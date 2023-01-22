@@ -11,6 +11,7 @@ import { RouterLink, RouterView } from "vue-router";
         <q-toolbar-title> NBA Team Builder </q-toolbar-title>
         <nav>
           <RouterLink to="/">Home</RouterLink>
+          <RouterLink to="/news">News</RouterLink>
           <RouterLink to="/about">About</RouterLink>
         </nav>
       </q-toolbar>
@@ -20,10 +21,10 @@ import { RouterLink, RouterView } from "vue-router";
       <RouterView />
     </q-page-container>
 
-    <q-footer elevated class="bg-grey-8 text-white">
+    <q-footer elevated>
       <q-toolbar>
         <q-toolbar-title>
-          <div>Title</div>
+          <div>NBA Team Builder</div>
         </q-toolbar-title>
       </q-toolbar>
     </q-footer>
