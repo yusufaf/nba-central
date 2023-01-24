@@ -1,5 +1,15 @@
 <script setup lang="ts">
+import { ref } from 'vue'
+
 import TeamBuilderButtons from "@/components/TeamBuilder/TeamBuilderButtons.vue";
+
+const showDrawer = ref(false);
+const search = ref("")
+
+const addPlayer = () => {
+  showDrawer.value = !showDrawer.value;
+}
+
 </script>
 
 <template>
@@ -8,8 +18,9 @@ import TeamBuilderButtons from "@/components/TeamBuilder/TeamBuilderButtons.vue"
     <div class="builder-container">
       <!-- Create new TeamBuilderHeaderComponent -->
       <div class="header">
-        <!-- <q-input v-model="text" label="Title" /> -->
-        <q-input v-model="text" label="Title" stack-label dark />
+        <!-- <q-input class="title-input" v-model="text" label="Title" stack-label dark /> -->
+        <div class="hidden">Hidden</div>
+        <!-- TODO: Make the score animated so that when its value changes there's some cool animation  -->
         <div class="score">Score: N/A</div>
         <TeamBuilderButtons />
       </div>
@@ -20,21 +31,69 @@ import TeamBuilderButtons from "@/components/TeamBuilder/TeamBuilderButtons.vue"
             <q-card-section>
               <h6>Player {{ n }}</h6>
             </q-card-section>
-            <q-separator /> 
+            <q-separator />
             <q-card-section>
+              <!-- Player Img and other player info will replace the + button -->
               <!-- <q-img class="rounded-borders" src="https://cdn.quasar.dev/img/parallax2.jpg" /> -->
-              <q-btn flat round icon="add_circle" size="1.75rem" class/>
-  
+              <q-btn @click="addPlayer" flat round icon="add_circle" size="1.75rem" class="add-player-btn"
+                title="Add Player" />
+
             </q-card-section>
-  
+
             <q-card-actions>
-              <q-btn flat round icon="delete" color="negative"/>
+              <q-btn flat round icon="delete" color="negative" />
             </q-card-actions>
           </q-card>
         </div>
         <h6 class="section-header">Bench</h6>
+        <div class="bench-lineup">
+          <q-card dark class="player-card" bordered :key="n" v-for="n in 10">
+            <q-card-section>
+              <h6>Player {{ n }}</h6>
+            </q-card-section>
+            <q-separator />
+            <q-card-section>
+              <!-- Player Img and other player info will replace the + button -->
+              <!-- <q-img class="rounded-borders" src="https://cdn.quasar.dev/img/parallax2.jpg" /> -->
+              <q-btn @click="addPlayer" round icon="add_circle" size="1.75rem" class="add-player-btn" />
+              <!-- <q-btn flat label="Confirm" color="primary" v-close-popup /> -->
+
+            </q-card-section>
+
+            <q-card-actions>
+              <q-btn flat round icon="delete" color="negative" />
+            </q-card-actions>
+          </q-card>
+        </div>
       </div>
     </div>
+    <q-drawer v-model="showDrawer" :width="300" bordered elevated overlay dark side="right">
+      <div class="drawer-header">
+        <h6 class="drawer-title">Add Player</h6>
+        <q-btn @click="showDrawer = false" round icon="close" class="drawer-close" />
+      </div>
+      <q-input outlined v-model="search" placeholder="Search for a player" type="search" dark>
+        <template v-slot:append>
+          <q-icon name="search" />
+        </template>
+      </q-input>
+      <!-- <q-scroll-area class="fit">
+
+        <q-list>
+          <template v-for="(menuItem, index) in menuList" :key="index">
+            <q-item clickable :active="menuItem.label === 'Outbox'" v-ripple>
+              <q-item-section avatar>
+                <q-icon :name="menuItem.icon" />
+              </q-item-section>
+              <q-item-section>
+                {{ menuItem.label }}
+              </q-item-section>
+            </q-item>
+            <q-separator :key="'sep' + index" v-if="menuItem.separator" />
+          </template>
+        </q-list>
+      </q-scroll-area> -->
+    </q-drawer>
   </main>
 </template>
 
@@ -67,16 +126,27 @@ import TeamBuilderButtons from "@/components/TeamBuilder/TeamBuilderButtons.vue"
   border-bottom: 0.125rem solid var(--vt-c-divider-dark-1);
 }
 
+.title-input {
+  width: 15%;
+  margin-left: 2rem;
+}
+
+.hidden {
+  visibility: hidden
+}
+
 .score {
   display: flex;
   font-size: 2rem;
   font-weight: 600;
   margin-left: auto;
-  justify-self: center;
+  /* justify-self: center; */
 }
 
 .builder-main {
   margin: 1rem 2rem 0 2rem;
+  height: 25rem;
+  overflow-y: auto;
 }
 
 .main-lineup {
@@ -87,6 +157,7 @@ import TeamBuilderButtons from "@/components/TeamBuilder/TeamBuilderButtons.vue"
 
 .player-card {
   width: 40rem;
+  max-width: 40rem;
   height: 15rem;
 }
 
@@ -94,4 +165,34 @@ import TeamBuilderButtons from "@/components/TeamBuilder/TeamBuilderButtons.vue"
   margin: 1rem 0;
 }
 
+.add-player-btn {
+  left: 50%;
+  transform: translate(-50%, 0%);
+}
+
+.bench-lineup {
+  display: flex;
+  gap: 2rem;
+  flex-wrap: wrap;
+  /* flex-grow: 0; */
+}
+
+::-webkit-scrollbar {
+  display: none;
+}
+
+
+.drawer-header {
+  display: flex;
+  height: fit-content;
+}
+
+.drawer-title {
+  padding: 0.25rem 0 0 1rem;
+}
+
+.drawer-close {
+  display: flex;
+  margin-left: auto;
+}
 </style>

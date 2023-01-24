@@ -2,17 +2,25 @@
 import { ref } from 'vue'
 
 const showConfirm = ref(false);
+const selectedView = ref("Default");
 
-const reset = () => {
-    alert("deez")
+const resetClick = () => {
+    showConfirm.value = !showConfirm.value;
 }
 
 </script>
 
 <template>
     <div class="team-builder-buttons">
+        <q-btn-toggle 
+            v-model="selectedView" 
+            toggle-color="primary" 
+            :options="[
+            { label: 'Default', value: 'Default' },
+            { label: 'List', value: 'List' }
+        ]" />
         <!-- Reset Button: Pops up a confirm dialog -->
-        <q-btn @click="showConfirm = true" round color="black" icon="refresh" title="Reset" />
+        <q-btn @click="resetClick" round color="black" icon="refresh" title="Reset" />
         <q-btn round color="black" icon="save" title="Save" />
     </div>
     <q-dialog v-model="showConfirm">

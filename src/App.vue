@@ -26,6 +26,15 @@ import { RouterLink, RouterView } from "vue-router";
         <q-toolbar-title>
           <div>NBA Team Builder</div>
         </q-toolbar-title>
+        <a href="https://github.com/yusufaf/nba-central">
+          <img 
+            alt="Github logo" 
+            class="logo" src="@/assets/github.png" 
+            width="32" 
+            height="32" 
+            title="Team Builder GitHub"
+          />
+        </a>
       </q-toolbar>
     </q-footer>
   </q-layout>
