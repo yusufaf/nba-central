@@ -10,6 +10,22 @@ const addPlayer = () => {
   showDrawer.value = !showDrawer.value;
 }
 
+const testFetchData = () => {
+  fetch("https://www.balldontlie.io/api/v1/players?per_page=50", {
+    method: 'GET',
+    headers: {}
+  })
+    .then(response => {
+      response.json().then(res => {
+        console.log("Response JSON = ", res);
+      });
+    })
+    .catch(err => {
+      console.error(err);
+    });
+}
+
+
 </script>
 
 <template>
@@ -41,7 +57,7 @@ const addPlayer = () => {
             </q-card-section>
 
             <q-card-actions>
-              <q-btn flat round icon="delete" color="negative" />
+              <q-btn @click="testFetchData" flat round icon="delete" color="negative" />
             </q-card-actions>
           </q-card>
         </div>

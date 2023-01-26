@@ -11,6 +11,7 @@ import { RouterLink, RouterView } from "vue-router";
         <q-toolbar-title> NBA Team Builder </q-toolbar-title>
         <nav>
           <RouterLink to="/">Home</RouterLink>
+          <RouterLink to="/scores">Scores</RouterLink>
           <RouterLink to="/news">News</RouterLink>
           <RouterLink to="/about">About</RouterLink>
         </nav>
