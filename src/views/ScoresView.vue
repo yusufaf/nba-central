@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { onMounted, ref, computed, reactive } from 'vue'
+import ScoreCard from '@/components/Scores/ScoreCard.vue';
 
 // http://site.api.espn.com/apis/site/v2/sports/basketball/nba/scoreboard
 
@@ -14,7 +15,7 @@ const date = ref(new Date());
 const primaryDateString = date.value.toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })
 const shortDateString = date.value.toLocaleDateString("en-us", { year: 'numeric', month: 'short', day: 'numeric' })
 
-const gameStatus = ref([] as any[]);
+// const gameStatus = ref([] as any[]);
 const gameData = ref([] as any[]);
 const games = ref([] as any[]);
 const gameTeams = ref([] as any[]);
@@ -24,17 +25,6 @@ const gameTeams = ref([] as any[]);
 - Discord through javascript somehow?
 
 */
-
-const getRecordString = (teamRecords: any[], homeAway: string) => {
-    let recordString = `(${teamRecords[0].summary}`;
-    if (homeAway === "home") {
-        recordString += `, ${teamRecords[1].summary} Home)`;
-    }
-    else if (homeAway === "away") {
-        recordString += `, ${teamRecords[2].summary} Away)`;
-    }
-    return recordString;
-}
 
 const fetchCurrentScores = () => {
     fetch(SCORES_URL, {
@@ -50,6 +40,7 @@ const fetchCurrentScores = () => {
                 gameData.value = events;
                 const eventCompetitions = events.map((event: any) => event.competitions);
                 const eventCompetitors = eventCompetitions.map((competition: any) => competition[0].competitors);
+                console.log({eventCompetitors})
                 games.value = eventCompetitions;
                 gameTeams.value = eventCompetitors;
                 console.log("Response JSON = ", res);
@@ -60,11 +51,10 @@ const fetchCurrentScores = () => {
         });
 }
 
-const testLink = () => {
+const navigateToReplays = () => {
     const search = encodeURI(shortDateString);
-    console.log({ search, shortDateString });
-    const testReplayLink = `https://watchreplay.net/?s=${search}`
-    window.open(testReplayLink, '_blank');
+    const fullGameReplaysLink = `https://watchreplay.net/?s=${search}`
+    window.open(fullGameReplaysLink, '_blank');
 }
 
 /* Computed Refs
@@ -93,34 +83,15 @@ onMounted(() => {
             <h2 class="">{{ numGames }} Games</h2>
         </div>
         <div class="scores-container">
-            <!-- TODO: Can probably and should probably create ScoreCard component -->
-            <q-card dark class="score-card" bordered :key="game.uid" v-for="(game, index) in gameData">
-                <q-card-section>
-                    <h6>{{ game.shortName }}</h6>
-                </q-card-section>
-                <q-separator />
-                <q-card-section>
-                    <!-- TODO: Subsection component where you pass in gameTeams[index] 
-                    - Sort the data to make sure its Away team on top
-                        
-                    -->
-                    <div class="team-row" v-for="competitor in [...gameTeams[index]].reverse()" :key="competitor.id">
-                        <!-- content -->
-                        <img class="team-logo" :src="competitor.team.logo" />
-                        <div class="team-info">
-                            <div>{{ competitor.team.displayName }}</div>
-                            <div>{{ getRecordString(competitor.records, competitor.homeAway) }}</div>
-                        </div>
-                        <div>{{ competitor.linescores.map((line: any) => line.value).join(" ") }}</div>
-                        <div class="score">{{ competitor.score }}</div>
-                    </div>
-                </q-card-section>
-
-                <q-card-actions>
-                </q-card-actions>
-            </q-card>
+            <ScoreCard
+                v-for="(game, index) in gameData" 
+                :key="game.uid" 
+                :game="game"
+                :index="index"
+                :gameTeams="gameTeams"
+            />
         </div>
-        <q-btn @click="testLink" outline color="primary" class="test-btn" title="Secret Link"> GAME REPLAYS </q-btn>
+        <q-btn @click="navigateToReplays" outline color="primary" class="replay-link-btn" title="Secret Link">Game Replays</q-btn>
     </main>
 </template>
 
@@ -183,7 +154,7 @@ h2 {
     margin-left: auto;
 }
 
-.test-btn {
+.replay-link-btn {
     position: absolute;
     top: 2rem;
 }
