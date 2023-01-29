@@ -6,28 +6,31 @@ const props = defineProps<{
 }>()
 
 /* TODO: Need to work on this when games are actually going on and see what the data looks like */
-const headerValues = computed(() => {
-    const headerVals: any[] = [...Array(4).keys()].map(i => i + 1);
-    headerVals.push("T");
-    const linescores = props.team.linescores;
-    if (linescores.length > 4) {
-        const index = 4;
-        headerVals.splice(index, 0, "OT")
-    }
-    return headerVals;
+
+
+const lineScore = computed(() => {
+    return props.team.linescores.map((score: any) => score.value);
 })
 
-const getLineScore = (team: any) => {
-    /* One div for => 1 2 3 4 (OT) T */
-    const { linescores, score } = team;
-
-}
 </script>
 
 <template>
-    <div >{{ headerValues.join(" ") }}</div>
+    <div class="line-scores">
+        <div class="score-value" v-for="(score, index) in lineScore" :key="index">{{ score }}</div>
+    </div>
 </template>
 
 <style scoped>
+.line-scores {
+    display: flex;
+    flex-direction: row;
+    gap: 2rem;
+    margin-left: auto;
+    /* justify-content: center; */
+}
+
+.score-value {
+    display: flex;
+}
 
 </style>
