@@ -1,14 +1,65 @@
 <script setup lang="ts">
-import { ref } from 'vue'
-
+import { ref, watch, computed } from 'vue'
 import TeamBuilderButtons from "@/components/TeamBuilder/TeamBuilderButtons.vue";
+import { BDL_API_PREFIX } from "@/constants/constants";
 
 const showDrawer = ref(false);
-const search = ref("")
+const search = ref("");
+const searchList = ref([] as any[]);
+const searchLoading = ref(false);
 
 const addPlayer = () => {
   showDrawer.value = !showDrawer.value;
 }
+
+const searchListResults = computed(() => searchList.value.map((player: any) => {
+  const { first_name, last_name, height_feet, height_inches, weight_pounds } = player;
+  const fullName = `${first_name} ${last_name}`;
+  const heightString = height_feet && height_inches ?`${height_feet}' ${height_inches}"` : "N/A Height";
+  const weightString = weight_pounds ? `${weight_pounds}lbs` : "N/A Weight";
+  const heightAndWeight = `${heightString}, ${weightString}`;
+  return {
+    ...player,
+    fullName,
+    heightAndWeight
+  }
+}));
+
+watch(search, async () => {
+  const searchedPlayer = search.value;
+
+  /* If not an empty string, make API call */
+  if (searchedPlayer) {
+    /* TODO: Disable the search input while search is loading? */
+    searchLoading.value = true;
+    /* TODO: Review this, clearing the list before every API call*/
+    searchList.value = [];
+    try {
+      let next_page = null;
+      do {
+        const page: number | null = next_page ? next_page : "";
+        const response: any = await fetch(`${BDL_API_PREFIX}/players?per_page=50&search=${searchedPlayer}&page=${page}`)
+        const responseJSON = await response.json();
+        const { data, meta } = responseJSON;
+        next_page = meta.next_page;
+        searchList.value = [...searchList.value, ...data];
+      } while (next_page != null);
+
+    } 
+    catch (error) {
+      console.error("Error! Failed to make search API call");
+      /* */
+    }
+    finally {
+      searchLoading.value = false;
+    }
+  }
+  else {
+    /* Clear the search list if no longer any players being searched for */
+    searchList.value = [];
+  }
+})
+
 
 const testFetchData = () => {
   fetch("https://www.balldontlie.io/api/v1/players?per_page=50", {
@@ -24,8 +75,6 @@ const testFetchData = () => {
       console.error(err);
     });
 }
-
-
 </script>
 
 <template>
@@ -83,7 +132,7 @@ const testFetchData = () => {
         </div>
       </div>
     </div>
-    <q-drawer v-model="showDrawer" :width="300" bordered elevated overlay dark side="right">
+    <q-drawer class="drawer" v-model="showDrawer" :width="300" bordered elevated overlay dark side="right">
       <div class="drawer-header">
         <h6 class="drawer-title">Add Player</h6>
         <q-btn @click="showDrawer = false" round icon="close" class="drawer-close" />
@@ -93,22 +142,25 @@ const testFetchData = () => {
           <q-icon name="search" />
         </template>
       </q-input>
-      <!-- <q-scroll-area class="fit">
-
-        <q-list>
-          <template v-for="(menuItem, index) in menuList" :key="index">
-            <q-item clickable :active="menuItem.label === 'Outbox'" v-ripple>
-              <q-item-section avatar>
-                <q-icon :name="menuItem.icon" />
-              </q-item-section>
-              <q-item-section>
-                {{ menuItem.label }}
-              </q-item-section>
-            </q-item>
-            <q-separator :key="'sep' + index" v-if="menuItem.separator" />
-          </template>
-        </q-list>
-      </q-scroll-area> -->
+      <q-linear-progress v-if="searchLoading" indeterminate color="primary"/>
+      <!-- <q-circular-progress v-if="searchLoading" indeterminate rounded size="50px" color="primary" /> -->
+      <q-list>
+        <template v-for="(player, index) in searchListResults" :key="player.id">
+          <q-item clickable v-ripple>
+            <q-item-section class="player-item">
+              <div>
+                <div>{{ player.fullName }}</div>
+                <div>{{ player.heightAndWeight }}</div>
+                <div>{{ player.team.full_name }}</div>
+              </div>
+              <div class="player-position">
+                {{ player.position }}
+              </div>
+            </q-item-section>
+          </q-item>
+          <q-separator />
+        </template>
+      </q-list>
     </q-drawer>
   </main>
 </template>
@@ -197,6 +249,7 @@ const testFetchData = () => {
   display: none;
 }
 
+/* Drawer Styles */
 
 .drawer-header {
   display: flex;
@@ -211,4 +264,15 @@ const testFetchData = () => {
   display: flex;
   margin-left: auto;
 }
+
+.player-item {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+}
+
+.player-position {
+  margin-left: auto;
+}
+
 </style>
