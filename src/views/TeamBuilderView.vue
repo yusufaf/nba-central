@@ -2,6 +2,7 @@
 import { ref, watch, computed } from 'vue'
 import TeamBuilderButtons from "@/components/TeamBuilder/TeamBuilderButtons.vue";
 import { BDL_API_PREFIX } from "@/constants/constants";
+import { debounce } from "quasar"
 
 const showDrawer = ref(false);
 const search = ref("");
@@ -12,10 +13,14 @@ const addPlayer = () => {
   showDrawer.value = !showDrawer.value;
 }
 
+const deletePlayer = (index) => {
+
+}
+
 const searchListResults = computed(() => searchList.value.map((player: any) => {
   const { first_name, last_name, height_feet, height_inches, weight_pounds } = player;
   const fullName = `${first_name} ${last_name}`;
-  const heightString = height_feet && height_inches ?`${height_feet}' ${height_inches}"` : "N/A Height";
+  const heightString = height_feet && height_inches ? `${height_feet}' ${height_inches}"` : "N/A Height";
   const weightString = weight_pounds ? `${weight_pounds}lbs` : "N/A Weight";
   const heightAndWeight = `${heightString}, ${weightString}`;
   return {
@@ -25,7 +30,10 @@ const searchListResults = computed(() => searchList.value.map((player: any) => {
   }
 }));
 
-watch(search, async () => {
+
+
+/* TODO: See if putting this into separate function still works */
+watch(search, debounce(async () => {
   const searchedPlayer = search.value;
 
   /* If not an empty string, make API call */
@@ -45,7 +53,7 @@ watch(search, async () => {
         searchList.value = [...searchList.value, ...data];
       } while (next_page != null);
 
-    } 
+    }
     catch (error) {
       console.error("Error! Failed to make search API call");
       /* */
@@ -58,23 +66,12 @@ watch(search, async () => {
     /* Clear the search list if no longer any players being searched for */
     searchList.value = [];
   }
-})
+}, 600));
 
+/*  Note on draggable cards:
+https://stackoverflow.com/questions/73325793/horizontally-draggable-quasar-q-cards-using-vue-draggable-next 
+*/
 
-const testFetchData = () => {
-  fetch("https://www.balldontlie.io/api/v1/players?per_page=50", {
-    method: 'GET',
-    headers: {}
-  })
-    .then(response => {
-      response.json().then(res => {
-        console.log("Response JSON = ", res);
-      });
-    })
-    .catch(err => {
-      console.error(err);
-    });
-}
 </script>
 
 <template>
@@ -106,7 +103,7 @@ const testFetchData = () => {
             </q-card-section>
 
             <q-card-actions>
-              <q-btn @click="testFetchData" flat round icon="delete" color="negative" />
+              <q-btn @click="deletePlayer(n)" flat round icon="delete" color="negative" />
             </q-card-actions>
           </q-card>
         </div>
@@ -142,8 +139,7 @@ const testFetchData = () => {
           <q-icon name="search" />
         </template>
       </q-input>
-      <q-linear-progress v-if="searchLoading" indeterminate color="primary"/>
-      <!-- <q-circular-progress v-if="searchLoading" indeterminate rounded size="50px" color="primary" /> -->
+      <q-linear-progress v-if="searchLoading" indeterminate color="primary" />
       <q-list>
         <template v-for="(player, index) in searchListResults" :key="player.id">
           <q-item clickable v-ripple>
@@ -274,5 +270,4 @@ const testFetchData = () => {
 .player-position {
   margin-left: auto;
 }
-
 </style>

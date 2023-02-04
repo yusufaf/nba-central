@@ -9,6 +9,8 @@ const props = defineProps<{
     gameTeams: any,
 }>()
 
+const tooltipInfo = ref("");
+
 const shortName = computed(() => props.game.shortName);
 const gameTeamsSorted = computed(() => {
     /* Ensure away team shows up on top */
@@ -66,7 +68,7 @@ const statusString = computed(() => {
 
 const getRecordDetailsTooltip = (competitor: any) => {
     console.log(competitor, competitor.team)
-    const {homeAway} = competitor;
+    const { homeAway } = competitor;
     const { id } = competitor.team;
     const teamURL = `https://site.api.espn.com/apis/site/v2/sports/basketball/nba/teams/${id}`;
 
@@ -77,12 +79,12 @@ const getRecordDetailsTooltip = (competitor: any) => {
     })
     .then(response => {
         response.json().then(res => {
-            console.log("Team Details response = ", {res})
-            const {team} = res;
-            const {record, standingSummary} = team;
+            console.log("Team Details response = ", { res })
+            const { team } = res;
+            const { record, standingSummary } = team;
             recordDetails += `${standingSummary}\n`;
             const [overallRecord, homeRecord, awayRecord] = record.items;
-            
+
             /* Parse out the home/away win percentage from data, append to record details */
             const homeAwayPrefix = homeAway === HOME ? HOME_C : AWAY_C;
             const recordToCheck = homeAway === HOME ? homeRecord : awayRecord;
@@ -95,8 +97,9 @@ const getRecordDetailsTooltip = (competitor: any) => {
     .catch(err => {
         console.error(err);
     });
-    console.log({recordDetails})
-    return recordDetails;
+    console.log({ recordDetails })
+    tooltipInfo.value = recordDetails;
+    console.log("TooltipInfo.value is now = ", tooltipInfo.value);
 }
 
 
@@ -104,8 +107,10 @@ const getRecordDetailsTooltip = (competitor: any) => {
 
 <template>
     <q-card dark class="score-card" bordered :key="game.uid">
-        <q-card-section>
+        <q-card-section class="card-header">
             <h6>{{ shortName }}</h6>
+            <!-- Toggled styling here ==> notifications vs notifications active -->
+            <q-btn @click="() => {}" flat round icon="notifications" title="Notify me about the game" />
         </q-card-section>
         <q-separator dark />
         <q-card-section>
@@ -119,15 +124,14 @@ const getRecordDetailsTooltip = (competitor: any) => {
                 </template>
             </div>
 
-            <div class="team-row" :class="{ first: index === 0 }" v-for="(competitor, index) in gameTeamsSorted"
-                :key="competitor.id">
+            <div class="team-row" :class="{ first: index === 0 }" v-for="(competitor, index) in gameTeamsSorted" :key="competitor.id">
                 <!-- content -->
                 <img class="team-logo" :src="competitor.team.logo" />
                 <div class="team-info">
                     <div>{{ competitor.team.displayName }}</div>
-                    <div>{{ getRecordString(competitor.records, competitor.homeAway) }}
+                    <div v-on:mouseenter="getRecordDetailsTooltip(competitor)">{{ getRecordString(competitor.records, competitor.homeAway) }}
                         <q-tooltip anchor="center right" self="bottom middle" :offset="[10, 10]">
-                            {{ getRecordDetailsTooltip(competitor) }}
+                            {{ tooltipInfo }}
                         </q-tooltip>
                     </div>
                 </div>
@@ -146,6 +150,11 @@ const getRecordDetailsTooltip = (competitor: any) => {
 <style scoped>
 .score-card {
     height: 15rem;
+}
+
+.card-header {
+    display: flex;
+    align-items: center;
 }
 
 .scores-container {
