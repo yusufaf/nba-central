@@ -1,20 +1,32 @@
 <script setup lang="ts">
 import { ref, watch, computed } from 'vue'
 import TeamBuilderButtons from "@/components/TeamBuilder/TeamBuilderButtons.vue";
+// import TeamBuilderDrawer from '@/components/TeamBuilder/TeamBuilderDrawer.vue';
 import { BDL_API_PREFIX } from "@/constants/constants";
+import { range } from "@/constants/functions";
 import { debounce } from "quasar"
 
-const showDrawer = ref(false);
-const search = ref("");
-const searchList = ref([] as any[]);
-const searchLoading = ref(false);
+const showDrawer = ref<boolean>(false);
+const search = ref<string>("");
+const searchList = ref<any[]>([]);
+const searchLoading = ref<boolean>(false);
+/* Typing guide: https://vuejs.org/guide/typescript/composition-api.html */
+const selectedPlayerIndex = ref<number | null>(null);
+const selectedPlayersData = ref(new Map());
 
-const addPlayer = () => {
+const showSortDropdown = ref<boolean>(false);
+
+const addPlayer = (index: number) => {
+  selectedPlayerIndex.value = index;
+  /* If already visible, don't do anything */
+  if (showDrawer.value) {
+    return;
+  }
   showDrawer.value = !showDrawer.value;
 }
 
-const deletePlayer = (index) => {
-
+const deletePlayer = (index: number) => {
+  selectedPlayersData.value.delete(index);
 }
 
 const searchListResults = computed(() => searchList.value.map((player: any) => {
@@ -72,6 +84,15 @@ watch(search, debounce(async () => {
 https://stackoverflow.com/questions/73325793/horizontally-draggable-quasar-q-cards-using-vue-draggable-next 
 */
 
+const addPlayerFromList = (player: any) => {
+  const playerIndex = selectedPlayerIndex.value;
+  console.log({ playerIndex });
+  const currentPlayer = selectedPlayersData.value.get(playerIndex);
+
+  selectedPlayersData.value.set(playerIndex, player);
+  console.log("Selected Players Data = ", selectedPlayersData.value);
+}
+
 </script>
 
 <template>
@@ -97,9 +118,14 @@ https://stackoverflow.com/questions/73325793/horizontally-draggable-quasar-q-car
             <q-card-section>
               <!-- Player Img and other player info will replace the + button -->
               <!-- <q-img class="rounded-borders" src="https://cdn.quasar.dev/img/parallax2.jpg" /> -->
-              <q-btn @click="addPlayer" flat round icon="add_circle" size="1.75rem" class="add-player-btn"
-                title="Add Player" />
+              <!-- {{ selectedPlayersData.has(n) }} -->
+              <!-- If there's no player with data @ this index, render the add player button -->
+              <q-btn v-if="!selectedPlayersData.has(n)" @click="addPlayer(n)" flat round icon="add_circle"
+                size="1.75rem" class="add-player-btn" title="Add Player" />
+              <template v-else>
+                <div>{{ selectedPlayersData.get(n).fullName }}</div>
 
+              </template>
             </q-card-section>
 
             <q-card-actions>
@@ -109,26 +135,28 @@ https://stackoverflow.com/questions/73325793/horizontally-draggable-quasar-q-car
         </div>
         <h6 class="section-header">Bench</h6>
         <div class="bench-lineup">
-          <q-card dark class="player-card" bordered :key="n" v-for="n in 10">
+          <q-card dark class="player-card" bordered :key="n" v-for="n in range(6, 15)">
             <q-card-section>
               <h6>Player {{ n }}</h6>
             </q-card-section>
             <q-separator />
             <q-card-section>
               <!-- Player Img and other player info will replace the + button -->
-              <!-- <q-img class="rounded-borders" src="https://cdn.quasar.dev/img/parallax2.jpg" /> -->
-              <q-btn @click="addPlayer" round icon="add_circle" size="1.75rem" class="add-player-btn" />
-              <!-- <q-btn flat label="Confirm" color="primary" v-close-popup /> -->
-
+              <q-btn v-if="!selectedPlayersData.has(n)" @click="addPlayer(n)" round icon="add_circle" size="1.75rem" class="add-player-btn" />
+              <template v-else>
+                <div>{{ selectedPlayersData.get(n).fullName }}</div>
+              </template>
             </q-card-section>
-
             <q-card-actions>
-              <q-btn flat round icon="delete" color="negative" />
+              <q-btn @click="deletePlayer(n)" flat round icon="delete" color="negative" />
             </q-card-actions>
           </q-card>
         </div>
       </div>
     </div>
+    <!-- <TeamBuilderDrawer 
+      v-bind:showDrawer="showDrawer"
+    /> -->
     <q-drawer class="drawer" v-model="showDrawer" :width="300" bordered elevated overlay dark side="right">
       <div class="drawer-header">
         <h6 class="drawer-title">Add Player</h6>
@@ -140,9 +168,21 @@ https://stackoverflow.com/questions/73325793/horizontally-draggable-quasar-q-car
         </template>
       </q-input>
       <q-linear-progress v-if="searchLoading" indeterminate color="primary" />
+
+      <!-- TODO: Figure out how you want the sort and filters to show up
+      - Hidden in a menu that opens up on click of a button?
+      - Visible dropdowns
+      -->
+      <div>
+        <q-select outlined v-model="model" :options="options" label="Sort" dark />
+        <q-select outlined v-model="model" :options="options" label="Filter" dark />
+      </div>
+
+
+      <q-separator dark />
       <q-list>
         <template v-for="(player, index) in searchListResults" :key="player.id">
-          <q-item clickable v-ripple>
+          <q-item @click="addPlayerFromList(player)" clickable v-ripple>
             <q-item-section class="player-item">
               <div>
                 <div>{{ player.fullName }}</div>

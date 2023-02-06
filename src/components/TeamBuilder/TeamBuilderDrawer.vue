@@ -1,6 +1,11 @@
 <!-- <script setup lang="ts">
 import { ref, computed } from 'vue'
 
+defineProps<{
+    showDrawer: boolean;
+}>();
+
+
 </script>
 
 

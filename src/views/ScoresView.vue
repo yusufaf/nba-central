@@ -1,11 +1,9 @@
 <script setup lang="ts">
 import { onMounted, ref, computed, reactive } from 'vue'
+import { ESPN_SCORES_URL } from "@/constants/constants";
 import ScoreCard from '@/components/Scores/ScoreCard.vue';
 
-// http://site.api.espn.com/apis/site/v2/sports/basketball/nba/scoreboard
-
 /* Update scores every 5 mins */
-const SCORES_URL = "http://site.api.espn.com/apis/site/v2/sports/basketball/nba/scoreboard"
 const SCOREBOARD_TIMEOUT = 300000;
 
 const numGames = ref(0)
@@ -16,9 +14,11 @@ const primaryDateString = date.value.toLocaleDateString(undefined, { weekday: 'l
 const shortDateString = date.value.toLocaleDateString("en-us", { year: 'numeric', month: 'short', day: 'numeric' })
 
 // const gameStatus = ref([] as any[]);
-const gameData = ref([] as any[]);
-const games = ref([] as any[]);
-const gameTeams = ref([] as any[]);
+const gameData = ref<any[]>([]);
+const games = ref<any[]>([]);
+const gameTeams = ref<any[]>([]);
+
+const showReplayConfirm = ref<boolean>(false);
 
 /* TODO/IDEA:
 - Notifications for score updates like Google?
@@ -27,7 +27,7 @@ const gameTeams = ref([] as any[]);
 */
 
 const fetchCurrentScores = () => {
-    fetch(SCORES_URL, {
+    fetch(ESPN_SCORES_URL, {
         method: 'GET',
     })
         .then(response => {
@@ -40,7 +40,7 @@ const fetchCurrentScores = () => {
                 gameData.value = events;
                 const eventCompetitions = events.map((event: any) => event.competitions);
                 const eventCompetitors = eventCompetitions.map((competition: any) => competition[0].competitors);
-                console.log({eventCompetitors})
+                console.log({ eventCompetitors })
                 games.value = eventCompetitions;
                 gameTeams.value = eventCompetitors;
                 console.log("Response JSON = ", res);
@@ -83,15 +83,26 @@ onMounted(() => {
             <h2 class="">{{ numGames }} Games</h2>
         </div>
         <div class="scores-container">
-            <ScoreCard
+            <ScoreCard 
                 v-for="(game, index) in gameData" 
                 :key="game.uid" 
-                :game="game"
+                :game="game" 
                 :index="index"
-                :gameTeams="gameTeams"
+                :gameTeams="gameTeams" 
             />
         </div>
-        <q-btn @click="navigateToReplays" outline color="primary" class="replay-link-btn" title="Secret Link">Game Replays</q-btn>
+        <q-btn @click="showReplayConfirm = true" outline color="primary" class="replay-link-btn" title="Secret Link">Game Replays</q-btn>
+        <q-dialog v-model="showReplayConfirm">
+            <q-card dark>
+                <q-card-section class="row items-center">
+                    <div>This will take you to an external website to access full game replays for today's slate of games, view at your own risk 🙂</div>
+                </q-card-section>
+                <q-card-actions align="right">
+                    <q-btn flat label="Cancel" color="primary" v-close-popup />
+                    <q-btn @click="navigateToReplays" flat label="Confirm" color="primary" v-close-popup />
+                </q-card-actions>
+            </q-card>
+        </q-dialog>
     </main>
 </template>
 

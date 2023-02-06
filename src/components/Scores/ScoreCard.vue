@@ -1,6 +1,14 @@
 <script setup lang="tsx">
 import { h, ref, computed } from 'vue'
+import { useQuasar } from 'quasar';
+import {
+    HOME,
+    HOME_C,
+    AWAY,
+    AWAY_C
+} from "@/constants/constants";
 import LineScore from './LineScore.vue';
+import TeamDetailsTooltip from './TeamDetailsTooltip.vue';
 
 /* Resource: https://dmitripavlutin.com/props-destructure-vue-composition/ */
 const props = defineProps<{
@@ -10,6 +18,7 @@ const props = defineProps<{
 }>()
 
 const tooltipInfo = ref("");
+const tooltipData = ref<any>(null);
 
 const shortName = computed(() => props.game.shortName);
 const gameTeamsSorted = computed(() => {
@@ -20,10 +29,6 @@ const gameTeamsSorted = computed(() => {
     })
 });
 
-const HOME = "home";
-const HOME_C = "Home";
-const AWAY = "away";
-const AWAY_C = "Away";
 const getRecordString = (teamRecords: any[], homeAway: string): string => {
     const [overallRecord, homeRecord, awayRecord] = teamRecords;
     let recordString = `(${overallRecord.summary}`;
@@ -52,12 +57,14 @@ const headerValues = computed(() => {
     }
     // console.log({ headerVals });
     return headerVals;
-})
+});
 
 const isGameDone = computed(() => {
     const statusInfo = props.game.status.type;
     return statusInfo.completed;
 })
+
+console.log(isGameDone.value)
 
 const statusString = computed(() => {
     const statusInfo = props.game.status;
@@ -68,8 +75,7 @@ const statusString = computed(() => {
 
 const getRecordDetailsTooltip = (competitor: any) => {
     console.log(competitor, competitor.team)
-    const { homeAway } = competitor;
-    const { id } = competitor.team;
+    const { homeAway, id } = competitor;
     const teamURL = `https://site.api.espn.com/apis/site/v2/sports/basketball/nba/teams/${id}`;
 
     let recordDetails = "";
@@ -77,30 +83,102 @@ const getRecordDetailsTooltip = (competitor: any) => {
     fetch(teamURL, {
         method: 'GET',
     })
-    .then(response => {
-        response.json().then(res => {
-            console.log("Team Details response = ", { res })
-            const { team } = res;
-            const { record, standingSummary } = team;
-            recordDetails += `${standingSummary}\n`;
-            const [overallRecord, homeRecord, awayRecord] = record.items;
+        .then(response => {
+            response.json().then(res => {
+                tooltipData.value = res.team;
 
-            /* Parse out the home/away win percentage from data, append to record details */
-            const homeAwayPrefix = homeAway === HOME ? HOME_C : AWAY_C;
-            const recordToCheck = homeAway === HOME ? homeRecord : awayRecord;
-            const homeAwayWinPercent = +Number(recordToCheck.stats[3].value).toFixed(2) * 100;
-            recordDetails += `${homeAwayPrefix} Win %: ${homeAwayWinPercent}%\n`;
-            console.log("recordDetails is now = ", recordDetails);
+                console.log("Team Details response = ", { res });
+                /* TODO: Could maybe do find() or filter() for these properties and ensure that you're accessing the right value */
+                const { team } = res;
+                const { record, standingSummary } = team;
+                recordDetails += `${standingSummary}\n`;
+                const [overallRecord, homeRecord, awayRecord] = record.items;
 
+                const { stats: overallRecordStats } = overallRecord
+
+                /* Streak */
+                const streak = overallRecordStats[14].value;
+                recordDetails += streak >= 0 ? `Streak: W${streak}\n` : `Streak: L${streak.toString().replace("-", "")}\n`;
+
+                /* Playoff Seed */
+                const playoffSeed = overallRecordStats[10].value;
+                recordDetails += `Seed: ${playoffSeed}\n`;
+
+                /* Overall and Home/Away Win % */
+                const overallWinPercent = +Number(overallRecordStats[16].value * 100).toFixed(1);
+                recordDetails += `Overall Win Pct: ${overallWinPercent}%\n`;
+
+                /* Parse out the home/away win percentage from data, append to record details */
+                const homeAwayPrefix = homeAway === HOME ? HOME_C : AWAY_C;
+                const recordToCheck = homeAway === HOME ? homeRecord : awayRecord;
+                const homeAwayWinPercent = +Number(recordToCheck.stats[3].value * 100).toFixed(1);
+                recordDetails += `${homeAwayPrefix} Win Pct: ${homeAwayWinPercent}%\n`;
+
+                /* Games Behind 1st */
+                const gamesBehind = overallRecordStats[6].value;
+                recordDetails += `Games Behind 1st: ${gamesBehind} \n`;
+
+                /* Point Differential */
+                const pointDifferential = +Number(overallRecordStats[4].value).toFixed(2);
+                recordDetails += `Point Differential: ${pointDifferential}\n`
+
+                tooltipInfo.value = recordDetails;
+            });
+        })
+        .catch(err => {
+            console.error(err);
         });
-    })
-    .catch(err => {
-        console.error(err);
-    });
-    console.log({ recordDetails })
-    tooltipInfo.value = recordDetails;
-    console.log("TooltipInfo.value is now = ", tooltipInfo.value);
 }
+
+const $q = useQuasar();
+
+const toggleGameNotification = () => {
+
+    $q.notify({
+        message: 'Jim pinged you.',
+        caption: '5 minutes ago',
+        color: 'secondary'
+    })
+}
+
+const homeLeaderData = computed(() => {
+    const currentTeams = props.gameTeams[props.index];
+    const leaders = currentTeams[0].leaders;
+    const ratingLeader = leaders[3];
+    return ratingLeader;
+})
+
+const homeLeaderPlayer = computed(() => {
+    return homeLeaderData.value.athlete;
+})
+
+const homeLeaderName = computed(() => {
+    return homeLeaderData.value.shortName;
+})
+
+const homeLeaderStatline = computed(() => {
+    return homeLeaderData.value.displayValue;
+})
+
+/* Away Player w/ best rating */
+const awayLeaderData = computed(() => {
+    const currentTeams = props.gameTeams[props.index];
+    const leaders = currentTeams[1].leaders;
+    const ratingLeader = leaders[3];
+    return ratingLeader;
+})
+
+const awayLeaderPlayer = computed(() => {
+    return awayLeaderData.value.athlete;
+})
+
+const awayLeaderName = computed(() => {
+    return homeLeaderData.value.shortName;
+})
+
+const awayLeaderStatline = computed(() => {
+    return awayLeaderData.value.displayValue;
+})
 
 
 </script>
@@ -110,7 +188,9 @@ const getRecordDetailsTooltip = (competitor: any) => {
         <q-card-section class="card-header">
             <h6>{{ shortName }}</h6>
             <!-- Toggled styling here ==> notifications vs notifications active -->
-            <q-btn @click="() => {}" flat round icon="notifications" title="Notify me about the game" />
+            <!-- v-if="!isGameDone" -->
+            <q-btn @click="toggleGameNotification" class="notification-bell" flat round icon="notifications"
+                title="Notify me about the game" />
         </q-card-section>
         <q-separator dark />
         <q-card-section>
@@ -124,15 +204,23 @@ const getRecordDetailsTooltip = (competitor: any) => {
                 </template>
             </div>
 
-            <div class="team-row" :class="{ first: index === 0 }" v-for="(competitor, index) in gameTeamsSorted" :key="competitor.id">
+            <div class="team-row" :class="{ first: index === 0 }" v-for="(competitor, index) in gameTeamsSorted"
+                :key="competitor.id">
                 <!-- content -->
                 <img class="team-logo" :src="competitor.team.logo" />
                 <div class="team-info">
                     <div>{{ competitor.team.displayName }}</div>
-                    <div v-on:mouseenter="getRecordDetailsTooltip(competitor)">{{ getRecordString(competitor.records, competitor.homeAway) }}
-                        <q-tooltip anchor="center right" self="bottom middle" :offset="[10, 10]">
-                            {{ tooltipInfo }}
-                        </q-tooltip>
+                    <div v-on:mouseenter="getRecordDetailsTooltip(competitor)">
+                        <span>{{ getRecordString(competitor.records, competitor.homeAway) }}</span>
+                        <TeamDetailsTooltip
+                            :data="tooltipData"
+                            v-if="tooltipData"
+                        />
+                        <!-- <q-tooltip anchor="center right" self="bottom middle" :offset="[10, 10]">
+                            <div class="tooltip-info">
+                                {{ tooltipInfo }}
+                            </div>
+                        </q-tooltip> -->
                     </div>
                 </div>
                 <LineScore :team="competitor" />
@@ -142,6 +230,16 @@ const getRecordDetailsTooltip = (competitor: any) => {
             </div>
         </q-card-section>
         <q-separator dark />
+        <q-card-section class="leaders">
+            <!-- Leader 1 -->
+            <div>
+                {{ homeLeaderStatline }}
+            </div>
+            <!-- Leader 2 -->
+            <div>
+                {{ awayLeaderStatline }}
+            </div>
+        </q-card-section>
         <q-card-actions>
         </q-card-actions>
     </q-card>
@@ -149,7 +247,7 @@ const getRecordDetailsTooltip = (competitor: any) => {
 
 <style scoped>
 .score-card {
-    height: 15rem;
+    height: 20rem;
 }
 
 .card-header {
@@ -208,4 +306,119 @@ const getRecordDetailsTooltip = (competitor: any) => {
     flex-direction: column;
     gap: 0.5rem;
 }
+
+.tooltip-info {
+    white-space: pre-line;
+    font-size: 0.7rem;
+}
+
+.notification-bell {
+    animation: ring 4s .7s ease-in-out;
+    transform-origin: 50% 1px;
+}
+
+@keyframes ring {
+    0% {
+        transform: rotate(0);
+    }
+
+    1% {
+        transform: rotate(30deg);
+    }
+
+    3% {
+        transform: rotate(-28deg);
+    }
+
+    5% {
+        transform: rotate(34deg);
+    }
+
+    7% {
+        transform: rotate(-32deg);
+    }
+
+    9% {
+        transform: rotate(30deg);
+    }
+
+    11% {
+        transform: rotate(-28deg);
+    }
+
+    13% {
+        transform: rotate(26deg);
+    }
+
+    15% {
+        transform: rotate(-24deg);
+    }
+
+    17% {
+        transform: rotate(22deg);
+    }
+
+    19% {
+        transform: rotate(-20deg);
+    }
+
+    21% {
+        transform: rotate(18deg);
+    }
+
+    23% {
+        transform: rotate(-16deg);
+    }
+
+    25% {
+        transform: rotate(14deg);
+    }
+
+    27% {
+        transform: rotate(-12deg);
+    }
+
+    29% {
+        transform: rotate(10deg);
+    }
+
+    31% {
+        transform: rotate(-8deg);
+    }
+
+    33% {
+        transform: rotate(6deg);
+    }
+
+    35% {
+        transform: rotate(-4deg);
+    }
+
+    37% {
+        transform: rotate(2deg);
+    }
+
+    39% {
+        transform: rotate(-1deg);
+    }
+
+    41% {
+        transform: rotate(1deg);
+    }
+
+    43% {
+        transform: rotate(0);
+    }
+
+    100% {
+        transform: rotate(0);
+    }
+}
+
+.leaders {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+}
+
 </style>
