@@ -9,6 +9,7 @@ import {
 
 const props = defineProps<{
     data: any;
+    homeAway: string;
 }>();
 
 console.log("Data in TeamDetailsTooltip = ", props.data);
@@ -19,6 +20,10 @@ const awayRecord = computed(() => props.data.record.items[2]);
 
 const getColorClass = (condition: boolean) => {
     return condition ? "positive" : "negative";
+}
+
+const roundValueToNPlaces = (value: any, n: number = 1) => {
+    return Number(value).toFixed(n);
 }
 
 const streak = computed(() => {
@@ -46,6 +51,17 @@ const playoffSeed = computed(() => {
 
 const standingSummary = computed(() =>`${props.data.standingSummary}\n`);
 
+const overallWinPercent = computed(() => {
+    const winPercent = roundValueToNPlaces(overallRecordStats.value[16].value * 100);
+    return `Overall Win Pct: ${winPercent}%\n`;
+})
+
+const homeAwayWinPercent = computed(() => {
+    const homeAwayPrefix = props.homeAway === HOME ? HOME_C : AWAY_C;
+    const recordToCheck = props.homeAway === HOME ? homeRecord.value : awayRecord.value;
+    const winPercent =  roundValueToNPlaces(recordToCheck.stats[3].value * 100);
+    return `${homeAwayPrefix} Win Pct: ${winPercent}%\n`;
+})
 
 </script>
 
@@ -56,6 +72,8 @@ const standingSummary = computed(() =>`${props.data.standingSummary}\n`);
             <div>{{ standingSummary }}</div>
             <div :class="streak.positive">{{ streak.message }}</div>
             <div :class="playoffSeed.positive">{{ playoffSeed.message }}</div>
+            <div>{{ overallWinPercent }}</div>
+            <div>{{ homeAwayWinPercent }}</div>
         </div>
     </q-tooltip>
 </template>

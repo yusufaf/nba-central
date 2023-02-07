@@ -6,8 +6,8 @@ import ScoreCard from '@/components/Scores/ScoreCard.vue';
 /* Update scores every 5 mins */
 const SCOREBOARD_TIMEOUT = 300000;
 
-const numGames = ref(0)
-const scoreData = ref({});
+const numGames = ref<number>(0)
+const scoreData = ref<any>({});
 
 const date = ref(new Date());
 const primaryDateString = date.value.toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })
@@ -132,10 +132,6 @@ h2 {
 
 .date {
     color: var(--q-primary);
-}
-
-.score-card {
-    height: 15rem;
 }
 
 .scores-container {

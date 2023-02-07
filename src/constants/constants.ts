@@ -12,6 +12,7 @@ export const ESPN_SCORES_URL = "http://site.api.espn.com/apis/site/v2/sports/bas
 /* API URLs for reference 
 - https://site.api.espn.com/apis/site/v2/sports/basketball/nba/teams/7
 - ESPN Scoreboard: http://site.api.espn.com/apis/site/v2/sports/basketball/nba/scoreboard
-- NBA.com Scorebard: https://nba-prod-us-east-1-mediaops-stats.s3.amazonaws.com/NBA/liveData/scoreboard/todaysScoreboard_00.json
+- ESPN News: http://site.api.espn.com/apis/site/v2/sports/basketball/nba/news
+- NBA.com Scoreboard: https://nba-prod-us-east-1-mediaops-stats.s3.amazonaws.com/NBA/liveData/scoreboard/todaysScoreboard_00.json
 - NBA.com Standings: http://data.nba.net/prod/v1/current/standings_conference.json
 */

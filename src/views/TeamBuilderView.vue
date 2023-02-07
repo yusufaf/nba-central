@@ -93,6 +93,13 @@ const addPlayerFromList = (player: any) => {
   console.log("Selected Players Data = ", selectedPlayersData.value);
 }
 
+const resetTeam = () => {
+
+}
+const saveTeam = () => {
+  
+}
+
 </script>
 
 <template>
@@ -105,7 +112,11 @@ const addPlayerFromList = (player: any) => {
         <div class="hidden">Hidden</div>
         <!-- TODO: Make the score animated so that when its value changes there's some cool animation  -->
         <div class="score">Score: N/A</div>
-        <TeamBuilderButtons />
+        <TeamBuilderButtons 
+          @saveTeam="saveTeam"
+          @reset="resetTeam"
+          @viewChange="() => {}"
+        />
       </div>
       <div class="builder-main">
         <h6 class="section-header">Starters</h6>

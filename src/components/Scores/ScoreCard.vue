@@ -141,11 +141,15 @@ const toggleGameNotification = () => {
     })
 }
 
+/* TODO:
+- Figure out if there's a better way instead of the sequence of computed refs
+*/
 const homeLeaderData = computed(() => {
     const currentTeams = props.gameTeams[props.index];
     const leaders = currentTeams[0].leaders;
     const ratingLeader = leaders[3];
-    return ratingLeader;
+    /* Assuming there's only one leader per team */
+    return ratingLeader.leaders[0];
 })
 
 const homeLeaderPlayer = computed(() => {
@@ -153,11 +157,19 @@ const homeLeaderPlayer = computed(() => {
 })
 
 const homeLeaderName = computed(() => {
-    return homeLeaderData.value.shortName;
+    return homeLeaderPlayer.value.shortName;
 })
 
 const homeLeaderStatline = computed(() => {
     return homeLeaderData.value.displayValue;
+})
+
+const homeLeaderPosition = computed(() => {
+    return homeLeaderPlayer.value.position.abbreviation;
+})
+
+const homeLeaderPicture = computed(() => {
+    return homeLeaderPlayer.value.headshot;
 })
 
 /* Away Player w/ best rating */
@@ -165,7 +177,8 @@ const awayLeaderData = computed(() => {
     const currentTeams = props.gameTeams[props.index];
     const leaders = currentTeams[1].leaders;
     const ratingLeader = leaders[3];
-    return ratingLeader;
+    /* Assuming there's only one leader per team */
+    return ratingLeader.leaders[0];
 })
 
 const awayLeaderPlayer = computed(() => {
@@ -173,11 +186,19 @@ const awayLeaderPlayer = computed(() => {
 })
 
 const awayLeaderName = computed(() => {
-    return homeLeaderData.value.shortName;
+    return awayLeaderPlayer.value.shortName;
+})
+
+const awayLeaderPosition = computed(() => {
+    return awayLeaderPlayer.value.position.abbreviation;
 })
 
 const awayLeaderStatline = computed(() => {
     return awayLeaderData.value.displayValue;
+})
+
+const awayLeaderPicture = computed(() => {
+    return awayLeaderPlayer.value.headshot;
 })
 
 
@@ -212,15 +233,11 @@ const awayLeaderStatline = computed(() => {
                     <div>{{ competitor.team.displayName }}</div>
                     <div v-on:mouseenter="getRecordDetailsTooltip(competitor)">
                         <span>{{ getRecordString(competitor.records, competitor.homeAway) }}</span>
-                        <TeamDetailsTooltip
-                            :data="tooltipData"
-                            v-if="tooltipData"
+                        <TeamDetailsTooltip 
+                            v-if="tooltipData" 
+                            :data="tooltipData" 
+                            :homeAway="competitor.homeAway"
                         />
-                        <!-- <q-tooltip anchor="center right" self="bottom middle" :offset="[10, 10]">
-                            <div class="tooltip-info">
-                                {{ tooltipInfo }}
-                            </div>
-                        </q-tooltip> -->
                     </div>
                 </div>
                 <LineScore :team="competitor" />
@@ -231,13 +248,25 @@ const awayLeaderStatline = computed(() => {
         </q-card-section>
         <q-separator dark />
         <q-card-section class="leaders">
-            <!-- Leader 1 -->
-            <div>
-                {{ homeLeaderStatline }}
+            <!-- Away Leader -->
+            <div class="leader">
+                <q-avatar class="headshot">
+                    <img :src="awayLeaderPicture" />
+                </q-avatar>
+                <div class="leader-info">
+                    <span>{{ `${awayLeaderName} - ${awayLeaderPosition}`}}</span>
+                    <span>{{ awayLeaderStatline }}</span>
+                </div>
             </div>
-            <!-- Leader 2 -->
-            <div>
-                {{ awayLeaderStatline }}
+            <!-- Home Leader -->
+            <div class="leader">
+                <q-avatar class="headshot">
+                    <img :src="homeLeaderPicture" />
+                </q-avatar>
+                <div class="leader-info">
+                    <span>{{ `${homeLeaderName} - ${homeLeaderPosition}`}}</span>
+                    <span>{{ homeLeaderStatline }}</span>
+                </div>
             </div>
         </q-card-section>
         <q-card-actions>
@@ -421,4 +450,18 @@ const awayLeaderStatline = computed(() => {
     justify-content: space-between;
 }
 
+.headshot {
+    height: 3rem;
+    width: 3.5rem;
+}
+
+.leader {
+    display: flex;
+    flex-direction: row;
+}
+
+.leader-info {
+    display: flex;
+    flex-direction: column;
+}
 </style>
