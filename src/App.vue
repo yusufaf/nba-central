@@ -5,8 +5,7 @@ import { RouterLink, RouterView } from "vue-router";
 
 <template>
   <q-layout view="hhh lpR fff">
-
-    <q-header elevated class="bg-primary text-white">
+    <q-header elevated class="bg-primary text-black">
       <q-toolbar>
         <q-toolbar-title> NBA Team Builder </q-toolbar-title>
         <nav>
@@ -22,7 +21,7 @@ import { RouterLink, RouterView } from "vue-router";
       <RouterView />
     </q-page-container>
 
-    <q-footer elevated>
+    <q-footer elevated class="bg-primary text-black">
       <q-toolbar>
         <q-toolbar-title>
           <div>NBA Team Builder</div>

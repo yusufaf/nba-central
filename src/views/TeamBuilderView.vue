@@ -5,6 +5,7 @@ import TeamBuilderButtons from "@/components/TeamBuilder/TeamBuilderButtons.vue"
 import { BDL_API_PREFIX } from "@/constants/constants";
 import { range } from "@/constants/functions";
 import { debounce } from "quasar"
+import draggable from 'vuedraggable'
 
 const showDrawer = ref<boolean>(false);
 const search = ref<string>("");
@@ -14,7 +15,11 @@ const searchLoading = ref<boolean>(false);
 const selectedPlayerIndex = ref<number | null>(null);
 const selectedPlayersData = ref(new Map());
 
+/* Sorting and Filtering */
 const showSortDropdown = ref<boolean>(false);
+const selectedSort = ref<string | null>(null);
+const sortOptions = ['Alphabetic (A-Z)', 'Reverse Alphabetic (Z-A)'];
+
 
 const addPlayer = (index: number) => {
   selectedPlayerIndex.value = index;
@@ -80,9 +85,6 @@ watch(search, debounce(async () => {
   }
 }, 600));
 
-/*  Note on draggable cards:
-https://stackoverflow.com/questions/73325793/horizontally-draggable-quasar-q-cards-using-vue-draggable-next 
-*/
 
 const addPlayerFromList = (player: any) => {
   const playerIndex = selectedPlayerIndex.value;
@@ -97,8 +99,21 @@ const resetTeam = () => {
 
 }
 const saveTeam = () => {
-  
+
 }
+
+/*  Note on draggable cards:
+https://stackoverflow.com/questions/73325793/horizontally-draggable-quasar-q-cards-using-vue-draggable-next 
+*/
+const drag = ref<boolean>(false);
+const items = ref([
+  { id: "1", name: 'item1' },
+  { id: "2", name: 'item2' },
+  { id: "3", name: 'item3' },
+  { id: "4", name: 'item4' },
+  { id: "5", name: 'item5' },
+]);
+const testArray = ref([]);
 
 </script>
 
@@ -112,15 +127,12 @@ const saveTeam = () => {
         <div class="hidden">Hidden</div>
         <!-- TODO: Make the score animated so that when its value changes there's some cool animation  -->
         <div class="score">Score: N/A</div>
-        <TeamBuilderButtons 
-          @saveTeam="saveTeam"
-          @reset="resetTeam"
-          @viewChange="() => {}"
-        />
+        <TeamBuilderButtons @saveTeam="saveTeam" @reset="resetTeam" @viewChange="() => { }" />
       </div>
       <div class="builder-main">
         <h6 class="section-header">Starters</h6>
         <div class="main-lineup">
+
           <q-card dark class="player-card" bordered :key="n" v-for="n in 5">
             <q-card-section>
               <h6>Player {{ n }}</h6>
@@ -153,7 +165,8 @@ const saveTeam = () => {
             <q-separator />
             <q-card-section>
               <!-- Player Img and other player info will replace the + button -->
-              <q-btn v-if="!selectedPlayersData.has(n)" @click="addPlayer(n)" round icon="add_circle" size="1.75rem" class="add-player-btn" />
+              <q-btn v-if="!selectedPlayersData.has(n)" @click="addPlayer(n)" round icon="add_circle" size="1.75rem"
+                class="add-player-btn" />
               <template v-else>
                 <div>{{ selectedPlayersData.get(n).fullName }}</div>
               </template>
@@ -185,8 +198,43 @@ const saveTeam = () => {
       - Visible dropdowns
       -->
       <div>
-        <q-select outlined v-model="model" :options="options" label="Sort" dark />
-        <q-select outlined v-model="model" :options="options" label="Filter" dark />
+        <q-select outlined v-model="selectedSort" :options="sortOptions" label="Sort" clearable dark />
+        <q-btn color="primary" label="Filters Menu">
+          <q-menu dark>
+            <q-list style="min-width: 100px">
+              <q-item v-close-popup>
+                <q-item-section>
+                  <q-checkbox v-model="right" label="Current Season Only" dark />
+                </q-item-section>
+              </q-item>
+              <q-item>
+                <q-item-section>
+                  <q-checkbox v-model="right" label="PG" dark />
+                </q-item-section>
+              </q-item>
+              <q-item>
+                <q-item-section>
+                  <q-checkbox v-model="right" label="SG" dark />
+                </q-item-section>
+              </q-item>
+              <q-item>
+                <q-item-section>
+                  <q-checkbox v-model="right" label="SF" dark />
+                </q-item-section>
+              </q-item>
+              <q-item>
+                <q-item-section>
+                  <q-checkbox v-model="right" label="PF" dark />
+                </q-item-section>
+              </q-item>
+              <q-item>
+                <q-item-section>
+                  <q-checkbox v-model="right" label="C" dark />
+                </q-item-section>
+              </q-item>
+            </q-list>
+          </q-menu>
+        </q-btn>
       </div>
 
 

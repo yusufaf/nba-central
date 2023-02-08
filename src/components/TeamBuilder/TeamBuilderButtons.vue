@@ -6,6 +6,11 @@ const emit = defineEmits(['reset', 'saveTeam', 'viewChange'])
 const showConfirm = ref<boolean>(false);
 const selectedView = ref<string>("Default");
 
+const VIEW_OPTIONS = [
+    { label: 'Default', value: 'Default' },
+    { label: 'List', value: 'List' }
+]
+
 watch(selectedView, (newSelectedView) => {
     emit('viewChange', newSelectedView);
 })
@@ -13,7 +18,6 @@ watch(selectedView, (newSelectedView) => {
 const resetClick = () => {
     showConfirm.value = !showConfirm.value;
 }
-
 
 const resetConfirm = () => {
     emit('reset');
@@ -23,20 +27,11 @@ const saveClick = () => {
     emit('saveTeam');
 }
 
-/* TODO: Reset can do the emit/dispatch logic to the TeamBuilder */
-
 </script>
 
 <template>
     <div class="team-builder-buttons">
-        <q-btn-toggle 
-            v-model="selectedView" 
-            toggle-color="primary" 
-            :options="[
-            { label: 'Default', value: 'Default' },
-            { label: 'List', value: 'List' }
-        ]" />
-        <!-- Reset Button: Pops up a confirm dialog -->
+        <q-btn-toggle v-model="selectedView" toggle-color="primary" :options="VIEW_OPTIONS" />
         <q-btn @click="resetClick" round color="black" icon="refresh" title="Reset" />
         <q-btn @click="saveClick" round color="black" icon="save" title="Save" />
     </div>
@@ -61,6 +56,4 @@ const saveClick = () => {
     padding: 1rem;
     margin-left: auto;
 }
-
-.container {}
 </style>
