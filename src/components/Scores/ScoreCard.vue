@@ -1,5 +1,5 @@
 <script setup lang="tsx">
-import { ref, computed } from 'vue'
+import { ref, computed, watch } from 'vue'
 import { useQuasar } from 'quasar';
 import {
     HOME,
@@ -19,6 +19,7 @@ const props = defineProps<{
     game: any
     index: number,
     gameTeams: any,
+    customizationMap: any,
 }>();
 
 const $q = useQuasar();
@@ -26,7 +27,6 @@ const $q = useQuasar();
 const tooltipData = ref<any>(null);
 const notificationPermission = ref<string>("");
 const gameNotificationsMap = ref<any>(new Map());
-
 
 const shortName = computed(() => props.game.shortName);
 /*TODO: 
@@ -276,7 +276,7 @@ const askNotificationPermission = (): void => {
                 <!-- content -->
                 <img class="team-logo" :src="competitor.team.logo" />
                 <div class="team-info">
-                    <div>{{ competitor.team.displayName }}</div>
+                    <div>{{ competitor.team.shortDisplayName }}</div>
                     <div v-on:mouseenter="getRecordDetailsTooltip(competitor)">
                         <span>{{ getRecordString(competitor.records, competitor.homeAway) }}</span>
                         <TeamDetailsTooltip v-if="tooltipData" :data="tooltipData" :homeAway="competitor.homeAway" />

@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { onMounted, ref, computed, reactive } from 'vue'
 import { ESPN_SCORES_URL, VIEW_OPTIONS, VIEWS } from "@/constants/constants";
+import type { CustomizationKey } from "@/constants/constants";
 import ScoreCard from '@/components/Scores/ScoreCard.vue';
 
 /* Update scores every 5 mins */
@@ -22,6 +23,8 @@ const showReplayConfirm = ref<boolean>(false);
 const hideScores = ref<boolean>(false);
 const selectedView = ref<string>("Default");
 
+// const customizationState = ref<any>(new Map());
+const useShortNames = ref<boolean>(true);
 
 /* TODO/IDEA:
 - Notifications for score updates like Google?
@@ -67,6 +70,14 @@ const navigateToReplays = () => {
 //     return gameData.value.map((event) => event.competitions);
 // })
 
+const customizationState = computed(() => {
+    const customizationMap: Map<CustomizationKey, any> = new Map()
+    customizationMap.set("shortNames", useShortNames.value);
+    customizationMap.set("hideScores", hideScores.value);
+    return customizationMap;
+})
+
+
 onMounted(() => {
     fetchCurrentScores();
     setInterval(() => {
@@ -84,15 +95,36 @@ onMounted(() => {
             <h2 class="">{{ numGames }} Games</h2>
         </div>
         <div class="buttons">
-            <q-btn @click="saveClick" round icon="more_vert" title="More" />
+            <q-btn round icon="more_vert" title="More">
+                <q-menu dark transition-show="jump-down" transition-hide="jump-up">
+                    <q-list>
+                        <q-item>
+                            <q-item-section>
+                                <q-toggle v-model="hideScores" label="Hide Scores" />
+                            </q-item-section>
+                        </q-item>
+                        <q-item>
+                            <q-item-section>
+                                <q-toggle v-model="useShortNames" label="Use Short Names" />
+                            </q-item-section>
+                        </q-item>
+                        <q-separator />
+                    </q-list>
+                </q-menu>
+            </q-btn>
             <q-btn-toggle v-model="selectedView" toggle-color="primary" :options="VIEW_OPTIONS" />
-            <q-toggle v-model="hideScores" color="primary" label="Hide Scores" />
             <q-btn @click="showReplayConfirm = true" outline color="primary" class="replay-link-btn"
                 title="Secret Link">Game Replays</q-btn>
         </div>
         <div class="scores-container" :class="{ list: selectedView === VIEWS.LIST }">
-            <ScoreCard v-for="(game, index) in gameData" :key="game.uid" :game="game" :index="index"
-                :gameTeams="gameTeams" />
+            <ScoreCard 
+                v-for="(game, index) in gameData" 
+                :key="game.uid" 
+                :game="game" 
+                :index="index"
+                :gameTeams="gameTeams" 
+                :customizationMap="customizationState"
+            />
         </div>
         <q-dialog v-model="showReplayConfirm">
             <q-card dark>

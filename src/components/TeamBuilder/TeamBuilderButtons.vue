@@ -28,6 +28,23 @@ const saveClick = () => {
 
 <template>
     <div class="team-builder-buttons">
+        <q-btn round icon="more_vert" title="More">
+            <q-menu dark transition-show="jump-down" transition-hide="jump-up">
+                <q-list>
+                    <q-item>
+                        <q-item-section>
+                            <!-- <q-toggle v-model="hideScores" label="Hide Scores" /> -->
+                        </q-item-section>
+                    </q-item>
+                    <q-item>
+                        <q-item-section>
+                            <!-- <q-toggle v-model="useShortNames" label="Use Short Names" /> -->
+                        </q-item-section>
+                    </q-item>
+                    <q-separator />
+                </q-list>
+            </q-menu>
+        </q-btn>
         <q-btn-toggle v-model="selectedView" toggle-color="primary" :options="VIEW_OPTIONS" />
         <q-btn @click="resetClick" round color="black" icon="refresh" title="Reset" />
         <q-btn @click="saveClick" round color="black" icon="save" title="Save" />

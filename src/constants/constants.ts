@@ -11,6 +11,8 @@ export const VIEW_OPTIONS = [
 export const NOTIFICATION_GRANTED = "granted";
 export const NOTIFICATION_DENIED = "denied"
 
+export type CustomizationKey = "shortNames" | "hideScores";
+
 /* NBA Info */
 export const NUM_TEAMS = 30;
 
