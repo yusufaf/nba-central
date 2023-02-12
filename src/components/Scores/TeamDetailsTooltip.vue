@@ -53,15 +53,26 @@ const standingSummary = computed(() =>`${props.data.standingSummary}\n`);
 
 const overallWinPercent = computed(() => {
     const winPercent = roundValueToNPlaces(overallRecordStats.value[16].value * 100);
-    return `Overall Win Pct: ${winPercent}%\n`;
+    return `Overall Win Pct: ${winPercent}%`;
 })
 
 const homeAwayWinPercent = computed(() => {
     const homeAwayPrefix = props.homeAway === HOME ? HOME_C : AWAY_C;
     const recordToCheck = props.homeAway === HOME ? homeRecord.value : awayRecord.value;
     const winPercent =  roundValueToNPlaces(recordToCheck.stats[3].value * 100);
-    return `${homeAwayPrefix} Win Pct: ${winPercent}%\n`;
+    return `${homeAwayPrefix} Win Pct: ${winPercent}%`;
 })
+
+
+const gamesBehind = computed(() => {
+    const gamesBehind = overallRecordStats.value[6].value;
+    return `Games Behind 1st: ${gamesBehind}`;
+})
+
+const pointDifferential = computed(() => {
+    const pointDifferential = roundValueToNPlaces(overallRecordStats.value[4].value, 2); +Number(overallRecordStats.value[4].value).toFixed(2);
+    return `Point Differential: ${pointDifferential}`;
+});
 
 </script>
 
@@ -74,6 +85,8 @@ const homeAwayWinPercent = computed(() => {
             <div :class="playoffSeed.positive">{{ playoffSeed.message }}</div>
             <div>{{ overallWinPercent }}</div>
             <div>{{ homeAwayWinPercent }}</div>
+            <div>{{ gamesBehind }}</div>
+            <div>{{ pointDifferential }}</div>
         </div>
     </q-tooltip>
 </template>

@@ -1,15 +1,12 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue'
-
+import {
+    VIEW_OPTIONS
+} from "@/constants/constants";
 const emit = defineEmits(['reset', 'saveTeam', 'viewChange'])
 
 const showConfirm = ref<boolean>(false);
 const selectedView = ref<string>("Default");
-
-const VIEW_OPTIONS = [
-    { label: 'Default', value: 'Default' },
-    { label: 'List', value: 'List' }
-]
 
 watch(selectedView, (newSelectedView) => {
     emit('viewChange', newSelectedView);

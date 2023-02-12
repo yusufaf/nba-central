@@ -7,12 +7,17 @@ import { RouterLink, RouterView } from "vue-router";
   <q-layout view="hhh lpR fff">
     <q-header elevated class="bg-primary text-black">
       <q-toolbar>
-        <q-toolbar-title> NBA Team Builder </q-toolbar-title>
+        <q-toolbar-title shrink> NBA Team Builder
+        </q-toolbar-title>
         <nav>
-          <RouterLink to="/">Home</RouterLink>
-          <RouterLink to="/scores">Scores</RouterLink>
-          <RouterLink to="/news">News</RouterLink>
-          <RouterLink to="/about">About</RouterLink>
+          <ul>
+            <RouterLink to="/">Home</RouterLink>
+            <RouterLink to="/scores">Scores</RouterLink>
+            <RouterLink to="/news">News</RouterLink>
+            <RouterLink to="/about">About</RouterLink>
+            <RouterLink class="login" to="/login">Sign In</RouterLink>
+          </ul>
+
         </nav>
       </q-toolbar>
     </q-header>
@@ -27,13 +32,8 @@ import { RouterLink, RouterView } from "vue-router";
           <div>NBA Team Builder</div>
         </q-toolbar-title>
         <a href="https://github.com/yusufaf/nba-central">
-          <img 
-            alt="Github logo" 
-            class="logo" src="@/assets/github.png" 
-            width="32" 
-            height="32" 
-            title="Team Builder GitHub"
-          />
+          <img alt="Github logo" class="logo" src="@/assets/github.png" width="32" height="32"
+            title="Team Builder GitHub" />
         </a>
       </q-toolbar>
     </q-footer>
@@ -54,28 +54,28 @@ import { RouterLink, RouterView } from "vue-router";
   margin: 0 auto 2rem;
 } */
 
-/* nav {
-  width: 100%;
-  font-size: 12px;
-  text-align: center;
-  margin-top: 2rem;
-} */
-
 nav a.router-link-exact-active {
   color: var(--color-text);
+
 }
 
 nav a.router-link-exact-active:hover {
   background-color: transparent;
 }
 
-nav a {
-  display: inline-block;
-  padding: 0 1rem;
-  border-left: 1px solid var(--color-border);
+ul {
+  display: flex;
+  flex-direction: row;
+  gap: 2rem;
 }
 
-nav a:first-of-type {
-  border: 0;
+nav a {
+  font-weight: 600;
+  text-decoration: none;
+  /* display: inline-block; */
+}
+
+.login {
+  margin-left: auto;
 }
 </style>

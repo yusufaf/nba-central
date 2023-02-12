@@ -5,7 +5,9 @@ import {
     HOME,
     HOME_C,
     AWAY,
-    AWAY_C
+    AWAY_C,
+    GAME_STATUS,
+    ZERO_CLOCK
 } from "@/constants/constants";
 import LineScore from './LineScore.vue';
 import TeamDetailsTooltip from './TeamDetailsTooltip.vue';
@@ -17,10 +19,24 @@ const props = defineProps<{
     gameTeams: any,
 }>()
 
-const tooltipInfo = ref("");
 const tooltipData = ref<any>(null);
 
 const shortName = computed(() => props.game.shortName);
+/*TODO: 
+- Operating on the current date only until can figure out how to work with bkref to get previous games 
+- Bkref doesn't do current scores, so might have to actually differentiate data betwene previous days and current day
+    - ESPN/NBA.com - current day | bkref - previous days
+*/
+const gameDate = computed(() => props.game.date);
+const gameTimeStart = computed(() => {
+    const timeString = new Date(props.game.date).toLocaleTimeString(undefined, 
+        { hour: "2-digit", minute: "2-digit" }
+    )
+    return timeString;
+});
+
+console.log({ shortName });
+
 const gameTeamsSorted = computed(() => {
     /* Ensure away team shows up on top */
     const currentTeams = [...props.gameTeams[props.index]];
@@ -50,8 +66,8 @@ const headerValues = computed(() => {
     headerVals.push("T");
     const currentTeams = props.gameTeams[props.index];
     const linescores = currentTeams[0].linescores;
-    // console.log({ currentTeams, linescores });
-    if (linescores.length > 4) {
+    console.log({ currentTeams, linescores });
+    if (linescores?.length > 4) {
         const index = 4;
         headerVals.splice(index, 0, "OT")
     }
@@ -59,26 +75,34 @@ const headerValues = computed(() => {
     return headerVals;
 });
 
+const gameStatusName = computed(() => props.game.status.type.name);
+const gameNotStarted = computed(() => gameStatusName.value === GAME_STATUS.SCHEDULED);
+const gameInProgress = computed(() => gameStatusName.value === GAME_STATUS.IN_PROGRESS)
+
 const isGameDone = computed(() => {
     const statusInfo = props.game.status.type;
     return statusInfo.completed;
 })
 
-console.log(isGameDone.value)
+console.log({ isTheGameDone: isGameDone.value, thisGameData: props.game })
 
-const statusString = computed(() => {
+
+const gameClockString = computed(() => {
     const statusInfo = props.game.status;
-    const { clock, displayClock, period } = statusInfo;
-    console.log({ clock, displayClock, period });
-    return "";
+    const { displayClock, period } = statusInfo;
+    const clockString = `${displayClock} - ${period}Q`;
+
+    if (period === 2 && displayClock === ZERO_CLOCK) {
+        return "Halftime";
+    }
+    return clockString;
 })
 
-const getRecordDetailsTooltip = (competitor: any) => {
-    console.log(competitor, competitor.team)
-    const { homeAway, id } = competitor;
-    const teamURL = `https://site.api.espn.com/apis/site/v2/sports/basketball/nba/teams/${id}`;
+// console.log({ isTheGameDone: statusString.value })
 
-    let recordDetails = "";
+const getRecordDetailsTooltip = (competitor: any) => {
+    const { id } = competitor;
+    const teamURL = `https://site.api.espn.com/apis/site/v2/sports/basketball/nba/teams/${id}`;
 
     fetch(teamURL, {
         method: 'GET',
@@ -86,43 +110,6 @@ const getRecordDetailsTooltip = (competitor: any) => {
         .then(response => {
             response.json().then(res => {
                 tooltipData.value = res.team;
-
-                console.log("Team Details response = ", { res });
-                /* TODO: Could maybe do find() or filter() for these properties and ensure that you're accessing the right value */
-                const { team } = res;
-                const { record, standingSummary } = team;
-                recordDetails += `${standingSummary}\n`;
-                const [overallRecord, homeRecord, awayRecord] = record.items;
-
-                const { stats: overallRecordStats } = overallRecord
-
-                /* Streak */
-                const streak = overallRecordStats[14].value;
-                recordDetails += streak >= 0 ? `Streak: W${streak}\n` : `Streak: L${streak.toString().replace("-", "")}\n`;
-
-                /* Playoff Seed */
-                const playoffSeed = overallRecordStats[10].value;
-                recordDetails += `Seed: ${playoffSeed}\n`;
-
-                /* Overall and Home/Away Win % */
-                const overallWinPercent = +Number(overallRecordStats[16].value * 100).toFixed(1);
-                recordDetails += `Overall Win Pct: ${overallWinPercent}%\n`;
-
-                /* Parse out the home/away win percentage from data, append to record details */
-                const homeAwayPrefix = homeAway === HOME ? HOME_C : AWAY_C;
-                const recordToCheck = homeAway === HOME ? homeRecord : awayRecord;
-                const homeAwayWinPercent = +Number(recordToCheck.stats[3].value * 100).toFixed(1);
-                recordDetails += `${homeAwayPrefix} Win Pct: ${homeAwayWinPercent}%\n`;
-
-                /* Games Behind 1st */
-                const gamesBehind = overallRecordStats[6].value;
-                recordDetails += `Games Behind 1st: ${gamesBehind} \n`;
-
-                /* Point Differential */
-                const pointDifferential = +Number(overallRecordStats[4].value).toFixed(2);
-                recordDetails += `Point Differential: ${pointDifferential}\n`
-
-                tooltipInfo.value = recordDetails;
             });
         })
         .catch(err => {
@@ -133,7 +120,6 @@ const getRecordDetailsTooltip = (competitor: any) => {
 const $q = useQuasar();
 
 const toggleGameNotification = () => {
-
     $q.notify({
         message: 'Jim pinged you.',
         caption: '5 minutes ago',
@@ -147,7 +133,8 @@ const toggleGameNotification = () => {
 const homeLeaderData = computed(() => {
     const currentTeams = props.gameTeams[props.index];
     const leaders = currentTeams[0].leaders;
-    const ratingLeader = leaders[3];
+    const lastIndex = leaders.length - 1;
+    const ratingLeader = leaders[lastIndex];
     /* Assuming there's only one leader per team */
     return ratingLeader.leaders[0];
 })
@@ -176,7 +163,8 @@ const homeLeaderPicture = computed(() => {
 const awayLeaderData = computed(() => {
     const currentTeams = props.gameTeams[props.index];
     const leaders = currentTeams[1].leaders;
-    const ratingLeader = leaders[3];
+    const lastIndex = leaders.length - 1;
+    const ratingLeader = leaders[lastIndex];
     /* Assuming there's only one leader per team */
     return ratingLeader.leaders[0];
 })
@@ -210,19 +198,24 @@ const awayLeaderPicture = computed(() => {
             <h6>{{ shortName }}</h6>
             <!-- Toggled styling here ==> notifications vs notifications active -->
             <!-- v-if="!isGameDone" -->
-            <q-btn @click="toggleGameNotification" class="notification-bell" flat round icon="notifications"
-                title="Notify me about the game" />
+            <div>
+
+
+                <q-btn @click="toggleGameNotification" class="notification-bell" flat round icon="notifications"
+                    title="Notify me about the game" />
+            </div>
+
         </q-card-section>
         <q-separator dark />
         <q-card-section>
             <!-- TODO: Formatting / information to include when the game hasn't started -->
             <div class="card-heading">
-                {{}}
-            </div>
-            <div class="line-score-heading">
+                <div class="clock" :class="{ active: gameInProgress }" >{{ gameInProgress ? gameClockString : gameTimeStart }}</div>
+                <div class="line-score-heading">
                 <template v-for="(heading, index) in headerValues" :key="index">
                     <div class="time-period" :class="{ total: index === headerValues.length - 1 }">{{ heading }}</div>
                 </template>
+                </div>
             </div>
 
             <div class="team-row" :class="{ first: index === 0 }" v-for="(competitor, index) in gameTeamsSorted"
@@ -233,39 +226,38 @@ const awayLeaderPicture = computed(() => {
                     <div>{{ competitor.team.displayName }}</div>
                     <div v-on:mouseenter="getRecordDetailsTooltip(competitor)">
                         <span>{{ getRecordString(competitor.records, competitor.homeAway) }}</span>
-                        <TeamDetailsTooltip 
-                            v-if="tooltipData" 
-                            :data="tooltipData" 
-                            :homeAway="competitor.homeAway"
-                        />
+                        <TeamDetailsTooltip v-if="tooltipData" :data="tooltipData" :homeAway="competitor.homeAway" />
                     </div>
                 </div>
                 <LineScore :team="competitor" />
                 <!-- {{ getLineScore(competitor) }} -->
-                <!-- <div>{{ [...Array(competitor.linescores.length).keys()].map( i => i+1) }}</div> -->
                 <div class="score">{{ competitor.score }}</div>
             </div>
         </q-card-section>
         <q-separator dark />
-        <q-card-section class="leaders">
-            <!-- Away Leader -->
-            <div class="leader">
-                <q-avatar class="headshot">
-                    <img :src="awayLeaderPicture" />
-                </q-avatar>
-                <div class="leader-info">
-                    <span>{{ `${awayLeaderName} - ${awayLeaderPosition}`}}</span>
-                    <span>{{ awayLeaderStatline }}</span>
-                </div>
+        <q-card-section class="leaders-section">
+            <div class="leaders-header">
+                {{ gameNotStarted ? "Players to Watch" : "Top Performers" }}
             </div>
-            <!-- Home Leader -->
-            <div class="leader">
-                <q-avatar class="headshot">
-                    <img :src="homeLeaderPicture" />
-                </q-avatar>
-                <div class="leader-info">
-                    <span>{{ `${homeLeaderName} - ${homeLeaderPosition}`}}</span>
-                    <span>{{ homeLeaderStatline }}</span>
+            <div class="leaders">
+                <div class="leader">
+                    <q-avatar class="headshot">
+                        <img :src="awayLeaderPicture" />
+                    </q-avatar>
+                    <div class="leader-info">
+                        <span>{{ `${awayLeaderName} - ${awayLeaderPosition}`}}</span>
+                        <span>{{ awayLeaderStatline }}</span>
+                    </div>
+                </div>
+                <!-- Home Leader -->
+                <div class="leader">
+                    <q-avatar class="headshot">
+                        <img :src="homeLeaderPicture" />
+                    </q-avatar>
+                    <div class="leader-info">
+                        <span>{{ `${homeLeaderName} - ${homeLeaderPosition}`}}</span>
+                        <span>{{ homeLeaderStatline }}</span>
+                    </div>
                 </div>
             </div>
         </q-card-section>
@@ -276,7 +268,7 @@ const awayLeaderPicture = computed(() => {
 
 <style scoped>
 .score-card {
-    height: 20rem;
+    height: 21.5rem;
 }
 
 .card-header {
@@ -309,19 +301,38 @@ const awayLeaderPicture = computed(() => {
     margin-left: 1rem;
 }
 
+.card-heading {
+    display: flex;
+}
+
 .line-score-heading {
     display: flex;
-    flex-direction: row;
     gap: 2rem;
     font-weight: 600;
-    width: fit-content;
+    flex: 1;
+    justify-content: flex-end;
+    /* width: fit-content;
     margin-left: auto;
-    margin-right: 8rem;
+    margin-right: 8rem; */
+}
+
+
+.clock {
+    font-weight: 600;
+}
+
+.clock.active {
+    color: var(--q-primary);
+}
+
+.time-period {
+    display: flex;
+    justify-content: center;
 }
 
 .time-period.total {
-    display: flex;
-    margin-left: auto;
+    /* display: flex;
+    margin-left: auto; */
 }
 
 .score {
@@ -342,6 +353,7 @@ const awayLeaderPicture = computed(() => {
 }
 
 .notification-bell {
+    margin-left: auto;
     animation: ring 4s .7s ease-in-out;
     transform-origin: 50% 1px;
 }
@@ -442,6 +454,19 @@ const awayLeaderPicture = computed(() => {
     100% {
         transform: rotate(0);
     }
+}
+
+.leaders-header {
+    display: flex;
+    font-size: 0.9rem;
+    font-weight: 500;
+    margin-bottom: 0.5rem;
+}
+
+.leaders-section {
+    display: flex;
+    flex-direction: column;
+    padding-top: 0rem;
 }
 
 .leaders {

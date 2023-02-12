@@ -9,7 +9,13 @@ const props = defineProps<{
 
 
 const lineScore = computed(() => {
-    return props.team.linescores.map((score: any) => score.value);
+    const lineScores = props.team.linescores;
+    if (lineScores === undefined) {
+        return [];
+    }
+    else {
+        return props.team.linescores.map((score: any) => score.value);
+    }
 })
 
 </script>

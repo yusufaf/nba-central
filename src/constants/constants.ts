@@ -1,9 +1,24 @@
+/* UI */
+export const VIEW_OPTIONS = [
+    { label: 'Default', value: 'Default' },
+    { label: 'List', value: 'List' }
+];
+
+/* NBA Info */
 export const NUM_TEAMS = 30;
 
 export const HOME = "home";
 export const HOME_C = "Home";
 export const AWAY = "away";
 export const AWAY_C = "Away";
+
+/* Scoreboard */
+export const ZERO_CLOCK = "0.0";
+export const GAME_STATUS = {
+    SCHEDULED: "STATUS_SCHEDULED",
+    IN_PROGRESS: "STATUS_IN_PROGRESS",
+    COMPLETED: "STATUS_COMPLETED",
+}
 
 /* API */
 export const BDL_API_PREFIX = "https://www.balldontlie.io/api/v1";

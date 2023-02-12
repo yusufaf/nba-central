@@ -312,15 +312,18 @@ const testArray = ref([]);
   overflow-y: auto;
 }
 
-.main-lineup {
-  display: flex;
-  align-items: center;
+.main-lineup,
+.bench-lineup
+{
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
   gap: 2rem;
+  grid-auto-flow: row;
 }
 
 .player-card {
-  width: 40rem;
-  max-width: 40rem;
+  /* width: 40rem; */
+  /* max-width: 40rem; */
   height: 15rem;
 }
 
@@ -333,12 +336,6 @@ const testArray = ref([]);
   transform: translate(-50%, 0%);
 }
 
-.bench-lineup {
-  display: flex;
-  gap: 2rem;
-  flex-wrap: wrap;
-  /* flex-grow: 0; */
-}
 
 ::-webkit-scrollbar {
   display: none;

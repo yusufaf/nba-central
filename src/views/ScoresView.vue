@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { onMounted, ref, computed, reactive } from 'vue'
-import { ESPN_SCORES_URL } from "@/constants/constants";
+import { ESPN_SCORES_URL, VIEW_OPTIONS } from "@/constants/constants";
 import ScoreCard from '@/components/Scores/ScoreCard.vue';
 
 /* Update scores every 5 mins */
@@ -19,6 +19,10 @@ const games = ref<any[]>([]);
 const gameTeams = ref<any[]>([]);
 
 const showReplayConfirm = ref<boolean>(false);
+const hideScores = ref<boolean>(false);
+const selectedView = ref<string>("Default");
+
+
 
 /* TODO/IDEA:
 - Notifications for score updates like Google?
@@ -40,7 +44,6 @@ const fetchCurrentScores = () => {
                 gameData.value = events;
                 const eventCompetitions = events.map((event: any) => event.competitions);
                 const eventCompetitors = eventCompetitions.map((competition: any) => competition[0].competitors);
-                console.log({ eventCompetitors })
                 games.value = eventCompetitions;
                 gameTeams.value = eventCompetitors;
                 console.log("Response JSON = ", res);
@@ -66,7 +69,6 @@ const navigateToReplays = () => {
 // })
 
 onMounted(() => {
-    // TODO: setInterval() here?
     fetchCurrentScores();
     setInterval(() => {
         fetchCurrentScores();
@@ -82,7 +84,13 @@ onMounted(() => {
             <h2 class="date">{{ primaryDateString }}</h2>
             <h2 class="">{{ numGames }} Games</h2>
         </div>
-        <div class="scores-container">
+        <div class="buttons">
+            <q-btn-toggle v-model="selectedView" toggle-color="primary" :options="VIEW_OPTIONS" />
+            <q-toggle v-model="hideScores" color="primary" label="Hide Scores" />
+            <q-btn @click="showReplayConfirm = true" outline color="primary" class="replay-link-btn"
+                title="Secret Link">Game Replays</q-btn>
+        </div>
+        <div class="scores-container" :class="{list: selectedView === 'List'}">
             <ScoreCard 
                 v-for="(game, index) in gameData" 
                 :key="game.uid" 
@@ -91,11 +99,11 @@ onMounted(() => {
                 :gameTeams="gameTeams" 
             />
         </div>
-        <q-btn @click="showReplayConfirm = true" outline color="primary" class="replay-link-btn" title="Secret Link">Game Replays</q-btn>
         <q-dialog v-model="showReplayConfirm">
             <q-card dark>
                 <q-card-section class="row items-center">
-                    <div>This will take you to an external website to access full game replays for today's slate of games, view at your own risk 🙂</div>
+                    <div>This will take you to an external website to access full game replays for today's slate of
+                        games, view at your own risk 🙂</div>
                 </q-card-section>
                 <q-card-actions align="right">
                     <q-btn flat label="Cancel" color="primary" v-close-popup />
@@ -136,9 +144,15 @@ h2 {
 
 .scores-container {
     display: grid;
-    grid-template-columns: repeat(3, 35rem);
+    /* grid-template-columns: repeat(3, 35rem); */
+    grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 2rem;
 }
+
+.scores-container.list {
+    grid-template-columns: unset;
+}
+
 
 ::-webkit-scrollbar {
     display: none;
@@ -161,8 +175,11 @@ h2 {
     margin-left: auto;
 }
 
-.replay-link-btn {
-    position: absolute;
-    top: 2rem;
+.buttons {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 1rem;
+    justify-content: right;
 }
 </style>
