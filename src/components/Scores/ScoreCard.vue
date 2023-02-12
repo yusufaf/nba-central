@@ -364,9 +364,6 @@ const askNotificationPermission = (): void => {
     font-weight: 600;
     flex: 1;
     justify-content: flex-end;
-    /* width: fit-content;
-    margin-left: auto;
-    margin-right: 8rem; */
 }
 
 
@@ -384,8 +381,8 @@ const askNotificationPermission = (): void => {
 }
 
 .time-period.total {
-    /* display: flex;
-    margin-left: auto; */
+
+        
 }
 
 .score {

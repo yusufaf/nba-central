@@ -2,7 +2,7 @@
 import { ref, watch, computed } from 'vue'
 import TeamBuilderButtons from "@/components/TeamBuilder/TeamBuilderButtons.vue";
 // import TeamBuilderDrawer from '@/components/TeamBuilder/TeamBuilderDrawer.vue';
-import { BDL_API_PREFIX } from "@/constants/constants";
+import { BDL_API_PREFIX, VIEWS } from "@/constants/constants";
 import { range } from "@/constants/functions";
 import { debounce } from "quasar"
 import draggable from 'vuedraggable'
@@ -19,6 +19,8 @@ const selectedPlayersData = ref(new Map());
 const showSortDropdown = ref<boolean>(false);
 const selectedSort = ref<string | null>(null);
 const sortOptions = ['Alphabetic (A-Z)', 'Reverse Alphabetic (Z-A)'];
+
+const selectedView = ref<string>("Default");
 
 
 const addPlayer = (index: number) => {
@@ -127,11 +129,14 @@ const testArray = ref([]);
         <div class="hidden">Hidden</div>
         <!-- TODO: Make the score animated so that when its value changes there's some cool animation  -->
         <div class="score">Score: N/A</div>
-        <TeamBuilderButtons @saveTeam="saveTeam" @reset="resetTeam" @viewChange="() => { }" />
+        <TeamBuilderButtons 
+          @saveTeam="saveTeam" 
+          @reset="resetTeam" 
+          @viewChange="(newView) => selectedView = newView" />
       </div>
       <div class="builder-main">
         <h6 class="section-header">Starters</h6>
-        <div class="main-lineup">
+        <div class="main-lineup" :class="{ list: selectedView === VIEWS.LIST }" >
 
           <q-card dark class="player-card" bordered :key="n" v-for="n in 5">
             <q-card-section>
@@ -157,7 +162,7 @@ const testArray = ref([]);
           </q-card>
         </div>
         <h6 class="section-header">Bench</h6>
-        <div class="bench-lineup">
+        <div class="bench-lineup" :class="{ list: selectedView === VIEWS.LIST }">
           <q-card dark class="player-card" bordered :key="n" v-for="n in range(6, 15)">
             <q-card-section>
               <h6>Player {{ n }}</h6>
@@ -320,6 +325,11 @@ const testArray = ref([]);
   gap: 2rem;
   grid-auto-flow: row;
 }
+
+.main-lineup.list, .bench-lineup.list {
+  grid-template-columns: unset;
+}
+
 
 .player-card {
   /* width: 40rem; */
