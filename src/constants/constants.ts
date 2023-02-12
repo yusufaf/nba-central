@@ -1,8 +1,15 @@
 /* UI */
+export const VIEWS = {
+    DEFAULT: "Default",
+    LIST: "List",
+}
 export const VIEW_OPTIONS = [
-    { label: 'Default', value: 'Default' },
-    { label: 'List', value: 'List' }
+    { label: VIEWS.DEFAULT, value: VIEWS.DEFAULT },
+    { label: VIEWS.LIST, value: VIEWS.LIST }
 ];
+
+export const NOTIFICATION_GRANTED = "granted";
+export const NOTIFICATION_DENIED = "denied"
 
 /* NBA Info */
 export const NUM_TEAMS = 30;

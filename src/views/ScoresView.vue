@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { onMounted, ref, computed, reactive } from 'vue'
-import { ESPN_SCORES_URL, VIEW_OPTIONS } from "@/constants/constants";
+import { ESPN_SCORES_URL, VIEW_OPTIONS, VIEWS } from "@/constants/constants";
 import ScoreCard from '@/components/Scores/ScoreCard.vue';
 
 /* Update scores every 5 mins */
@@ -21,7 +21,6 @@ const gameTeams = ref<any[]>([]);
 const showReplayConfirm = ref<boolean>(false);
 const hideScores = ref<boolean>(false);
 const selectedView = ref<string>("Default");
-
 
 
 /* TODO/IDEA:
@@ -85,19 +84,15 @@ onMounted(() => {
             <h2 class="">{{ numGames }} Games</h2>
         </div>
         <div class="buttons">
+            <q-btn @click="saveClick" round icon="more_vert" title="More" />
             <q-btn-toggle v-model="selectedView" toggle-color="primary" :options="VIEW_OPTIONS" />
             <q-toggle v-model="hideScores" color="primary" label="Hide Scores" />
             <q-btn @click="showReplayConfirm = true" outline color="primary" class="replay-link-btn"
                 title="Secret Link">Game Replays</q-btn>
         </div>
-        <div class="scores-container" :class="{list: selectedView === 'List'}">
-            <ScoreCard 
-                v-for="(game, index) in gameData" 
-                :key="game.uid" 
-                :game="game" 
-                :index="index"
-                :gameTeams="gameTeams" 
-            />
+        <div class="scores-container" :class="{ list: selectedView === VIEWS.LIST }">
+            <ScoreCard v-for="(game, index) in gameData" :key="game.uid" :game="game" :index="index"
+                :gameTeams="gameTeams" />
         </div>
         <q-dialog v-model="showReplayConfirm">
             <q-card dark>
@@ -144,7 +139,6 @@ h2 {
 
 .scores-container {
     display: grid;
-    /* grid-template-columns: repeat(3, 35rem); */
     grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 2rem;
 }

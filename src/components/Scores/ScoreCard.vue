@@ -1,5 +1,5 @@
 <script setup lang="tsx">
-import { h, ref, computed } from 'vue'
+import { ref, computed } from 'vue'
 import { useQuasar } from 'quasar';
 import {
     HOME,
@@ -7,7 +7,9 @@ import {
     AWAY,
     AWAY_C,
     GAME_STATUS,
-    ZERO_CLOCK
+    ZERO_CLOCK,
+    NOTIFICATION_GRANTED,
+    NOTIFICATION_DENIED
 } from "@/constants/constants";
 import LineScore from './LineScore.vue';
 import TeamDetailsTooltip from './TeamDetailsTooltip.vue';
@@ -17,9 +19,14 @@ const props = defineProps<{
     game: any
     index: number,
     gameTeams: any,
-}>()
+}>();
+
+const $q = useQuasar();
 
 const tooltipData = ref<any>(null);
+const notificationPermission = ref<string>("");
+const gameNotificationsMap = ref<any>(new Map());
+
 
 const shortName = computed(() => props.game.shortName);
 /*TODO: 
@@ -29,13 +36,11 @@ const shortName = computed(() => props.game.shortName);
 */
 const gameDate = computed(() => props.game.date);
 const gameTimeStart = computed(() => {
-    const timeString = new Date(props.game.date).toLocaleTimeString(undefined, 
+    const timeString = new Date(props.game.date).toLocaleTimeString(undefined,
         { hour: "2-digit", minute: "2-digit" }
     )
     return timeString;
 });
-
-console.log({ shortName });
 
 const gameTeamsSorted = computed(() => {
     /* Ensure away team shows up on top */
@@ -100,7 +105,7 @@ const gameClockString = computed(() => {
 
 // console.log({ isTheGameDone: statusString.value })
 
-const getRecordDetailsTooltip = (competitor: any) => {
+const getRecordDetailsTooltip = (competitor: any): void => {
     const { id } = competitor;
     const teamURL = `https://site.api.espn.com/apis/site/v2/sports/basketball/nba/teams/${id}`;
 
@@ -117,14 +122,9 @@ const getRecordDetailsTooltip = (competitor: any) => {
         });
 }
 
-const $q = useQuasar();
 
-const toggleGameNotification = () => {
-    $q.notify({
-        message: 'Jim pinged you.',
-        caption: '5 minutes ago',
-        color: 'secondary'
-    })
+const toggleGameNotification = (): void => {
+    askNotificationPermission();
 }
 
 /* TODO:
@@ -190,6 +190,51 @@ const awayLeaderPicture = computed(() => {
 })
 
 
+const checkNotificationPromise = (): boolean => {
+    try {
+        Notification.requestPermission().then();
+    } catch (e) {
+        return false;
+    }
+    return true;
+}
+
+const askNotificationPermission = (): void => {
+    /* Early return if browser permission has already been granted */
+    if (notificationPermission.value === NOTIFICATION_GRANTED) {
+        // const notification = new Notification("Hi there!");
+        return;
+    }
+    else if (notificationPermission.value === NOTIFICATION_DENIED) {
+        /* Send toast instructing what user needs to change, return early because browser won't ask again */
+        $q.notify({
+            message: 'Please update your browser permissions to allow us to send you notifications',
+            type: 'negative',
+            position: "bottom-left"
+        })
+        return;
+    }
+
+    const handlePermission = (permission: string) => {
+        notificationPermission.value = permission;
+    }
+
+    // Let's check if the browser supports notifications
+    if (!('Notification' in window)) {
+        console.error("This browser does not support notifications.");
+    } else if (checkNotificationPromise()) {
+        Notification.requestPermission().then((permission) => {
+            handlePermission(permission);
+        });
+    } else {
+        Notification.requestPermission((permission) => {
+            handlePermission(permission);
+        });
+    }
+}
+
+/* TODO: Browser notifications link: https://developer.mozilla.org/en-US/docs/Web/API/Notifications_API/Using_the_Notifications_API */
+
 </script>
 
 <template>
@@ -208,13 +253,21 @@ const awayLeaderPicture = computed(() => {
         </q-card-section>
         <q-separator dark />
         <q-card-section>
-            <!-- TODO: Formatting / information to include when the game hasn't started -->
             <div class="card-heading">
-                <div class="clock" :class="{ active: gameInProgress }" >{{ gameInProgress ? gameClockString : gameTimeStart }}</div>
+                <div class="clock active" v-if="gameInProgress">
+                    {{ gameClockString }}
+                </div>
+                <div class="clock" v-else-if="gameNotStarted">
+                    {{ gameTimeStart }}
+                </div>
+                <div class="clock" v-else>
+                    FINAL
+                </div>
                 <div class="line-score-heading">
-                <template v-for="(heading, index) in headerValues" :key="index">
-                    <div class="time-period" :class="{ total: index === headerValues.length - 1 }">{{ heading }}</div>
-                </template>
+                    <template v-for="(heading, index) in headerValues" :key="index">
+                        <div class="time-period" :class="{ total: index === headerValues.length - 1 }">{{ heading }}
+                        </div>
+                    </template>
                 </div>
             </div>
 
@@ -237,7 +290,7 @@ const awayLeaderPicture = computed(() => {
         <q-separator dark />
         <q-card-section class="leaders-section">
             <div class="leaders-header">
-                {{ gameNotStarted ? "Players to Watch" : "Top Performers" }}
+                {{ gameNotStarted? "Players to Watch": "Top Performers" }}
             </div>
             <div class="leaders">
                 <div class="leader">
