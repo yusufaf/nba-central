@@ -12,15 +12,15 @@ watch(selectedView, (newSelectedView) => {
     emit('viewChange', newSelectedView);
 })
 
-const resetClick = () => {
+const resetClick = (): void => {
     showConfirm.value = !showConfirm.value;
 }
 
-const resetConfirm = () => {
+const resetConfirm = (): void => {
     emit('reset');
 }
 
-const saveClick = () => {
+const saveClick = (): void => {
     emit('saveTeam');
 }
 

@@ -5,13 +5,15 @@ import { RouterLink, RouterView } from "vue-router";
 
 <template>
   <q-layout view="hhh lpR fff">
-    <q-header elevated class="bg-primary text-black">
+    <q-header elevated class="bg-primary text-black shadow-8">
       <q-toolbar>
-        <q-toolbar-title shrink> NBA Team Builder
+        <q-toolbar-title shrink> 
+          NBA Team Builder
         </q-toolbar-title>
         <nav>
           <ul>
             <RouterLink to="/">Home</RouterLink>
+            <RouterLink to="/teambuilder">Team Builder</RouterLink>
             <RouterLink to="/scores">Scores</RouterLink>
             <RouterLink to="/news">News</RouterLink>
             <RouterLink to="/about">About</RouterLink>
@@ -54,9 +56,9 @@ import { RouterLink, RouterView } from "vue-router";
   margin: 0 auto 2rem;
 } */
 
+/* TODO: Styling for the nav bar pages */
 nav a.router-link-exact-active {
   color: var(--color-text);
-
 }
 
 nav a.router-link-exact-active:hover {

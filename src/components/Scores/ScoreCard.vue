@@ -24,9 +24,12 @@ const props = defineProps<{
 
 const $q = useQuasar();
 
+/* Refs */
 const tooltipData = ref<any>(null);
 const notificationPermission = ref<string>("");
 const gameNotificationsMap = ref<any>(new Map());
+
+/* Computed Refs */
 
 const shortName = computed(() => props.game.shortName);
 /*TODO: 
@@ -103,7 +106,12 @@ const gameClockString = computed(() => {
     return clockString;
 })
 
-// console.log({ isTheGameDone: statusString.value })
+const namePropertyKey = computed(() => {
+    const useShortNames: boolean = props.customizationMap.get("shortNames");
+    // const keyToUse = useShortNames ? 
+    // return keyToUse;
+    return "";
+})
 
 const getRecordDetailsTooltip = (competitor: any): void => {
     const { id } = competitor;
@@ -123,9 +131,7 @@ const getRecordDetailsTooltip = (competitor: any): void => {
 }
 
 
-const toggleGameNotification = (): void => {
-    askNotificationPermission();
-}
+
 
 /* TODO:
 - Figure out if there's a better way instead of the sequence of computed refs
@@ -189,6 +195,9 @@ const awayLeaderPicture = computed(() => {
     return awayLeaderPlayer.value.headshot;
 })
 
+const toggleGameNotification = (): void => {
+    askNotificationPermission();
+}
 
 const checkNotificationPromise = (): boolean => {
     try {

@@ -4,8 +4,13 @@ import TeamBuilderButtons from "@/components/TeamBuilder/TeamBuilderButtons.vue"
 // import TeamBuilderDrawer from '@/components/TeamBuilder/TeamBuilderDrawer.vue';
 import { BDL_API_PREFIX, VIEWS } from "@/constants/constants";
 import { range } from "@/constants/functions";
-import { debounce } from "quasar"
+import { debounce, useQuasar } from "quasar"
+// TODO: Can use this for new IDs when storing
+import { uid } from 'quasar'
+
 import draggable from 'vuedraggable'
+
+const $q = useQuasar();
 
 const showDrawer = ref<boolean>(false);
 const search = ref<string>("");
@@ -21,7 +26,6 @@ const selectedSort = ref<string | null>(null);
 const sortOptions = ['Alphabetic (A-Z)', 'Reverse Alphabetic (Z-A)'];
 
 const selectedView = ref<string>("Default");
-
 
 const addPlayer = (index: number) => {
   selectedPlayerIndex.value = index;
@@ -102,6 +106,14 @@ const resetTeam = () => {
 }
 const saveTeam = () => {
 
+
+  // TODO: determine if saving was successful or not
+  $q.notify({
+    message: 'Successfully saved team!',
+    type: "positive",
+    position: "bottom-left",
+    closeBtn: true
+  })
 }
 
 /*  Note on draggable cards:
@@ -122,21 +134,18 @@ const testArray = ref([]);
 <template>
   <main class="builder-page">
     <h1 class="title">Team Builder</h1>
-    <div class="builder-container">
+    <div class="builder-container shadow-8">
       <!-- Create new TeamBuilderHeaderComponent -->
       <div class="header">
         <!-- <q-input class="title-input" v-model="text" label="Title" stack-label dark /> -->
         <div class="hidden">Hidden</div>
         <!-- TODO: Make the score animated so that when its value changes there's some cool animation  -->
         <div class="score">Score: N/A</div>
-        <TeamBuilderButtons 
-          @saveTeam="saveTeam" 
-          @reset="resetTeam" 
-          @viewChange="(newView) => selectedView = newView" />
+        <TeamBuilderButtons @saveTeam="saveTeam" @reset="resetTeam" @viewChange="(newView) => selectedView = newView" />
       </div>
       <div class="builder-main">
         <h6 class="section-header">Starters</h6>
-        <div class="main-lineup" :class="{ list: selectedView === VIEWS.LIST }" >
+        <div class="main-lineup" :class="{ list: selectedView === VIEWS.LIST }">
 
           <q-card dark class="player-card" bordered :key="n" v-for="n in 5">
             <q-card-section>
@@ -285,7 +294,7 @@ const testArray = ref([]);
   width: calc(100% - 10rem);
   height: 35rem;
   border-radius: 0.25rem;
-  box-shadow: 0px 3px 5px -1px rgba(0, 0, 0, 0.2), 0px 6px 10px 0px rgba(0, 0, 0, 0.14), 0px 1px 18px 0px rgba(0, 0, 0, 0.12);
+  /* box-shadow: 0px 3px 5px -1px rgba(0, 0, 0, 0.2), 0px 6px 10px 0px rgba(0, 0, 0, 0.14), 0px 1px 18px 0px rgba(0, 0, 0, 0.12); */
 }
 
 .header {
@@ -318,15 +327,15 @@ const testArray = ref([]);
 }
 
 .main-lineup,
-.bench-lineup
-{
+.bench-lineup {
   display: grid;
   grid-template-columns: repeat(5, minmax(0, 1fr));
   gap: 2rem;
   grid-auto-flow: row;
 }
 
-.main-lineup.list, .bench-lineup.list {
+.main-lineup.list,
+.bench-lineup.list {
   grid-template-columns: unset;
 }
 
