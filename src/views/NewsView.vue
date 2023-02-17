@@ -20,7 +20,7 @@ onMounted(() => {
     <main class="news-page">
         <h1 class="title">News</h1>
         <div class="builder-container">
-            <div class="header" />
+            <!-- <div class="header" /> -->
         </div>
     </main>
 </template>

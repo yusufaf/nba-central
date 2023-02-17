@@ -218,32 +218,32 @@ const testArray = ref([]);
             <q-list style="min-width: 100px">
               <q-item v-close-popup>
                 <q-item-section>
-                  <q-checkbox v-model="right" label="Current Season Only" dark />
+                  <!-- <q-checkbox v-model="right" label="Current Season Only" dark /> -->
                 </q-item-section>
               </q-item>
               <q-item>
                 <q-item-section>
-                  <q-checkbox v-model="right" label="PG" dark />
+                  <!-- <q-checkbox v-model="right" label="PG" dark :modelValue="" /> -->
                 </q-item-section>
               </q-item>
               <q-item>
                 <q-item-section>
-                  <q-checkbox v-model="right" label="SG" dark />
+                  <!-- <q-checkbox v-model="right" label="SG" dark /> -->
                 </q-item-section>
               </q-item>
               <q-item>
                 <q-item-section>
-                  <q-checkbox v-model="right" label="SF" dark />
+                  <!-- <q-checkbox v-model="right" label="SF" dark /> -->
                 </q-item-section>
               </q-item>
               <q-item>
                 <q-item-section>
-                  <q-checkbox v-model="right" label="PF" dark />
+                  <!-- <q-checkbox v-model="right" label="PF" dark /> -->
                 </q-item-section>
               </q-item>
               <q-item>
                 <q-item-section>
-                  <q-checkbox v-model="right" label="C" dark />
+                  <!-- <q-checkbox v-model="right" label="C" dark /> -->
                 </q-item-section>
               </q-item>
             </q-list>
@@ -254,7 +254,7 @@ const testArray = ref([]);
 
       <q-separator dark />
       <q-list>
-        <template v-for="(player, index) in searchListResults" :key="player.id">
+        <template v-for="(player) in searchListResults" :key="player.id">
           <q-item @click="addPlayerFromList(player)" clickable v-ripple>
             <q-item-section class="player-item">
               <div>
