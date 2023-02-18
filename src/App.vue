@@ -7,10 +7,10 @@ import { RouterLink, RouterView } from "vue-router";
   <q-layout view="hhh lpR fff">
     <q-header elevated class="bg-primary text-black shadow-8">
       <q-toolbar>
-        <q-toolbar-title shrink> 
+        <q-toolbar-title shrink>
           NBA Team Builder
         </q-toolbar-title>
-        <nav>
+        <nav class="gt-sm">
           <ul>
             <RouterLink to="/">Home</RouterLink>
             <RouterLink to="/teambuilder">Team Builder</RouterLink>
@@ -19,7 +19,21 @@ import { RouterLink, RouterView } from "vue-router";
             <RouterLink to="/about">About</RouterLink>
             <RouterLink class="login" to="/login">Sign In</RouterLink>
           </ul>
-
+          <q-btn class="lt-md" color="black" icon="more_vert" title="More">
+            <q-menu dark transition-show="jump-down" transition-hide="jump-up">
+              <q-list>
+                <q-item>
+                  <q-item-section>
+                  </q-item-section>
+                </q-item>
+                <q-item>
+                  <q-item-section>
+                  </q-item-section>
+                </q-item>
+                <q-separator />
+              </q-list>
+            </q-menu>
+          </q-btn>
         </nav>
       </q-toolbar>
     </q-header>
@@ -40,22 +54,9 @@ import { RouterLink, RouterView } from "vue-router";
       </q-toolbar>
     </q-footer>
   </q-layout>
-
-  <!-- <img
-      alt="Vue logo"
-      class="logo"
-      src="@/assets/logo.svg"
-      width="125"
-      height="125"
-    /> -->
 </template>
 
 <style scoped>
-/* .logo {
-  display: block;
-  margin: 0 auto 2rem;
-} */
-
 /* TODO: Styling for the nav bar pages */
 nav a.router-link-exact-active {
   color: var(--color-text);

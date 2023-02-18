@@ -12,8 +12,6 @@ const props = defineProps<{
     homeAway: string;
 }>();
 
-console.log("Data in TeamDetailsTooltip = ", props.data);
-
 const overallRecordStats = computed(() => props.data.record.items[0].stats);
 const homeRecord = computed(() => props.data.record.items[1]);
 const awayRecord = computed(() => props.data.record.items[2]);
@@ -76,7 +74,6 @@ const pointDifferential = computed(() => {
 
 </script>
 
-
 <template>
     <q-tooltip anchor="center right" self="bottom middle" :offset="[10, 10]">
         <div class="tooltip-info">
@@ -106,5 +103,4 @@ const pointDifferential = computed(() => {
         color: var(--q-negative);
         font-weight: 600;
     }
-
 </style>
