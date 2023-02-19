@@ -3,7 +3,7 @@ import { onMounted, ref, computed, reactive } from 'vue'
 import { ESPN_SCORES_URL, VIEW_OPTIONS, VIEWS } from "@/constants/constants";
 import type { CustomizationKey } from "@/constants/constants";
 import ScoreCard from '@/components/Scores/ScoreCard.vue';
-import {fetchTeamDetailsTest} from "@/network/api";
+import { fetchTeamDetailsTest } from "@/network/api";
 
 /* Update scores every 5 mins */
 const SCOREBOARD_TIMEOUT = 300000;
@@ -119,14 +119,8 @@ onMounted(() => {
                 title="Secret Link">Game Replays</q-btn>
         </div>
         <div class="scores-container" :class="{ list: selectedView === VIEWS.LIST }">
-            <ScoreCard 
-                v-for="(game, index) in gameData" 
-                :key="game.uid" 
-                :game="game" 
-                :index="index"
-                :gameTeams="gameTeams" 
-                :customizationMap="customizationState"
-            />
+            <ScoreCard v-for="(game, index) in gameData" :key="game.uid" :game="game" :index="index" :gameTeams="gameTeams"
+                :customizationMap="customizationState" />
         </div>
         <q-dialog v-model="showReplayConfirm">
             <q-card dark>
