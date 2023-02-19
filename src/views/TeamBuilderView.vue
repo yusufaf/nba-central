@@ -9,6 +9,7 @@ import { debounce, useQuasar } from "quasar"
 import { uid } from 'quasar'
 import draggable from 'vuedraggable'
 
+
 const $q = useQuasar();
 
 /* Team Metadata */

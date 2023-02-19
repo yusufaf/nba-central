@@ -54,6 +54,9 @@ const gameTeamsSorted = computed(() => {
 });
 
 const getRecordString = (teamRecords: any[], homeAway: string): string => {
+    if (!teamRecords) {
+        return "";
+    }
     const [overallRecord, homeRecord, awayRecord] = teamRecords;
     let recordString = `(${overallRecord.summary}`;
     switch (homeAway) {
