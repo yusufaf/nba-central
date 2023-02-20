@@ -8,6 +8,16 @@ export const VIEW_OPTIONS = [
     { label: VIEWS.LIST, value: VIEWS.LIST }
 ];
 
+export type DrawerSide = "left" | "right" | undefined;
+export const DRAWER_SIDES: {[key: string]: DrawerSide} = {
+    LEFT: "left",
+    RIGHT: "right",
+}
+export const DRAWER_OPTIONS = [
+    { label: DRAWER_SIDES.LEFT, value: DRAWER_SIDES.LEFT },
+    { label: DRAWER_SIDES.RIGHT, value: DRAWER_SIDES.RIGHT }
+];
+
 export const NOTIFICATION_GRANTED = "granted";
 export const NOTIFICATION_DENIED = "denied"
 

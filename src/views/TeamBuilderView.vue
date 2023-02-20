@@ -2,7 +2,8 @@
 import { ref, watch, computed } from 'vue'
 import TeamBuilderButtons from "@/components/TeamBuilder/TeamBuilderButtons.vue";
 // import TeamBuilderDrawer from '@/components/TeamBuilder/TeamBuilderDrawer.vue';
-import { BDL_API_PREFIX, VIEWS } from "@/constants/constants";
+import { BDL_API_PREFIX, VIEWS, DRAWER_SIDES } from "@/constants/constants";
+import type {DrawerSide} from "@/constants/constants";
 import { range } from "@/constants/functions";
 import { debounce, useQuasar } from "quasar"
 // TODO: Can use this for new IDs when storing
@@ -27,7 +28,8 @@ const selectedPlayersData = ref(new Map());
 const showSortDropdown = ref<boolean>(false);
 const selectedSort = ref<string | null>(null);
 const sortOptions = ['Alphabetic (A-Z)', 'Reverse Alphabetic (Z-A)'];
-const selectedView = ref<string>("Default");
+const selectedView = ref<string>(VIEWS.DEFAULT);
+const selectedDrawerSide = ref<DrawerSide>("right");
 
 const selectedFilters = ref<string[]>([]);
 const AVAILABLE_FILTERS = ["Current Season Only", "PG", "SG", "SF", "PF", "C"];
@@ -125,6 +127,14 @@ const saveTeam = () => {
   })
 }
 
+const handleViewChange = (newView: string) => {
+  selectedView.value = newView
+}
+
+const handleDrawerSideChange = (newDrawerSide: DrawerSide) => {
+  selectedDrawerSide.value = newDrawerSide
+}
+
 /*  Note on draggable cards:
 https://stackoverflow.com/questions/73325793/horizontally-draggable-quasar-q-cards-using-vue-draggable-next 
 */
@@ -151,10 +161,22 @@ const testArray = ref([]);
 
         <!-- TODO: Make the score animated so that when its value changes there's some cool animation  -->
         <div class="score">Score: N/A</div>
-        <TeamBuilderButtons @saveTeam="saveTeam" @reset="resetTeam" @viewChange="(newView) => selectedView = newView" />
+        <TeamBuilderButtons 
+          @saveTeam="saveTeam" 
+          @reset="resetTeam" 
+          @viewChange="handleViewChange" 
+          @drawerSideChange="handleDrawerSideChange"
+        />
       </div>
       <div class="builder-main">
-        <h6 class="section-header">Starters</h6>
+        <div class="builder-header">
+          <h6 class="section-header">
+            Starters
+          </h6>
+          <h6 class="player-count">
+            Player Count: {{ selectedPlayersData.size }} / 15
+          </h6>
+        </div>
         <div class="main-lineup" :class="{ list: selectedView === VIEWS.LIST }">
 
           <!-- TODO: Move cards into separate PlayerCard components -->
@@ -208,7 +230,7 @@ const testArray = ref([]);
     <!-- <TeamBuilderDrawer 
           v-bind:showDrawer="showDrawer"
         /> -->
-    <q-drawer class="drawer" v-model="showDrawer" :width="300" bordered elevated overlay dark side="right">
+    <q-drawer class="drawer" v-model="showDrawer" :width="300" bordered elevated overlay dark :side="selectedDrawerSide">
       <div class="drawer-header">
         <h6 class="drawer-title">Add Player</h6>
         <q-btn @click="showDrawer = false" round icon="close" class="drawer-close" />
@@ -285,6 +307,8 @@ const testArray = ref([]);
   width: calc(100% - 10rem);
   height: 35rem;
   border-radius: 0.25rem;
+  display: grid;
+  grid-template-rows: 6rem auto;
 }
 
 .header {
@@ -337,6 +361,12 @@ const testArray = ref([]);
 
 .section-header {
   margin: 1rem 0;
+}
+
+.builder-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
 }
 
 .add-player-btn {}

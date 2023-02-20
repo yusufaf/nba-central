@@ -3,7 +3,6 @@ import { onMounted, ref, computed, reactive } from 'vue'
 import { ESPN_SCORES_URL, VIEW_OPTIONS, VIEWS } from "@/constants/constants";
 import type { CustomizationKey } from "@/constants/constants";
 import ScoreCard from '@/components/Scores/ScoreCard.vue';
-import { fetchTeamDetailsTest } from "@/network/api";
 
 /* Update scores every 5 mins */
 const SCOREBOARD_TIMEOUT = 300000;
@@ -81,7 +80,6 @@ const customizationState = computed(() => {
 
 onMounted(() => {
     fetchCurrentScores();
-    fetchTeamDetailsTest();
     setInterval(() => {
         fetchCurrentScores();
     }, SCOREBOARD_TIMEOUT)

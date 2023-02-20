@@ -1,15 +1,23 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue'
 import {
-    VIEW_OPTIONS
+    VIEW_OPTIONS,
+    DRAWER_OPTIONS
 } from "@/constants/constants";
-const emit = defineEmits(['reset', 'saveTeam', 'viewChange'])
+const emit = defineEmits(['reset', 'saveTeam', 'viewChange', 'drawerSideChange', 'headerExpanded'])
 
 const showConfirm = ref<boolean>(false);
 const selectedView = ref<string>("Default");
+const drawerSide = ref<string>("right");
+const headerExpanded = ref<boolean>(false);
 
+/* Watchers */
 watch(selectedView, (newSelectedView) => {
     emit('viewChange', newSelectedView);
+})
+
+watch(drawerSide, (newDrawerSide) => {
+    emit('drawerSideChange', newDrawerSide);
 })
 
 const resetClick = (): void => {
@@ -24,28 +32,29 @@ const saveClick = (): void => {
     emit('saveTeam');
 }
 
+const expandClick = () => {
+    headerExpanded.value = !headerExpanded.value;
+    emit('headerExpanded', headerExpanded.value);
+}
+
 </script>
 
 <template>
     <div class="team-builder-buttons">
+        <q-btn @click="expandClick" round :icon="headerExpanded ? 'expand_less' : 'expand_more'" title="More" />
         <q-btn round icon="more_vert" title="More">
             <q-menu dark transition-show="jump-down" transition-hide="jump-up">
                 <q-list>
                     <q-item>
                         <q-item-section>
-                            <!-- <q-toggle v-model="hideScores" label="Hide Scores" /> -->
+                            <q-btn-toggle v-model="drawerSide" toggle-color="primary" :options="DRAWER_OPTIONS" />
                         </q-item-section>
                     </q-item>
-                    <q-item>
-                        <q-item-section>
-                            <!-- <q-toggle v-model="useShortNames" label="Use Short Names" /> -->
-                        </q-item-section>
-                    </q-item>
-                    <q-separator />
                 </q-list>
             </q-menu>
         </q-btn>
         <q-btn-toggle v-model="selectedView" toggle-color="primary" :options="VIEW_OPTIONS" />
+        <q-btn @click="resetClick" round color="black" icon="share" title="Share" />
         <q-btn @click="resetClick" round color="black" icon="refresh" title="Reset" />
         <q-btn @click="saveClick" round color="black" icon="save" title="Save" />
     </div>
