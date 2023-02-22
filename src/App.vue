@@ -7,16 +7,16 @@ import { RouterLink, RouterView } from "vue-router";
   <q-layout view="hhh lpR fff">
     <q-header elevated class="bg-primary text-black shadow-8">
       <q-toolbar>
-        <q-toolbar-title shrink>
+        <q-toolbar-title>
           NBA Team Builder
         </q-toolbar-title>
         <nav class="gt-sm">
           <ul>
             <RouterLink to="/">Home</RouterLink>
+            <RouterLink to="/teams">My Teams</RouterLink>
             <RouterLink to="/teambuilder">Team Builder</RouterLink>
             <RouterLink to="/scores">Scores</RouterLink>
             <RouterLink to="/news">News</RouterLink>
-            <RouterLink to="/about">About</RouterLink>
             <RouterLink class="login" to="/login">Sign In</RouterLink>
           </ul>
           <q-btn class="lt-md" color="black" icon="more_vert" title="More">
@@ -58,6 +58,10 @@ import { RouterLink, RouterView } from "vue-router";
 
 <style scoped>
 /* TODO: Styling for the nav bar pages */
+nav {
+  width: calc(100vw - 13rem);
+}
+
 nav a.router-link-exact-active {
   color: var(--color-text);
 }
@@ -77,8 +81,11 @@ nav a {
   text-decoration: none;
   /* display: inline-block; */
 }
-
+ul a:nth-child(5) {
+  flex:1;
+}
 .login {
   margin-left: auto;
+  margin-right: 1rem;
 }
 </style>

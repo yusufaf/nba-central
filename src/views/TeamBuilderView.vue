@@ -2,20 +2,22 @@
 import { ref, watch, computed } from 'vue'
 import TeamBuilderButtons from "@/components/TeamBuilder/TeamBuilderButtons.vue";
 // import TeamBuilderDrawer from '@/components/TeamBuilder/TeamBuilderDrawer.vue';
-import { BDL_API_PREFIX, VIEWS, DRAWER_SIDES } from "@/constants/constants";
-import type {DrawerSide} from "@/constants/constants";
+import { BDL_API_PREFIX, VIEWS, DRAWER_SIDES, DEFAULT_NOTIFICATION_PROPS } from "@/constants/constants";
+import type { DrawerSide } from "@/constants/constants";
 import { range } from "@/constants/functions";
-import { debounce, useQuasar } from "quasar"
+import { debounce, useQuasar, type QNotifyCreateOptions } from "quasar";
+import type {Team} from "@/lib/types/Team";
+
 // TODO: Can use this for new IDs when storing
-import { uid } from 'quasar'
-import draggable from 'vuedraggable'
+import { uid } from 'quasar';
+import draggable from 'vuedraggable';
+import axios from "axios";
 
 
 const $q = useQuasar();
 
 /* Team Metadata */
 const teamName = ref<string>("");
-
 const showDrawer = ref<boolean>(false);
 const search = ref<string>("");
 const searchList = ref<any[]>([]);
@@ -24,19 +26,21 @@ const searchLoading = ref<boolean>(false);
 const selectedPlayerIndex = ref<number | null>(null);
 const selectedPlayersData = ref(new Map());
 
-/* Sorting and Filtering */
-const showSortDropdown = ref<boolean>(false);
-const selectedSort = ref<string | null>(null);
 const sortOptions = ['Alphabetic (A-Z)', 'Reverse Alphabetic (Z-A)'];
 const selectedView = ref<string>(VIEWS.DEFAULT);
 const selectedDrawerSide = ref<DrawerSide>("right");
+const headerExpanded = ref<boolean>(false);
+
+/* Sorting and Filtering */
+const showSortDropdown = ref<boolean>(false);
+const selectedSort = ref<string | null>(null);
 
 const selectedFilters = ref<string[]>([]);
 const AVAILABLE_FILTERS = ["Current Season Only", "PG", "SG", "SF", "PF", "C"];
 
 /* Note to self: Use watchers to get reactive console logs */
 watch(selectedFilters, (selectedFilters, prevFilters) => {
-    console.log(selectedFilters, prevFilters);
+  console.log(selectedFilters, prevFilters);
 })
 
 const addPlayer = (index: number) => {
@@ -113,17 +117,45 @@ const addPlayerFromList = (player: any) => {
 }
 
 const resetTeam = () => {
-
+  axios.get("/api/team/")
+    .then((res) => console.log(res.data))
 }
+
 const saveTeam = () => {
+
+  let message = "Successfully saved team!";
+  const uuid = uid();
+  
+  const testPlayers = ["Damian Lillard", "LeBron James", "Giannis Antetokounmpo"]
+
+  const newTeam: Team = {
+    uuid, 
+    description: "This is a test team",
+    name: teamName.value,
+    players: testPlayers
+  }
+
+    axios
+      .post(`/api/team/`, newTeam)
+      .then((res) => console.log(res.data));
+  /* If there's an existing ID for this team */
+  // if (item.id) {
+  //   axios
+  //     .put(`/api/team/`, item)
+  //     .then((res) => {});
+  //   message = "Successfully created team!";
+  //   return;
+  // }
+  // axios
+  //   .post("/api/todos/", item)
+  //   .then((res) => this.refreshList());
 
 
   // TODO: determine if saving was successful or not
   $q.notify({
-    message: 'Successfully saved team!',
+    message,
     type: "positive",
-    position: "bottom-left",
-    closeBtn: true
+    ...DEFAULT_NOTIFICATION_PROPS as Partial<QNotifyCreateOptions>
   })
 }
 
@@ -133,6 +165,10 @@ const handleViewChange = (newView: string) => {
 
 const handleDrawerSideChange = (newDrawerSide: DrawerSide) => {
   selectedDrawerSide.value = newDrawerSide
+}
+
+const handleHeaderExpandedChange = (newHeaderExpanded: boolean) => {
+  headerExpanded.value = newHeaderExpanded
 }
 
 /*  Note on draggable cards:
@@ -164,8 +200,9 @@ const testArray = ref([]);
         <TeamBuilderButtons 
           @saveTeam="saveTeam" 
           @reset="resetTeam" 
-          @viewChange="handleViewChange" 
-          @drawerSideChange="handleDrawerSideChange"
+          @viewChange="handleViewChange"
+          @drawerSideChange="handleDrawerSideChange" 
+          @headerExpanded="handleHeaderExpandedChange"  
         />
       </div>
       <div class="builder-main">
@@ -199,7 +236,7 @@ const testArray = ref([]);
             </q-card-section>
             <q-separator dark />
             <q-card-actions>
-              <q-btn @click="deletePlayer(n)" flat round icon="delete" color="negative" title="Delete player from team"/>
+              <q-btn @click="deletePlayer(n)" flat round icon="delete" color="negative" title="Delete player from team" />
             </q-card-actions>
           </q-card>
         </div>
@@ -228,8 +265,8 @@ const testArray = ref([]);
       </div>
     </div>
     <!-- <TeamBuilderDrawer 
-          v-bind:showDrawer="showDrawer"
-        /> -->
+              v-bind:showDrawer="showDrawer"
+            /> -->
     <q-drawer class="drawer" v-model="showDrawer" :width="300" bordered elevated overlay dark :side="selectedDrawerSide">
       <div class="drawer-header">
         <h6 class="drawer-title">Add Player</h6>
@@ -243,9 +280,9 @@ const testArray = ref([]);
       <q-linear-progress v-if="searchLoading" indeterminate color="primary" />
 
       <!-- TODO: Figure out how you want the sort and filters to show up
-          - Hidden in a menu that opens up on click of a button?
-          - Visible dropdowns
-          -->
+              - Hidden in a menu that opens up on click of a button?
+              - Visible dropdowns
+              -->
       <div>
         <q-select outlined v-model="selectedSort" :options="sortOptions" label="Sort" clearable dark />
         <q-btn color="primary" label="Filters Menu">
@@ -305,7 +342,7 @@ const testArray = ref([]);
 .builder-container {
   background: var(--vt-c-black-soft);
   width: calc(100% - 10rem);
-  height: 35rem;
+  height: 37rem;
   border-radius: 0.25rem;
   display: grid;
   grid-template-rows: 6rem auto;
@@ -336,7 +373,7 @@ const testArray = ref([]);
 
 .builder-main {
   margin: 1rem 2rem 0 2rem;
-  height: 25rem;
+  height: 28rem;
   overflow-y: auto;
 }
 

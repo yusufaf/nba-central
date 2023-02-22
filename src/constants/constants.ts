@@ -8,6 +8,11 @@ export const VIEW_OPTIONS = [
     { label: VIEWS.LIST, value: VIEWS.LIST }
 ];
 
+export const DEFAULT_NOTIFICATION_PROPS = {
+    position: "bottom-left",
+    closeBtn: true
+}
+
 export type DrawerSide = "left" | "right" | undefined;
 export const DRAWER_SIDES: {[key: string]: DrawerSide} = {
     LEFT: "left",
