@@ -1,4 +1,11 @@
 /* UI */
+
+export const TYPE_WRITER_PROPS = {
+    closingText: "team",
+    leadInText: "Build the",
+    textDisplayArray: ['GOAT','best','greatest','coldest','dopest','coolest','hottest'],
+}
+
 export const VIEWS = {
     DEFAULT: "Default",
     LIST: "List",

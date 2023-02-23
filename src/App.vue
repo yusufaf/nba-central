@@ -1,15 +1,12 @@
 <script setup lang="ts">
 import { RouterLink, RouterView } from "vue-router";
-
 </script>
 
 <template>
   <q-layout view="hhh lpR fff">
     <q-header elevated class="bg-primary text-black shadow-8">
       <q-toolbar>
-        <q-toolbar-title>
-          NBA Team Builder
-        </q-toolbar-title>
+        <q-toolbar-title> NBA Team Builder </q-toolbar-title>
         <nav class="gt-sm">
           <ul>
             <RouterLink to="/">Home</RouterLink>
@@ -23,12 +20,10 @@ import { RouterLink, RouterView } from "vue-router";
             <q-menu dark transition-show="jump-down" transition-hide="jump-up">
               <q-list>
                 <q-item>
-                  <q-item-section>
-                  </q-item-section>
+                  <q-item-section> </q-item-section>
                 </q-item>
                 <q-item>
-                  <q-item-section>
-                  </q-item-section>
+                  <q-item-section> </q-item-section>
                 </q-item>
                 <q-separator />
               </q-list>
@@ -48,8 +43,14 @@ import { RouterLink, RouterView } from "vue-router";
           <div>NBA Team Builder</div>
         </q-toolbar-title>
         <a href="https://github.com/yusufaf/nba-central">
-          <img alt="Github logo" class="logo" src="@/assets/github.png" width="32" height="32"
-            title="Team Builder GitHub" />
+          <img
+            alt="Github logo"
+            class="logo"
+            src="@/assets/github.png"
+            width="32"
+            height="32"
+            title="Team Builder GitHub"
+          />
         </a>
       </q-toolbar>
     </q-footer>
@@ -82,7 +83,7 @@ nav a {
   /* display: inline-block; */
 }
 ul a:nth-child(5) {
-  flex:1;
+  flex: 1;
 }
 .login {
   margin-left: auto;
