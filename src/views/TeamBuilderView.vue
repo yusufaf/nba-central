@@ -6,7 +6,7 @@ import { BDL_API_PREFIX, VIEWS, DRAWER_SIDES, DEFAULT_NOTIFICATION_PROPS } from 
 import type { DrawerSide } from "@/constants/constants";
 import { range } from "@/constants/functions";
 import { debounce, useQuasar, type QNotifyCreateOptions } from "quasar";
-import type {Team} from "@/lib/types/Team";
+import type {Team} from "@/lib/types";
 
 // TODO: Can use this for new IDs when storing
 import { uid } from 'quasar';
