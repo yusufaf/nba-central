@@ -68,8 +68,6 @@ const eraseText = () => {
 
 <style scoped>
 .container {
-  width: 100%;
-  height: 100vh;
   display: flex;
   justify-content: center;
   align-items: center;
@@ -78,6 +76,7 @@ const eraseText = () => {
 h1 {
   font-size: 6rem;
   font-weight: normal;
+  color: var(--vt-c-white-soft);
 }
 
 span.typed-text {
@@ -86,7 +85,8 @@ span.typed-text {
 
 .blinking-cursor {
   font-size: 6rem;
-  color: #2c3e50;
+  color: var(--q-primary);
+  /* color: #2c3e50; */
   -webkit-animation: 1s blink step-end infinite;
   -moz-animation: 1s blink step-end infinite;
   -ms-animation: 1s blink step-end infinite;
@@ -101,7 +101,7 @@ span.typed-text {
   }
 
   50% {
-    color: #2c3e50;
+    color: var(--q-primary);
   }
 }
 
@@ -112,7 +112,7 @@ span.typed-text {
   }
 
   50% {
-    color: #2c3e50;
+    color: var(--q-primary);
   }
 }
 
@@ -123,7 +123,7 @@ span.typed-text {
   }
 
   50% {
-    color: #2c3e50;
+    color: var(--q-primary);
   }
 }
 
@@ -134,7 +134,7 @@ span.typed-text {
   }
 
   50% {
-    color: #2c3e50;
+    color: var(--q-primary);
   }
 }
 
@@ -145,12 +145,12 @@ span.typed-text {
   }
 
   50% {
-    color: #2c3e50;
+    color: var(--q-primary);
   }
 }
 
 .typing {
-  border-right: 0.2rem solid #2c3e50;
+  border-right: 0.2rem solid var(--q-primary);
 }
 
 .close-text {

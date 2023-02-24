@@ -18,6 +18,8 @@ const $q = useQuasar();
 
 /* Team Metadata */
 const teamName = ref<string>("");
+const teamDescription = ref<string>("");
+
 const showDrawer = ref<boolean>(false);
 const search = ref<string>("");
 const searchList = ref<any[]>([]);
@@ -189,21 +191,25 @@ const testArray = ref([]);
 <template>
   <main class="builder-page">
     <h1 class="title">Team Builder</h1>
-    <div class="builder-container shadow-8">
+    <div class="builder-container shadow-8" :class="{ expanded: headerExpanded }">
       <!-- Create new TeamBuilderHeaderComponent -->
-      <div class="header">
-        <q-input class="title-input" v-model="teamName" label="Team Name" stack-label dark />
-        <div class="hidden">Hidden</div>
-
-        <!-- TODO: Make the score animated so that when its value changes there's some cool animation  -->
-        <div class="score">Score: N/A</div>
-        <TeamBuilderButtons 
-          @saveTeam="saveTeam" 
-          @reset="resetTeam" 
-          @viewChange="handleViewChange"
-          @drawerSideChange="handleDrawerSideChange" 
-          @headerExpanded="handleHeaderExpandedChange"  
-        />
+      <div class="header" :class="{ expanded: headerExpanded }">
+        <div class="header-top">
+          <q-input class="title-input" v-model="teamName" label="Team Name" stack-label dark />
+          <div class="hidden">Hidden</div>
+  
+          <!-- TODO: Make the score animated so that when its value changes there's some cool animation  -->
+          <div class="score">Score: N/A</div>
+          <TeamBuilderButtons 
+            @saveTeam="saveTeam" 
+            @reset="resetTeam" 
+            @viewChange="handleViewChange"
+            @drawerSideChange="handleDrawerSideChange" 
+            @headerExpanded="handleHeaderExpandedChange"  
+          />
+        </div>
+        
+        <q-input v-if="headerExpanded" class="title-input" v-model="teamDescription" label="Team Description" stack-label dark />
       </div>
       <div class="builder-main">
         <div class="builder-header">
@@ -344,14 +350,28 @@ const testArray = ref([]);
   width: calc(100% - 10rem);
   height: 37rem;
   border-radius: 0.25rem;
-  display: grid;
-  grid-template-rows: 6rem auto;
+  /* display: grid;
+  grid-template-rows: 6rem auto; */
+}
+
+.builder-container.expanded {
+  height: 40rem
 }
 
 .header {
   display: flex;
-  align-items: center;
+  flex-direction: column;
   border-bottom: 0.125rem solid var(--vt-c-divider-dark-1);
+}
+
+.header-top {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+}
+
+.header.expanded {
+  height: 10rem;
 }
 
 .title-input {
