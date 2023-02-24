@@ -1,5 +1,6 @@
 export type Team = {
-    id: string,
+    uuid: string,
     name: string,
     description: string,
+    players: any,
 }
