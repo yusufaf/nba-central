@@ -3,6 +3,7 @@ import { onMounted, ref, computed, reactive } from "vue";
 import { ESPN_SCORES_URL, VIEW_OPTIONS, VIEWS } from "@/constants/constants";
 import type { CustomizationKey } from "@/constants/constants";
 import ScoreCard from "@/components/Scores/ScoreCard.vue";
+import PageTitle from "@/components/PageTitle.vue";
 
 /* Update scores every 5 mins */
 const SCOREBOARD_TIMEOUT = 300000;
@@ -101,7 +102,7 @@ onMounted(() => {
 <template>
   <main class="scores-page">
     <div class="header">
-      <h1 class="title">NBA Scoreboard</h1>
+      <PageTitle />
       <h2 class="date">{{ primaryDateString }}</h2>
       <h2 class="">{{ numGames }} Games</h2>
     </div>
@@ -184,12 +185,6 @@ onMounted(() => {
   justify-content: center;
   align-items: center;
   margin-bottom: 2rem;
-}
-
-.title {
-  font-size: 3rem;
-  margin-top: 2rem;
-  font-weight: 600;
 }
 
 h2 {

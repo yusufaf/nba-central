@@ -1,4 +1,12 @@
 /* UI */
+export const ROUTES = [
+    { id: 1, name: "Home", path: "/", title: "" },
+    { id: 2, name: "My Teams", path: "/teams", title: "My Teams" },
+    { id: 3, name: "Team Builder", path: "/teambuilder", title: "Team Builder" },
+    { id: 4, name: "Scores", path: "/scores", title: "NBA Scoreboard" },
+    { id: 5, name: "News", path: "/news", title: "NBA News" },
+    { id: 6, name: "Sign In", path: "/login", class: "login" },
+]
 
 export const TYPE_WRITER_PROPS = {
     closingText: "team",

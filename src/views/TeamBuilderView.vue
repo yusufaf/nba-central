@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { ref, watch, computed } from 'vue'
+import { ref, watch, computed } from 'vue';
+import PageTitle from "@/components/PageTitle.vue"
 import TeamBuilderButtons from "@/components/TeamBuilder/TeamBuilderButtons.vue";
 // import TeamBuilderDrawer from '@/components/TeamBuilder/TeamBuilderDrawer.vue';
 import { BDL_API_PREFIX, VIEWS, DRAWER_SIDES, DEFAULT_NOTIFICATION_PROPS } from "@/constants/constants";
@@ -190,7 +191,7 @@ const testArray = ref([]);
 
 <template>
   <main class="builder-page">
-    <h1 class="title">Team Builder</h1>
+    <PageTitle />
     <div class="builder-container shadow-8" :class="{ expanded: headerExpanded }">
       <!-- Create new TeamBuilderHeaderComponent -->
       <div class="header" :class="{ expanded: headerExpanded }">
@@ -337,12 +338,6 @@ const testArray = ref([]);
   align-items: center;
   flex-direction: column;
   padding: 0 4rem;
-}
-
-.title {
-  font-size: 3rem;
-  margin: 2rem 0;
-  font-weight: 600;
 }
 
 .builder-container {
