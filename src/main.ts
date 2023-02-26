@@ -34,7 +34,7 @@ app.use(Quasar, {
 
       positive: '#21BA45',
       negative: '#C10015',
-      info: '#31CCEC',
+      info: '#1084e0',
       warning: '#F2C037'
     }
   }

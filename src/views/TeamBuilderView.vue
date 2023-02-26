@@ -12,8 +12,6 @@ import type { DrawerSide } from "@/constants/constants";
 import { range } from "@/constants/functions";
 import { debounce, useQuasar, type QNotifyCreateOptions } from "quasar";
 import type { Team } from "@/lib/types";
-
-// TODO: Can use this for new IDs when storing
 import { uid } from "quasar";
 import draggable from "vuedraggable";
 import axios from "axios";
@@ -34,6 +32,15 @@ const selectedPlayerIndex = ref<number | null>(null);
 const selectedPlayersData = ref<Map<any, any>>(new Map());
 const selectedPlayerStats = ref<any>([]);
 
+const playerStatsData = computed(() => {
+  return selectedPlayerStats.value.map((item: any, index: number) => {
+    return {
+      ...item,
+      id: index,
+    };
+  });
+});
+
 const cardsFlipped = ref<Map<any, boolean>>(new Map());
 const showTransition = ref(false);
 
@@ -43,6 +50,10 @@ const sortOptions = ["Alphabetic (A-Z)", "Reverse Alphabetic (Z-A)"];
 const selectedView = ref<string>(VIEWS.DEFAULT);
 const selectedDrawerSide = ref<DrawerSide>("right");
 const headerExpanded = ref<boolean>(false);
+
+
+const selectedPlayersForComparison  = ref<Set<any>>(new Set());
+
 
 /* Sorting and Filtering */
 const showSortDropdown = ref<boolean>(false);
@@ -275,10 +286,11 @@ const flipCard = (n: number) => {
 };
 
 const viewPlayerStats = () => {
-  showPlayerStatsDialog.value = true;
+  /* Retrieve player stats from data map */
   const { playerStats } = selectedPlayersData.value.get(
     selectedPlayerIndex.value
   );
+  /* Add an id to each for use in the table */
   const modifiedPlayerStats = playerStats.map((item: any, index: number) => {
     return {
       ...item,
@@ -286,8 +298,38 @@ const viewPlayerStats = () => {
     };
   });
 
+  console.log("Selected Player Stats ref being set to: ", modifiedPlayerStats);
+
+  /* Store it in the ref */
   selectedPlayerStats.value = modifiedPlayerStats;
+
+  console.log(
+    "Actual value of selectedPlayerStats = ",
+    selectedPlayerStats.value
+  );
+
+  /* Show the player stats popup */
+  showPlayerStatsDialog.value = true;
 };
+
+const togglePlayerInComparison = (n: number) => {
+  const isSelected = selectedPlayersForComparison.value.has(n);
+  let message;
+  if (isSelected) {
+    message = "Removed player from comparison";
+    selectedPlayersForComparison.value.delete(n);
+  } else {
+    message = "Added player to comparison";
+    selectedPlayersForComparison.value.add(n);
+  }
+
+  /* Show toast notification */
+  $q.notify({
+    message,
+    type: "info",
+    ...(DEFAULT_NOTIFICATION_PROPS as Partial<QNotifyCreateOptions>),
+  });
+}
 
 /* Child Component Event Handlers */
 const handleViewChange = (newView: string) => {
@@ -429,6 +471,15 @@ const testArray = ref([]);
                     color="negative"
                     title="Delete player from team"
                   />
+                  <q-btn
+                    v-if="selectedPlayersData.has(n)"
+                    flat 
+                    round
+                    icon="compare_arrows"
+                    title="Select for comparison"
+                    :color="selectedPlayersForComparison.has(n) ? 'primary' : 'white'"
+                    @click.stop="togglePlayerInComparison(n)"
+                  /> 
                 </q-card-actions>
               </q-card>
             </Transition>
@@ -572,10 +623,9 @@ const testArray = ref([]);
     </q-drawer>
     <PlayerStatsDialog
       :visible="showPlayerStatsDialog"
-      :data="selectedPlayerStats.value"
+      :data="playerStatsData"
       @visibleChange="handlePlayerStatsVisibleChange"
-    >
-    </PlayerStatsDialog>
+    />
   </main>
 </template>
 

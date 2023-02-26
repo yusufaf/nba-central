@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, ref, watch, watchEffect } from "vue";
+import { ref, watch } from "vue";
 import {} from "@/constants/constants";
 
 const props = defineProps<{
@@ -16,10 +16,10 @@ watch(() => props.visible, (value) => {
   localVisible.value = value;
 });
 
-watchEffect(() => {
-  console.log("data changed", props.data);
-  localData.value = props.data;
+watch(() => props.data, (value) => {
+  localData.value = value;
 });
+
 
 const onClose = () => {
   emit("visibleChange", false);
@@ -33,10 +33,13 @@ const columns = ref<any[]>([
   { name: 'min', label: 'Minutes', field: 'min' , sortable: true},
   { name: 'fgm', label: 'FG Made', field: 'fgm', sortable: true },
   { name: 'fga', label: 'FG Attempted', field: 'fga', sortable: true },
+  { name: 'fg_pct', label: 'FG%', field: 'fg_pct', sortable: true },
   { name: 'fg3m', label: '3PT Made', field: 'fg3m', sortable: true },
   { name: 'fg3a', label: '3PT Attempted', field: 'fg3a', sortable: true },
+  { name: 'fg3_pct', label: '3PT%', field: 'fg3_pct', sortable: true },
   { name: 'ftm', label: 'FT Made', field: 'ftm', sortable: true },
   { name: 'fta', label: 'FT Attempted', field: 'fta', sortable: true },
+  { name: 'ft_pct', label: 'FT%', field: 'ft_pct', sortable: true },
   { name: 'oreb', label: 'Offensive Rebounds', field: 'oreb' },
   { name: 'dreb', label: 'Defensive Rebounds', field: 'dreb' },
   { name: 'reb', label: 'Total Rebounds', field: 'reb', sortable: true },
@@ -46,9 +49,6 @@ const columns = ref<any[]>([
   { name: 'turnover', label: 'Turnovers', field: 'turnover', sortable: true },
   { name: 'pf', label: 'Personal Fouls', field: 'pf', sortable: true },
   { name: 'pts', label: 'Points', field: 'pts', sortable: true },
-  { name: 'fg_pct', label: 'FG%', field: 'fg_pct', sortable: true },
-  { name: 'fg3_pct', label: '3PT%', field: 'fg3_pct', sortable: true },
-  { name: 'ft_pct', label: 'FT%', field: 'ft_pct', sortable: true }
 ]);
 </script>
 
@@ -58,17 +58,15 @@ const columns = ref<any[]>([
       <q-card-section>
         <div class="text-h6">Player Stats</div>
       </q-card-section>
-
       <q-card-section>
         <q-table
-          :rows="props.data"
+          :rows="localData"
           :columns="columns"
           row-key="id"
           dark
         >
         </q-table>
       </q-card-section>
-
       <q-card-actions align="right">
         <q-btn flat label="Close" @click="onClose" />
       </q-card-actions>

@@ -1,5 +1,5 @@
 /* UI */
-export const CURRENT_SEASON_START_YEAR = new Date().getFullYear()  // returns the current year
+export const CURRENT_SEASON_START_YEAR = new Date().getFullYear() - 1;
 
 
 export const ROUTES = [
@@ -28,7 +28,9 @@ export const VIEW_OPTIONS = [
 
 export const DEFAULT_NOTIFICATION_PROPS = {
     position: "bottom-left",
-    closeBtn: true
+    closeBtn: true,
+    timeout: 2500,
+    textColor: 'white',
 }
 
 export type DrawerSide = "left" | "right" | undefined;
