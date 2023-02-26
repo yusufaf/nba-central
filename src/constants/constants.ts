@@ -1,4 +1,7 @@
 /* UI */
+export const CURRENT_SEASON_START_YEAR = new Date().getFullYear()  // returns the current year
+
+
 export const ROUTES = [
     { id: 1, name: "Home", path: "/", title: "" },
     { id: 2, name: "My Teams", path: "/teams", title: "My Teams" },
