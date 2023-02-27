@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { onMounted, ref, computed, reactive } from "vue";
-import { ESPN_SCORES_URL, VIEW_OPTIONS, VIEWS } from "@/constants/constants";
+import { ESPN_SCORES_URL, VIEW_OPTIONS, VIEWS} from "@/constants/constants";
 import type { CustomizationKey } from "@/constants/constants";
 import ScoreCard from "@/components/Scores/ScoreCard.vue";
 import PageTitle from "@/components/PageTitle.vue";
@@ -35,6 +35,8 @@ const selectedView = ref<string>("Default");
 
 // const customizationState = ref<any>(new Map());
 const useShortNames = ref<boolean>(true);
+
+const notificationsMenuOpen = ref<boolean>(false);
 
 /* TODO/IDEA:
 - Notifications for score updates like Google?
@@ -107,6 +109,14 @@ onMounted(() => {
       <h2 class="">{{ numGames }} Games</h2>
     </div>
     <div class="buttons">
+      <q-btn
+        round
+        icon="edit_notifications"
+        title="Manage Notifications"
+        @click="notificationsMenuOpen = !notificationsMenuOpen"
+      >
+
+      </q-btn>
       <q-btn round icon="more_vert" title="More">
         <q-menu dark transition-show="jump-down" transition-hide="jump-up">
           <q-list>
@@ -168,6 +178,34 @@ onMounted(() => {
             color="primary"
             v-close-popup
           />
+        </q-card-actions>
+      </q-card>
+    </q-dialog>
+    <q-dialog v-model="notificationsMenuOpen">
+      <q-card dark>
+        <q-card-section class="row items-center">
+          <q-select
+          outlined
+          label="Sort"
+          clearable
+          dark
+          multiple
+        />
+
+          <!-- Favorited Teams: -->
+          <q-list dark bordered>
+            <template v-for="n in Array(5)" :key="n">
+              <q-item>
+                <q-item-section>
+                  <q-toggle v-model="hideScores" label="Hide Scores" />
+                </q-item-section>
+              </q-item>
+              <q-separator dark/>
+            </template>
+          </q-list>
+        </q-card-section>
+        <q-card-actions align="right">
+          <q-btn flat label="Close" color="primary" v-close-popup />
         </q-card-actions>
       </q-card>
     </q-dialog>

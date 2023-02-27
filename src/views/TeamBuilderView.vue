@@ -50,10 +50,7 @@ const sortOptions = ["Alphabetic (A-Z)", "Reverse Alphabetic (Z-A)"];
 const selectedView = ref<string>(VIEWS.DEFAULT);
 const selectedDrawerSide = ref<DrawerSide>("right");
 const headerExpanded = ref<boolean>(false);
-
-
 const selectedPlayersForComparison  = ref<Set<any>>(new Set());
-
 
 /* Sorting and Filtering */
 const showSortDropdown = ref<boolean>(false);
@@ -314,12 +311,24 @@ const viewPlayerStats = () => {
 
 const togglePlayerInComparison = (n: number) => {
   const isSelected = selectedPlayersForComparison.value.has(n);
+  
+  if (selectedPlayersForComparison.value.size === 2 && !isSelected) {
+    /* Show toast notification */
+    $q.notify({
+      message: "You can only compare two players at a time",
+      type: "warning",
+      ...(DEFAULT_NOTIFICATION_PROPS as Partial<QNotifyCreateOptions>),
+    });
+    return;
+  }
+
+  const playerName = selectedPlayersData.value.get(n).fullName;
   let message;
   if (isSelected) {
-    message = "Removed player from comparison";
+    message = `Removed player ${playerName} from comparison`;
     selectedPlayersForComparison.value.delete(n);
   } else {
-    message = "Added player to comparison";
+    message = `Added player ${playerName} to comparison`;
     selectedPlayersForComparison.value.add(n);
   }
 
@@ -446,8 +455,7 @@ const testArray = ref([]);
                   />
                   <template v-else>
                     <template v-if="cardsFlipped.get(n)">
-                      <div>look at my back</div>
-                      <q-btn flat color="primary" @click.stop="viewPlayerStats">
+                      <q-btn outline color="primary" @click.stop="viewPlayerStats">
                         View Player Stats
                       </q-btn>
                     </template>
@@ -476,10 +484,10 @@ const testArray = ref([]);
                     flat 
                     round
                     icon="compare_arrows"
-                    title="Select for comparison"
+                    :title="selectedPlayersForComparison.has(n) ? 'Remove from comparison' : 'Select for comparison'"
                     :color="selectedPlayersForComparison.has(n) ? 'primary' : 'white'"
                     @click.stop="togglePlayerInComparison(n)"
-                  /> 
+                  />
                 </q-card-actions>
               </q-card>
             </Transition>
@@ -531,6 +539,10 @@ const testArray = ref([]);
               />
             </q-card-actions>
           </q-card>
+        </div>
+        <h6 class="section-header">Coach</h6>
+        <div>
+
         </div>
       </div>
     </div>
