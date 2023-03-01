@@ -32,7 +32,7 @@ const saveClick = (): void => {
     emit('saveTeam');
 }
 
-const expandClick = () => {
+const expandClick = (): void => {
     headerExpanded.value = !headerExpanded.value;
     emit('headerExpanded', headerExpanded.value);
 }
@@ -41,11 +41,15 @@ const expandClick = () => {
 
 <template>
     <div class="team-builder-buttons">
-        <q-btn @click="expandClick" round :icon="headerExpanded ? 'expand_less' : 'expand_more'" title="More" />
+        <q-btn round icon="more_vert" title="More" />
+        <q-btn class="expand-btn" @click="expandClick" round :icon="headerExpanded ? 'expand_less' : 'expand_more'" title="More" />
         <q-btn round icon="more_vert" title="More">
             <q-menu dark transition-show="jump-down" transition-hide="jump-up">
-                <q-list>
+                <q-list dark>
                     <q-item>
+                        <q-item-section side>
+                            <q-item-label>Drawer Side</q-item-label>
+                        </q-item-section>
                         <q-item-section>
                             <q-btn-toggle v-model="drawerSide" toggle-color="primary" :options="DRAWER_OPTIONS" />
                         </q-item-section>

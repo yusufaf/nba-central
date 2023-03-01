@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import { ref, watch, computed, Transition } from "vue";
+import { ref, watch, computed, Transition, onMounted } from "vue";
 import PageTitle from "@/components/PageTitle.vue";
-import TeamBuilderButtons from "@/components/TeamBuilder/TeamBuilderButtons.vue";
+import TeamBuilderHeader from "@/components/TeamBuilder/TeamBuilderHeader.vue";
+import PlayerStatsDialog from "@/components/TeamBuilder/PlayerStatsDialog.vue";
 import {
   BDL_API_PREFIX,
   VIEWS,
@@ -15,13 +16,23 @@ import type { Team } from "@/lib/types";
 import { uid } from "quasar";
 import draggable from "vuedraggable";
 import axios from "axios";
-import PlayerStatsDialog from "@/components/TeamBuilder/PlayerStatsDialog.vue";
+import coachesData from "@/assets/coaches.json";
 
 const $q = useQuasar();
 
 /* Team Metadata */
 const teamName = ref<string>("");
 const teamDescription = ref<string>("");
+const teamCity = ref<string>("");
+// const teamMetdata = computed(() => {
+//   return {
+//     teamName: teamName.value,
+//     teamDescription: teamDescription.value,
+//     teamCity: teamCity.value,
+//   };
+// });
+
+const teamCoach = ref<any>(null);
 
 const showDrawer = ref<boolean>(false);
 const search = ref<string>("");
@@ -50,7 +61,7 @@ const sortOptions = ["Alphabetic (A-Z)", "Reverse Alphabetic (Z-A)"];
 const selectedView = ref<string>(VIEWS.DEFAULT);
 const selectedDrawerSide = ref<DrawerSide>("right");
 const headerExpanded = ref<boolean>(false);
-const selectedPlayersForComparison  = ref<Set<any>>(new Set());
+const selectedPlayersForComparison = ref<Set<any>>(new Set());
 
 /* Sorting and Filtering */
 const showSortDropdown = ref<boolean>(false);
@@ -311,7 +322,7 @@ const viewPlayerStats = () => {
 
 const togglePlayerInComparison = (n: number) => {
   const isSelected = selectedPlayersForComparison.value.has(n);
-  
+
   if (selectedPlayersForComparison.value.size === 2 && !isSelected) {
     /* Show toast notification */
     $q.notify({
@@ -338,7 +349,7 @@ const togglePlayerInComparison = (n: number) => {
     type: "info",
     ...(DEFAULT_NOTIFICATION_PROPS as Partial<QNotifyCreateOptions>),
   });
-}
+};
 
 /* Child Component Event Handlers */
 const handleViewChange = (newView: string) => {
@@ -357,6 +368,18 @@ const handlePlayerStatsVisibleChange = (newPlayerStatsVisible: boolean) => {
   showPlayerStatsDialog.value = newPlayerStatsVisible;
 };
 
+const handleTeamNameChange = (newTeamName: string) => {
+  teamName.value = newTeamName;
+};
+
+const handleTeamDescriptionChange = (newTeamDescription: string) => {
+  teamDescription.value = newTeamDescription;
+};
+
+const handleTeamCityChange = (newTeamCity: string) => {
+  teamCity.value = newTeamCity;
+};
+
 /* TODO: Drag Player Cards Functionality */
 
 /*  Note on draggable cards:
@@ -371,6 +394,11 @@ const items = ref([
   { id: "5", name: "item5" },
 ]);
 const testArray = ref([]);
+
+onMounted(() => {
+  console.log({coachesData})
+})
+
 </script>
 
 <template>
@@ -380,38 +408,18 @@ const testArray = ref([]);
       class="builder-container shadow-8"
       :class="{ expanded: headerExpanded }"
     >
-      <!-- Create new TeamBuilderHeaderComponent -->
-      <div class="header" :class="{ expanded: headerExpanded }">
-        <div class="header-top">
-          <q-input
-            class="title-input"
-            v-model="teamName"
-            label="Team Name"
-            stack-label
-            dark
-          />
-          <div class="hidden">Hidden</div>
-
-          <!-- TODO: Make the score animated so that when its value changes there's some cool animation  -->
-          <div class="score">Score: N/A</div>
-          <TeamBuilderButtons
-            @saveTeam="saveTeam"
-            @reset="resetTeam"
-            @viewChange="handleViewChange"
-            @drawerSideChange="handleDrawerSideChange"
-            @headerExpanded="handleHeaderExpandedChange"
-          />
-        </div>
-
-        <q-input
-          v-if="headerExpanded"
-          class="title-input"
-          v-model="teamDescription"
-          label="Team Description"
-          stack-label
-          dark
-        />
-      </div>
+      <TeamBuilderHeader
+        :headerExpanded="headerExpanded"
+        :teamName="teamName"
+        :teamDescription="teamDescription"
+        :teamCity="teamCity"
+        @headerExpandedChange="handleHeaderExpandedChange"
+        @teamNameChange="handleTeamNameChange"
+        @teamDescriptionChange="handleTeamDescriptionChange"
+        @viewChange="handleViewChange"
+        @selectedDrawerSideChange="handleDrawerSideChange"
+        @saveTeam="saveTeam"
+      />
       <div class="builder-main">
         <div class="builder-header">
           <h6 class="section-header">Starters</h6>
@@ -455,7 +463,11 @@ const testArray = ref([]);
                   />
                   <template v-else>
                     <template v-if="cardsFlipped.get(n)">
-                      <q-btn outline color="primary" @click.stop="viewPlayerStats">
+                      <q-btn
+                        outline
+                        color="primary"
+                        @click.stop="viewPlayerStats"
+                      >
                         View Player Stats
                       </q-btn>
                     </template>
@@ -481,11 +493,17 @@ const testArray = ref([]);
                   />
                   <q-btn
                     v-if="selectedPlayersData.has(n)"
-                    flat 
+                    flat
                     round
                     icon="compare_arrows"
-                    :title="selectedPlayersForComparison.has(n) ? 'Remove from comparison' : 'Select for comparison'"
-                    :color="selectedPlayersForComparison.has(n) ? 'primary' : 'white'"
+                    :title="
+                      selectedPlayersForComparison.has(n)
+                        ? 'Remove from comparison'
+                        : 'Select for comparison'
+                    "
+                    :color="
+                      selectedPlayersForComparison.has(n) ? 'primary' : 'white'
+                    "
                     @click.stop="togglePlayerInComparison(n)"
                   />
                 </q-card-actions>
@@ -541,9 +559,45 @@ const testArray = ref([]);
           </q-card>
         </div>
         <h6 class="section-header">Coach</h6>
-        <div>
-
-        </div>
+         <q-card
+            dark
+            class="player-card"
+            bordered
+          >
+            <q-card-section>
+              <h6>Coach</h6>
+            </q-card-section>
+            <q-separator />
+            <q-card-section class="main-card-section">
+              <!-- Player Img and other player info will replace the + button -->
+              <q-btn
+                v-if="!selectedPlayersData.has(n)"
+                @click="addPlayer(n)"
+                round
+                icon="add_circle"
+                size="1.75rem"
+                class="add-player-btn"
+              />
+              <template v-else>
+                <q-icon
+                  class="blank-avatar"
+                  name="account_circle"
+                  size="3.5rem"
+                />
+                <div>{{ selectedPlayersData.get(n).fullName }}</div>
+              </template>
+            </q-card-section>
+            <q-separator dark />
+            <q-card-actions>
+              <q-btn
+                @click="deletePlayer(n)"
+                flat
+                round
+                icon="delete"
+                color="negative"
+              />
+            </q-card-actions>
+          </q-card>
       </div>
     </div>
     <!-- <TeamBuilderDrawer 
