@@ -116,7 +116,6 @@ const toggleCustomizationDialog = (): void => {
       <!-- TODO: Make the score animated so that when its value changes there's some cool animation  -->
       <div class="score">Score: N/A</div>
       <div class="team-builder-buttons">
-        <q-btn round icon="more_vert" title="More" />
         <q-btn
           class="expand-btn"
           @click="expandClick"
