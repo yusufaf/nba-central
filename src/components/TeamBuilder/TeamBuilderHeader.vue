@@ -1,13 +1,14 @@
 <script setup lang="ts">
 import { ref, watch } from "vue";
 import { VIEW_OPTIONS, DRAWER_OPTIONS } from "@/constants/constants";
+import type { DrawerSide } from "@/constants/constants";
 
 const props = defineProps<{
   headerExpanded: boolean;
   teamName: string;
   teamDescription: string;
   teamCity: string;
-  drawerSide: string;
+  drawerSide: DrawerSide;
 }>();
 
 const emit = defineEmits([
@@ -24,7 +25,7 @@ const emit = defineEmits([
 const localTeamName = ref(props.teamName);
 const localTeamDescription = ref(props.teamDescription);
 const localTeamCity = ref(props.teamCity);
-const localDrawerSide = ref(props.drawerSide);
+const localDrawerSide = ref<DrawerSide>(props.drawerSide);
 
 const showConfirm = ref<boolean>(false);
 const selectedView = ref<string>("Default");
