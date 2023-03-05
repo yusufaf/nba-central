@@ -184,13 +184,13 @@ onMounted(() => {
     <q-dialog v-model="notificationsMenuOpen">
       <q-card dark>
         <q-card-section class="row items-center">
-          <q-select
+          <!-- <q-select 
           outlined
           label="Sort"
           clearable
           dark
           multiple
-        />
+        /> -->
 
           <!-- Favorited Teams: -->
           <q-list dark bordered>

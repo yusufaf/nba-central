@@ -60,7 +60,7 @@ const showPlayerStatsDialog = ref<boolean>(false);
 
 const sortOptions = ["Alphabetic (A-Z)", "Reverse Alphabetic (Z-A)"];
 const selectedView = ref<string>(VIEWS.DEFAULT);
-const selectedDrawerSide = ref<string>("right");
+const selectedDrawerSide = ref<"left" | "right" | "undefined">("right");
 const headerExpanded = ref<boolean>(false);
 const selectedPlayersForComparison = ref<Set<any>>(new Set());
 
@@ -565,9 +565,8 @@ onMounted(() => {
           <q-card-section>
             <h6>Coach</h6>
           </q-card-section>
-          <q-separator />
+          <!-- <q-separator />
           <q-card-section class="main-card-section">
-            <!-- Player Img and other player info will replace the + button -->
             <q-btn
               v-if="!selectedPlayersData.has(n)"
               @click="addPlayer(n)"
@@ -594,7 +593,7 @@ onMounted(() => {
               icon="delete"
               color="negative"
             />
-          </q-card-actions>
+          </q-card-actions> -->
         </q-card>
       </div>
     </div>
