@@ -35,6 +35,7 @@ const teamCity = ref<string>("");
 const teamCoach = ref<any>(null);
 
 const showDrawer = ref<boolean>(false);
+
 const search = ref<string>("");
 const searchList = ref<any[]>([]);
 const searchLoading = ref<boolean>(false);
@@ -59,7 +60,7 @@ const showPlayerStatsDialog = ref<boolean>(false);
 
 const sortOptions = ["Alphabetic (A-Z)", "Reverse Alphabetic (Z-A)"];
 const selectedView = ref<string>(VIEWS.DEFAULT);
-const selectedDrawerSide = ref<DrawerSide>("right");
+const selectedDrawerSide = ref<string>("right");
 const headerExpanded = ref<boolean>(false);
 const selectedPlayersForComparison = ref<Set<any>>(new Set());
 
@@ -356,7 +357,7 @@ const handleViewChange = (newView: string) => {
   selectedView.value = newView;
 };
 
-const handleDrawerSideChange = (newDrawerSide: DrawerSide) => {
+const handleDrawerSideChange = (newDrawerSide: string) => {
   selectedDrawerSide.value = newDrawerSide;
 };
 
@@ -396,9 +397,8 @@ const items = ref([
 const testArray = ref([]);
 
 onMounted(() => {
-  console.log({coachesData})
-})
-
+  console.log({ coachesData });
+});
 </script>
 
 <template>
@@ -413,11 +413,13 @@ onMounted(() => {
         :teamName="teamName"
         :teamDescription="teamDescription"
         :teamCity="teamCity"
+        :drawerSide="selectedDrawerSide"
         @headerExpandedChange="handleHeaderExpandedChange"
         @teamNameChange="handleTeamNameChange"
         @teamDescriptionChange="handleTeamDescriptionChange"
+        @teamCityChange="handleTeamCityChange"
         @viewChange="handleViewChange"
-        @selectedDrawerSideChange="handleDrawerSideChange"
+        @drawerSideChange="handleDrawerSideChange"
         @saveTeam="saveTeam"
       />
       <div class="builder-main">
@@ -429,10 +431,10 @@ onMounted(() => {
         </div>
         <div class="main-lineup" :class="{ list: selectedView === VIEWS.LIST }">
           <!-- 
-            - TODO: Move cards into separate PlayerCard components 
-            - TODO: Make the cards draggable
-            - TODO: Template instead of for loop on cards?
-          -->
+              - TODO: Move cards into separate PlayerCard components 
+              - TODO: Make the cards draggable
+              - TODO: Template instead of for loop on cards?
+            -->
           <template :key="n" v-for="n in 5">
             <Transition name="flip" mode="in-out">
               <q-card
@@ -559,50 +561,46 @@ onMounted(() => {
           </q-card>
         </div>
         <h6 class="section-header">Coach</h6>
-         <q-card
-            dark
-            class="player-card"
-            bordered
-          >
-            <q-card-section>
-              <h6>Coach</h6>
-            </q-card-section>
-            <q-separator />
-            <q-card-section class="main-card-section">
-              <!-- Player Img and other player info will replace the + button -->
-              <q-btn
-                v-if="!selectedPlayersData.has(n)"
-                @click="addPlayer(n)"
-                round
-                icon="add_circle"
-                size="1.75rem"
-                class="add-player-btn"
+        <q-card dark class="player-card" bordered>
+          <q-card-section>
+            <h6>Coach</h6>
+          </q-card-section>
+          <q-separator />
+          <q-card-section class="main-card-section">
+            <!-- Player Img and other player info will replace the + button -->
+            <q-btn
+              v-if="!selectedPlayersData.has(n)"
+              @click="addPlayer(n)"
+              round
+              icon="add_circle"
+              size="1.75rem"
+              class="add-player-btn"
+            />
+            <template v-else>
+              <q-icon
+                class="blank-avatar"
+                name="account_circle"
+                size="3.5rem"
               />
-              <template v-else>
-                <q-icon
-                  class="blank-avatar"
-                  name="account_circle"
-                  size="3.5rem"
-                />
-                <div>{{ selectedPlayersData.get(n).fullName }}</div>
-              </template>
-            </q-card-section>
-            <q-separator dark />
-            <q-card-actions>
-              <q-btn
-                @click="deletePlayer(n)"
-                flat
-                round
-                icon="delete"
-                color="negative"
-              />
-            </q-card-actions>
-          </q-card>
+              <div>{{ selectedPlayersData.get(n).fullName }}</div>
+            </template>
+          </q-card-section>
+          <q-separator dark />
+          <q-card-actions>
+            <q-btn
+              @click="deletePlayer(n)"
+              flat
+              round
+              icon="delete"
+              color="negative"
+            />
+          </q-card-actions>
+        </q-card>
       </div>
     </div>
     <!-- <TeamBuilderDrawer 
-              v-bind:showDrawer="showDrawer"
-            /> -->
+                v-bind:showDrawer="showDrawer"
+              /> -->
     <q-drawer
       class="drawer"
       v-model="showDrawer"
@@ -614,78 +612,86 @@ onMounted(() => {
       :side="selectedDrawerSide"
     >
       <div class="drawer-header">
-        <h6 class="drawer-title">Add Player</h6>
-        <q-btn
-          @click="showDrawer = false"
-          round
-          icon="close"
-          class="drawer-close"
-        />
-      </div>
-      <q-input
-        outlined
-        v-model="search"
-        placeholder="Search for a player"
-        type="search"
-        dark
-      >
-        <template v-slot:append>
-          <q-icon name="search" />
-        </template>
-      </q-input>
-      <q-linear-progress v-if="searchLoading" indeterminate color="primary" />
-
-      <!-- TODO: Figure out how you want the sort and filters to show up
-              - Hidden in a menu that opens up on click of a button?
-              - Visible dropdowns
-              -->
-      <div>
-        <q-select
+        <div class="drawer-title-container">
+          <h6 class="drawer-title">Add Player</h6>
+          <q-btn
+            @click="showDrawer = false"
+            round
+            icon="close"
+            class="drawer-close"
+          />
+        </div>
+        <q-input
           outlined
-          v-model="selectedSort"
-          :options="sortOptions"
-          label="Sort"
-          clearable
+          v-model="search"
+          placeholder="Search for a player"
+          type="search"
           dark
-        />
-        <q-btn color="primary" label="Filters Menu">
-          <q-menu dark>
-            <q-list style="min-width: 100px">
-              <template
-                v-for="(filter, index) in AVAILABLE_FILTERS"
-                :key="index"
-              >
-                <q-item tag="label" avatar>
-                  <q-item-section>
-                    <q-checkbox v-model="selectedFilters" :val="filter" dark />
-                  </q-item-section>
-                  <q-item-section>
-                    <q-item-label>{{ filter }}</q-item-label>
-                  </q-item-section>
-                </q-item>
-              </template>
-            </q-list>
-          </q-menu>
-        </q-btn>
+        >
+          <template v-slot:append>
+            <q-icon name="search" />
+          </template>
+        </q-input>
+        <q-linear-progress v-if="searchLoading" indeterminate color="primary" />
+
+        <!-- TODO: Figure out how you want the sort and filters to show up
+                - Hidden in a menu that opens up on click of a button?
+                - Visible dropdowns
+                -->
+        <div>
+          <q-select
+            outlined
+            v-model="selectedSort"
+            :options="sortOptions"
+            label="Sort"
+            clearable
+            dark
+          />
+          <q-btn color="primary" label="Filters Menu">
+            <q-menu dark>
+              <q-list style="min-width: 100px">
+                <template
+                  v-for="(filter, index) in AVAILABLE_FILTERS"
+                  :key="index"
+                >
+                  <q-item tag="label" avatar>
+                    <q-item-section>
+                      <q-checkbox
+                        v-model="selectedFilters"
+                        :val="filter"
+                        dark
+                      />
+                    </q-item-section>
+                    <q-item-section>
+                      <q-item-label>{{ filter }}</q-item-label>
+                    </q-item-section>
+                  </q-item>
+                </template>
+              </q-list>
+            </q-menu>
+          </q-btn>
+        </div>
       </div>
       <q-separator dark />
-      <q-list>
-        <template v-for="player in searchListResults" :key="player.id">
-          <q-item @click="addPlayerFromList(player)" clickable v-ripple>
-            <q-item-section class="player-item">
-              <div>
-                <div>{{ player.fullName }}</div>
-                <div>{{ player.heightAndWeight }}</div>
-                <div>{{ player.team.full_name }}</div>
-              </div>
-              <div class="player-position">
-                {{ player.position }}
-              </div>
-            </q-item-section>
-          </q-item>
-          <q-separator />
-        </template>
-      </q-list>
+      <q-scroll-area class="fit">
+        <q-list>
+          <template v-for="player in searchListResults" :key="player.id">
+            <q-item @click="addPlayerFromList(player)" clickable v-ripple>
+              <q-item-section class="player-item">
+                <div>
+                  <div>{{ player.fullName }}</div>
+                  <div>{{ player.heightAndWeight }}</div>
+                  <div>{{ player.team.full_name }}</div>
+                </div>
+                <div class="player-position">
+                  {{ player.position }}
+                </div>
+              </q-item-section>
+            </q-item>
+            <q-separator />
+          </template>
+        </q-list>
+      </q-scroll-area>
     </q-drawer>
     <PlayerStatsDialog
       :visible="showPlayerStatsDialog"
@@ -823,17 +829,32 @@ onMounted(() => {
 }
 
 /* Drawer Styles */
-.drawer-header {
-  display: flex;
-  height: fit-content;
+
+/* Hide scrollbar in header section of drawer */
+::v-deep .q-drawer__content.scroll {
+  overflow: hidden;
 }
 
-.drawer-title {
-  padding: 0.25rem 0 0 1rem;
+.drawer-header {
+  display: flex;
+  flex-direction: column;
+  /* height: fit-content; */
+  overflow: hidden;
+}
+
+.drawer-title-container {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  padding-left: 1rem;
+  margin-bottom: 0.5rem;
+}
+
+.q-drawer > .q-drawer__content {
+  overflow: hidden;
 }
 
 .drawer-close {
-  display: flex;
   margin-left: auto;
 }
 

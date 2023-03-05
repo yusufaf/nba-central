@@ -7,6 +7,7 @@ const props = defineProps<{
   teamName: string;
   teamDescription: string;
   teamCity: string;
+  drawerSide: string;
 }>();
 
 const emit = defineEmits([
@@ -23,10 +24,10 @@ const emit = defineEmits([
 const localTeamName = ref(props.teamName);
 const localTeamDescription = ref(props.teamDescription);
 const localTeamCity = ref(props.teamCity);
+const localDrawerSide = ref(props.drawerSide);
 
 const showConfirm = ref<boolean>(false);
 const selectedView = ref<string>("Default");
-const drawerSide = ref<string>("right");
 const headerExpanded = ref<boolean>(false);
 const showTeamCustomizationDialog = ref<boolean>(false);
 
@@ -51,11 +52,18 @@ watch(
   }
 );
 
+watch(
+  () => props.drawerSide,
+  (value) => {
+    localDrawerSide.value = value;
+  }
+);
+
 watch(selectedView, (newSelectedView) => {
   emit("viewChange", newSelectedView);
 });
 
-watch(drawerSide, (newDrawerSide) => {
+watch(localDrawerSide, (newDrawerSide) => {
   emit("drawerSideChange", newDrawerSide);
 });
 
@@ -132,7 +140,7 @@ const toggleCustomizationDialog = (): void => {
                 </q-item-section>
                 <q-item-section>
                   <q-btn-toggle
-                    v-model="drawerSide"
+                    v-model="localDrawerSide"
                     toggle-color="primary"
                     :options="DRAWER_OPTIONS"
                   />
