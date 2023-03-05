@@ -25,6 +25,7 @@ import { ROUTES } from "@/constants/constants";
         </q-toolbar-title>
         <nav class="gt-sm">
           <ul>
+            <!-- For loop may have not been why the deployment failed -->
             <RouterLink to="/">Home</RouterLink>
             <RouterLink to="/teams">My Teams</RouterLink>
             <RouterLink to="/teambuilder">Team Builder</RouterLink>
