@@ -1,6 +1,14 @@
 <script setup lang="ts">
 import { RouterLink, RouterView } from "vue-router";
 import { ROUTES } from "@/constants/constants";
+
+/* 
+ <template v-for="route in ROUTES" :key="route.id">
+              <RouterLink :class="route?.class" :to="route.path">{{
+                route.name
+              }}</RouterLink>
+            </template> -->
+*/
 </script>
 
 <template>
@@ -12,16 +20,17 @@ import { ROUTES } from "@/constants/constants";
             <img
               src="@/assets/TeamBuilderLogo1_Transparent2.png"
               alt="NBA Team Builder Logo"
-          />
+            />
           </a>
-      </q-toolbar-title>
+        </q-toolbar-title>
         <nav class="gt-sm">
           <ul>
-            <template v-for="route in ROUTES" :key="route.id">
-              <RouterLink :class="route?.class" :to="route.path">{{
-                route.name
-              }}</RouterLink>
-            </template>
+            <RouterLink to="/">Home</RouterLink>
+            <RouterLink to="/teams">My Teams</RouterLink>
+            <RouterLink to="/teambuilder">Team Builder</RouterLink>
+            <RouterLink to="/scores">Scores</RouterLink>
+            <RouterLink to="/news">News</RouterLink>
+            <RouterLink class="login" to="/login">Sign In</RouterLink>
           </ul>
           <q-btn class="lt-md" color="black" icon="more_vert" title="More">
             <q-menu dark transition-show="jump-down" transition-hide="jump-up">
