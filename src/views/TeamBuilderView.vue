@@ -60,7 +60,7 @@ const showPlayerStatsDialog = ref<boolean>(false);
 
 const sortOptions = ["Alphabetic (A-Z)", "Reverse Alphabetic (Z-A)"];
 const selectedView = ref<string>(VIEWS.DEFAULT);
-const selectedDrawerSide = ref<"left" | "right" | "undefined">("right");
+const selectedDrawerSide = ref<"left" | "right" | undefined>("right");
 const headerExpanded = ref<boolean>(false);
 const selectedPlayersForComparison = ref<Set<any>>(new Set());
 

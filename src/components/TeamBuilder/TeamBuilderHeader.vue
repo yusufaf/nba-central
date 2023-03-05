@@ -30,6 +30,7 @@ const showConfirm = ref<boolean>(false);
 const selectedView = ref<string>("Default");
 const headerExpanded = ref<boolean>(false);
 const showTeamCustomizationDialog = ref<boolean>(false);
+const selectedFile = ref<null>(null);
 
 /* Watchers */
 watch(() => props.teamName,
@@ -225,7 +226,7 @@ const toggleCustomizationDialog = (): void => {
         input-class="file-picker"
         dark
         outlined
-        v-model="model"
+        v-model="selectedFile"
         label="Click to select files or drag into this area"
         stack-label
         accept=".jpg, image/*"
