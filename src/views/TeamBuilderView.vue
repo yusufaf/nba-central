@@ -17,7 +17,7 @@ import { uid } from "quasar";
 import draggable from "vuedraggable";
 import axios from "axios";
 import coachesData from "@/assets/coaches.json";
-import {roundValueToNPlaces} from "@/constants/functions";
+import { roundValueToNPlaces } from "@/constants/functions";
 
 const $q = useQuasar();
 
@@ -346,7 +346,7 @@ const coachWinPercent = (wlPercent: string | number) => {
   }
 
   return `${roundValueToNPlaces(parseFloat(wlPercent) * 100, 1)}%`;
-}
+};
 
 const togglePlayerInComparison = (n: number) => {
   const isSelected = selectedPlayersForComparison.value.has(n);
@@ -557,22 +557,30 @@ onMounted(() => {
             </q-card-section>
             <q-separator />
             <q-card-section class="main-card-section">
-              <!-- Player Img and other player info will replace the + button -->
               <q-btn
                 v-if="!selectedPlayersData.has(n)"
                 @click="addPlayer(n)"
+                flat
                 round
                 icon="add_circle"
                 size="1.75rem"
                 class="add-player-btn"
+                title="Add Player"
               />
               <template v-else>
-                <q-icon
-                  class="blank-avatar"
-                  name="account_circle"
-                  size="3.5rem"
-                />
-                <div>{{ selectedPlayersData.get(n).fullName }}</div>
+                <template v-if="cardsFlipped.get(n)">
+                  <q-btn outline color="primary" @click.stop="viewPlayerStats">
+                    View Player Stats
+                  </q-btn>
+                </template>
+                <template v-else>
+                  <q-icon
+                    class="blank-avatar"
+                    name="account_circle"
+                    size="3.5rem"
+                  />
+                  <div>{{ selectedPlayersData.get(n).fullName }}</div>
+                </template>
               </template>
             </q-card-section>
             <q-separator dark />
@@ -797,9 +805,18 @@ onMounted(() => {
               <q-item-section class="coach-item">
                 <div>
                   <div>{{ coach.name }}</div>
-                  <div>Record: {{ `${coach.w} - ${coach.l}` }}, {{ coachWinPercent(coach.wlPercent) }}</div>
-                  <div>Playoffs: {{ `${coach.playoffW} - ${coach.playoffL}` }}, {{ coachWinPercent(coach.playoffWLPercent) }}</div>
-                  <div>Championships: {{ coach.championships }}, Conf: {{ coach.confTitles }}</div>
+                  <div>
+                    Record: {{ `${coach.w} - ${coach.l}` }},
+                    {{ coachWinPercent(coach.wlPercent) }}
+                  </div>
+                  <div>
+                    Playoffs: {{ `${coach.playoffW} - ${coach.playoffL}` }},
+                    {{ coachWinPercent(coach.playoffWLPercent) }}
+                  </div>
+                  <div>
+                    Championships: {{ coach.championships }}, Conf:
+                    {{ coach.confTitles }}
+                  </div>
                 </div>
                 <div>
                   <div>{{ `${coach.from} - ${coach.to}` }}</div>
