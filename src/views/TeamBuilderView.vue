@@ -3,6 +3,9 @@ import { ref, watch, computed, Transition, onMounted } from "vue";
 import PageTitle from "@/components/PageTitle.vue";
 import TeamBuilderHeader from "@/components/TeamBuilder/TeamBuilderHeader.vue";
 import PlayerStatsDialog from "@/components/TeamBuilder/PlayerStatsDialog.vue";
+import CoachSection from "@/components/TeamBuilder/CoachSection.vue";
+import ArenaSection from "@/components/TeamBuilder/ArenaSection.vue";
+
 import {
   BDL_API_PREFIX,
   VIEWS,
@@ -34,6 +37,7 @@ const teamCity = ref<string>("");
 // });
 
 const teamCoach = ref<any>(null);
+const teamArena = ref<any>(null);
 
 const showDrawer = ref<boolean>(false);
 const showCoachDrawer = ref<boolean>(false);
@@ -85,6 +89,10 @@ watch(selectedFilters, (selectedFilters, prevFilters) => {
 
 watch(coachesData, (newCoachesData) => {
   console.log({ newCoachesData });
+});
+
+watch(teamCoach, (newCoach) => {
+  console.log("New coach is lmao = ", { newCoach });
 });
 
 const addPlayer = (index: number) => {
@@ -340,14 +348,6 @@ const deleteCoach = () => {
   teamCoach.value = null;
 };
 
-const coachWinPercent = (wlPercent: string | number) => {
-  if (typeof wlPercent === "number") {
-    return `0%`;
-  }
-
-  return `${roundValueToNPlaces(parseFloat(wlPercent) * 100, 1)}%`;
-};
-
 const togglePlayerInComparison = (n: number) => {
   const isSelected = selectedPlayersForComparison.value.has(n);
 
@@ -470,7 +470,6 @@ onMounted(() => {
                 :key="n"
                 :class="{
                   selected: selectedPlayersData.has(n),
-                  showTransition: showTransition,
                 }"
                 bordered
                 @click="() => flipCard(n)"
@@ -595,41 +594,8 @@ onMounted(() => {
             </q-card-actions>
           </q-card>
         </div>
-        <h6 class="section-header">Coach</h6>
-        <q-card dark class="player-card" bordered>
-          <q-card-section>
-            <h6>Coach</h6>
-          </q-card-section>
-          <q-separator />
-          <q-card-section class="main-card-section">
-            <q-btn
-              v-if="!teamCoach"
-              round
-              icon="add_circle"
-              size="1.75rem"
-              class="add-player-btn"
-              @click="showCoachDrawer = true"
-            />
-            <template v-else>
-              <q-icon
-                class="blank-avatar"
-                name="account_circle"
-                size="3.5rem"
-              />
-              <div>{{ teamCoach.name ?? "" }}</div>
-            </template>
-          </q-card-section>
-          <q-separator dark />
-          <q-card-actions>
-            <q-btn
-              @click="deleteCoach"
-              flat
-              round
-              icon="delete"
-              color="negative"
-            />
-          </q-card-actions>
-        </q-card>
+        <CoachSection v-model:teamCoach="teamCoach" />
+        <ArenaSection v-model:teamArena="teamArena" />
       </div>
     </div>
     <q-drawer
@@ -664,11 +630,6 @@ onMounted(() => {
           </template>
         </q-input>
         <q-linear-progress v-if="searchLoading" indeterminate color="primary" />
-
-        <!-- TODO: Figure out how you want the sort and filters to show up
-                - Hidden in a menu that opens up on click of a button?
-                - Visible dropdowns
-                -->
         <div>
           <q-select
             outlined
@@ -729,105 +690,6 @@ onMounted(() => {
       :data="playerStatsData"
       @visibleChange="handlePlayerStatsVisibleChange"
     />
-    <q-drawer
-      v-model="showCoachDrawer"
-      :side="selectedDrawerSide"
-      :width="300"
-      bordered
-      elevated
-      overlay
-      dark
-    >
-      <div class="drawer-header">
-        <div class="drawer-title-container">
-          <h6 class="drawer-title">Add Coach</h6>
-          <q-btn
-            @click="showCoachDrawer = false"
-            round
-            icon="close"
-            class="drawer-close"
-          />
-        </div>
-        <q-input
-          outlined
-          v-model="search"
-          placeholder="Search for a coach"
-          type="search"
-          dark
-        >
-          <template v-slot:append>
-            <q-icon name="search" />
-          </template>
-        </q-input>
-        <q-linear-progress v-if="searchLoading" indeterminate color="primary" />
-        <div>
-          <q-select
-            outlined
-            v-model="selectedSort"
-            :options="sortOptions"
-            label="Sort"
-            clearable
-            dark
-          />
-          <div class="coach-filter-container">
-            <q-btn color="primary" label="Filters Menu">
-              <q-menu dark>
-                <q-list style="min-width: 100px">
-                  <template
-                    v-for="(filter, index) in COACH_FILTERS"
-                    :key="index"
-                  >
-                    <q-item tag="label" avatar>
-                      <q-item-section>
-                        <q-checkbox
-                          v-model="selectedFilters"
-                          :val="filter"
-                          dark
-                        />
-                      </q-item-section>
-                      <q-item-section>
-                        <q-item-label>{{ filter }}</q-item-label>
-                      </q-item-section>
-                    </q-item>
-                  </template>
-                </q-list>
-              </q-menu>
-            </q-btn>
-            <span class="hof-coach"> * = Hall of Fame </span>
-          </div>
-        </div>
-      </div>
-      <q-separator dark />
-      <q-scroll-area class="fit">
-        <q-list>
-          <template v-for="(coach, index) in coachesData" :key="index">
-            <q-item @click="() => setCoach(coach)" clickable v-ripple>
-              <q-item-section class="coach-item">
-                <div>
-                  <div>{{ coach.name }}</div>
-                  <div>
-                    Record: {{ `${coach.w} - ${coach.l}` }},
-                    {{ coachWinPercent(coach.wlPercent) }}
-                  </div>
-                  <div>
-                    Playoffs: {{ `${coach.playoffW} - ${coach.playoffL}` }},
-                    {{ coachWinPercent(coach.playoffWLPercent) }}
-                  </div>
-                  <div>
-                    Championships: {{ coach.championships }}, Conf:
-                    {{ coach.confTitles }}
-                  </div>
-                </div>
-                <div>
-                  <div>{{ `${coach.from} - ${coach.to}` }}</div>
-                </div>
-              </q-item-section>
-            </q-item>
-            <q-separator />
-          </template>
-        </q-list>
-      </q-scroll-area>
-    </q-drawer>
   </main>
 </template>
 
