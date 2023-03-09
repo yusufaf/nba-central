@@ -4,7 +4,7 @@ import { BDL_API_PREFIX, VIEWS } from "@/constants/constants";
 import type { DrawerSide } from "@/constants/constants";
 import type { Coach } from "@/lib/types";
 import axios from "axios";
-import coachesData from "@/assets/coaches.json";
+import arenaData from "@/assets/arenas.json";
 import { roundValueToNPlaces } from "@/constants/functions";
 
 const props = defineProps<{
@@ -60,14 +60,6 @@ const setArena = (coach: any) => {
 const deleteArena = () => {
   localTeamArena.value = null;
 };
-
-const coachWinPercent = (wlPercent: string | number) => {
-  if (typeof wlPercent === "number") {
-    return `0%`;
-  }
-
-  return `${roundValueToNPlaces(parseFloat(wlPercent) * 100, 1)}%`;
-};
 </script>
 
 <template>
@@ -118,7 +110,7 @@ const coachWinPercent = (wlPercent: string | number) => {
         <q-input
           outlined
           v-model="search"
-          placeholder="Search for a coach"
+          placeholder="Search for an arena"
           type="search"
           dark
         >
@@ -160,30 +152,22 @@ const coachWinPercent = (wlPercent: string | number) => {
                 </q-list>
               </q-menu>
             </q-btn>
-            <span class="hof-coach"> * = Hall of Fame </span>
           </div>
         </div>
       </div>
       <q-separator dark />
       <q-scroll-area class="fit">
         <q-list>
-          <template v-for="(arena, index) in Array(5)" :key="index">
+          <template v-for="(arena, index) in arenaData" :key="index">
             <q-item @click="() => setArena(arena)" clickable v-ripple>
-              <q-item-section class="coach-item">
-                <div>
-                  <div class="coach-name">{{ }}</div>
-                  <div>
-                    {{  }}
-                  </div>
-                  <div>
-                    {{ }}
-                  </div>
-                  <div>
-                    {{  }}
-                  </div>
-                </div>
-                <div>
-                  <div>{{ }}</div>
+              <q-item-section thumbnail>
+                <img :src="arena.imgLink" height="50" width="75" />
+              </q-item-section>
+              <q-item-section class="arena-item">
+                <div class="right">
+                  <div class="arena-name">{{ arena.name }}</div>
+                  <div>Capacity: {{ arena.capacity }}</div>
+                  <div>Opened {{ arena.openedYear }}</div>
                 </div>
               </q-item-section>
             </q-item>
@@ -258,13 +242,17 @@ const coachWinPercent = (wlPercent: string | number) => {
   margin-left: auto;
 }
 
-.coach-item {
+.arena-item {
   display: flex;
   flex-direction: row;
   justify-content: space-between;
 }
+.arena-item .right {
+  justify-content: right;
+}
 
-.coach-name {
+
+.arena-name {
   font-weight: 600;
 }
 
@@ -272,11 +260,5 @@ const coachWinPercent = (wlPercent: string | number) => {
   display: flex;
   flex-direction: row;
   align-items: center;
-}
-
-.hof-coach {
-  margin-left: auto;
-  margin-right: 0.5rem;
-  font-weight: 600;
 }
 </style>

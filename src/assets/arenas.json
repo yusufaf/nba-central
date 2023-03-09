@@ -1,0 +1,242 @@
+[
+  {
+    "imgLink": "https://upload.wikimedia.org/wikipedia/commons/b/bc/American_Airlines_Center_August_2015.jpg",
+    "name": "American Airlines Center",
+    "location": "Dallas, Texas",
+    "team": "Dallas Mavericks",
+    "capacity": "19,200",
+    "openedYear": 2001
+  },
+  {
+    "imgLink": "https://upload.wikimedia.org/wikipedia/commons/thumb/9/9f/Amway_Center.jpg/800px-Amway_Center.jpg",
+    "name": "Amway Center",
+    "location": "Orlando, Florida",
+    "team": "Orlando Magic",
+    "capacity": "18,846",
+    "openedYear": 2010
+  },
+  {
+    "imgLink": "https://upload.wikimedia.org/wikipedia/commons/thumb/5/50/Texasdd.JPG/800px-Texasdd.JPG",
+    "name": "AT&T Center",
+    "location": "San Antonio, Texas",
+    "team": "San Antonio Spurs",
+    "capacity": "18,418",
+    "openedYear": 2002
+  },
+  {
+    "imgLink": "https://upload.wikimedia.org/wikipedia/commons/thumb/6/6c/Ball_Arena_exterior_2022.jpg/800px-Ball_Arena_exterior_2022.jpg",
+    "name": "Ball Arena",
+    "location": "Denver, Colorado",
+    "team": "Denver Nuggets",
+    "capacity": "19,520",
+    "openedYear": 1999
+  },
+  {
+    "imgLink": "https://upload.wikimedia.org/wikipedia/commons/thumb/5/55/Barclays_Center_western_side.jpg/800px-Barclays_Center_western_side.jpg",
+    "name": "Barclays Center",
+    "location": "Brooklyn, New York",
+    "team": "Brooklyn Nets",
+    "capacity": "17,732",
+    "openedYear": 2012
+  },
+  {
+    "imgLink": "https://upload.wikimedia.org/wikipedia/commons/thumb/7/7f/Verizon_Center_wide.jpg/800px-Verizon_Center_wide.jpg",
+    "name": "Capital One Arena",
+    "location": "Washington, D.C.",
+    "team": "Washington Wizards",
+    "capacity": "20,356",
+    "openedYear": 1997
+  },
+  {
+    "imgLink": "https://upload.wikimedia.org/wikipedia/commons/thumb/5/58/Chase_Center_-_East_Side_-_San_Francisco.jpg/800px-Chase_Center_-_East_Side_-_San_Francisco.jpg",
+    "name": "Chase Center",
+    "location": "San Francisco, California",
+    "team": "Golden State Warriors",
+    "capacity": "18,064",
+    "openedYear": 2019
+  },
+  {
+    "imgLink": "https://upload.wikimedia.org/wikipedia/commons/thumb/1/17/Crypto.com_Arena_2022.jpg/800px-Crypto.com_Arena_2022.jpg",
+    "name": "Crypto.com Arena",
+    "location": "Los Angeles, California",
+    "team": "Los Angeles Clippers",
+    "capacity": "19,068",
+    "openedYear": 1999
+  },
+  {
+    "imgLink": "https://upload.wikimedia.org/wikipedia/commons/thumb/1/17/Crypto.com_Arena_2022.jpg/800px-Crypto.com_Arena_2022.jpg",
+    "name": "Crypto.com Arena",
+    "location": "Los Angeles, California",
+    "team": "Los Angeles Laker",
+    "capacity": "19,068",
+    "openedYear": 1999
+  },
+  {
+    "imgLink": "https://upload.wikimedia.org/wikipedia/commons/thumb/3/37/FedExForum.jpg/800px-FedExForum.jpg",
+    "name": "FedExForum",
+    "location": "Memphis, Tennessee",
+    "team": "Memphis Grizzlies",
+    "capacity": "17,794",
+    "openedYear": 2004
+  },
+  {
+    "imgLink": "https://upload.wikimedia.org/wikipedia/commons/thumb/2/2c/Milwaukee_July_2022_022_%28Fiserv_Forum%29.jpg/800px-Milwaukee_July_2022_022_%28Fiserv_Forum%29.jpg",
+    "name": "Fiserv Forum",
+    "location": "Milwaukee, Wisconsin",
+    "team": "Milwaukee Bucks",
+    "capacity": "17,500",
+    "openedYear": 2018
+  },
+  {
+    "imgLink": "https://upload.wikimedia.org/wikipedia/commons/thumb/5/54/Footprint_Center_2022.jpg/800px-Footprint_Center_2022.jpg",
+    "name": "Footprint Center",
+    "location": "Phoenix, Arizona",
+    "team": "Phoenix Suns",
+    "capacity": "17,071",
+    "openedYear": 1992
+  },
+  {
+    "imgLink": "https://upload.wikimedia.org/wikipedia/commons/thumb/6/67/Bankers_Life_Fieldhouse%2C_Indian%C3%A1polis%2C_Estados_Unidos%2C_2012-10-22%2C_DD_02.jpg/800px-Bankers_Life_Fieldhouse%2C_Indian%C3%A1polis%2C_Estados_Unidos%2C_2012-10-22%2C_DD_02.jpg",
+    "name": "Gainbridge Fieldhouse",
+    "location": "Indianapolis, Indiana",
+    "team": "Indiana Pacers",
+    "capacity": "17,923",
+    "openedYear": 1999
+  },
+  {
+    "imgLink": "https://upload.wikimedia.org/wikipedia/commons/thumb/0/0c/Golden_1_Center_2017.jpg/800px-Golden_1_Center_2017.jpg",
+    "name": "Golden 1 Center",
+    "location": "Sacramento, California",
+    "team": "Sacramento Kings",
+    "capacity": "17,583",
+    "openedYear": 2016
+  },
+  {
+    "imgLink": "https://upload.wikimedia.org/wikipedia/commons/thumb/f/f3/Little_Caesars_Arena_panorama.jpg/800px-Little_Caesars_Arena_panorama.jpg",
+    "name": "Little Caesars Arena",
+    "location": "Detroit, Michigan",
+    "team": "Detroit Pistons",
+    "capacity": "20,332",
+    "openedYear": 2017
+  },
+  {
+    "imgLink": "https://upload.wikimedia.org/wikipedia/commons/thumb/4/4b/Madison_Square_Garden_%28MSG%29_-_Full_%2848124330357%29.jpg/800px-Madison_Square_Garden_%28MSG%29_-_Full_%2848124330357%29.jpg",
+    "name": "Madison Square Garden",
+    "location": "New York City, New York",
+    "team": "New York Knicks",
+    "capacity": "19,812",
+    "openedYear": "1968"
+  },
+  {
+    "imgLink": "https://upload.wikimedia.org/wikipedia/commons/thumb/4/44/American_Airlines_Arena%2C_Miami%2C_FL%2C_jjron_29.03.2012.jpg/800px-American_Airlines_Arena%2C_Miami%2C_FL%2C_jjron_29.03.2012.jpg",
+    "name": "Miami-Dade Arena",
+    "location": "Miami, Florida",
+    "team": "Miami Heat",
+    "capacity": "19,600",
+    "openedYear": 1999
+  },
+  {
+    "imgLink": "https://upload.wikimedia.org/wikipedia/commons/thumb/7/74/Moda_Center.JPG/800px-Moda_Center.JPG",
+    "name": "Moda Center",
+    "location": "Portland, Oregon",
+    "team": "Portland Trail Blazers",
+    "capacity": "19,441",
+    "openedYear": 1995
+  },
+  {
+    "imgLink": "https://upload.wikimedia.org/wikipedia/commons/thumb/f/f3/Paycom_Center.jpg/800px-Paycom_Center.jpg",
+    "name": "Paycom Center",
+    "location": "Oklahoma City, Oklahoma",
+    "team": "Oklahoma City Thunder",
+    "capacity": "18,203",
+    "openedYear": 2002
+  },
+  {
+    "imgLink": "https://upload.wikimedia.org/wikipedia/commons/thumb/f/fd/Rocket_Mortgage_FieldHouse_%282%29.jpg/800px-Rocket_Mortgage_FieldHouse_%282%29.jpg",
+    "name": "Rocket Mortgage FieldHouse",
+    "location": "Cleveland, Ohio",
+    "team": "Cleveland Cavaliers",
+    "capacity": "19,432",
+    "openedYear": 1994
+  },
+  {
+    "imgLink": "https://upload.wikimedia.org/wikipedia/commons/thumb/5/57/Scotiabank_Arena_-_2018_%28cropped%29.jpg/800px-Scotiabank_Arena_-_2018_%28cropped%29.jpg",
+    "name": "Scotiabank Arena",
+    "location": "Toronto, Ontario",
+    "team": "Toronto Raptors",
+    "capacity": "19,800",
+    "openedYear": 1999
+  },
+  {
+    "imgLink": "https://upload.wikimedia.org/wikipedia/commons/thumb/0/00/Smoothie_King_Center.jpg/800px-Smoothie_King_Center.jpg",
+    "name": "Smoothie King Center",
+    "location": "New Orleans, Louisiana",
+    "team": "New Orleans Pelicans",
+    "capacity": "16,867",
+    "openedYear": 1999
+  },
+  {
+    "imgLink": "https://upload.wikimedia.org/wikipedia/commons/thumb/6/6e/Spectrum_Center_2018.jpg/800px-Spectrum_Center_2018.jpg",
+    "name": "Spectrum Center",
+    "location": "Charlotte, North Carolina",
+    "team": "Charlotte Hornets",
+    "capacity": "19,077",
+    "openedYear": 2005
+  },
+  {
+    "imgLink": "https://upload.wikimedia.org/wikipedia/commons/f/fa/Philips_Arena.jpg",
+    "name": "State Farm Arena",
+    "location": "Atlanta, Georgia",
+    "team": "Atlanta Hawks",
+    "capacity": "18,118",
+    "openedYear": 1999
+  },
+  {
+    "imgLink": "https://upload.wikimedia.org/wikipedia/commons/thumb/a/a7/TargetCenter.jpg/800px-TargetCenter.jpg",
+    "name": "Target Center",
+    "location": "Minneapolis, Minnesota",
+    "team": "Minnesota Timberwolves",
+    "capacity": "18,978",
+    "openedYear": 1990
+  },
+  {
+    "imgLink": "https://upload.wikimedia.org/wikipedia/commons/thumb/6/6a/TD_Garden_%28crop%29.JPG/800px-TD_Garden_%28crop%29.JPG",
+    "name": "TD Garden",
+    "location": "Boston, Massachusetts",
+    "team": "Boston Celtics",
+    "capacity": "19,156",
+    "openedYear": 1995
+  },
+  {
+    "imgLink": "https://upload.wikimedia.org/wikipedia/commons/thumb/d/db/Toyota_Center_entr.jpg/800px-Toyota_Center_entr.jpg",
+    "name": "Toyota Center",
+    "location": "Houston, Texas",
+    "team": "Houston Rockets",
+    "capacity": "18,055",
+    "openedYear": 2003
+  },
+  {
+    "imgLink": "https://upload.wikimedia.org/wikipedia/commons/thumb/2/22/United_Center_1.jpg/800px-United_Center_1.jpg",
+    "name": "United Center",
+    "location": "Chicago, Illinois",
+    "team": "Chicago Bulls",
+    "capacity": "20,917",
+    "openedYear": 1994
+  },
+  {
+    "imgLink": "https://upload.wikimedia.org/wikipedia/commons/thumb/1/17/Vivint_Smart_Home_Arena_August_13%2C_2016.jpg/800px-Vivint_Smart_Home_Arena_August_13%2C_2016.jpg",
+    "name": "Vivint Arena",
+    "location": "Salt Lake City, Utah",
+    "team": "Utah Jazz",
+    "capacity": "18,306",
+    "openedYear": 1991
+  },
+  {
+    "imgLink": "https://upload.wikimedia.org/wikipedia/commons/thumb/5/50/Wells_Fargo_Center_-_2019_OWL_Grand_Finals.jpg/800px-Wells_Fargo_Center_-_2019_OWL_Grand_Finals.jpg",
+    "name": "Wells Fargo Center",
+    "location": "Philadelphia, Pennsylvania",
+    "team": "Philadelphia 76ers",
+    "capacity": "20,478",
+    "openedYear": 1996
+  }
+]
