@@ -1,16 +1,15 @@
 <script setup lang="ts">
 import { ref, watch, computed } from "vue";
-import { BDL_API_PREFIX, VIEWS } from "@/constants/constants";
 import type { DrawerSide } from "@/constants/constants";
-import type { Coach } from "@/lib/types";
-import axios from "axios";
+import type { Arena } from "@/lib/types";
 import arenaData from "@/assets/arenas.json";
-import { roundValueToNPlaces } from "@/constants/functions";
 
 const props = defineProps<{
-  teamArena: Coach | null;
+  teamArena: any;
 }>();
 const emit = defineEmits(["update:teamArena"]);
+
+const typedArenaData = arenaData as Arena[];
 
 /* Note: Good pattern for creating a two-way bound value in child component */
 const localTeamArena = computed({
@@ -29,32 +28,64 @@ const searchLoading = ref<boolean>(false);
 /* Typing guide: https://vuejs.org/guide/typescript/composition-api.html */
 const cardsFlipped = ref<Map<any, boolean>>(new Map());
 const showTransition = ref(false);
-const sortOptions = ["Alphabetic (A-Z)", "Reverse Alphabetic (Z-A)"];
+const sortOptions = [
+  "Alphabetic (A-Z)",
+  "Reverse Alphabetic (Z-A)",
+  "Capacity (Low-High)",
+  "Capacity (High-Low)",
+];
 const selectedDrawerSide = ref<DrawerSide>("right");
 /* Sorting and Filtering */
-const showSortDropdown = ref<boolean>(false);
 const selectedSort = ref<string | null>(null);
-const selectedFilters = ref<string[]>([]);
-const COACH_FILTERS = ["Current Season Only", "Hall of Famer"];
 
 /* Computed Props */
 
-const flipCard = (n: number) => {
-  const isFlipped = cardsFlipped.value.get(n);
-  console.log("Flipping card: ", !isFlipped);
-  cardsFlipped.value.set(n, !isFlipped);
+const sortedArenaData = computed(() => {
+  const copyArenaData = [...typedArenaData];
 
-  if (!isFlipped) {
-    showTransition.value = true;
-    setTimeout(() => {
-      showTransition.value = false;
-    }, 400);
+  switch (selectedSort.value) {
+    case "Alphabetic (A-Z)":
+      return copyArenaData.sort((a: Arena, b: Arena) => {
+        return a.name.localeCompare(b.name);
+      });
+    case "Reverse Alphabetic (Z-A)":
+      return copyArenaData
+        .sort((a: Arena, b: Arena) => {
+          return b.name.localeCompare(a.name);
+        })
+    case "Capacity (Low-High)":
+      return copyArenaData.sort((a: Arena, b: Arena) => {
+        const capacityA = parseInt(a.capacity.replace(",", ""));
+        const capacityB = parseInt(b.capacity.replace(",", ""));
+        return capacityA - capacityB;
+      });
+    case "Capacity (High-Low)":
+      return copyArenaData.sort((a: Arena, b: Arena) => {
+        const capacityA = parseInt(a.capacity.replace(",", ""));
+        const capacityB = parseInt(b.capacity.replace(",", ""));
+        return capacityB - capacityA;
+      });
+    default:
+      return typedArenaData;
   }
-};
+});
 
-/* Coach Select Logic */
-const setArena = (coach: any) => {
-  localTeamArena.value = coach;
+// const flipCard = (n: number) => {
+//   const isFlipped = cardsFlipped.value.get(n);
+//   console.log("Flipping card: ", !isFlipped);
+//   cardsFlipped.value.set(n, !isFlipped);
+
+//   if (!isFlipped) {
+//     showTransition.value = true;
+//     setTimeout(() => {
+//       showTransition.value = false;
+//     }, 400);
+//   }
+// };
+
+/* Arena Select Logic */
+const setArena = (arena: any) => {
+  localTeamArena.value = arena;
 };
 
 const deleteArena = () => {
@@ -79,8 +110,9 @@ const deleteArena = () => {
           @click="showArenaDrawer = true"
         />
         <template v-else>
-          <q-icon class="blank-avatar" name="account_circle" size="3.5rem" />
-          <div>{{ teamArena.name ?? "" }}</div>
+          <!-- TODO: Fix image width -->
+          <img :src="teamArena.imgLink" height="100" width="150" />
+          <div>{{ teamArena.name }}</div>
         </template>
       </q-card-section>
       <q-separator dark />
@@ -128,37 +160,12 @@ const deleteArena = () => {
             clearable
             dark
           />
-          <div class="coach-filter-container">
-            <q-btn color="primary" label="Filters Menu">
-              <q-menu dark>
-                <q-list style="min-width: 100px">
-                  <template
-                    v-for="(filter, index) in COACH_FILTERS"
-                    :key="index"
-                  >
-                    <q-item tag="label" avatar>
-                      <q-item-section>
-                        <q-checkbox
-                          v-model="selectedFilters"
-                          :val="filter"
-                          dark
-                        />
-                      </q-item-section>
-                      <q-item-section>
-                        <q-item-label>{{ filter }}</q-item-label>
-                      </q-item-section>
-                    </q-item>
-                  </template>
-                </q-list>
-              </q-menu>
-            </q-btn>
-          </div>
         </div>
       </div>
       <q-separator dark />
       <q-scroll-area class="fit">
         <q-list>
-          <template v-for="(arena, index) in arenaData" :key="index">
+          <template v-for="(arena, index) in sortedArenaData" :key="index">
             <q-item @click="() => setArena(arena)" clickable v-ripple>
               <q-item-section thumbnail>
                 <img :src="arena.imgLink" height="50" width="75" />
@@ -251,14 +258,7 @@ const deleteArena = () => {
   justify-content: right;
 }
 
-
 .arena-name {
   font-weight: 600;
-}
-
-.coach-filter-container {
-  display: flex;
-  flex-direction: row;
-  align-items: center;
 }
 </style>

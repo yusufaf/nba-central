@@ -20,7 +20,6 @@ import { uid } from "quasar";
 import draggable from "vuedraggable";
 import axios from "axios";
 import coachesData from "@/assets/coaches.json";
-import { roundValueToNPlaces } from "@/constants/functions";
 
 const $q = useQuasar();
 
@@ -28,6 +27,8 @@ const $q = useQuasar();
 const teamName = ref<string>("");
 const teamDescription = ref<string>("");
 const teamCity = ref<string>("");
+const teamCountry = ref<string>("");
+
 // const teamMetdata = computed(() => {
 //   return {
 //     teamName: teamName.value,
@@ -77,7 +78,6 @@ const selectedSort = ref<string | null>(null);
 const selectedFilters = ref<string[]>([]);
 const PLAYER_FILTERS = ["Current Season Only", "PG", "SG", "SF", "PF", "C"];
 
-const COACH_FILTERS = ["Current Season Only", "Hall of Famer"];
 
 /* TODO: Team Score */
 const teamScore = ref<number>(0);
@@ -85,14 +85,6 @@ const teamScore = ref<number>(0);
 /* Note to self: Use watchers to get reactive console logs */
 watch(selectedFilters, (selectedFilters, prevFilters) => {
   console.log(selectedFilters, prevFilters);
-});
-
-watch(coachesData, (newCoachesData) => {
-  console.log({ newCoachesData });
-});
-
-watch(teamCoach, (newCoach) => {
-  console.log("New coach is lmao = ", { newCoach });
 });
 
 const addPlayer = (index: number) => {
@@ -337,17 +329,6 @@ const viewPlayerStats = () => {
   showPlayerStatsDialog.value = true;
 };
 
-/* Coach Select Logic */
-
-const setCoach = (coach: any) => {
-  teamCoach.value = coach;
-  // console.log("Selected Coach = ", selectedCoach.value);
-};
-
-const deleteCoach = () => {
-  teamCoach.value = null;
-};
-
 const togglePlayerInComparison = (n: number) => {
   const isSelected = selectedPlayersForComparison.value.has(n);
 
@@ -423,9 +404,6 @@ const items = ref([
 ]);
 const testArray = ref([]);
 
-onMounted(() => {
-  console.log({ coachesData });
-});
 </script>
 
 <template>
@@ -594,8 +572,13 @@ onMounted(() => {
             </q-card-actions>
           </q-card>
         </div>
-        <CoachSection v-model:teamCoach="teamCoach" />
-        <ArenaSection v-model:teamArena="teamArena" />
+        <CoachSection 
+          v-model:teamCoach="teamCoach" 
+        />
+        <ArenaSection 
+          v-model:teamArena="teamArena" 
+
+        />
       </div>
     </div>
     <q-drawer
@@ -855,25 +838,8 @@ onMounted(() => {
   flex-direction: row;
   align-items: center;
 }
-.coach-item {
-  display: flex;
-  flex-direction: row;
-  justify-content: space-between;
-}
 
 .player-position {
   margin-left: auto;
-}
-
-.coach-filter-container {
-  display: flex;
-  flex-direction: row;
-  align-items: center;
-}
-
-.hof-coach {
-  margin-left: auto;
-  margin-right: 0.5rem;
-  font-weight: 600;
 }
 </style>

@@ -12,6 +12,8 @@ const props = defineProps<{
 }>();
 const emit = defineEmits(["update:teamCoach"]);
 
+const typedCoachesData = coachesData as Coach[];
+
 /* Note: Good pattern for creating a two-way bound value in child component */
 const localTeamCoach = computed({
   get() {
@@ -29,7 +31,20 @@ const searchLoading = ref<boolean>(false);
 /* Typing guide: https://vuejs.org/guide/typescript/composition-api.html */
 const cardsFlipped = ref<Map<any, boolean>>(new Map());
 const showTransition = ref(false);
-const sortOptions = ["Alphabetic (A-Z)", "Reverse Alphabetic (Z-A)"];
+const sortOptions = [
+  "Alphabetic (A-Z)",
+  "Reverse Alphabetic (Z-A)",
+  "Win Percentage (Low-High)",
+  "Win Percentage (High-Low)",
+  "Playoff Win Percentage (Low-High)",
+  "Playoff Win Percentage (High-Low)",
+  "Championships (Low-High)",
+  "Championships (High-Low)",
+  "Years Coached (Low-High)",
+  "Years Coached (High-Low)",
+  "Year Started Coaching (Low-High)",
+  "Year Started Coaching (High-Low)",
+];
 const selectedDrawerSide = ref<DrawerSide>("right");
 /* Sorting and Filtering */
 const showSortDropdown = ref<boolean>(false);
@@ -37,32 +52,93 @@ const selectedSort = ref<string | null>(null);
 const selectedFilters = ref<string[]>([]);
 const COACH_FILTERS = ["Current Season Only", "Hall of Famer"];
 
-/* Computed Props */
-const cleanCoachesData = computed(() => {
-  return coachesData.map((coach: any) => {
-    const {
-      l,
-      w,
-      wlPercent,
-      playoffW,
-      playoffL,
-      playoffWLPercent,
-      championships,
-      confTitles,
-      from,
-      to,
-    } = coach;
+const cleanCoachesData = typedCoachesData.map((coach: Coach) => {
+  const {
+    l,
+    w,
+    wlPercent,
+    playoffW,
+    playoffL,
+    playoffWLPercent,
+    championships,
+    confTitles,
+    from,
+    to,
+  } = coach;
 
-    return {
-      ...coach,
-      generalRecord: `Record: ${w} - ${l}, ${coachWinPercent(wlPercent)}`,
-      playoffRecord: `Playoffs: ${playoffW} - ${playoffL}, ${coachWinPercent(
-        playoffWLPercent
-      )}`,
-      champsCount: `Championships: ${championships}, Conf: ${confTitles}`,
-      yearsCoached: `Years Coached: ${from} - ${to}`,
-    };
-  });
+  return {
+    ...coach,
+    generalRecord: `Record: ${w} - ${l}, ${coachWinPercent(wlPercent)}`,
+    playoffRecord: `Playoffs: ${playoffW} - ${playoffL}, ${coachWinPercent(
+      playoffWLPercent
+    )}`,
+    champsCount: `Championships: ${championships}, Conf: ${confTitles}`,
+    yearsCoached: `Years Coached: ${from} - ${to}`,
+  };
+});
+
+/* Computed Props */
+const sortedCoachesData = computed(() => {
+  const copyCoachData = [...cleanCoachesData];
+
+  /* TODO: Possibly combine the */
+
+  switch (selectedSort.value) {
+    case "Alphabetic (A-Z)":
+      return copyCoachData.sort((a: Coach, b: Coach) => {
+        return a.name.localeCompare(b.name);
+      });
+    case "Reverse Alphabetic (Z-A)":
+      return copyCoachData.sort((a: Coach, b: Coach) => {
+        return b.name.localeCompare(a.name);
+      });
+    case "Win Percentage (Low-High)":
+      return copyCoachData.sort((a: Coach, b: Coach) => {
+        return parseFloat(a.wlPercent) - parseFloat(b.wlPercent);
+      });
+    case "Win Percentage (High-Low)":
+      return copyCoachData.sort((a: Coach, b: Coach) => {
+        return parseFloat(b.wlPercent) - parseFloat(a.wlPercent);
+      });
+    case "Playoff Win Percentage (Low-High)":
+      return copyCoachData.sort((a: Coach, b: Coach) => {
+        return parseFloat(a.playoffWLPercent) - parseFloat(b.playoffWLPercent);
+      });
+    case "Playoff Win Percentage (High-Low)":
+      return copyCoachData.sort((a: Coach, b: Coach) => {
+        return parseFloat(b.playoffWLPercent) - parseFloat(a.playoffWLPercent);
+      });
+    case "Championships (Low-High)":
+      return copyCoachData.sort((a: Coach, b: Coach) => {
+        return a.championships - b.championships;
+      });
+    case "Championships (High-Low)":
+      return copyCoachData.sort((a: Coach, b: Coach) => {
+        return b.championships - a.championships;
+      });
+    case "Years Coached (Low-High)":
+      return copyCoachData.sort((a: Coach, b: Coach) => {
+        const aDiff = a.to - a.from;
+        const bDIff = b.to - b.from;
+        return aDiff - bDIff;
+      });
+    case "Years Coached (High-Low)":
+      return copyCoachData.sort((a: Coach, b: Coach) => {
+        const aDiff = a.to - a.from;
+        const bDIff = b.to - b.from;
+        return bDIff - aDiff;
+      });
+    case "Year Started Coaching (Low-High)":
+      return copyCoachData.sort((a: Coach, b: Coach) => {
+        return a.from - b.from;
+      });
+    case "Year Started Coaching (High-Low)":
+      return copyCoachData.sort((a: Coach, b: Coach) => {
+        return b.from - a.from;
+      });
+    default:
+      return cleanCoachesData;
+  }
 });
 
 const flipCard = (n: number) => {
@@ -87,13 +163,13 @@ const deleteCoach = () => {
   localTeamCoach.value = null;
 };
 
-const coachWinPercent = (wlPercent: string | number) => {
+function coachWinPercent(wlPercent: string | number) {
   if (typeof wlPercent === "number") {
     return `0%`;
   }
 
   return `${roundValueToNPlaces(parseFloat(wlPercent) * 100, 1)}%`;
-};
+}
 </script>
 
 <template>
@@ -193,7 +269,7 @@ const coachWinPercent = (wlPercent: string | number) => {
       <q-separator dark />
       <q-scroll-area class="fit">
         <q-list>
-          <template v-for="(coach, index) in cleanCoachesData" :key="index">
+          <template v-for="(coach, index) in sortedCoachesData" :key="index">
             <q-item @click="() => setCoach(coach)" clickable v-ripple>
               <q-item-section class="coach-item">
                 <div>

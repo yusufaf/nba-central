@@ -220,6 +220,11 @@ const toggleCustomizationDialog = (): void => {
           <q-icon name="place" />
         </template>
       </q-input>
+      <q-input v-model="localTeamCity" label="Country" dark>
+        <template v-slot:prepend>
+          <q-icon name="place" />
+        </template>
+      </q-input>
       <div>
         Team Logo
       </div>
