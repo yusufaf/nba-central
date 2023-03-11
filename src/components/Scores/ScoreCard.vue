@@ -307,7 +307,11 @@ const askNotificationPermission = (): void => {
             <div class="leaders">
                 <div class="leader">
                     <q-avatar class="headshot">
-                        <img :src="awayLeaderPicture" />
+                        <q-img 
+                            :src="awayLeaderPicture" 
+                            height="50px"
+                            width="50px"
+                        />
                     </q-avatar>
                     <div class="leader-info">
                         <span>{{ `${awayLeaderName} - ${awayLeaderPosition}`}}</span>
@@ -317,7 +321,11 @@ const askNotificationPermission = (): void => {
                 <!-- Home Leader -->
                 <div class="leader">
                     <q-avatar class="headshot">
-                        <img :src="homeLeaderPicture" />
+                        <q-img 
+                            :src="homeLeaderPicture" 
+                            height="50px"
+                            width="50px"
+                        />
                     </q-avatar>
                     <div class="leader-info">
                         <span>{{ `${homeLeaderName} - ${homeLeaderPosition}`}}</span>
