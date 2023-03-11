@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import TypeWriter from "@/components/TypeWriter.vue";
 import { TYPE_WRITER_PROPS } from "@/constants/constants";
-import { ref, Transition } from "vue";
 </script>
 
 <!-- When using the video tag inside QParallax, you must provide the width and height attributes in order for QParallax to work properly -->
