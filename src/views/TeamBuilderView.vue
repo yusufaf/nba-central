@@ -360,35 +360,6 @@ const togglePlayerInComparison = (n: number) => {
   });
 };
 
-/* Child Component Event Handlers */
-const handleViewChange = (newView: string) => {
-  selectedView.value = newView;
-};
-
-const handleDrawerSideChange = (newDrawerSide: DrawerSide) => {
-  selectedDrawerSide.value = newDrawerSide;
-};
-
-const handleHeaderExpandedChange = (newHeaderExpanded: boolean) => {
-  headerExpanded.value = newHeaderExpanded;
-};
-
-const handlePlayerStatsVisibleChange = (newPlayerStatsVisible: boolean) => {
-  showPlayerStatsDialog.value = newPlayerStatsVisible;
-};
-
-const handleTeamNameChange = (newTeamName: string) => {
-  teamName.value = newTeamName;
-};
-
-const handleTeamDescriptionChange = (newTeamDescription: string) => {
-  teamDescription.value = newTeamDescription;
-};
-
-const handleTeamCityChange = (newTeamCity: string) => {
-  teamCity.value = newTeamCity;
-};
-
 /* TODO: Drag Player Cards Functionality */
 
 /*  Note on draggable cards:
@@ -414,18 +385,14 @@ const testArray = ref([]);
       :class="{ expanded: headerExpanded }"
     >
       <TeamBuilderHeader
-        :headerExpanded="headerExpanded"
-        :teamName="teamName"
-        :teamDescription="teamDescription"
-        :teamCity="teamCity"
-        :drawerSide="selectedDrawerSide"
-        @headerExpandedChange="handleHeaderExpandedChange"
-        @teamNameChange="handleTeamNameChange"
-        @teamDescriptionChange="handleTeamDescriptionChange"
-        @teamCityChange="handleTeamCityChange"
-        @viewChange="handleViewChange"
-        @drawerSideChange="handleDrawerSideChange"
+        v-model:headerExpanded="headerExpanded"
+        v-model:teamName="teamName"
+        v-model:teamDescription="teamDescription"
+        v-model:teamCity="teamCity"
+        v-model:drawerSide="selectedDrawerSide"
+        v-model:selectedView="selectedView"
         @saveTeam="saveTeam"
+        teamCountry="aint no way"
       />
       <div class="builder-main">
         <div class="builder-header">
@@ -669,9 +636,8 @@ const testArray = ref([]);
       </q-scroll-area>
     </q-drawer>
     <PlayerStatsDialog
-      :visible="showPlayerStatsDialog"
+      v-model:visible="showPlayerStatsDialog"
       :data="playerStatsData"
-      @visibleChange="handlePlayerStatsVisibleChange"
     />
   </main>
 </template>

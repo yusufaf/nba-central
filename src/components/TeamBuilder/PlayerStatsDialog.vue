@@ -10,7 +10,12 @@ const props = defineProps<{
 const localVisible = ref(props.visible);
 const localData = ref(props.data);
 
-const emit = defineEmits(['visibleChange']);
+const emit = defineEmits(['update:visible']);
+
+watch(localVisible, (newVisible) => {
+  emit("update:visible", newVisible);
+});
+
 
 watch(() => props.visible, (value) => {
   localVisible.value = value;
@@ -22,7 +27,7 @@ watch(() => props.data, (value) => {
 
 
 const onClose = () => {
-  emit("visibleChange", false);
+  localVisible.value = false;
 };
 
 const columns = ref<any[]>([

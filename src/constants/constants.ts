@@ -78,6 +78,8 @@ export const ESPN_SCORES_URL =
 export const ESPN_NEWS_URL =
   "http://site.api.espn.com/apis/site/v2/sports/basketball/nba/news";
 
+export const ESPN_TEAM_URL = "https://site.api.espn.com/apis/site/v2/sports/basketball/nba/teams/";
+
 /* API URLs for reference 
 - https://site.api.espn.com/apis/site/v2/sports/basketball/nba/teams/7
 - ESPN Scoreboard: http://site.api.espn.com/apis/site/v2/sports/basketball/nba/scoreboard

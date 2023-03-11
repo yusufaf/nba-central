@@ -1,84 +1,74 @@
 <script setup lang="ts">
-import { ref, watch } from "vue";
-import { VIEW_OPTIONS, DRAWER_OPTIONS } from "@/constants/constants";
+import { ref, watch, onMounted } from "vue";
+import {
+  VIEW_OPTIONS,
+  DRAWER_OPTIONS,
+  ESPN_TEAM_URL,
+} from "@/constants/constants";
 import type { DrawerSide } from "@/constants/constants";
+import axios from "axios";
 
 const props = defineProps<{
   headerExpanded: boolean;
   teamName: string;
   teamDescription: string;
   teamCity: string;
+  teamCountry: string;
   drawerSide: DrawerSide;
+  selectedView: string;
 }>();
 
 const emit = defineEmits([
   "reset",
   "saveTeam",
-  "viewChange",
-  "drawerSideChange",
-  "headerExpanded",
-  "teamNameChange",
-  "teamDescriptionChange",
-  "teamCityChange",
+  "update:headerExpanded",
+  "update:teamName",
+  "update:teamDescription",
+  "update:teamCity",
+  "update:drawerSide",
+  "update:selectedView",
 ]);
 
 const localTeamName = ref(props.teamName);
 const localTeamDescription = ref(props.teamDescription);
 const localTeamCity = ref(props.teamCity);
+const localTeamCountry = ref(props.teamCountry);
+
+const localTeamLogo = ref<string>("");
+
 const localDrawerSide = ref<DrawerSide>(props.drawerSide);
+const localSelectedView = ref<string>(props.selectedView);
+const localHeaderExpanded = ref<boolean>(false);
 
 const showConfirm = ref<boolean>(false);
-const selectedView = ref<string>("Default");
-const headerExpanded = ref<boolean>(false);
 const showTeamCustomizationDialog = ref<boolean>(false);
 const selectedFile = ref<null>(null);
 
+const nbaTeamLogos = ref<any[]>([]);
+
 /* Watchers */
-watch(() => props.teamName,
-  (value) => {
-    localTeamName.value = value;
-  }
-);
-
-watch(
-  () => props.teamDescription,
-  (value) => {
-    localTeamDescription.value = value;
-  }
-);
-
-watch(
-  () => props.teamCity,
-  (value) => {
-    localTeamCity.value = value;
-  }
-);
-
-watch(
-  () => props.drawerSide,
-  (value) => {
-    localDrawerSide.value = value;
-  }
-);
-
-watch(selectedView, (newSelectedView) => {
-  emit("viewChange", newSelectedView);
-});
-
-watch(localDrawerSide, (newDrawerSide) => {
-  emit("drawerSideChange", newDrawerSide);
-});
-
 watch(localTeamName, (newTeamName) => {
-  emit("teamNameChange", newTeamName);
+  emit("update:teamName", newTeamName);
 });
 
 watch(localTeamDescription, (newTeamDescription) => {
-  emit("teamDescriptionChange", newTeamDescription);
+  emit("update:teamDescription", newTeamDescription);
 });
 
 watch(localTeamCity, (newTeamCity) => {
-  emit("teamCityChange", newTeamCity);
+  emit("update:teamCity", newTeamCity);
+});
+
+watch(localDrawerSide, (newDrawerSide) => {
+  emit("update:drawerSide", newDrawerSide);
+});
+
+watch(localSelectedView, (newSelectedView) => {
+  emit("update:selectedView", newSelectedView);
+});
+
+watch(localHeaderExpanded, (newHeaderExpanded) => {
+  emit("update:headerExpanded", newHeaderExpanded);
 });
 
 const resetClick = (): void => {
@@ -94,17 +84,44 @@ const saveClick = (): void => {
 };
 
 const expandClick = (): void => {
-  headerExpanded.value = !headerExpanded.value;
-  emit("headerExpanded", headerExpanded.value);
+  localHeaderExpanded.value = !localHeaderExpanded.value;
 };
 
 const toggleCustomizationDialog = (): void => {
   showTeamCustomizationDialog.value = !showTeamCustomizationDialog.value;
 };
+
+const fetchAllTeamLogos = async () => {
+  for (let i = 1; i < 31; i++) {
+    const url = `${ESPN_TEAM_URL}${i}`;
+    const response = await axios.get(url);
+    const {team} = response.data;
+
+    const logos = team.logos;
+
+    /* Take the first logo for now */
+    const logo = logos[0];
+    nbaTeamLogos.value = nbaTeamLogos.value.concat(logo);
+  }
+  nbaTeamLogos.value = nbaTeamLogos.value.sort((a, b) => {
+    const hrefSplitA = a.href.split("/");
+    const teamAbbrA = a.href.split("/")[hrefSplitA.length - 1];
+
+    const hrefSplitB = b.href.split("/");
+    const teamAbbrB = b.href.split("/")[hrefSplitB.length - 1];
+
+    return teamAbbrA.localeCompare(teamAbbrB);
+  });
+
+};
+
+onMounted(() => {
+  fetchAllTeamLogos();
+});
 </script>
 
 <template>
-  <div class="header" :class="{ expanded: headerExpanded }">
+  <div class="header" :class="{ expanded: localHeaderExpanded }">
     <div class="header-top">
       <div class="title-input-container">
         <q-input
@@ -130,7 +147,7 @@ const toggleCustomizationDialog = (): void => {
           class="expand-btn"
           @click="expandClick"
           round
-          :icon="headerExpanded ? 'expand_less' : 'expand_more'"
+          :icon="localHeaderExpanded ? 'expand_less' : 'expand_more'"
           title="More"
         />
         <q-btn round icon="more_vert" title="More">
@@ -152,7 +169,7 @@ const toggleCustomizationDialog = (): void => {
           </q-menu>
         </q-btn>
         <q-btn-toggle
-          v-model="selectedView"
+          v-model="localSelectedView"
           toggle-color="primary"
           :options="VIEW_OPTIONS"
         />
@@ -220,14 +237,12 @@ const toggleCustomizationDialog = (): void => {
           <q-icon name="place" />
         </template>
       </q-input>
-      <q-input v-model="localTeamCity" label="Country" dark>
+      <q-input v-model="localTeamCountry" label="Country" dark>
         <template v-slot:prepend>
-          <q-icon name="place" />
+          <q-icon name="flag" />
         </template>
       </q-input>
-      <div>
-        Team Logo
-      </div>
+      <div>Team Logo</div>
       <q-file
         input-class="file-picker"
         dark
@@ -241,6 +256,17 @@ const toggleCustomizationDialog = (): void => {
           <q-icon name="attach_file" />
         </template>
       </q-file>
+      <div>or select an existing team's logo:</div>
+      <div class="team-logos">
+        <q-img
+          v-for="logo in nbaTeamLogos"
+          :key="logo.href"
+          :src="logo.href"
+
+          class="team-logo"
+          :class="{ selected: logo.href === localTeamLogo }"
+        />
+      </div>
     </div>
   </q-dialog>
 </template>
@@ -318,4 +344,17 @@ const toggleCustomizationDialog = (): void => {
 .file-picker {
   height: 20rem;
 }
+
+.team-logo {
+  border: 0.125rem solid var(--vt-c-divider-dark-1);
+  border-radius: 0.5rem;
+  cursor: pointer;
+  height: 6.25rem;
+  width: 6.25rem;
+}
+
+.team-logo:hover {
+  border: 0.125rem solid var(--q-primary);
+}
+
 </style>

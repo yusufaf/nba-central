@@ -30,7 +30,6 @@ const search = ref<string>("");
 const searchLoading = ref<boolean>(false);
 /* Typing guide: https://vuejs.org/guide/typescript/composition-api.html */
 const cardsFlipped = ref<Map<any, boolean>>(new Map());
-const showTransition = ref(false);
 const sortOptions = [
   "Alphabetic (A-Z)",
   "Reverse Alphabetic (Z-A)",
@@ -141,18 +140,18 @@ const sortedCoachesData = computed(() => {
   }
 });
 
-const flipCard = (n: number) => {
-  const isFlipped = cardsFlipped.value.get(n);
-  console.log("Flipping card: ", !isFlipped);
-  cardsFlipped.value.set(n, !isFlipped);
+// const flipCard = (n: number) => {
+//   const isFlipped = cardsFlipped.value.get(n);
+//   console.log("Flipping card: ", !isFlipped);
+//   cardsFlipped.value.set(n, !isFlipped);
 
-  if (!isFlipped) {
-    showTransition.value = true;
-    setTimeout(() => {
-      showTransition.value = false;
-    }, 400);
-  }
-};
+//   if (!isFlipped) {
+//     showTransition.value = true;
+//     setTimeout(() => {
+//       showTransition.value = false;
+//     }, 400);
+//   }
+// };
 
 /* Coach Select Logic */
 const setCoach = (coach: any) => {
