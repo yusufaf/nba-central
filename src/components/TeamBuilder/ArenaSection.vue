@@ -33,7 +33,7 @@ const sortOptions = [
   "Capacity (Low-High)",
   "Capacity (High-Low)",
 ];
-const selectedDrawerSide = ref<DrawerSide>("right");
+const selectedDrawerSide = ref<any>("right");
 /* Sorting and Filtering */
 const selectedSort = ref<string | null>(null);
 

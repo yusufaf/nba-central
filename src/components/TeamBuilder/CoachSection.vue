@@ -9,10 +9,13 @@ import { roundValueToNPlaces } from "@/constants/functions";
 
 const props = defineProps<{
   teamCoach: Coach | null;
+  selectedDrawerSide: any;
 }>();
 const emit = defineEmits(["update:teamCoach"]);
 
 const typedCoachesData = coachesData as Coach[];
+
+const localDrawerSide = ref<any>(props.selectedDrawerSide);
 
 /* Note: Good pattern for creating a two-way bound value in child component */
 const localTeamCoach = computed({
@@ -44,7 +47,7 @@ const sortOptions = [
   "Year Started Coaching (Low-High)",
   "Year Started Coaching (High-Low)",
 ];
-const selectedDrawerSide = ref<DrawerSide>("right");
+
 /* Sorting and Filtering */
 const showSortDropdown = ref<boolean>(false);
 const selectedSort = ref<string | null>(null);
@@ -199,7 +202,7 @@ function coachWinPercent(wlPercent: string | number) {
     </q-card>
     <q-drawer
       v-model="showCoachDrawer"
-      :side="selectedDrawerSide"
+      :side="localDrawerSide"
       :width="300"
       bordered
       elevated
