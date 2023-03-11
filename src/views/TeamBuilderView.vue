@@ -67,7 +67,7 @@ const showPlayerStatsDialog = ref<boolean>(false);
 
 const sortOptions = ["Alphabetic (A-Z)", "Reverse Alphabetic (Z-A)"];
 const selectedView = ref<string>(VIEWS.DEFAULT);
-const selectedDrawerSide = ref<DrawerSide>("right");
+const selectedDrawerSide = ref<any>("right");
 const headerExpanded = ref<boolean>(false);
 const selectedPlayersForComparison = ref<Set<any>>(new Set());
 
@@ -541,6 +541,7 @@ const testArray = ref([]);
         </div>
         <CoachSection 
           v-model:teamCoach="teamCoach" 
+          :selectedDrawerSide="selectedDrawerSide"
         />
         <ArenaSection 
           v-model:teamArena="teamArena" 

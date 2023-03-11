@@ -14,7 +14,7 @@ const props = defineProps<{
   teamDescription: string;
   teamCity: string;
   teamCountry: string;
-  drawerSide: DrawerSide;
+  drawerSide: any;
   selectedView: string;
 }>();
 
@@ -36,7 +36,7 @@ const localTeamCountry = ref(props.teamCountry);
 
 const localTeamLogo = ref<string>("");
 
-const localDrawerSide = ref<DrawerSide>(props.drawerSide);
+const localDrawerSide = ref<any>(props.drawerSide);
 const localSelectedView = ref<string>(props.selectedView);
 const localHeaderExpanded = ref<boolean>(false);
 
