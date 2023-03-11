@@ -1,5 +1,7 @@
 # nba-central
 
+[![Netlify Status](https://api.netlify.com/api/v1/badges/3b71d60e-0f7f-4d4b-a2df-56c0518b605a/deploy-status)](https://app.netlify.com/sites/nba-central/deploys)
+
 This template should help get you started developing with Vue 3 in Vite.
 
 ## Recommended IDE Setup
