@@ -74,9 +74,9 @@ export const GAME_STATUS = {
 /* API */
 export const BDL_API_PREFIX = "https://www.balldontlie.io/api/v1";
 export const ESPN_SCORES_URL =
-  "http://site.api.espn.com/apis/site/v2/sports/basketball/nba/scoreboard";
+  "https://site.api.espn.com/apis/site/v2/sports/basketball/nba/scoreboard";
 export const ESPN_NEWS_URL =
-  "http://site.api.espn.com/apis/site/v2/sports/basketball/nba/news";
+  "https://site.api.espn.com/apis/site/v2/sports/basketball/nba/news";
 
 export const ESPN_TEAM_URL = "https://site.api.espn.com/apis/site/v2/sports/basketball/nba/teams/";
 
