@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, watch, computed } from "vue";
+import { WESTERN_TEAMS, EASTERN_TEAMS } from "@/constants/constants";
 import type { DrawerSide } from "@/constants/constants";
 import type { Arena } from "@/lib/types";
 import arenaData from "@/assets/arenas.json";
@@ -36,6 +37,9 @@ const sortOptions = [
 const selectedDrawerSide = ref<any>("right");
 /* Sorting and Filtering */
 const selectedSort = ref<string | null>(null);
+const selectedFilters = ref<string[]>([]);
+const ARENA_FILTERS = ["Western Conference", "Eastern Conference"];
+
 
 /* Computed Props */
 
@@ -48,10 +52,9 @@ const sortedArenaData = computed(() => {
         return a.name.localeCompare(b.name);
       });
     case "Reverse Alphabetic (Z-A)":
-      return copyArenaData
-        .sort((a: Arena, b: Arena) => {
-          return b.name.localeCompare(a.name);
-        })
+      return copyArenaData.sort((a: Arena, b: Arena) => {
+        return b.name.localeCompare(a.name);
+      });
     case "Capacity (Low-High)":
       return copyArenaData.sort((a: Arena, b: Arena) => {
         const capacityA = parseInt(a.capacity.replace(",", ""));
@@ -67,6 +70,35 @@ const sortedArenaData = computed(() => {
     default:
       return typedArenaData;
   }
+});
+
+const filteredArenaData = computed(() => {
+  const copyArenaData = [...sortedArenaData.value];
+
+  /* If no filters, return regular sorted data */
+  if (selectedFilters.value.length === 0) {
+    return copyArenaData;
+  }
+
+  return copyArenaData.filter((arena: Arena) => {
+    const { team } = arena;
+
+    if (selectedFilters.value.includes("Western Conference")) {
+      const isWesternTeam = WESTERN_TEAMS.includes(team);
+      if (!isWesternTeam) {
+        return false;
+      }
+    }
+
+    if (selectedFilters.value.includes("Eastern Conference")) {
+      const isEasternTeam = EASTERN_TEAMS.includes(team);
+      if (!isEasternTeam) {
+        return false;
+      }
+    }
+
+    return true;
+  });
 });
 
 // const flipCard = (n: number) => {
@@ -159,12 +191,37 @@ const deleteArena = () => {
             clearable
             dark
           />
+          <div class="arena-filter-container">
+            <q-btn color="primary" label="Filters Menu">
+              <q-menu dark>
+                <q-list style="min-width: 100px">
+                  <template
+                    v-for="(filter, index) in ARENA_FILTERS"
+                    :key="index"
+                  >
+                    <q-item tag="label" avatar>
+                      <q-item-section>
+                        <q-checkbox
+                          v-model="selectedFilters"
+                          :val="filter"
+                          dark
+                        />
+                      </q-item-section>
+                      <q-item-section>
+                        <q-item-label>{{ filter }}</q-item-label>
+                      </q-item-section>
+                    </q-item>
+                  </template>
+                </q-list>
+              </q-menu>
+            </q-btn>
+          </div>
         </div>
       </div>
       <q-separator dark />
       <q-scroll-area class="fit">
         <q-list>
-          <template v-for="(arena, index) in sortedArenaData" :key="index">
+          <template v-for="(arena, index) in filteredArenaData" :key="index">
             <q-item @click="() => setArena(arena)" clickable v-ripple>
               <q-item-section thumbnail>
                 <img :src="arena.imgLink" height="50" width="75" />

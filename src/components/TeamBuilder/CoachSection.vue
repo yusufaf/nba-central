@@ -143,6 +143,26 @@ const sortedCoachesData = computed(() => {
   }
 });
 
+const filteredCoachesData = computed(() => {
+  const copyCoachData = [...sortedCoachesData.value];
+
+  /* If no filters, return regular sorted data */
+  if (selectedFilters.value.length === 0) {
+    return copyCoachData;
+  }
+  return copyCoachData.filter((coach: Coach) => {
+    const { name } = coach;
+    const isHallOfFamer = name.endsWith("*");
+
+    if (selectedFilters.value.includes("Hall of Famer")) {
+      if (!isHallOfFamer) {
+        return false;
+      }
+    }
+    return true;
+  });
+});
+
 // const flipCard = (n: number) => {
 //   const isFlipped = cardsFlipped.value.get(n);
 //   console.log("Flipping card: ", !isFlipped);
@@ -271,7 +291,7 @@ function coachWinPercent(wlPercent: string | number) {
       <q-separator dark />
       <q-scroll-area class="fit">
         <q-list>
-          <template v-for="(coach, index) in sortedCoachesData" :key="index">
+          <template v-for="coach in filteredCoachesData" :key="coach.rank">
             <q-item @click="() => setCoach(coach)" clickable v-ripple>
               <q-item-section class="coach-item">
                 <div>
