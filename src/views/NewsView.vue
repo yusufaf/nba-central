@@ -2,11 +2,16 @@
 import { ref, watch, computed, onMounted } from 'vue'
 import PageTitle from "@/components/PageTitle.vue"
 import { ESPN_NEWS_URL } from "@/constants/constants";
+import axios from "axios";
 
-/* TODO: Dropdown for asking for frequency of when to retrieve more news */
+const espnArticles = ref<any[]>([]);
+
 
 const fetchNews = async () => {
-    
+    const response = await axios.get(ESPN_NEWS_URL);
+    console.log(response.data);
+    const { articles } = response.data;
+    espnArticles.value = articles;
 }
 
 

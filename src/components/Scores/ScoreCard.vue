@@ -29,6 +29,16 @@ const tooltipData = ref<any>(null);
 const notificationPermission = ref<string>("");
 const gameNotificationsMap = ref<any>(new Map());
 
+/* Watchers */
+watch(notificationPermission, (newPermission) => {
+    if (newPermission === NOTIFICATION_GRANTED) {
+        return;
+    } else if (newPermission === NOTIFICATION_DENIED) {
+        return;
+    }
+});
+
+
 /* Computed Refs */
 
 const shortName = computed(() => props.game.shortName);
@@ -198,8 +208,8 @@ const awayLeaderPicture = computed(() => {
     return awayLeaderPlayer.value.headshot;
 })
 
-const toggleGameNotification = (): void => {
-    askNotificationPermission();
+const toggleGameNotification = (id: string): void => {
+    askNotificationPermission(id);
 }
 
 const checkNotificationPromise = (): boolean => {
@@ -211,7 +221,7 @@ const checkNotificationPromise = (): boolean => {
     return true;
 }
 
-const askNotificationPermission = (): void => {
+const askNotificationPermission = (id: string): void => {
     /* Early return if browser permission has already been granted */
     if (notificationPermission.value === NOTIFICATION_GRANTED) {
         // const notification = new Notification("Hi there!");
@@ -258,8 +268,14 @@ const askNotificationPermission = (): void => {
             <div>
 
 
-                <q-btn @click="toggleGameNotification" class="notification-bell" flat round icon="notifications"
-                    title="Notify me about the game" />
+                <q-btn 
+                    @click="toggleGameNotification(game.uid)" 
+                    class="notification-bell" 
+                    flat 
+                    round 
+                    icon="notifications"
+                    title="Notify me about the game" 
+                />
             </div>
 
         </q-card-section>

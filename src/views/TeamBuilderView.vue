@@ -20,6 +20,7 @@ import { uid } from "quasar";
 import draggable from "vuedraggable";
 import axios from "axios";
 import coachesData from "@/assets/coaches.json";
+import GMSection from "@/components/TeamBuilder/GMSection.vue";
 
 const $q = useQuasar();
 
@@ -77,7 +78,6 @@ const selectedSort = ref<string | null>(null);
 
 const selectedFilters = ref<string[]>([]);
 const PLAYER_FILTERS = ["Current Season Only", "PG", "SG", "SF", "PF", "C"];
-
 
 /* TODO: Team Score */
 const teamScore = ref<number>(0);
@@ -225,20 +225,7 @@ const addPlayerFromList = async (player: any) => {
 };
 
 const resetTeam = async () => {
-  let season = 2023;
-
-  const results = [];
-  do {
-    const response: any = await fetch(
-      `${BDL_API_PREFIX}/season_averages?season=${season}&player_ids[]=2931`
-    );
-    console.log(response.data);
-    results.push(response.data);
-    season -= 1;
-  } while (season > 1988);
-
-  // axios.get("/api/team/")
-  //   .then((res) => console.log(res.data))
+  axios.get("/login/").then((res) => console.log(res.data));
 };
 
 const saveTeam = () => {
@@ -374,7 +361,6 @@ const items = ref([
   { id: "5", name: "item5" },
 ]);
 const testArray = ref([]);
-
 </script>
 
 <template>
@@ -392,6 +378,7 @@ const testArray = ref([]);
         v-model:drawerSide="selectedDrawerSide"
         v-model:selectedView="selectedView"
         @saveTeam="saveTeam"
+        @reset="resetTeam"
         teamCountry="aint no way"
       />
       <div class="builder-main">
@@ -539,14 +526,12 @@ const testArray = ref([]);
             </q-card-actions>
           </q-card>
         </div>
-        <CoachSection 
-          v-model:teamCoach="teamCoach" 
+        <CoachSection
+          v-model:teamCoach="teamCoach"
           :selectedDrawerSide="selectedDrawerSide"
         />
-        <ArenaSection 
-          v-model:teamArena="teamArena" 
-
-        />
+        <ArenaSection v-model:teamArena="teamArena" />
+        <GMSection v-model:teamArena="teamArena" />
       </div>
     </div>
     <q-drawer

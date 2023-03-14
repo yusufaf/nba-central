@@ -38,6 +38,11 @@ const useShortNames = ref<boolean>(true);
 
 const notificationsMenuOpen = ref<boolean>(false);
 
+/* TODO: Set in localStorage?  */
+const gamesWithNotifications = ref<Map<any, any>>(new Map());
+
+
+
 /* TODO/IDEA:
 - Notifications for score updates like Google?
 - Discord through javascript somehow?
