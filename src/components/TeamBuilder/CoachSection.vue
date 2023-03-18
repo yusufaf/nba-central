@@ -9,13 +9,30 @@ import { roundValueToNPlaces } from "@/constants/functions";
 
 const props = defineProps<{
   teamCoach: Coach | null;
+  showCoachDrawer: boolean;
   selectedDrawerSide: any;
 }>();
-const emit = defineEmits(["update:teamCoach"]);
+const emit = defineEmits(["update:teamCoach", "update:showCoachDrawer"]);
 
 const typedCoachesData = coachesData as Coach[];
 
 const localDrawerSide = ref<any>(props.selectedDrawerSide);
+
+/* Watchers */
+watch(() => props.selectedDrawerSide,
+  (newVal) => {
+    localDrawerSide.value = newVal;
+  }
+);
+
+const localShowCoachDrawer = computed({
+  get() {
+    return props.showCoachDrawer;
+  },
+  set(value) {
+    emit("update:showCoachDrawer", value);
+  },
+});
 
 /* Note: Good pattern for creating a two-way bound value in child component */
 const localTeamCoach = computed({
@@ -26,8 +43,6 @@ const localTeamCoach = computed({
     emit("update:teamCoach", value);
   },
 });
-
-const showCoachDrawer = ref<boolean>(false);
 
 const search = ref<string>("");
 const searchLoading = ref<boolean>(false);
@@ -192,6 +207,12 @@ function coachWinPercent(wlPercent: string | number) {
 
   return `${roundValueToNPlaces(parseFloat(wlPercent) * 100, 1)}%`;
 }
+
+const selectRandomCoach = () => {
+  const copyCoachData = filteredCoachesData.value;
+  const randomIndex = Math.floor(Math.random() * copyCoachData.length);
+  localTeamCoach.value = copyCoachData[randomIndex];
+};
 </script>
 
 <template>
@@ -208,7 +229,7 @@ function coachWinPercent(wlPercent: string | number) {
           round
           icon="add_circle"
           size="1.75rem"
-          @click="showCoachDrawer = true"
+          @click="localShowCoachDrawer = true"
         />
         <template v-else>
           <q-icon class="blank-avatar" name="account_circle" size="3.5rem" />
@@ -221,7 +242,7 @@ function coachWinPercent(wlPercent: string | number) {
       </q-card-actions>
     </q-card>
     <q-drawer
-      v-model="showCoachDrawer"
+      v-model="localShowCoachDrawer"
       :side="localDrawerSide"
       :width="300"
       bordered
@@ -233,7 +254,7 @@ function coachWinPercent(wlPercent: string | number) {
         <div class="drawer-title-container">
           <h6 class="drawer-title">Add Coach</h6>
           <q-btn
-            @click="showCoachDrawer = false"
+            @click="localShowCoachDrawer = false"
             round
             icon="close"
             class="drawer-close"
@@ -261,30 +282,39 @@ function coachWinPercent(wlPercent: string | number) {
             dark
           />
           <div class="coach-filter-container">
-            <q-btn color="primary" label="Filters Menu">
-              <q-menu dark>
-                <q-list style="min-width: 100px">
-                  <template
-                    v-for="(filter, index) in COACH_FILTERS"
-                    :key="index"
-                  >
-                    <q-item tag="label" avatar>
-                      <q-item-section>
-                        <q-checkbox
-                          v-model="selectedFilters"
-                          :val="filter"
-                          dark
-                        />
-                      </q-item-section>
-                      <q-item-section>
-                        <q-item-label>{{ filter }}</q-item-label>
-                      </q-item-section>
-                    </q-item>
-                  </template>
-                </q-list>
-              </q-menu>
-            </q-btn>
-            <span class="hof-coach"> * = Hall of Fame </span>
+            <div class="coach-filter-buttons">
+              <q-btn color="primary" label="Filters Menu">
+                <q-menu dark>
+                  <q-list style="min-width: 100px">
+                    <template
+                      v-for="(filter, index) in COACH_FILTERS"
+                      :key="index"
+                    >
+                      <q-item tag="label" avatar>
+                        <q-item-section>
+                          <q-checkbox
+                            v-model="selectedFilters"
+                            :val="filter"
+                            dark
+                          />
+                        </q-item-section>
+                        <q-item-section>
+                          <q-item-label>{{ filter }}</q-item-label>
+                        </q-item-section>
+                      </q-item>
+                    </template>
+                  </q-list>
+                </q-menu>
+              </q-btn>
+              <q-btn
+                icon="shuffle"
+                round
+                color="primary"
+                title="Select random coach"
+                @click="selectRandomCoach"
+              />
+              <span class="hof-coach"> * = Hall of Fame </span>
+            </div>
           </div>
         </div>
       </div>
@@ -394,12 +424,18 @@ function coachWinPercent(wlPercent: string | number) {
 
 .coach-filter-container {
   display: flex;
+  flex-direction: column;
+}
+
+.coach-filter-buttons {
+  display: flex;
   flex-direction: row;
+  justify-content: space-between;
   align-items: center;
 }
 
 .hof-coach {
-  margin-left: auto;
+  /* margin-left: auto; */
   margin-right: 0.5rem;
   font-weight: 600;
 }

@@ -1,94 +1,103 @@
 <script setup lang="ts">
 import { ref, watch, computed } from "vue";
-import { WESTERN_TEAMS, EASTERN_TEAMS } from "@/constants/constants";
 import type { DrawerSide } from "@/constants/constants";
-import type { Arena } from "@/lib/types";
-import arenaData from "@/assets/arenas.json";
+// import type { GM } from "@/lib/types";
+import gmData from "@/assets/execs.json";
 
 const props = defineProps<{
-  teamArena: any;
+  teamGM: any;
+  selectedDrawerSide: any;
+  showGMDrawer: boolean;
 }>();
-const emit = defineEmits(["update:teamArena"]);
+const emit = defineEmits(["update:teamGM", "update:showGMDrawer"]);
 
-const typedArenaData = arenaData as Arena[];
+const typedGMData = gmData;
 
 /* Note: Good pattern for creating a two-way bound value in child component */
-const localTeamArena = computed({
+const localTeamGM = computed({
   get() {
-    return props.teamArena;
+    return props.teamGM;
   },
   set(value) {
-    emit("update:teamArena", value);
+    emit("update:teamGM", value);
   },
 });
 
-const showArenaDrawer = ref<boolean>(false);
+const localShowGMDrawer = computed({
+  get() {
+    return props.showGMDrawer;
+  },
+  set(value) {
+    emit("update:showGMDrawer", value);
+  },
+});
+
 
 const search = ref<string>("");
 const searchLoading = ref<boolean>(false);
 /* Typing guide: https://vuejs.org/guide/typescript/composition-api.html */
 const cardsFlipped = ref<Map<any, boolean>>(new Map());
-const sortOptions = [
-  "Alphabetic (A-Z)",
-  "Reverse Alphabetic (Z-A)",
-  "Capacity (Low-High)",
-  "Capacity (High-Low)",
-];
-const selectedDrawerSide = ref<any>("right");
+
+const sortOptions = ["Alphabetic (A-Z)", "Reverse Alphabetic (Z-A)"];
 /* Sorting and Filtering */
 const selectedSort = ref<string | null>(null);
 const selectedFilters = ref<string[]>([]);
-const ARENA_FILTERS = ["Western Conference", "Eastern Conference"];
+const GM_FILTERS = ["Western Conference", "Eastern Conference"];
+
+const localDrawerSide = ref<any>(props.selectedDrawerSide);
+
+/* Watchers */
+watch(
+  () => props.selectedDrawerSide,
+  (newVal) => {
+    localDrawerSide.value = newVal;
+  }
+);
+
 
 
 /* Computed Props */
 
-const sortedArenaData = computed(() => {
-  const copyArenaData = [...typedArenaData];
+const sortedGMData = computed(() => {
+  const copyGMData = [...typedGMData];
 
   switch (selectedSort.value) {
     case "Alphabetic (A-Z)":
-      return copyArenaData.sort((a: Arena, b: Arena) => {
+      return copyGMData.sort((a: any, b: any) => {
         return a.name.localeCompare(b.name);
       });
     case "Reverse Alphabetic (Z-A)":
-      return copyArenaData.sort((a: Arena, b: Arena) => {
+      return copyGMData.sort((a: any, b: any) => {
         return b.name.localeCompare(a.name);
       });
-    case "Capacity (Low-High)":
-      return copyArenaData.sort((a: Arena, b: Arena) => {
-        const capacityA = parseInt(a.capacity.replace(",", ""));
-        const capacityB = parseInt(b.capacity.replace(",", ""));
-        return capacityA - capacityB;
-      });
-    case "Capacity (High-Low)":
-      return copyArenaData.sort((a: Arena, b: Arena) => {
-        const capacityA = parseInt(a.capacity.replace(",", ""));
-        const capacityB = parseInt(b.capacity.replace(",", ""));
-        return capacityB - capacityA;
-      });
     default:
-      return typedArenaData;
+      return typedGMData;
   }
 });
 
-const filteredArenaData = computed(() => {
-  const copyArenaData = [...sortedArenaData.value];
+const filteredGMData = computed(() => {
+  const copyGMData = [...sortedGMData.value];
 
   /* If no filters, return regular sorted data */
   if (selectedFilters.value.length === 0) {
-    return copyArenaData;
+    return copyGMData;
   }
-  return []
+  return [];
 });
 
 /* GM Select Logic */
-const setGM = (arena: any) => {
-  localTeamArena.value = arena;
+const setGM = (gm: any) => {
+  localTeamGM.value = gm;
 };
 
 const deleteGM = () => {
-  localTeamArena.value = null;
+  localTeamGM.value = null;
+};
+
+const selectRandomGM = () => {
+  const copyGMData = filteredGMData.value;
+  const randomIndex = Math.floor(Math.random() * copyGMData.length);
+  localTeamGM.value = copyGMData[randomIndex];
 };
 </script>
 
@@ -102,16 +111,15 @@ const deleteGM = () => {
       <q-separator />
       <q-card-section class="main-card-section">
         <q-btn
-          v-if="!teamArena"
+          v-if="!teamGM"
           round
           icon="add_circle"
           size="1.75rem"
-          @click="showArenaDrawer = true"
+          @click="localShowGMDrawer = true"
         />
         <template v-else>
-          <!-- TODO: Fix image width -->
-          <img :src="teamArena.imgLink" height="100" width="150" />
-          <div>{{ teamArena.name }}</div>
+          <q-icon class="blank-avatar" name="account_circle" size="3.5rem" />
+          <div>{{ teamGM.name }}</div>
         </template>
       </q-card-section>
       <q-separator dark />
@@ -120,8 +128,8 @@ const deleteGM = () => {
       </q-card-actions>
     </q-card>
     <q-drawer
-      v-model="showArenaDrawer"
-      :side="selectedDrawerSide"
+      v-model="localShowGMDrawer"
+      :side="localDrawerSide"
       :width="300"
       bordered
       elevated
@@ -130,9 +138,9 @@ const deleteGM = () => {
     >
       <div class="drawer-header">
         <div class="drawer-title-container">
-          <h6 class="drawer-title">Add Arena</h6>
+          <h6 class="drawer-title">Add GM</h6>
           <q-btn
-            @click="showArenaDrawer = false"
+            @click="localShowGMDrawer = false"
             round
             icon="close"
             class="drawer-close"
@@ -141,7 +149,7 @@ const deleteGM = () => {
         <q-input
           outlined
           v-model="search"
-          placeholder="Search for an arena"
+          placeholder="Search for a GM"
           type="search"
           dark
         >
@@ -159,14 +167,11 @@ const deleteGM = () => {
             clearable
             dark
           />
-          <div class="arena-filter-container">
+          <div class="gm-filter-container">
             <q-btn color="primary" label="Filters Menu">
               <q-menu dark>
                 <q-list style="min-width: 100px">
-                  <template
-                    v-for="(filter, index) in ARENA_FILTERS"
-                    :key="index"
-                  >
+                  <template v-for="(filter, index) in GM_FILTERS" :key="index">
                     <q-item tag="label" avatar>
                       <q-item-section>
                         <q-checkbox
@@ -183,23 +188,26 @@ const deleteGM = () => {
                 </q-list>
               </q-menu>
             </q-btn>
+            <q-btn
+              icon="shuffle"
+              round
+              color="primary"
+              title="Select random GM"
+              @click="selectRandomGM"
+            />
           </div>
         </div>
       </div>
       <q-separator dark />
       <q-scroll-area class="fit">
         <q-list>
-          <template v-for="(arena, index) in filteredArenaData" :key="index">
-            <q-item @click="() => setGM(arena)" clickable v-ripple>
-              <q-item-section thumbnail>
-                <img :src="arena.imgLink" height="50" width="75" />
-              </q-item-section>
-              <q-item-section class="arena-item">
-                <div class="right">
-                  <div class="arena-name">{{ arena.name }}</div>
-                  <div>Capacity: {{ arena.capacity }}</div>
-                  <div>Opened {{ arena.openedYear }}</div>
+          <template v-for="(gm, index) in filteredGMData" :key="index">
+            <q-item @click="() => setGM(gm)" clickable v-ripple>
+              <q-item-section class="gm-item">
+                <div>
+                  <div class="name">{{ gm.name }}</div>
                 </div>
+                <div></div>
               </q-item-section>
             </q-item>
             <q-separator />
@@ -273,16 +281,23 @@ const deleteGM = () => {
   margin-left: auto;
 }
 
-.arena-item {
+.gm-filter-container {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.gm-item {
   display: flex;
   flex-direction: row;
   justify-content: space-between;
 }
-.arena-item .right {
+.gm-item .right {
   justify-content: right;
 }
 
-.arena-name {
+.gm-name {
   font-weight: 600;
 }
 </style>

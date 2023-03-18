@@ -30,19 +30,23 @@ const teamDescription = ref<string>("");
 const teamCity = ref<string>("");
 const teamCountry = ref<string>("");
 
-// const teamMetdata = computed(() => {
+// const teamMetadata = computed(() => {
 //   return {
 //     teamName: teamName.value,
 //     teamDescription: teamDescription.value,
 //     teamCity: teamCity.value,
+//     teamCountry: teamCountry.value,
 //   };
 // });
 
 const teamCoach = ref<any>(null);
 const teamArena = ref<any>(null);
+const teamGM = ref<any>(null);
 
-const showDrawer = ref<boolean>(false);
+const showPlayerDrawer = ref<boolean>(false);
 const showCoachDrawer = ref<boolean>(false);
+const showArenaDrawer = ref<boolean>(false);
+const showGMDrawer = ref<boolean>(false);
 
 const search = ref<string>("");
 const searchList = ref<any[]>([]);
@@ -82,6 +86,44 @@ const PLAYER_FILTERS = ["Current Season Only", "PG", "SG", "SF", "PF", "C"];
 /* TODO: Team Score */
 const teamScore = ref<number>(0);
 
+const activeDrawer = computed(() => {
+  console.log({ test1: showCoachDrawer.value, test2: showArenaDrawer.value, test3: showGMDrawer.value })
+  if (showCoachDrawer.value) {
+    return "Coach";
+  } else if (showArenaDrawer.value) {
+    return "Arena";
+  } else if (showGMDrawer.value) {
+    return "GM";
+  } else {
+    return null;
+  }
+});
+
+/* Watchers */
+
+watch(activeDrawer, (newDisplayedDrawer) => {
+  console.log({ newDisplayedDrawer })
+  switch (newDisplayedDrawer) {
+    case "Coach":
+      showPlayerDrawer.value = false
+      showArenaDrawer.value = false
+      showGMDrawer.value = false
+      break;
+    case "Arena":
+      showPlayerDrawer.value = false
+      showCoachDrawer.value = false
+      showGMDrawer.value = false
+      break;
+    case "GM":
+      showPlayerDrawer.value = false
+      showCoachDrawer.value = false
+      showArenaDrawer.value = false
+      break;
+    default:
+      break;
+  }
+});
+
 /* Note to self: Use watchers to get reactive console logs */
 watch(selectedFilters, (selectedFilters, prevFilters) => {
   console.log(selectedFilters, prevFilters);
@@ -90,10 +132,10 @@ watch(selectedFilters, (selectedFilters, prevFilters) => {
 const addPlayer = (index: number) => {
   selectedPlayerIndex.value = index;
   /* If already visible, don't do anything */
-  if (showDrawer.value) {
+  if (showPlayerDrawer.value) {
     return;
   }
-  showDrawer.value = !showDrawer.value;
+  showPlayerDrawer.value = !showPlayerDrawer.value;
 };
 
 const deletePlayer = (index: number) => {
@@ -528,15 +570,24 @@ const testArray = ref([]);
         </div>
         <CoachSection
           v-model:teamCoach="teamCoach"
+          v-model:showCoachDrawer="showCoachDrawer"
           :selectedDrawerSide="selectedDrawerSide"
         />
-        <ArenaSection v-model:teamArena="teamArena" />
-        <GMSection v-model:teamArena="teamArena" />
+        <ArenaSection
+          v-model:teamArena="teamArena"
+          v-model:showArenaDrawer="showArenaDrawer"
+          :selectedDrawerSide="selectedDrawerSide"
+        />
+        <GMSection
+          v-model:teamGM="teamGM"
+          v-model:showGMDrawer="showGMDrawer"
+          :selectedDrawerSide="selectedDrawerSide"
+        />
       </div>
     </div>
     <q-drawer
       class="drawer"
-      v-model="showDrawer"
+      v-model="showPlayerDrawer"
       :width="300"
       bordered
       elevated
@@ -548,7 +599,7 @@ const testArray = ref([]);
         <div class="drawer-title-container">
           <h6 class="drawer-title">Add Player</h6>
           <q-btn
-            @click="showDrawer = false"
+            @click="showPlayerDrawer = false"
             round
             icon="close"
             class="drawer-close"
@@ -738,14 +789,8 @@ const testArray = ref([]);
   justify-content: space-between;
 }
 
-.add-player-btn {
-}
-
 ::-webkit-scrollbar {
   display: none;
-}
-
-.blank-avatar {
 }
 
 .main-card-section {
@@ -765,7 +810,6 @@ const testArray = ref([]);
 .drawer-header {
   display: flex;
   flex-direction: column;
-  /* height: fit-content; */
   overflow: hidden;
 }
 

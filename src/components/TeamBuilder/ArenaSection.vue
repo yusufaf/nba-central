@@ -1,14 +1,16 @@
 <script setup lang="ts">
 import { ref, watch, computed } from "vue";
 import { WESTERN_TEAMS, EASTERN_TEAMS } from "@/constants/constants";
-import type { DrawerSide } from "@/constants/constants";
 import type { Arena } from "@/lib/types";
 import arenaData from "@/assets/arenas.json";
 
 const props = defineProps<{
   teamArena: any;
+  selectedDrawerSide: any;
+  showArenaDrawer: boolean;
 }>();
-const emit = defineEmits(["update:teamArena"]);
+
+const emit = defineEmits(["update:teamArena", "update:showArenaDrawer"]);
 
 const typedArenaData = arenaData as Arena[];
 
@@ -22,7 +24,14 @@ const localTeamArena = computed({
   },
 });
 
-const showArenaDrawer = ref<boolean>(false);
+const localShowArenaDrawer = computed({
+  get() {
+    return props.showArenaDrawer;
+  },
+  set(value) {
+    emit("update:showArenaDrawer", value);
+  },
+});
 
 const search = ref<string>("");
 const searchLoading = ref<boolean>(false);
@@ -39,6 +48,15 @@ const selectedDrawerSide = ref<any>("right");
 const selectedSort = ref<string | null>(null);
 const selectedFilters = ref<string[]>([]);
 const ARENA_FILTERS = ["Western Conference", "Eastern Conference"];
+
+const localDrawerSide = ref<any>(props.selectedDrawerSide);
+
+/* Watchers */
+watch(() => props.selectedDrawerSide,
+  (newVal) => {
+    localDrawerSide.value = newVal;
+  }
+);
 
 
 /* Computed Props */
@@ -122,6 +140,14 @@ const setArena = (arena: any) => {
 const deleteArena = () => {
   localTeamArena.value = null;
 };
+
+const selectRandomArena = () => {
+  const copyArenaData = filteredArenaData.value;
+  const randomIndex = Math.floor(Math.random() * copyArenaData.length);
+  localTeamArena.value = copyArenaData[randomIndex];
+};
+
+
 </script>
 
 <template>
@@ -138,7 +164,7 @@ const deleteArena = () => {
           round
           icon="add_circle"
           size="1.75rem"
-          @click="showArenaDrawer = true"
+          @click="localShowArenaDrawer = true"
         />
         <template v-else>
           <!-- TODO: Fix image width -->
@@ -152,8 +178,8 @@ const deleteArena = () => {
       </q-card-actions>
     </q-card>
     <q-drawer
-      v-model="showArenaDrawer"
-      :side="selectedDrawerSide"
+      v-model="localShowArenaDrawer"
+      :side="localDrawerSide"
       :width="300"
       bordered
       elevated
@@ -164,7 +190,7 @@ const deleteArena = () => {
         <div class="drawer-title-container">
           <h6 class="drawer-title">Add Arena</h6>
           <q-btn
-            @click="showArenaDrawer = false"
+            @click="localShowArenaDrawer = false"
             round
             icon="close"
             class="drawer-close"
@@ -215,6 +241,14 @@ const deleteArena = () => {
                 </q-list>
               </q-menu>
             </q-btn>
+
+            <q-btn
+              icon="shuffle"
+              round
+              color="primary"
+              title="Select random arena"
+              @click="selectRandomArena"
+            />
           </div>
         </div>
       </div>
@@ -303,6 +337,13 @@ const deleteArena = () => {
 
 .drawer-close {
   margin-left: auto;
+}
+
+.arena-filter-container {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between
 }
 
 .arena-item {
