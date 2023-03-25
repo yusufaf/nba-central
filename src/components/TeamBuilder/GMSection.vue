@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, watch, computed } from "vue";
 import type { DrawerSide } from "@/constants/constants";
-// import type { GM } from "@/lib/types";
+import type { SortDirection } from "@/lib/types";
 import gmData from "@/assets/execs.json";
 
 const props = defineProps<{
@@ -32,17 +32,17 @@ const localShowGMDrawer = computed({
   },
 });
 
-
 const search = ref<string>("");
 const searchLoading = ref<boolean>(false);
 /* Typing guide: https://vuejs.org/guide/typescript/composition-api.html */
 const cardsFlipped = ref<Map<any, boolean>>(new Map());
 
-const sortOptions = ["Alphabetic (A-Z)", "Reverse Alphabetic (Z-A)"];
+const sortOptions = ["Alphabetic"];
 /* Sorting and Filtering */
 const selectedSort = ref<string | null>(null);
 const selectedFilters = ref<string[]>([]);
 const GM_FILTERS = ["Western Conference", "Eastern Conference"];
+const sortDirection = ref<SortDirection>("asc");
 
 const localDrawerSide = ref<any>(props.selectedDrawerSide);
 
@@ -54,21 +54,17 @@ watch(
   }
 );
 
-
-
 /* Computed Props */
 
 const sortedGMData = computed(() => {
   const copyGMData = [...typedGMData];
 
+  const sortModifier = sortDirection.value === "asc" ? 1 : -1;
+
   switch (selectedSort.value) {
-    case "Alphabetic (A-Z)":
+    case "Alphabetic":
       return copyGMData.sort((a: any, b: any) => {
-        return a.name.localeCompare(b.name);
-      });
-    case "Reverse Alphabetic (Z-A)":
-      return copyGMData.sort((a: any, b: any) => {
-        return b.name.localeCompare(a.name);
+        return sortModifier * a.name.localeCompare(b.name);
       });
     default:
       return typedGMData;
@@ -84,6 +80,10 @@ const filteredGMData = computed(() => {
   }
   return [];
 });
+
+const toggleSortDirection = () => {
+  sortDirection.value = sortDirection.value === "asc" ? "desc" : "asc";
+};
 
 /* GM Select Logic */
 const setGM = (gm: any) => {
@@ -166,7 +166,17 @@ const selectRandomGM = () => {
             label="Sort"
             clearable
             dark
-          />
+          >
+            <template v-slot:prepend>
+              <q-btn
+                :icon="
+                  sortDirection === 'asc' ? 'arrow_upward' : 'arrow_downward'
+                "
+                @click.stop.prevent="toggleSortDirection"
+                round
+              />
+            </template>
+          </q-select>
           <div class="gm-filter-container">
             <q-btn color="primary" label="Filters Menu">
               <q-menu dark>

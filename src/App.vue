@@ -71,7 +71,6 @@ import { ROUTES } from "@/constants/constants";
 </template>
 
 <style scoped>
-/* TODO: Styling for the nav bar pages */
 nav {
   width: calc(100vw - 15rem);
 }

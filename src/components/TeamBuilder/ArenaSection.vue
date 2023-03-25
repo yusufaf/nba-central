@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, watch, computed } from "vue";
 import { WESTERN_TEAMS, EASTERN_TEAMS } from "@/constants/constants";
-import type { Arena } from "@/lib/types";
+import type { Arena, SortDirection } from "@/lib/types";
 import arenaData from "@/assets/arenas.json";
 
 const props = defineProps<{
@@ -37,53 +37,42 @@ const search = ref<string>("");
 const searchLoading = ref<boolean>(false);
 /* Typing guide: https://vuejs.org/guide/typescript/composition-api.html */
 const cardsFlipped = ref<Map<any, boolean>>(new Map());
-const sortOptions = [
-  "Alphabetic (A-Z)",
-  "Reverse Alphabetic (Z-A)",
-  "Capacity (Low-High)",
-  "Capacity (High-Low)",
-];
-const selectedDrawerSide = ref<any>("right");
+
+const sortOptions = ["Alphabetic", "Capacity "];
+
 /* Sorting and Filtering */
 const selectedSort = ref<string | null>(null);
 const selectedFilters = ref<string[]>([]);
 const ARENA_FILTERS = ["Western Conference", "Eastern Conference"];
+const sortDirection = ref<SortDirection>("asc");
 
 const localDrawerSide = ref<any>(props.selectedDrawerSide);
 
 /* Watchers */
-watch(() => props.selectedDrawerSide,
+watch(
+  () => props.selectedDrawerSide,
   (newVal) => {
     localDrawerSide.value = newVal;
   }
 );
-
 
 /* Computed Props */
 
 const sortedArenaData = computed(() => {
   const copyArenaData = [...typedArenaData];
 
+  const sortModifier = sortDirection.value === "asc" ? 1 : -1;
+
   switch (selectedSort.value) {
-    case "Alphabetic (A-Z)":
+    case "Alphabetic":
       return copyArenaData.sort((a: Arena, b: Arena) => {
-        return a.name.localeCompare(b.name);
+        return sortModifier * a.name.localeCompare(b.name);
       });
-    case "Reverse Alphabetic (Z-A)":
-      return copyArenaData.sort((a: Arena, b: Arena) => {
-        return b.name.localeCompare(a.name);
-      });
-    case "Capacity (Low-High)":
+    case "Capacity":
       return copyArenaData.sort((a: Arena, b: Arena) => {
         const capacityA = parseInt(a.capacity.replace(",", ""));
         const capacityB = parseInt(b.capacity.replace(",", ""));
-        return capacityA - capacityB;
-      });
-    case "Capacity (High-Low)":
-      return copyArenaData.sort((a: Arena, b: Arena) => {
-        const capacityA = parseInt(a.capacity.replace(",", ""));
-        const capacityB = parseInt(b.capacity.replace(",", ""));
-        return capacityB - capacityA;
+        return sortModifier * (capacityA - capacityB);
       });
     default:
       return typedArenaData;
@@ -119,18 +108,9 @@ const filteredArenaData = computed(() => {
   });
 });
 
-// const flipCard = (n: number) => {
-//   const isFlipped = cardsFlipped.value.get(n);
-//   console.log("Flipping card: ", !isFlipped);
-//   cardsFlipped.value.set(n, !isFlipped);
-
-//   if (!isFlipped) {
-//     showTransition.value = true;
-//     setTimeout(() => {
-//       showTransition.value = false;
-//     }, 400);
-//   }
-// };
+const toggleSortDirection = () => {
+  sortDirection.value = sortDirection.value === "asc" ? "desc" : "asc";
+};
 
 /* Arena Select Logic */
 const setArena = (arena: any) => {
@@ -146,8 +126,6 @@ const selectRandomArena = () => {
   const randomIndex = Math.floor(Math.random() * copyArenaData.length);
   localTeamArena.value = copyArenaData[randomIndex];
 };
-
-
 </script>
 
 <template>
@@ -216,7 +194,17 @@ const selectRandomArena = () => {
             label="Sort"
             clearable
             dark
-          />
+          >
+            <template v-slot:prepend>
+              <q-btn
+                :icon="
+                  sortDirection === 'asc' ? 'arrow_upward' : 'arrow_downward'
+                "
+                @click.stop.prevent="toggleSortDirection"
+                round
+              />
+            </template>
+          </q-select>
           <div class="arena-filter-container">
             <q-btn color="primary" label="Filters Menu">
               <q-menu dark>
@@ -343,7 +331,7 @@ const selectRandomArena = () => {
   display: flex;
   flex-direction: row;
   align-items: center;
-  justify-content: space-between
+  justify-content: space-between;
 }
 
 .arena-item {

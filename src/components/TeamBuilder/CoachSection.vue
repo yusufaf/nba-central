@@ -2,7 +2,7 @@
 import { ref, watch, computed } from "vue";
 import { BDL_API_PREFIX, VIEWS } from "@/constants/constants";
 import type { DrawerSide } from "@/constants/constants";
-import type { Coach } from "@/lib/types";
+import type { Coach, SortDirection } from "@/lib/types";
 import axios from "axios";
 import coachesData from "@/assets/coaches.json";
 import { roundValueToNPlaces } from "@/constants/functions";
@@ -19,7 +19,8 @@ const typedCoachesData = coachesData as Coach[];
 const localDrawerSide = ref<any>(props.selectedDrawerSide);
 
 /* Watchers */
-watch(() => props.selectedDrawerSide,
+watch(
+  () => props.selectedDrawerSide,
   (newVal) => {
     localDrawerSide.value = newVal;
   }
@@ -48,26 +49,22 @@ const search = ref<string>("");
 const searchLoading = ref<boolean>(false);
 /* Typing guide: https://vuejs.org/guide/typescript/composition-api.html */
 const cardsFlipped = ref<Map<any, boolean>>(new Map());
+
 const sortOptions = [
-  "Alphabetic (A-Z)",
-  "Reverse Alphabetic (Z-A)",
-  "Win Percentage (Low-High)",
-  "Win Percentage (High-Low)",
-  "Playoff Win Percentage (Low-High)",
-  "Playoff Win Percentage (High-Low)",
-  "Championships (Low-High)",
-  "Championships (High-Low)",
-  "Years Coached (Low-High)",
-  "Years Coached (High-Low)",
-  "Year Started Coaching (Low-High)",
-  "Year Started Coaching (High-Low)",
+  "Alphabetic",
+  "Win Percentage",
+  "Playoff Win Percentage",
+  "Championships",
+  "Years Coached",
+  "Year Started Coaching",
 ];
 
 /* Sorting and Filtering */
-const showSortDropdown = ref<boolean>(false);
 const selectedSort = ref<string | null>(null);
 const selectedFilters = ref<string[]>([]);
 const COACH_FILTERS = ["Current Season Only", "Hall of Famer"];
+
+const sortDirection = ref<SortDirection>("asc");
 
 const cleanCoachesData = typedCoachesData.map((coach: Coach) => {
   const {
@@ -98,60 +95,38 @@ const cleanCoachesData = typedCoachesData.map((coach: Coach) => {
 const sortedCoachesData = computed(() => {
   const copyCoachData = [...cleanCoachesData];
 
-  /* TODO: Possibly combine the */
+  const sortModifier = sortDirection.value === "asc" ? 1 : -1;
 
   switch (selectedSort.value) {
-    case "Alphabetic (A-Z)":
+    case "Alphabetic":
       return copyCoachData.sort((a: Coach, b: Coach) => {
-        return a.name.localeCompare(b.name);
+        return sortModifier * a.name.localeCompare(b.name);
       });
-    case "Reverse Alphabetic (Z-A)":
+    case "Win Percentage":
       return copyCoachData.sort((a: Coach, b: Coach) => {
-        return b.name.localeCompare(a.name);
+        const result = parseFloat(a.wlPercent) - parseFloat(b.wlPercent);
+        return sortModifier * result;
       });
-    case "Win Percentage (Low-High)":
+    case "Playoff Win Percentage":
       return copyCoachData.sort((a: Coach, b: Coach) => {
-        return parseFloat(a.wlPercent) - parseFloat(b.wlPercent);
+        const result =
+          parseFloat(a.playoffWLPercent) - parseFloat(b.playoffWLPercent);
+        return sortModifier * result;
       });
-    case "Win Percentage (High-Low)":
+    case "Championships":
       return copyCoachData.sort((a: Coach, b: Coach) => {
-        return parseFloat(b.wlPercent) - parseFloat(a.wlPercent);
+        const result = a.championships - b.championships;
+        return sortModifier * result;
       });
-    case "Playoff Win Percentage (Low-High)":
-      return copyCoachData.sort((a: Coach, b: Coach) => {
-        return parseFloat(a.playoffWLPercent) - parseFloat(b.playoffWLPercent);
-      });
-    case "Playoff Win Percentage (High-Low)":
-      return copyCoachData.sort((a: Coach, b: Coach) => {
-        return parseFloat(b.playoffWLPercent) - parseFloat(a.playoffWLPercent);
-      });
-    case "Championships (Low-High)":
-      return copyCoachData.sort((a: Coach, b: Coach) => {
-        return a.championships - b.championships;
-      });
-    case "Championships (High-Low)":
-      return copyCoachData.sort((a: Coach, b: Coach) => {
-        return b.championships - a.championships;
-      });
-    case "Years Coached (Low-High)":
+    case "Years Coached":
       return copyCoachData.sort((a: Coach, b: Coach) => {
         const aDiff = a.to - a.from;
         const bDIff = b.to - b.from;
-        return aDiff - bDIff;
+        return sortModifier * (aDiff - bDIff);
       });
-    case "Years Coached (High-Low)":
+    case "Year Started Coaching":
       return copyCoachData.sort((a: Coach, b: Coach) => {
-        const aDiff = a.to - a.from;
-        const bDIff = b.to - b.from;
-        return bDIff - aDiff;
-      });
-    case "Year Started Coaching (Low-High)":
-      return copyCoachData.sort((a: Coach, b: Coach) => {
-        return a.from - b.from;
-      });
-    case "Year Started Coaching (High-Low)":
-      return copyCoachData.sort((a: Coach, b: Coach) => {
-        return b.from - a.from;
+        return sortModifier * (a.from - b.from);
       });
     default:
       return cleanCoachesData;
@@ -178,18 +153,9 @@ const filteredCoachesData = computed(() => {
   });
 });
 
-// const flipCard = (n: number) => {
-//   const isFlipped = cardsFlipped.value.get(n);
-//   console.log("Flipping card: ", !isFlipped);
-//   cardsFlipped.value.set(n, !isFlipped);
-
-//   if (!isFlipped) {
-//     showTransition.value = true;
-//     setTimeout(() => {
-//       showTransition.value = false;
-//     }, 400);
-//   }
-// };
+const toggleSortDirection = () => {
+  sortDirection.value = sortDirection.value === "asc" ? "desc" : "asc";
+};
 
 /* Coach Select Logic */
 const setCoach = (coach: any) => {
@@ -274,13 +240,24 @@ const selectRandomCoach = () => {
         <q-linear-progress v-if="searchLoading" indeterminate color="primary" />
         <div>
           <q-select
+            class="sort-select"
             outlined
             v-model="selectedSort"
             :options="sortOptions"
             label="Sort"
             clearable
             dark
-          />
+          >
+            <template v-slot:prepend>
+              <q-btn
+                :icon="
+                  sortDirection === 'asc' ? 'arrow_upward' : 'arrow_downward'
+                "
+                @click.stop.prevent="toggleSortDirection"
+                round
+              />
+            </template>
+          </q-select>
           <div class="coach-filter-container">
             <div class="coach-filter-buttons">
               <q-btn color="primary" label="Filters Menu">

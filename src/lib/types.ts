@@ -32,3 +32,5 @@ export type Arena = {
   capacity: string;
   openedYear: number;
 };
+
+export type SortDirection = "asc" | "desc";
