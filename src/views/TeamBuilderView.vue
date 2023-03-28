@@ -5,6 +5,7 @@ import TeamBuilderHeader from "@/components/TeamBuilder/TeamBuilderHeader.vue";
 import PlayerStatsDialog from "@/components/TeamBuilder/PlayerStatsDialog.vue";
 import CoachSection from "@/components/TeamBuilder/CoachSection.vue";
 import ArenaSection from "@/components/TeamBuilder/ArenaSection.vue";
+import PlayerComparison from "@/components/TeamBuilder/PlayerComparison.vue";
 
 import {
   BDL_API_PREFIX,
@@ -30,14 +31,6 @@ const teamDescription = ref<string>("");
 const teamCity = ref<string>("");
 const teamCountry = ref<string>("");
 
-// const teamMetadata = computed(() => {
-//   return {
-//     teamName: teamName.value,
-//     teamDescription: teamDescription.value,
-//     teamCity: teamCity.value,
-//     teamCountry: teamCountry.value,
-//   };
-// });
 
 const teamCoach = ref<any>(null);
 const teamArena = ref<any>(null);
@@ -55,6 +48,7 @@ const searchLoading = ref<boolean>(false);
 const selectedPlayerIndex = ref<number | null>(null);
 const selectedPlayersData = ref<Map<any, any>>(new Map());
 const selectedPlayerStats = ref<any>([]);
+
 
 const playerStatsData = computed(() => {
   return selectedPlayerStats.value.map((item: any, index: number) => {
@@ -74,10 +68,16 @@ const sortOptions = ["Alphabetic (A-Z)", "Reverse Alphabetic (Z-A)"];
 const selectedView = ref<string>(VIEWS.DEFAULT);
 const selectedDrawerSide = ref<any>("right");
 const headerExpanded = ref<boolean>(false);
+
 const selectedPlayersForComparison = ref<Set<any>>(new Set());
+const selectedComparePlayers = computed(() => {
+  const comparePlayers = [...selectedPlayersForComparison.value];
+  console.log({playerStatsData, comparePlayers});
+  return comparePlayers.slice(0, 2);
+})
+
 
 /* Sorting and Filtering */
-const showSortDropdown = ref<boolean>(false);
 const selectedSort = ref<string | null>(null);
 
 const selectedFilters = ref<string[]>([]);
@@ -102,7 +102,6 @@ const activeDrawer = computed(() => {
 /* Watchers */
 
 watch(activeDrawer, (newDisplayedDrawer) => {
-  console.log({ newDisplayedDrawer })
   switch (newDisplayedDrawer) {
     case "Coach":
       showPlayerDrawer.value = false
@@ -118,8 +117,6 @@ watch(activeDrawer, (newDisplayedDrawer) => {
       showPlayerDrawer.value = false
       showCoachDrawer.value = false
       showArenaDrawer.value = false
-      break;
-    default:
       break;
   }
 });
@@ -266,8 +263,14 @@ const addPlayerFromList = async (player: any) => {
   cardsFlipped.value.set(playerIndex, false);
 };
 
+// TODO
 const resetTeam = async () => {
-  axios.get("/login/").then((res) => console.log(res.data));
+  /* Reset coach, arena, and GM selections */
+  teamCoach.value = null;
+  teamArena.value = null;
+  teamGM.value = null;
+
+  // axios.get("/login/").then((res) => console.log(res.data));
 };
 
 const saveTeam = () => {
@@ -361,8 +364,8 @@ const viewPlayerStats = () => {
 const togglePlayerInComparison = (n: number) => {
   const isSelected = selectedPlayersForComparison.value.has(n);
 
+    /* Show toast notification if trying to add more than 2 players to comparison */
   if (selectedPlayersForComparison.value.size === 2 && !isSelected) {
-    /* Show toast notification */
     $q.notify({
       message: "You can only compare two players at a time",
       type: "warning",
@@ -419,9 +422,9 @@ const testArray = ref([]);
         v-model:teamCity="teamCity"
         v-model:drawerSide="selectedDrawerSide"
         v-model:selectedView="selectedView"
+        v-model:teamCountry="teamCountry"
         @saveTeam="saveTeam"
         @reset="resetTeam"
-        teamCountry="aint no way"
       />
       <div class="builder-main">
         <div class="builder-header">
@@ -431,11 +434,6 @@ const testArray = ref([]);
           </h6>
         </div>
         <div class="main-lineup" :class="{ list: selectedView === VIEWS.LIST }">
-          <!-- 
-              - TODO: Move cards into separate PlayerCard components 
-              - TODO: Make the cards draggable
-              - TODO: Template instead of for loop on cards?
-            -->
           <template :key="n" v-for="n in 5">
             <Transition name="flip" mode="in-out">
               <q-card
@@ -675,6 +673,11 @@ const testArray = ref([]);
     <PlayerStatsDialog
       v-model:visible="showPlayerStatsDialog"
       :data="playerStatsData"
+    />
+    <PlayerComparison
+      v-if="selectedPlayersForComparison.size === 2"
+      :player1Data="playerStatsData[selectedComparePlayers[0]]"
+      :player2Data="playerStatsData[selectedComparePlayers[1]]"
     />
   </main>
 </template>

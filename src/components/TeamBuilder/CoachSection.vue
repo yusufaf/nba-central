@@ -327,23 +327,6 @@ const selectRandomCoach = () => {
 </template>
 
 <style scoped>
-.flip-enter-active,
-.flip-leave-active {
-  transition: all 0.4s ease;
-}
-
-.flip-enter,
-.flip-leave-to {
-  transform: rotateY(180deg);
-  opacity: 0;
-}
-
-.flip-leave,
-.flip-enter-to {
-  transform: rotateY(0);
-  opacity: 1;
-}
-
 .section-header {
   margin: 1rem 0;
 }

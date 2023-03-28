@@ -1,11 +1,10 @@
 <script setup lang="ts">
-import { ref, watch, onMounted } from "vue";
+import { ref, watch, onMounted, computed } from "vue";
 import {
   VIEW_OPTIONS,
   DRAWER_OPTIONS,
   ESPN_TEAM_URL,
 } from "@/constants/constants";
-import type { DrawerSide } from "@/constants/constants";
 import axios from "axios";
 
 const props = defineProps<{
@@ -25,14 +24,47 @@ const emit = defineEmits([
   "update:teamName",
   "update:teamDescription",
   "update:teamCity",
+  "update:teamCountry",
   "update:drawerSide",
   "update:selectedView",
 ]);
 
-const localTeamName = ref(props.teamName);
-const localTeamDescription = ref(props.teamDescription);
-const localTeamCity = ref(props.teamCity);
-const localTeamCountry = ref(props.teamCountry);
+/* 2-Way Bound Props */
+const localTeamName = computed({
+  get() {
+    return props.teamName;
+  },
+  set(value) {
+    emit("update:teamName", value);
+  },
+});
+
+const localTeamDescription = computed({
+  get() {
+    return props.teamDescription;
+  },
+  set(value) {
+    emit("update:teamDescription", value);
+  },
+});
+
+const localTeamCity = computed({
+  get() {
+    return props.teamCity;
+  },
+  set(value) {
+    emit("update:teamCity", value);
+  },
+});
+
+const localTeamCountry = computed({
+  get() {
+    return props.teamCountry;
+  },
+  set(value) {
+    emit("update:teamCountry", value);
+  },
+});
 
 const localTeamLogo = ref<string>("");
 
@@ -47,18 +79,6 @@ const selectedFile = ref<null>(null);
 const nbaTeamLogos = ref<any[]>([]);
 
 /* Watchers */
-watch(localTeamName, (newTeamName) => {
-  emit("update:teamName", newTeamName);
-});
-
-watch(localTeamDescription, (newTeamDescription) => {
-  emit("update:teamDescription", newTeamDescription);
-});
-
-watch(localTeamCity, (newTeamCity) => {
-  emit("update:teamCity", newTeamCity);
-});
-
 watch(localDrawerSide, (newDrawerSide) => {
   emit("update:drawerSide", newDrawerSide);
 });
@@ -95,7 +115,7 @@ const fetchAllTeamLogos = async () => {
   for (let i = 1; i < 31; i++) {
     const url = `${ESPN_TEAM_URL}${i}`;
     const response = await axios.get(url);
-    const {team} = response.data;
+    const { team } = response.data;
 
     const logos = team.logos;
 
@@ -112,8 +132,19 @@ const fetchAllTeamLogos = async () => {
 
     return teamAbbrA.localeCompare(teamAbbrB);
   });
-
 };
+
+// For the q-file component:         @update:model-value="onUpdateFile"
+// const onUpdateFile = (value: any) => {
+//   const uploadDate = new Date().toLocaleDateString();
+//   const reader = new FileReader();
+//   reader.onload = () => {
+//     console.log("Result of FileReader = ", reader.result);
+//   }
+//   reader.readAsDataURL(value);
+
+//   console.log(value);
+// }
 
 onMounted(() => {
   fetchAllTeamLogos();
@@ -231,6 +262,7 @@ onMounted(() => {
         stack-label
         dark
         type="textarea"
+        class="desc-input"
       />
       <q-input v-model="localTeamCity" label="City" dark>
         <template v-slot:prepend>
@@ -262,7 +294,6 @@ onMounted(() => {
           v-for="logo in nbaTeamLogos"
           :key="logo.href"
           :src="logo.href"
-
           class="team-logo"
           :class="{ selected: logo.href === localTeamLogo }"
         />
@@ -303,9 +334,9 @@ onMounted(() => {
 }
 
 .title-input {
-  /* width: 15%; */
   margin-left: 2rem;
 }
+  
 
 .hidden {
   visibility: hidden;
@@ -327,6 +358,10 @@ onMounted(() => {
   height: 40rem;
   width: 40rem;
   padding: 1rem;
+}
+
+.customization-dialog::-webkit-scrollbar {
+  display: none;
 }
 
 .customization-header {
@@ -356,5 +391,4 @@ onMounted(() => {
 .team-logo:hover {
   border: 0.125rem solid var(--q-primary);
 }
-
 </style>
