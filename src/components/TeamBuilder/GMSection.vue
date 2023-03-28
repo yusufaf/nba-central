@@ -210,19 +210,21 @@ const selectRandomGM = () => {
       </div>
       <q-separator dark />
       <q-scroll-area class="fit">
-        <q-list>
-          <template v-for="(gm, index) in filteredGMData" :key="index">
-            <q-item @click="() => setGM(gm)" clickable v-ripple>
-              <q-item-section class="gm-item">
-                <div>
-                  <div class="name">{{ gm.name }}</div>
-                </div>
-                <div></div>
-              </q-item-section>
-            </q-item>
-            <q-separator />
-          </template>
-        </q-list>
+        <q-virtual-scroll
+          style="max-height: 600px"
+          :items="filteredGMData"
+          v-slot="{ item: gm, index }"
+          separator
+        >
+          <q-item :key="index" @click="() => setGM(gm)" clickable v-ripple>
+            <q-item-section class="gm-item">
+              <div>
+                <div class="name">{{ gm.name }}</div>
+              </div>
+              <div></div>
+            </q-item-section>
+          </q-item>
+        </q-virtual-scroll>
       </q-scroll-area>
     </q-drawer>
   </div>

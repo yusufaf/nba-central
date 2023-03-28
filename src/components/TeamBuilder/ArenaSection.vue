@@ -242,23 +242,25 @@ const selectRandomArena = () => {
       </div>
       <q-separator dark />
       <q-scroll-area class="fit">
-        <q-list>
-          <template v-for="(arena, index) in filteredArenaData" :key="index">
-            <q-item @click="() => setArena(arena)" clickable v-ripple>
-              <q-item-section thumbnail>
-                <img :src="arena.imgLink" height="50" width="75" />
-              </q-item-section>
-              <q-item-section class="arena-item">
-                <div class="right">
-                  <div class="arena-name">{{ arena.name }}</div>
-                  <div>Capacity: {{ arena.capacity }}</div>
-                  <div>Opened {{ arena.openedYear }}</div>
-                </div>
-              </q-item-section>
-            </q-item>
-            <q-separator />
-          </template>
-        </q-list>
+        <q-virtual-scroll
+          style="max-height: 600px"
+          :items="filteredArenaData"
+          v-slot="{ item: arena, index }"
+          separator
+        >
+          <q-item :key="index" @click="() => setArena(arena)" clickable v-ripple>
+            <q-item-section thumbnail>
+              <img :src="arena.imgLink" height="50" width="75" />
+            </q-item-section>
+            <q-item-section class="arena-item">
+              <div class="right">
+                <div class="arena-name">{{ arena.name }}</div>
+                <div>Capacity: {{ arena.capacity }}</div>
+                <div>Opened {{ arena.openedYear }}</div>
+              </div>
+            </q-item-section>
+          </q-item>
+        </q-virtual-scroll>
       </q-scroll-area>
     </q-drawer>
   </div>

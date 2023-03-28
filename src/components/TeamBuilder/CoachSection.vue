@@ -1,11 +1,10 @@
 <script setup lang="ts">
 import { ref, watch, computed } from "vue";
-import { BDL_API_PREFIX, VIEWS } from "@/constants/constants";
 import type { DrawerSide } from "@/constants/constants";
 import type { Coach, SortDirection } from "@/lib/types";
-import axios from "axios";
 import coachesData from "@/assets/coaches.json";
 import { roundValueToNPlaces } from "@/constants/functions";
+import { debounce } from "quasar";
 
 const props = defineProps<{
   teamCoach: Coach | null;
@@ -47,8 +46,6 @@ const localTeamCoach = computed({
 
 const search = ref<string>("");
 const searchLoading = ref<boolean>(false);
-/* Typing guide: https://vuejs.org/guide/typescript/composition-api.html */
-const cardsFlipped = ref<Map<any, boolean>>(new Map());
 
 const sortOptions = [
   "Alphabetic",
@@ -133,25 +130,52 @@ const sortedCoachesData = computed(() => {
   }
 });
 
-const filteredCoachesData = computed(() => {
-  const copyCoachData = [...sortedCoachesData.value];
+const filteredCoachesData = computed({
+  // Getter
+  get() {
+    const copyCoachData = [...sortedCoachesData.value];
 
-  /* If no filters, return regular sorted data */
-  if (selectedFilters.value.length === 0) {
-    return copyCoachData;
-  }
-  return copyCoachData.filter((coach: Coach) => {
-    const { name } = coach;
-    const isHallOfFamer = name.endsWith("*");
-
-    if (selectedFilters.value.includes("Hall of Famer")) {
-      if (!isHallOfFamer) {
-        return false;
-      }
+    /* If no filters, return regular sorted data */
+    if (selectedFilters.value.length === 0) {
+      return copyCoachData;
     }
-    return true;
-  });
+
+    return copyCoachData.filter((coach: Coach) => {
+      const { name } = coach;
+      const isHallOfFamer = name.endsWith("*");
+
+      if (selectedFilters.value.includes("Hall of Famer")) {
+        if (!isHallOfFamer) {
+          return false;
+        }
+      }
+      return true;
+    });
+  },
+  // Setter
+  set(value) {
+    filteredCoachesData.value = value;
+  }
 });
+
+
+/* Searching */
+// watch(
+//   search,
+//   debounce(async () => {
+//     const searchedCoach = search.value;
+//     console.log({searchedCoach})
+//     if (searchedCoach) {
+//       const searchedCoachLower = searchedCoach.toLowerCase();
+//       const searchedFilteredData = [...filteredCoachesData.value].filter((value: Coach) => {
+//           const nameLower = value.name.toLowerCase();
+//           return nameLower.includes(searchedCoachLower);
+//       })
+//       filteredCoachesData.value = searchedFilteredData;
+//     }
+//   }, 600)
+// );
+
 
 const toggleSortDirection = () => {
   sortDirection.value = sortDirection.value === "asc" ? "desc" : "asc";
@@ -297,30 +321,37 @@ const selectRandomCoach = () => {
       </div>
       <q-separator dark />
       <q-scroll-area class="fit">
-        <q-list>
-          <template v-for="coach in filteredCoachesData" :key="coach.rank">
-            <q-item @click="() => setCoach(coach)" clickable v-ripple>
-              <q-item-section class="coach-item">
+        <q-virtual-scroll
+          style="max-height: 600px"
+          :items="filteredCoachesData"
+          v-slot="{ item: coach }"
+          separator
+        >
+          <q-item
+            :key="coach.rank"
+            @click="() => setCoach(coach)"
+            clickable
+            v-ripple
+          >
+            <q-item-section class="coach-item">
+              <div>
+                <div class="coach-name">{{ coach.name }}</div>
                 <div>
-                  <div class="coach-name">{{ coach.name }}</div>
-                  <div>
-                    {{ coach.generalRecord }}
-                  </div>
-                  <div>
-                    {{ coach.playoffRecord }}
-                  </div>
-                  <div>
-                    {{ coach.champsCount }}
-                  </div>
+                  {{ coach.generalRecord }}
                 </div>
                 <div>
-                  <div>{{ coach.yearsCoached }}</div>
+                  {{ coach.playoffRecord }}
                 </div>
-              </q-item-section>
-            </q-item>
-            <q-separator />
-          </template>
-        </q-list>
+                <div>
+                  {{ coach.champsCount }}
+                </div>
+              </div>
+              <div>
+                <div>{{ coach.yearsCoached }}</div>
+              </div>
+            </q-item-section>
+          </q-item>
+        </q-virtual-scroll>
       </q-scroll-area>
     </q-drawer>
   </div>
