@@ -31,6 +31,8 @@ const gameTeams = ref<any[]>([]);
 
 const showReplayConfirm = ref<boolean>(false);
 const hideScores = ref<boolean>(false);
+const hideFinishedGames = ref<boolean>(false);
+
 const selectedView = ref<string>("Default");
 
 // const customizationState = ref<any>(new Map());
@@ -128,6 +130,11 @@ onMounted(() => {
             <q-item>
               <q-item-section>
                 <q-toggle v-model="hideScores" label="Hide Scores" />
+              </q-item-section>
+            </q-item>
+            <q-item>
+              <q-item-section>
+                <q-toggle v-model="hideFinishedGames" label="Hide Finished Games" />
               </q-item-section>
             </q-item>
             <q-item>

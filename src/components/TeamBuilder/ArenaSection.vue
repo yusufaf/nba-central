@@ -2,7 +2,7 @@
 import { ref, watch, computed } from "vue";
 import { WESTERN_TEAMS, EASTERN_TEAMS } from "@/constants/constants";
 import type { Arena, SortDirection } from "@/lib/types";
-import arenaData from "@/assets/arenas.json";
+import arenaData from "@/assets/data/arenas.json";
 
 const props = defineProps<{
   teamArena: any;

@@ -2,7 +2,7 @@
 import { ref, watch, computed } from "vue";
 import type { DrawerSide } from "@/constants/constants";
 import type { Coach, SortDirection } from "@/lib/types";
-import coachesData from "@/assets/coaches.json";
+import coachesData from "@/assets/data/coaches.json";
 import { roundValueToNPlaces } from "@/constants/functions";
 import { debounce } from "quasar";
 

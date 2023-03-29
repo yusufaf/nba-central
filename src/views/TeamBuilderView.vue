@@ -20,7 +20,7 @@ import type { Team } from "@/lib/types";
 import { uid } from "quasar";
 import draggable from "vuedraggable";
 import axios from "axios";
-import coachesData from "@/assets/coaches.json";
+import coachesData from "@/assets/data/coaches.json";
 import GMSection from "@/components/TeamBuilder/GMSection.vue";
 
 const $q = useQuasar();

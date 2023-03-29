@@ -2,7 +2,7 @@
 import { ref, watch, computed } from "vue";
 import type { DrawerSide } from "@/constants/constants";
 import type { GM, SortDirection } from "@/lib/types";
-import gmData from "@/assets/execs.json";
+import gmData from "@/assets/data/execs.json";
 
 const props = defineProps<{
   teamGM: any;
