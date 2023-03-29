@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, watch, computed } from "vue";
 import type { DrawerSide } from "@/constants/constants";
-import type { SortDirection } from "@/lib/types";
+import type { GM, SortDirection } from "@/lib/types";
 import gmData from "@/assets/execs.json";
 
 const props = defineProps<{
@@ -11,7 +11,7 @@ const props = defineProps<{
 }>();
 const emit = defineEmits(["update:teamGM", "update:showGMDrawer"]);
 
-const typedGMData = gmData;
+const typedGMData = gmData as GM[];
 
 /* Note: Good pattern for creating a two-way bound value in child component */
 const localTeamGM = computed({

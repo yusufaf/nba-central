@@ -11,6 +11,8 @@ const props = defineProps<{
   showCoachDrawer: boolean;
   selectedDrawerSide: any;
 }>();
+
+
 const emit = defineEmits(["update:teamCoach", "update:showCoachDrawer"]);
 
 const typedCoachesData = coachesData as Coach[];

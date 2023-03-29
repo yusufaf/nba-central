@@ -33,4 +33,9 @@ export type Arena = {
   openedYear: number;
 };
 
+export type GM = {
+  name: string;
+  teams: string[];
+}
+
 export type SortDirection = "asc" | "desc";
