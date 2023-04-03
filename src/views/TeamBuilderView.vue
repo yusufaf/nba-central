@@ -20,7 +20,6 @@ import type { Team } from "@/lib/types";
 import { uid } from "quasar";
 import draggable from "vuedraggable";
 import axios from "axios";
-import coachesData from "@/assets/data/coaches.json";
 import GMSection from "@/components/TeamBuilder/GMSection.vue";
 
 const $q = useQuasar();
@@ -87,7 +86,6 @@ const PLAYER_FILTERS = ["Current Season Only", "PG", "SG", "SF", "PF", "C"];
 const teamScore = ref<number>(0);
 
 const activeDrawer = computed(() => {
-  console.log({ test1: showCoachDrawer.value, test2: showArenaDrawer.value, test3: showGMDrawer.value })
   if (showCoachDrawer.value) {
     return "Coach";
   } else if (showArenaDrawer.value) {

@@ -7,13 +7,14 @@ import PageTitle from "@/components/PageTitle.vue"
 <template>
     <main class="login-page">
         <PageTitle />
-        <div class="builder-container">
+        <div class="login-container">
+            
         </div>
     </main>
 </template>
 
 <style scoped>
-.news-page {
+.login-page {
     display: flex;
     justify-content: center;
     align-items: center;
