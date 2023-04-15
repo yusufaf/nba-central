@@ -29,7 +29,7 @@ const teamName = ref<string>("");
 const teamDescription = ref<string>("");
 const teamCity = ref<string>("");
 const teamCountry = ref<string>("");
-
+const teamLogo = ref<any>();
 
 const teamCoach = ref<any>(null);
 const teamArena = ref<any>(null);
@@ -421,6 +421,7 @@ const testArray = ref([]);
         v-model:drawerSide="selectedDrawerSide"
         v-model:selectedView="selectedView"
         v-model:teamCountry="teamCountry"
+        v-model:teamLogo="teamLogo"
         @saveTeam="saveTeam"
         @reset="resetTeam"
       />

@@ -1,11 +1,12 @@
 <script setup lang="ts">
-import { ref, watch, onMounted, computed } from "vue";
+import { ref, watch, onMounted, computed, nextTick, watchEffect } from "vue";
 import {
   VIEW_OPTIONS,
   DRAWER_OPTIONS,
   ESPN_TEAM_URL,
 } from "@/constants/constants";
 import axios from "axios";
+import jerseyImg from "@/assets/basketbalL_jersey.png";
 
 const props = defineProps<{
   headerExpanded: boolean;
@@ -13,6 +14,7 @@ const props = defineProps<{
   teamDescription: string;
   teamCity: string;
   teamCountry: string;
+  teamLogo: string;
   drawerSide: any;
   selectedView: string;
 }>();
@@ -25,6 +27,7 @@ const emit = defineEmits([
   "update:teamDescription",
   "update:teamCity",
   "update:teamCountry",
+  "update:teamLogo",
   "update:drawerSide",
   "update:selectedView",
 ]);
@@ -66,7 +69,14 @@ const localTeamCountry = computed({
   },
 });
 
-const localTeamLogo = ref<string>("");
+const localTeamLogo = computed({
+  get() {
+    return props.teamLogo;
+  },
+  set(value) {
+    emit("update:teamLogo", value);
+  },
+});
 
 const localDrawerSide = ref<any>(props.drawerSide);
 const localSelectedView = ref<string>(props.selectedView);
@@ -77,6 +87,16 @@ const showTeamCustomizationDialog = ref<boolean>(false);
 const selectedFile = ref<null>(null);
 
 const nbaTeamLogos = ref<any[]>([]);
+
+/* Canvas Props */
+const drawingCanvas = ref<HTMLCanvasElement | null>(null);
+const isDrawing = ref<boolean>(false);
+const context = ref<any>(null);
+const currentX = ref<number>(0);
+const currentY = ref<number>(0);
+
+const canvasWidth = 500;
+const canvasHeight = 500;
 
 /* Watchers */
 watch(localDrawerSide, (newDrawerSide) => {
@@ -112,6 +132,7 @@ const toggleCustomizationDialog = (): void => {
 };
 
 const fetchAllTeamLogos = async () => {
+  const tempLogos = [];
   for (let i = 1; i < 31; i++) {
     const url = `${ESPN_TEAM_URL}${i}`;
     const response = await axios.get(url);
@@ -121,9 +142,11 @@ const fetchAllTeamLogos = async () => {
 
     /* Take the first logo for now */
     const logo = logos[0];
-    nbaTeamLogos.value = nbaTeamLogos.value.concat(logo);
+    tempLogos.push(logo);
   }
-  nbaTeamLogos.value = nbaTeamLogos.value.sort((a, b) => {
+
+  /* Sort the logos alphabetically */
+  nbaTeamLogos.value = tempLogos.sort((a, b) => {
     const hrefSplitA = a.href.split("/");
     const teamAbbrA = a.href.split("/")[hrefSplitA.length - 1];
 
@@ -146,8 +169,61 @@ const fetchAllTeamLogos = async () => {
 //   console.log(value);
 // }
 
+const handleLogoClick = (value: any) => {
+  localTeamLogo.value = value;
+};
+
+const startDrawing = (e: any) => {
+  isDrawing.value = true;
+  // lastX.value = e.offsetX;
+  // lastY.value = e.offsetY;
+};
+
+const stopDrawing = (e: any) => {
+  isDrawing.value = false;
+};
+
+const draw = (e: any) => {
+  if (!isDrawing.value) {
+    return;
+  }
+  context.value.beginPath();
+  context.value.moveTo(currentX.value, currentY.value);
+  context.value.lineTo(e.offsetX, e.offsetY);
+  context.value.stroke();
+
+  currentX.value = e.offsetX;
+  currentY.value = e.offsetY;
+};
+
+const setupCanvas = () => {
+  if (!drawingCanvas.value) return;
+  const localContext = drawingCanvas.value.getContext(
+    "2d"
+  ) as CanvasRenderingContext2D;
+  console.log({ context });
+
+  localContext.fillStyle = "white";
+  localContext.fillRect(0, 0, canvasWidth, canvasHeight);
+
+  const img = new Image();
+  img.onload = () => {
+    localContext.drawImage(img, 0, 0);
+  };
+  img.src = jerseyImg;
+
+  context.value = localContext;
+};
+
 onMounted(() => {
   fetchAllTeamLogos();
+  // Wait for nextTick to ensure the canvas element is rendered
+  nextTick(() => {
+    // Use watchEffect to wait for the ref to be assigned to the canvas element
+    watchEffect(() => {
+      setupCanvas();
+    });
+  });
 });
 </script>
 
@@ -296,8 +372,17 @@ onMounted(() => {
           :src="logo.href"
           class="team-logo"
           :class="{ selected: logo.href === localTeamLogo }"
+          @click="() => handleLogoClick(logo.href)"
         />
       </div>
+      <div>Team Jersey</div>
+      <canvas
+        ref="drawingCanvas"
+        :style="{ height: `${canvasHeight}px`, width: `${canvasWidth}px` }"
+        @mousedown="startDrawing"
+        @mousemove="draw"
+        @mouseup="stopDrawing"
+      />
     </div>
   </q-dialog>
 </template>
@@ -336,7 +421,10 @@ onMounted(() => {
 .title-input {
   margin-left: 2rem;
 }
-  
+
+.desc-input {
+  resize: none;
+}
 
 .hidden {
   visibility: hidden;
@@ -390,5 +478,9 @@ onMounted(() => {
 
 .team-logo:hover {
   border: 0.125rem solid var(--q-primary);
+}
+
+.team-logo.selected {
+  border: 0.25rem solid var(--q-positive);
 }
 </style>
