@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, ref, computed, reactive } from "vue";
+import { onMounted, ref, computed } from "vue";
 import { ESPN_SCORES_URL, VIEW_OPTIONS, VIEWS} from "@/constants/constants";
 import type { CustomizationKey } from "@/constants/constants";
 import ScoreCard from "@/components/Scores/ScoreCard.vue";
@@ -79,11 +79,20 @@ const fetchCurrentScores = () => {
     });
 };
 
+/* ==== Actions Bar ==== */
+const showReplayWarning = () => {
+  showReplayConfirm.value = true
+}
+
 const navigateToReplays = () => {
   const search = encodeURI(shortDateString);
   const fullGameReplaysLink = `https://watchreplay.net/?s=${search}`;
   window.open(fullGameReplaysLink, "_blank");
 };
+
+const toggleNotificationsMenu = () => {
+  notificationsMenuOpen.value = !notificationsMenuOpen.value;
+}
 
 /* Computed Refs
 - Not recommended to have computed refs based on other computed refs
@@ -113,16 +122,15 @@ onMounted(() => {
     <div class="header">
       <PageTitle />
       <h2 class="date">{{ primaryDateString }}</h2>
-      <h2 class="">{{ numGames }} Games</h2>
+      <h2>{{ numGames }} Games</h2>
     </div>
     <div class="buttons">
       <q-btn
         round
         icon="edit_notifications"
         title="Manage Notifications"
-        @click="notificationsMenuOpen = !notificationsMenuOpen"
+        @click="toggleNotificationsMenu"
       >
-
       </q-btn>
       <q-btn round icon="more_vert" title="More">
         <q-menu dark transition-show="jump-down" transition-hide="jump-up">
@@ -152,13 +160,13 @@ onMounted(() => {
         :options="VIEW_OPTIONS"
       />
       <q-btn
-        @click="showReplayConfirm = true"
+        @click="showReplayWarning"
         outline
         color="primary"
         class="replay-link-btn"
         title="Secret Link"
-        >Game Replays</q-btn
-      >
+        >Game Replays
+      </q-btn>
     </div>
     <div
       class="scores-container"
