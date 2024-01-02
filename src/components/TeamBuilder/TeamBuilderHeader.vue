@@ -111,23 +111,23 @@ watch(localHeaderExpanded, (newHeaderExpanded) => {
   emit("update:headerExpanded", newHeaderExpanded);
 });
 
-const resetClick = (): void => {
+const resetClick = () => {
   showConfirm.value = !showConfirm.value;
 };
 
-const resetConfirm = (): void => {
+const resetConfirm = () => {
   emit("reset");
 };
 
-const saveClick = (): void => {
+const saveClick = () => {
   emit("saveTeam");
 };
 
-const expandClick = (): void => {
+const expandClick = () => {
   localHeaderExpanded.value = !localHeaderExpanded.value;
 };
 
-const toggleCustomizationDialog = (): void => {
+const toggleCustomizationDialog = () => {
   showTeamCustomizationDialog.value = !showTeamCustomizationDialog.value;
 };
 
