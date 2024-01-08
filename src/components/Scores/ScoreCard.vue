@@ -1,6 +1,6 @@
 <script setup lang="tsx">
-import { ref, computed, watch } from 'vue'
-import { useQuasar } from 'quasar';
+import { ref, computed, watch } from "vue";
+import { useQuasar } from "quasar";
 import {
     HOME,
     HOME_C,
@@ -9,17 +9,18 @@ import {
     GAME_STATUS,
     ZERO_CLOCK,
     NOTIFICATION_GRANTED,
-    NOTIFICATION_DENIED
+    NOTIFICATION_DENIED,
+    type CustomizationKey,
 } from "@/constants/constants";
-import LineScore from './LineScore.vue';
-import TeamDetailsTooltip from './TeamDetailsTooltip.vue';
+import LineScore from "./LineScore.vue";
+import TeamDetailsTooltip from "./TeamDetailsTooltip.vue";
 
 /* Resource: https://dmitripavlutin.com/props-destructure-vue-composition/ */
 const props = defineProps<{
-    game: any
-    index: number,
-    gameTeams: any,
-    customizationMap: any,
+    game: any;
+    index: number;
+    gameTeams: any;
+    customizationState: Map<CustomizationKey, any>;
 }>();
 
 const $q = useQuasar();
@@ -38,10 +39,17 @@ watch(notificationPermission, (newPermission) => {
     }
 });
 
-
 /* Computed Refs */
 
-const shortName = computed(() => props.game.shortName);
+const fullGameName = computed(() => props.game.name);
+const shortGameName = computed(() => props.game.shortName);
+console.log({ test: fullGameName.value, test2: shortGameName.value });
+const gameNameToDisplay = computed(() => {
+    const useShortNames: boolean = props.customizationState.get("shortNames");
+    const nameToUse = useShortNames ? shortGameName : fullGameName;
+    return nameToUse.value.replace('"', "");
+});
+
 /*TODO: 
 - Operating on the current date only until can figure out how to work with bkref to get previous games 
 - Bkref doesn't do current scores, so might have to actually differentiate data betwene previous days and current day
@@ -49,9 +57,10 @@ const shortName = computed(() => props.game.shortName);
 */
 const gameDate = computed(() => props.game.date);
 const gameTimeStart = computed(() => {
-    const timeString = new Date(props.game.date).toLocaleTimeString(undefined,
-        { hour: "2-digit", minute: "2-digit" }
-    )
+    const timeString = new Date(props.game.date).toLocaleTimeString(undefined, {
+        hour: "2-digit",
+        minute: "2-digit",
+    });
     return timeString;
 });
 
@@ -59,8 +68,8 @@ const gameTeamsSorted = computed(() => {
     /* Ensure away team shows up on top */
     const currentTeams = [...props.gameTeams[props.index]];
     return currentTeams.sort((a: any, b: any) => {
-        return (a.homeAway > b.homeAway) ? 1 : ((b.homeAway > a.homeAway) ? -1 : 0)
-    })
+        return a.homeAway > b.homeAway ? 1 : b.homeAway > a.homeAway ? -1 : 0;
+    });
 });
 
 const getRecordString = (teamRecords: any[], homeAway: string): string => {
@@ -80,33 +89,36 @@ const getRecordString = (teamRecords: any[], homeAway: string): string => {
         }
     }
     return recordString;
-}
+};
 
 const headerValues = computed(() => {
-    const headerVals: any[] = [...Array(4).keys()].map(i => i + 1);
+    const headerVals: any[] = [...Array(4).keys()].map((i) => i + 1);
     headerVals.push("T");
     const currentTeams = props.gameTeams[props.index];
     const linescores = currentTeams[0].linescores;
     console.log({ currentTeams, linescores });
     if (linescores?.length > 4) {
         const index = 4;
-        headerVals.splice(index, 0, "OT")
+        headerVals.splice(index, 0, "OT");
     }
     // console.log({ headerVals });
     return headerVals;
 });
 
 const gameStatusName = computed(() => props.game.status.type.name);
-const gameNotStarted = computed(() => gameStatusName.value === GAME_STATUS.SCHEDULED);
-const gameInProgress = computed(() => gameStatusName.value === GAME_STATUS.IN_PROGRESS)
+const gameNotStarted = computed(
+    () => gameStatusName.value === GAME_STATUS.SCHEDULED
+);
+const gameInProgress = computed(
+    () => gameStatusName.value === GAME_STATUS.IN_PROGRESS
+);
 
 const isGameDone = computed(() => {
     const statusInfo = props.game.status.type;
     return statusInfo.completed;
-})
+});
 
-console.log({ isTheGameDone: isGameDone.value, thisGameData: props.game })
-
+console.log({ isTheGameDone: isGameDone.value, thisGameData: props.game });
 
 const gameClockString = computed(() => {
     const statusInfo = props.game.status;
@@ -117,34 +129,24 @@ const gameClockString = computed(() => {
         return "Halftime";
     }
     return clockString;
-})
-
-const namePropertyKey = computed(() => {
-    const useShortNames: boolean = props.customizationMap.get("shortNames");
-    // const keyToUse = useShortNames ? 
-    // return keyToUse;
-    return "";
-})
+});
 
 const getRecordDetailsTooltip = (competitor: any): void => {
     const { id } = competitor;
     const teamURL = `https://site.api.espn.com/apis/site/v2/sports/basketball/nba/teams/${id}`;
 
     fetch(teamURL, {
-        method: 'GET',
+        method: "GET",
     })
-        .then(response => {
-            response.json().then(res => {
+        .then((response) => {
+            response.json().then((res) => {
                 tooltipData.value = res.team;
             });
         })
-        .catch(err => {
+        .catch((err) => {
             console.error(err);
         });
-}
-
-
-
+};
 
 /* TODO:
 - Figure out if there's a better way instead of the sequence of computed refs
@@ -156,27 +158,27 @@ const homeLeaderData = computed(() => {
     const ratingLeader = leaders[lastIndex];
     /* Assuming there's only one leader per team */
     return ratingLeader.leaders[0];
-})
+});
 
 const homeLeaderPlayer = computed(() => {
     return homeLeaderData.value.athlete;
-})
+});
 
 const homeLeaderName = computed(() => {
     return homeLeaderPlayer.value.shortName;
-})
+});
 
 const homeLeaderStatline = computed(() => {
     return homeLeaderData.value.displayValue;
-})
+});
 
 const homeLeaderPosition = computed(() => {
     return homeLeaderPlayer.value.position.abbreviation;
-})
+});
 
 const homeLeaderPicture = computed(() => {
     return homeLeaderPlayer.value.headshot;
-})
+});
 
 /* Away Player w/ best rating */
 const awayLeaderData = computed(() => {
@@ -186,31 +188,31 @@ const awayLeaderData = computed(() => {
     const ratingLeader = leaders[lastIndex];
     /* Assuming there's only one leader per team */
     return ratingLeader.leaders[0];
-})
+});
 
 const awayLeaderPlayer = computed(() => {
     return awayLeaderData.value.athlete;
-})
+});
 
 const awayLeaderName = computed(() => {
     return awayLeaderPlayer.value.shortName;
-})
+});
 
 const awayLeaderPosition = computed(() => {
     return awayLeaderPlayer.value.position.abbreviation;
-})
+});
 
 const awayLeaderStatline = computed(() => {
     return awayLeaderData.value.displayValue;
-})
+});
 
 const awayLeaderPicture = computed(() => {
     return awayLeaderPlayer.value.headshot;
-})
+});
 
 const toggleGameNotification = (id: string): void => {
     askNotificationPermission(id);
-}
+};
 
 const checkNotificationPromise = (): boolean => {
     try {
@@ -219,30 +221,30 @@ const checkNotificationPromise = (): boolean => {
         return false;
     }
     return true;
-}
+};
 
 const askNotificationPermission = (id: string): void => {
     /* Early return if browser permission has already been granted */
     if (notificationPermission.value === NOTIFICATION_GRANTED) {
         // const notification = new Notification("Hi there!");
         return;
-    }
-    else if (notificationPermission.value === NOTIFICATION_DENIED) {
+    } else if (notificationPermission.value === NOTIFICATION_DENIED) {
         /* Send toast instructing what user needs to change, return early because browser won't ask again */
         $q.notify({
-            message: 'Please update your browser permissions to allow us to send you notifications',
-            type: 'negative',
-            position: "bottom-left"
-        })
+            message:
+                "Please update your browser permissions to allow us to send you notifications",
+            type: "negative",
+            position: "bottom-left",
+        });
         return;
     }
 
     const handlePermission = (permission: string) => {
         notificationPermission.value = permission;
-    }
+    };
 
     // Let's check if the browser supports notifications
-    if (!('Notification' in window)) {
+    if (!("Notification" in window)) {
         console.error("This browser does not support notifications.");
     } else if (checkNotificationPromise()) {
         Notification.requestPermission().then((permission) => {
@@ -253,34 +255,32 @@ const askNotificationPermission = (id: string): void => {
             handlePermission(permission);
         });
     }
-}
+};
 
 /* TODO: Browser notifications link: https://developer.mozilla.org/en-US/docs/Web/API/Notifications_API/Using_the_Notifications_API */
-
 </script>
 
 <template>
     <q-card dark class="score-card" bordered :key="game.uid">
         <q-card-section class="card-header">
-            <h6>{{ shortName }}</h6>
+            <h6>{{ gameNameToDisplay }}</h6>
             <!-- Toggled styling here ==> notifications vs notifications active -->
             <!-- v-if="!isGameDone" -->
             <div>
-
-
-                <q-btn 
-                    @click="toggleGameNotification(game.uid)" 
-                    class="notification-bell" 
-                    flat 
-                    round 
+                <q-btn
+                    @click="toggleGameNotification(game.uid)"
+                    class="notification-bell"
+                    flat
+                    round
                     icon="notifications"
-                    title="Notify me about the game" 
+                    title="Notify me about the game"
                 />
             </div>
-
         </q-card-section>
         <q-separator dark />
         <q-card-section>
+            <div class="left-section"></div>
+
             <div class="card-heading">
                 <div class="clock active" v-if="gameInProgress">
                     {{ gameClockString }}
@@ -288,70 +288,93 @@ const askNotificationPermission = (id: string): void => {
                 <div class="clock" v-else-if="gameNotStarted">
                     {{ gameTimeStart }}
                 </div>
-                <div class="clock" v-else>
-                    FINAL
-                </div>
-                <div class="line-score-heading">
-                    <template v-for="(heading, index) in headerValues" :key="index">
-                        <div class="time-period" :class="{ total: index === headerValues.length - 1 }">{{ heading }}
+                <div class="clock" v-else>FINAL</div>
+                <div v-if="!gameNotStarted" class="line-score-heading">
+                    <template
+                        v-for="(heading, index) in headerValues"
+                        :key="index"
+                    >
+                        <div
+                            class="time-period"
+                            :class="{
+                                total: index === headerValues.length - 1,
+                            }"
+                        >
+                            {{ heading }}
                         </div>
                     </template>
                 </div>
             </div>
-
-            <div class="team-row" :class="{ first: index === 0 }" v-for="(competitor, index) in gameTeamsSorted"
-                :key="competitor.id">
-                <!-- content -->
+            <div
+                class="team-row"
+                :class="{ first: index === 0 }"
+                v-for="(competitor, index) in gameTeamsSorted"
+                :key="competitor.id"
+            >
                 <img class="team-logo" :src="competitor.team.logo" />
                 <div class="team-info">
                     <div>{{ competitor.team.shortDisplayName }}</div>
                     <div v-on:mouseenter="getRecordDetailsTooltip(competitor)">
-                        <span>{{ getRecordString(competitor.records, competitor.homeAway) }}</span>
-                        <TeamDetailsTooltip v-if="tooltipData" :data="tooltipData" :homeAway="competitor.homeAway" />
+                        <span>{{
+                            getRecordString(
+                                competitor.records,
+                                competitor.homeAway
+                            )
+                        }}</span>
+                        <TeamDetailsTooltip
+                            v-if="tooltipData"
+                            :data="tooltipData"
+                            :homeAway="competitor.homeAway"
+                        />
                     </div>
                 </div>
                 <LineScore :team="competitor" />
                 <!-- {{ getLineScore(competitor) }} -->
-                <div class="score">{{ competitor.score }}</div>
+                <div v-if="!gameNotStarted" class="score">
+                    {{ competitor.score }}
+                </div>
             </div>
         </q-card-section>
         <q-separator dark />
         <q-card-section class="leaders-section">
             <div class="leaders-header">
-                {{ gameNotStarted? "Players to Watch": "Top Performers" }}
+                {{ gameNotStarted ? "Players to Watch" : "Top Performers" }}
             </div>
             <div class="leaders">
                 <div class="leader">
                     <q-avatar class="headshot">
-                        <q-img 
-                            :src="awayLeaderPicture" 
+                        <q-img
+                            :src="awayLeaderPicture"
                             height="50px"
                             width="50px"
                         />
                     </q-avatar>
                     <div class="leader-info">
-                        <span>{{ `${awayLeaderName} - ${awayLeaderPosition}`}}</span>
+                        <span
+                            >{{ `${awayLeaderName} - ${awayLeaderPosition}` }}
+                        </span>
                         <span>{{ awayLeaderStatline }}</span>
                     </div>
                 </div>
                 <!-- Home Leader -->
                 <div class="leader">
                     <q-avatar class="headshot">
-                        <q-img 
-                            :src="homeLeaderPicture" 
+                        <q-img
+                            :src="homeLeaderPicture"
                             height="50px"
                             width="50px"
                         />
                     </q-avatar>
                     <div class="leader-info">
-                        <span>{{ `${homeLeaderName} - ${homeLeaderPosition}`}}</span>
+                        <span>
+                            {{ `${homeLeaderName} - ${homeLeaderPosition}` }}
+                        </span>
                         <span>{{ homeLeaderStatline }}</span>
                     </div>
                 </div>
             </div>
         </q-card-section>
-        <q-card-actions>
-        </q-card-actions>
+        <q-card-actions> </q-card-actions>
     </q-card>
 </template>
 
@@ -402,7 +425,6 @@ const askNotificationPermission = (id: string): void => {
     justify-content: flex-end;
 }
 
-
 .clock {
     font-weight: 600;
 }
@@ -417,8 +439,6 @@ const askNotificationPermission = (id: string): void => {
 }
 
 .time-period.total {
-
-        
 }
 
 .score {
@@ -440,7 +460,7 @@ const askNotificationPermission = (id: string): void => {
 
 .notification-bell {
     margin-left: auto;
-    animation: ring 4s .7s ease-in-out;
+    animation: ring 4s 0.7s ease-in-out;
     transform-origin: 50% 1px;
 }
 

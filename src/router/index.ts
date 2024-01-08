@@ -1,46 +1,45 @@
 import { createRouter, createWebHistory } from "vue-router";
-import Home from "../views/HomeView.vue";
-import TeamBuilder from "@/views/TeamBuilderView.vue";
-import Scores from "@/views/ScoresView.vue";
-import News from "@/views/NewsView.vue";
+import Home from "../views/Home.vue";
+import TeamBuilder from "@/views/TeamBuilder.vue";
+import Scores from "@/views/Scores.vue";
+import News from "@/views/News.vue";
+import Login from "@/views/Login.vue";
+import Teams from "@/views/Teams.vue";
 
 const router = createRouter({
-  history: createWebHistory(import.meta.env.BASE_URL),
-  routes: [
-    {
-      path: "/",
-      name: "home",
-      component: Home,
-    },
-    {
-      path: "/teambuilder",
-      name: "teamBuilder",
-      component: TeamBuilder,
-    },
-    {
-      path: "/scores",
-      name: "scores",
-      component: Scores,
-    },
-    {
-      path: "/news",
-      name: "news",
-      component: News,
-    },
-    {
-      path: "/login",
-      name: "login",
-      component: News,
-    },
-    // {
-    //   path: "/about",
-    //   name: "about",
-    //   // route level code-splitting
-    //   // this generates a separate chunk (About.[hash].js) for this route
-    //   // which is lazy-loaded when the route is visited.
-    //   component: () => import("../views/AboutView.vue"),
-    // },
-  ],
+    history: createWebHistory(import.meta.env.BASE_URL),
+    routes: [
+        {
+            path: "/",
+            name: "home",
+            component: Home,
+        },
+        {
+            path: "/teambuilder",
+            name: "teamBuilder",
+            component: TeamBuilder,
+        },
+        {
+            path: "/scores",
+            name: "scores",
+            component: Scores,
+        },
+        {
+            path: "/news",
+            name: "news",
+            component: News,
+        },
+        {
+            path: "/login",
+            name: "login",
+            component: Login,
+        },
+        {
+            path: "/teams",
+            name: "teams",
+            component: Teams,
+        },
+    ],
 });
 
 export default router;

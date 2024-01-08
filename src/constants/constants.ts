@@ -2,96 +2,104 @@
 export const CURRENT_SEASON_START_YEAR = new Date().getFullYear() - 1;
 
 export const ROUTES = [
-  { id: 1, name: "Home", path: "/", title: "" },
-  { id: 2, name: "My Teams", path: "/teams", title: "My Teams" },
-  { id: 3, name: "Team Builder", path: "/teambuilder", title: "Team Builder" },
-  { id: 4, name: "Scores", path: "/scores", title: "NBA Scoreboard" },
-  { id: 5, name: "News", path: "/news", title: "NBA News" },
-  { id: 6, name: "Sign In", path: "/login", class: "login" },
+    { id: 1, name: "Home", path: "/", title: "" },
+    { id: 2, name: "My Teams", path: "/teams", title: "My Teams" },
+    {
+        id: 3,
+        name: "Team Builder",
+        path: "/teambuilder",
+        title: "Team Builder",
+    },
+    { id: 4, name: "Scores", path: "/scores", title: "NBA Scoreboard" },
+    { id: 5, name: "News", path: "/news", title: "NBA News" },
+    { id: 6, name: "Login", path: "/login", class: "login" },
 ];
 
 export const TYPE_WRITER_PROPS = {
-  closingText: "team",
-  leadInText: "Build the",
-  textDisplayArray: [
-    "GOAT",
-    "best",
-    "greatest",
-    "coldest",
-    "dopest",
-    "coolest",
-    "hottest",
-  ],
+    closingText: "team",
+    leadInText: "Build the",
+    textDisplayArray: [
+        "GOAT",
+        "best",
+        "greatest",
+        "coldest",
+        "dopest",
+        "coolest",
+        "hottest",
+    ],
 };
 
 export const VIEWS = {
-  DEFAULT: "Default",
-  LIST: "List",
+    DEFAULT: "Default",
+    LIST: "List",
 };
 export const VIEW_OPTIONS = [
-  { label: VIEWS.DEFAULT, value: VIEWS.DEFAULT },
-  { label: VIEWS.LIST, value: VIEWS.LIST },
+    { label: VIEWS.DEFAULT, value: VIEWS.DEFAULT },
+    { label: VIEWS.LIST, value: VIEWS.LIST },
 ];
 
 export const DEFAULT_NOTIFICATION_PROPS = {
-  position: "bottom-left",
-  closeBtn: true,
-  timeout: 2500,
-  textColor: "white",
+    position: "bottom-left",
+    closeBtn: true,
+    timeout: 2500,
+    textColor: "white",
 };
 
 export type DrawerSide = "left" | "right" | undefined;
 export const DRAWER_SIDES: { [key: string]: DrawerSide } = {
-  LEFT: "left",
-  RIGHT: "right",
+    LEFT: "left",
+    RIGHT: "right",
 };
 export const DRAWER_OPTIONS = [
-  { label: DRAWER_SIDES.LEFT, value: DRAWER_SIDES.LEFT },
-  { label: DRAWER_SIDES.RIGHT, value: DRAWER_SIDES.RIGHT },
+    { label: DRAWER_SIDES.LEFT, value: DRAWER_SIDES.LEFT },
+    { label: DRAWER_SIDES.RIGHT, value: DRAWER_SIDES.RIGHT },
 ];
 
 export const NOTIFICATION_GRANTED = "granted";
 export const NOTIFICATION_DENIED = "denied";
 
-export type CustomizationKey = "shortNames" | "hideScores";
+export type CustomizationKey =
+    | "shortNames"
+    | "hideScores"
+    | "hideFinishedGames";
 
 /* NBA Info */
 export const NUM_TEAMS = 30;
 
 export const WESTERN_TEAMS = [
-  "Dallas Mavericks",
-  "Denver Nuggets",
-  "Golden State Warriors",
-  "Houston Rockets",
-  "Los Angeles Clippers",
-  "Los Angeles Lakers",
-  "Memphis Grizzlies",
-  "Minnesota Timberwolves",
-  "New Orleans Pelicans",
-  "Oklahoma City Thunder",
-  "Phoenix Suns",
-  "Portland Trail Blazers",
-  "Sacramento Kings",
-  "San Antonio Spurs",
-  "Utah Jazz",
+    "Dallas Mavericks",
+    "Denver Nuggets",
+    "Golden State Warriors",
+    "Houston Rockets",
+    "Los Angeles Clippers",
+    "Los Angeles Lakers",
+    "Memphis Grizzlies",
+    "Minnesota Timberwolves",
+    "New Orleans Pelicans",
+    "Oklahoma City Thunder",
+    "Phoenix Suns",
+    "Portland Trail Blazers",
+    "Sacramento Kings",
+    "San Antonio Spurs",
+    "Utah Jazz",
 ];
 
 export const EASTERN_TEAMS = [
-  "Atlanta Hawks",
-  "Boston Celtics",
-  "Brooklyn Nets",
-  "Charlotte Hornets",
-  "Chicago Bulls",
-  "Cleveland Cavaliers",
-  "Detroit Pistons",
-  "Indiana Pacers",
-  "Miami Heat",
-  "Milwaukee Bucks",
-  "New York Knicks",
-  "Orlando Magic",
-  "Philadelphia 76ers",
-  "Toronto Raptors",
-  "Washington Wizards",
+    "Atlanta Hawks",
+    "Boston Celtics",
+    "Brooklyn Nets",
+    "Charlotte Hornets",
+    "Chicago Bulls",
+    "Cleveland Cavaliers",
+    "Detroit Pistons",
+    "Indiana Pacers",
+    "Miami Heat",
+    "Milwaukee Bucks",
+    "New York Knicks",
+    "Orlando Magic",
+    "Philadelphia 76ers",
+    "Toronto Raptors",
+    "Washington Wizards",
 ];
 
 export const HOME = "home";
@@ -102,19 +110,20 @@ export const AWAY_C = "Away";
 /* Scoreboard */
 export const ZERO_CLOCK = "0.0";
 export const GAME_STATUS = {
-  SCHEDULED: "STATUS_SCHEDULED",
-  IN_PROGRESS: "STATUS_IN_PROGRESS",
-  COMPLETED: "STATUS_COMPLETED",
+    SCHEDULED: "STATUS_SCHEDULED",
+    IN_PROGRESS: "STATUS_IN_PROGRESS",
+    COMPLETED: "STATUS_COMPLETED",
 };
 
 /* API */
 export const BDL_API_PREFIX = "https://www.balldontlie.io/api/v1";
 export const ESPN_SCORES_URL =
-  "https://site.api.espn.com/apis/site/v2/sports/basketball/nba/scoreboard";
+    "https://site.api.espn.com/apis/site/v2/sports/basketball/nba/scoreboard";
 export const ESPN_NEWS_URL =
-  "https://site.api.espn.com/apis/site/v2/sports/basketball/nba/news";
+    "https://site.api.espn.com/apis/site/v2/sports/basketball/nba/news";
 
-export const ESPN_TEAM_URL = "https://site.api.espn.com/apis/site/v2/sports/basketball/nba/teams/";
+export const ESPN_TEAM_URL =
+    "https://site.api.espn.com/apis/site/v2/sports/basketball/nba/teams/";
 
 /* API URLs for reference 
 - https://site.api.espn.com/apis/site/v2/sports/basketball/nba/teams/7
@@ -124,10 +133,9 @@ export const ESPN_TEAM_URL = "https://site.api.espn.com/apis/site/v2/sports/bask
 - NBA.com Standings: http://data.nba.net/prod/v1/current/standings_conference.json
 */
 
-const BBALL_REF_PREFIX = "https://www.basketball-reference.com"
+const BBALL_REF_PREFIX = "https://www.basketball-reference.com";
 
 const COACH_COLUMNS = ["Coach", "From", "To", "Birth Date", "College"];
-
 
 /* Coaches Data Function:
 const coachesData = [];

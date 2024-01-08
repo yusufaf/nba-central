@@ -6,7 +6,7 @@ import PlayerStatsDialog from "@/components/TeamBuilder/PlayerStatsDialog.vue";
 import CoachSection from "@/components/TeamBuilder/CoachSection.vue";
 import ArenaSection from "@/components/TeamBuilder/ArenaSection.vue";
 import PlayerComparison from "@/components/TeamBuilder/PlayerComparison.vue";
-
+import GMSection from "@/components/TeamBuilder/GMSection.vue";
 import {
     BDL_API_PREFIX,
     VIEWS,
@@ -20,7 +20,6 @@ import type { Team } from "@/lib/types";
 import { uid } from "quasar";
 import draggable from "vuedraggable";
 import axios from "axios";
-import GMSection from "@/components/TeamBuilder/GMSection.vue";
 
 const $q = useQuasar();
 
@@ -95,6 +94,8 @@ const activeDrawer = computed(() => {
     }
     return null;
 });
+
+const showRemovePlayerDialog = ref<boolean>(false);
 
 /* Watchers */
 
@@ -728,6 +729,18 @@ const testArray = ref([]);
             :player1Data="playerStatsData[selectedComparePlayers[0]]"
             :player2Data="playerStatsData[selectedComparePlayers[1]]"
         />
+        <q-dialog v-model="showRemovePlayerDialog">
+            <q-card dark>
+                <q-card-section class="row items-center">
+                    <div>Are you sure you want to reset your whole team?</div>
+                </q-card-section>
+                <q-card-actions align="right">
+                    <q-btn flat label="Cancel" color="primary" v-close-popup />
+                    <!-- TODO: @click for q-btn  -->
+                    <q-btn label="Confirm" color="primary" v-close-popup />
+                </q-card-actions>
+            </q-card>
+        </q-dialog>
     </main>
 </template>
 
