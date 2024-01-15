@@ -1,4 +1,4 @@
-<script setup lang="tsx">
+<script setup lang="ts">
 import { ref, computed, watch } from "vue";
 import { useQuasar } from "quasar";
 import {
@@ -40,10 +40,8 @@ watch(notificationPermission, (newPermission) => {
 });
 
 /* Computed Refs */
-
 const fullGameName = computed(() => props.game.name);
 const shortGameName = computed(() => props.game.shortName);
-console.log({ test: fullGameName.value, test2: shortGameName.value });
 const gameNameToDisplay = computed(() => {
     const useShortNames: boolean = props.customizationState.get("shortNames");
     const nameToUse = useShortNames ? shortGameName : fullGameName;
@@ -118,12 +116,18 @@ const isGameDone = computed(() => {
     return statusInfo.completed;
 });
 
-console.log({ isTheGameDone: isGameDone.value, thisGameData: props.game });
+const gameStatusDetail = computed(() => props.game.status.type.detail);
 
 const gameClockString = computed(() => {
-    const statusInfo = props.game.status;
-    const { displayClock, period } = statusInfo;
-    const clockString = `${displayClock} - ${period}Q`;
+    const { displayClock, period } = props.game.status;
+
+    let currentPeriodString = `${period}Q`;
+    if (period > 4) {
+        const otNumber = period - 4;
+        currentPeriodString = `${otNumber ? otNumber : ""}OT`;
+    }
+
+    const clockString = `${displayClock} - ${currentPeriodString}`;
 
     if (period === 2 && displayClock === ZERO_CLOCK) {
         return "Halftime";
@@ -288,7 +292,7 @@ const askNotificationPermission = (id: string): void => {
                 <div class="clock" v-else-if="gameNotStarted">
                     {{ gameTimeStart }}
                 </div>
-                <div class="clock" v-else>FINAL</div>
+                <div class="clock" v-else>{{ gameStatusDetail }}</div>
                 <div v-if="!gameNotStarted" class="line-score-heading">
                     <template
                         v-for="(heading, index) in headerValues"

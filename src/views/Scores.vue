@@ -12,7 +12,7 @@ const numGames = ref<number>(0);
 const scoreData = ref<any>({});
 
 const date = ref(new Date());
-const primaryDateString = date.value.toLocaleDateString(undefined, {
+const primaryDateString = date.value.toLocaleDateString("en-us", {
     weekday: "long",
     year: "numeric",
     month: "long",
@@ -49,32 +49,40 @@ const gamesWithNotifications = ref<Map<any, any>>(new Map());
 
 */
 
-const fetchCurrentScores = () => {
-    fetch(ESPN_SCORES_URL, {
-        method: "GET",
-    })
-        .then((response) => {
-            response.json().then((res) => {
-                const { day, events } = res;
-                scoreData.value = res;
-                /* Date and # of Games for Easy Access */
-                date.value = new Date(day.date);
-                numGames.value = events.length;
-                gameData.value = events;
-                const eventCompetitions = events.map(
-                    (event: any) => event.competitions
-                );
-                const eventCompetitors = eventCompetitions.map(
-                    (competition: any) => competition[0].competitors
-                );
-                games.value = eventCompetitions;
-                gameTeams.value = eventCompetitors;
-                console.log("Response JSON = ", res);
-            });
-        })
-        .catch((err) => {
-            console.error(err);
+const fetchCurrentScores = async () => {
+    try {
+        const response = await fetch(ESPN_SCORES_URL, {
+            method: "GET",
         });
+
+        if (!response.ok) {
+            throw new Error(`Failed to fetch data. Status: ${response.status}`);
+        }
+
+        const data = await response.json();
+        console.log("Response JSON = ", data);
+        const { day, events } = data;
+
+        scoreData.value = data;
+        date.value = new Date(day.date);
+        numGames.value = events.length;
+        gameData.value = events;
+
+        const eventCompetitions = events.map(
+            (event: any) => event.competitions
+        );
+        const eventCompetitors = eventCompetitions.map(
+            (competition: any) => competition[0].competitors
+        );
+
+        games.value = eventCompetitions;
+        gameTeams.value = eventCompetitors;
+
+        return data;
+    } catch (err) {
+        console.error(err);
+        throw err; // Rethrow the error to be caught by the caller
+    }
 };
 
 /* ==== Actions Bar ==== */
@@ -108,11 +116,21 @@ const customizationState = computed(() => {
     return customizationMap;
 });
 
-onMounted(() => {
-    fetchCurrentScores();
-    setInterval(() => {
-        fetchCurrentScores();
-    }, SCOREBOARD_TIMEOUT);
+onMounted(async () => {
+    const localScoresData = await fetchCurrentScores();
+
+    const localEvents: any[] = localScoresData.events ?? [];
+
+    /* Determine if at least one game is not done */
+    const isAnyGameNotDone = localEvents.some((value) => {
+        return !value.status.type.completed;
+    });
+
+    if (isAnyGameNotDone) {
+        setInterval(() => {
+            fetchCurrentScores();
+        }, SCOREBOARD_TIMEOUT);
+    }
 });
 </script>
 
