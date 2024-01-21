@@ -4,9 +4,12 @@ import { ESPN_SCORES_URL, VIEW_OPTIONS, VIEWS } from "@/constants/constants";
 import type { CustomizationKey } from "@/constants/constants";
 import ScoreCard from "@/components/Scores/ScoreCard.vue";
 import PageTitle from "@/components/PageTitle.vue";
+import GameReplaysWarning from "@/components/Scores/GameReplaysWarning.vue";
+import ManageNotifications from "@/components/Scores/ManageNotifications.vue";
+import OptionsMenu from "@/components/Scores/OptionsMenu.vue";
 
 /* Update scores every 5 mins */
-const SCOREBOARD_TIMEOUT = 300000;
+const SCOREBOARD_INTERVAL = 300000;
 
 const numGames = ref<number>(0);
 const scoreData = ref<any>({});
@@ -16,11 +19,6 @@ const primaryDateString = date.value.toLocaleDateString("en-us", {
     weekday: "long",
     year: "numeric",
     month: "long",
-    day: "numeric",
-});
-const shortDateString = date.value.toLocaleDateString("en-us", {
-    year: "numeric",
-    month: "short",
     day: "numeric",
 });
 
@@ -90,12 +88,6 @@ const showReplayWarning = () => {
     showReplayConfirm.value = true;
 };
 
-const navigateToReplays = () => {
-    const search = encodeURI(shortDateString);
-    const fullGameReplaysLink = `https://watchreplay.net/?s=${search}`;
-    window.open(fullGameReplaysLink, "_blank");
-};
-
 const toggleNotificationsMenu = () => {
     notificationsMenuOpen.value = !notificationsMenuOpen.value;
 };
@@ -129,7 +121,7 @@ onMounted(async () => {
     if (isAnyGameNotDone) {
         setInterval(() => {
             fetchCurrentScores();
-        }, SCOREBOARD_TIMEOUT);
+        }, SCOREBOARD_INTERVAL);
     }
 });
 </script>
@@ -149,41 +141,11 @@ onMounted(async () => {
                 @click="toggleNotificationsMenu"
             >
             </q-btn>
-            <q-btn round icon="more_vert" title="More">
-                <q-menu
-                    dark
-                    transition-show="jump-down"
-                    transition-hide="jump-up"
-                >
-                    <q-list>
-                        <q-item>
-                            <q-item-section>
-                                <q-toggle
-                                    v-model="hideScores"
-                                    label="Hide Scores"
-                                />
-                            </q-item-section>
-                        </q-item>
-                        <q-item>
-                            <q-item-section>
-                                <q-toggle
-                                    v-model="hideFinishedGames"
-                                    label="Hide Finished Games"
-                                />
-                            </q-item-section>
-                        </q-item>
-                        <q-item>
-                            <q-item-section>
-                                <q-toggle
-                                    v-model="useShortNames"
-                                    label="Use Short Names"
-                                />
-                            </q-item-section>
-                        </q-item>
-                        <q-separator />
-                    </q-list>
-                </q-menu>
-            </q-btn>
+            <OptionsMenu
+                v-model:hideScores="hideScores"
+                v-model:useShortNames="useShortNames"
+                v-model:hideFinishedGames="hideFinishedGames"
+            />
             <q-btn-toggle
                 v-model="selectedView"
                 toggle-color="primary"
@@ -212,58 +174,10 @@ onMounted(async () => {
                 :hideScores="hideScores"
             />
         </div>
-        <q-dialog v-model="showReplayConfirm">
-            <q-card dark>
-                <q-card-section class="row items-center">
-                    <div>
-                        This will take you to an external website to access full
-                        game replays for today's slate of games, view at your
-                        own risk 🙂
-                    </div>
-                </q-card-section>
-                <q-card-actions align="right">
-                    <q-btn flat label="Cancel" color="primary" v-close-popup />
-                    <q-btn
-                        @click="navigateToReplays"
-                        flat
-                        label="Confirm"
-                        color="primary"
-                        v-close-popup
-                    />
-                </q-card-actions>
-            </q-card>
-        </q-dialog>
-        <q-dialog v-model="notificationsMenuOpen">
-            <q-card dark>
-                <q-card-section class="row items-center">
-                    <!-- <q-select 
-          outlined
-          label="Sort"
-          clearable
-          dark
-          multiple
-        /> -->
-
-                    <!-- Favorited Teams: -->
-                    <q-list dark bordered>
-                        <template v-for="n in Array(5)" :key="n">
-                            <q-item>
-                                <q-item-section>
-                                    <q-toggle
-                                        v-model="hideScores"
-                                        label="Hide Scores"
-                                    />
-                                </q-item-section>
-                            </q-item>
-                            <q-separator dark />
-                        </template>
-                    </q-list>
-                </q-card-section>
-                <q-card-actions align="right">
-                    <q-btn flat label="Close" color="primary" v-close-popup />
-                </q-card-actions>
-            </q-card>
-        </q-dialog>
+        <GameReplaysWarning v-model:showReplayConfirm="showReplayConfirm" />
+        <ManageNotifications
+            v-model:notificationsMenuOpen="notificationsMenuOpen"
+        />
     </main>
 </template>
 
