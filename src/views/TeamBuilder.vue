@@ -271,14 +271,11 @@ const addPlayerFromList = async (player: any) => {
     cardsFlipped.value.set(playerIndex, false);
 };
 
-// TODO
-const resetTeam = async () => {
+const resetTeam = () => {
     /* Reset coach, arena, and GM selections */
     teamCoach.value = null;
     teamArena.value = null;
     teamGM.value = null;
-
-    // axios.get("/login/").then((res) => console.log(res.data));
 };
 
 const saveTeam = () => {
@@ -404,9 +401,9 @@ const togglePlayerInComparison = (n: number) => {
 };
 
 // Example Reactive Console Log:
-// watch(teamName, (newTeamName, previousTeamName) => {
-//   console.log("test = ", {newTeamName, previousTeamName});
-// });
+watch(headerExpanded, (newheaderExpanded, previousheaderExpanded) => {
+    console.log("test = ", { newheaderExpanded, previousheaderExpanded });
+});
 
 /* TODO: Drag Player Cards Functionality */
 

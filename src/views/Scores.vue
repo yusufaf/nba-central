@@ -157,7 +157,8 @@ onMounted(async () => {
                 color="primary"
                 class="replay-link-btn"
                 title="Secret Link"
-                >Game Replays
+            >
+                Game Replays
             </q-btn>
         </div>
         <div

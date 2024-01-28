@@ -9,65 +9,24 @@ import axios from "axios";
 import jerseyImg from "@/assets/basketbalL_jersey.png";
 
 const props = defineProps<{
-    headerExpanded: boolean;
-    teamName: string;
-    teamDescription: string;
-    teamCity: string;
-    teamCountry: string;
     teamLogo: string;
     drawerSide: any;
-    selectedView: string;
 }>();
 
 const emit = defineEmits([
     "reset",
     "saveTeam",
-    "update:headerExpanded",
-    "update:teamName",
-    "update:teamDescription",
-    "update:teamCity",
-    "update:teamCountry",
     "update:teamLogo",
     "update:drawerSide",
-    "update:selectedView",
 ]);
 
 /* 2-Way Bound Props */
-const localTeamName = computed({
-    get() {
-        return props.teamName;
-    },
-    set(value) {
-        emit("update:teamName", value);
-    },
-});
-
-const localTeamDescription = computed({
-    get() {
-        return props.teamDescription;
-    },
-    set(value) {
-        emit("update:teamDescription", value);
-    },
-});
-
-const localTeamCity = computed({
-    get() {
-        return props.teamCity;
-    },
-    set(value) {
-        emit("update:teamCity", value);
-    },
-});
-
-const localTeamCountry = computed({
-    get() {
-        return props.teamCountry;
-    },
-    set(value) {
-        emit("update:teamCountry", value);
-    },
-});
+const headerExpanded = defineModel<boolean>("headerExpanded");
+const teamName = defineModel<string>("teamName");
+const teamDescription = defineModel<string>("teamDescription");
+const teamCity = defineModel<string>("teamCity");
+const teamCountry = defineModel<string>("teamCountry");
+const selectedView = defineModel<string>("selectedView");
 
 const localTeamLogo = computed({
     get() {
@@ -79,8 +38,6 @@ const localTeamLogo = computed({
 });
 
 const localDrawerSide = ref<any>(props.drawerSide);
-const localSelectedView = ref<string>(props.selectedView);
-const localHeaderExpanded = ref<boolean>(false);
 
 const showConfirm = ref<boolean>(false);
 const showTeamCustomizationDialog = ref<boolean>(false);
@@ -103,14 +60,6 @@ watch(localDrawerSide, (newDrawerSide) => {
     emit("update:drawerSide", newDrawerSide);
 });
 
-watch(localSelectedView, (newSelectedView) => {
-    emit("update:selectedView", newSelectedView);
-});
-
-watch(localHeaderExpanded, (newHeaderExpanded) => {
-    emit("update:headerExpanded", newHeaderExpanded);
-});
-
 const resetClick = () => {
     showConfirm.value = !showConfirm.value;
 };
@@ -124,7 +73,7 @@ const saveClick = () => {
 };
 
 const expandClick = () => {
-    localHeaderExpanded.value = !localHeaderExpanded.value;
+    headerExpanded.value = !headerExpanded.value;
 };
 
 const toggleCustomizationDialog = () => {
@@ -228,12 +177,12 @@ onMounted(() => {
 </script>
 
 <template>
-    <div class="header" :class="{ expanded: localHeaderExpanded }">
+    <div class="header" :class="{ expanded: headerExpanded }">
         <div class="header-top">
             <div class="title-input-container">
                 <q-input
                     class="title-input"
-                    v-model="localTeamName"
+                    v-model="teamName"
                     label="Team Name"
                     stack-label
                     dark
@@ -254,7 +203,7 @@ onMounted(() => {
                     class="expand-btn"
                     @click="expandClick"
                     round
-                    :icon="localHeaderExpanded ? 'expand_less' : 'expand_more'"
+                    :icon="headerExpanded ? 'expand_less' : 'expand_more'"
                     title="More"
                 />
                 <q-btn round icon="more_vert" title="More">
@@ -280,7 +229,7 @@ onMounted(() => {
                     </q-menu>
                 </q-btn>
                 <q-btn-toggle
-                    v-model="localSelectedView"
+                    v-model="selectedView"
                     toggle-color="primary"
                     :options="VIEW_OPTIONS"
                 />
@@ -343,7 +292,7 @@ onMounted(() => {
                 />
             </div>
             <q-input
-                v-model="localTeamDescription"
+                v-model="teamDescription"
                 outlined
                 label="Team Description"
                 stack-label
@@ -351,12 +300,12 @@ onMounted(() => {
                 type="textarea"
                 class="desc-input"
             />
-            <q-input v-model="localTeamCity" label="City" dark>
+            <q-input v-model="teamCity" label="City" dark>
                 <template v-slot:prepend>
                     <q-icon name="place" />
                 </template>
             </q-input>
-            <q-input v-model="localTeamCountry" label="Country" dark>
+            <q-input v-model="teamCountry" label="Country" dark>
                 <template v-slot:prepend>
                     <q-icon name="flag" />
                 </template>
