@@ -1,28 +1,13 @@
 <script setup lang="ts">
-import { computed } from "vue";
-
-const props = defineProps<{
-    showReplayConfirm: boolean;
-}>();
-
-const emit = defineEmits(["update:showReplayConfirm"]);
-
-const localShowReplayConfirm = computed({
-    get() {
-        return props.showReplayConfirm;
-    },
-    set(value) {
-        emit("update:showReplayConfirm", value);
-    },
-});
-
-const shortDateString = new Date().toLocaleDateString("en-us", {
-    year: "numeric",
-    month: "short",
-    day: "numeric",
-});
+/* 2-Way Bound Props */
+const showReplayConfirm = defineModel<boolean>("showReplayConfirm");
 
 const navigateToReplays = () => {
+    const shortDateString = new Date().toLocaleDateString("en-us", {
+        year: "numeric",
+        month: "short",
+        day: "numeric",
+    });
     const search = encodeURI(shortDateString);
     const fullGameReplaysLink = `https://watchreplay.net/?s=${search}`;
     window.open(fullGameReplaysLink, "_blank");
@@ -30,7 +15,7 @@ const navigateToReplays = () => {
 </script>
 
 <template>
-    <q-dialog v-model="localShowReplayConfirm">
+    <q-dialog v-model="showReplayConfirm">
         <q-card dark>
             <q-card-section class="row items-center">
                 <div>

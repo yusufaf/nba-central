@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { computed } from 'vue';
-import { useRouter } from 'vue-router';
-import { ROUTES } from '@/constants/constants';
+import { computed } from "vue";
+import { useRouter } from "vue-router";
+import { ROUTES } from "@/constants/constants";
 
 const title = computed(() => {
     const currentPath = useRouter().currentRoute.value.path;
@@ -10,17 +10,15 @@ const title = computed(() => {
 
 const isScorePage = computed(() => {
     const currentPath = useRouter().currentRoute.value.path;
-    return currentPath === '/scores';
+    return currentPath === "/scores";
 });
-
 </script>
 
 <template>
-    <h1 class="title" :class="{scores: isScorePage}">{{title}}</h1>
+    <h1 class="title" :class="{ scores: isScorePage }">{{ title }}</h1>
 </template>
 
 <style scoped>
-
 .title {
     font-size: 3rem;
     margin: 2rem 0;
@@ -29,5 +27,4 @@ const isScorePage = computed(() => {
 .title.scores {
     margin: 2rem 0 0 0;
 }
-
 </style>

@@ -33,9 +33,7 @@ const hideFinishedGames = ref<boolean>(false);
 
 const selectedView = ref<string>("Default");
 
-// const customizationState = ref<any>(new Map());
 const useShortNames = ref<boolean>(true);
-
 const notificationsMenuOpen = ref<boolean>(false);
 
 /* TODO: Set in localStorage?  */
@@ -67,10 +65,10 @@ const fetchCurrentScores = async () => {
         gameData.value = events;
 
         const eventCompetitions = events.map(
-            (event: any) => event.competitions
+            (event: any) => event.competitions,
         );
         const eventCompetitors = eventCompetitions.map(
-            (competition: any) => competition[0].competitors
+            (competition: any) => competition[0].competitors,
         );
 
         games.value = eventCompetitions;
@@ -109,12 +107,12 @@ const customizationState = computed(() => {
 });
 
 onMounted(async () => {
-    const localScoresData = await fetchCurrentScores();
+    const scoresData = await fetchCurrentScores();
 
-    const localEvents: any[] = localScoresData.events ?? [];
+    const events: any[] = scoresData.events ?? [];
 
     /* Determine if at least one game is not done */
-    const isAnyGameNotDone = localEvents.some((value) => {
+    const isAnyGameNotDone = events.some((value) => {
         return !value.status.type.completed;
     });
 

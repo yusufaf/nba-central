@@ -1,44 +1,8 @@
 <script setup lang="ts">
-import { computed } from "vue";
-
-const props = defineProps<{
-    hideScores: boolean;
-    useShortNames: boolean;
-    hideFinishedGames: boolean;
-}>();
-
-const emit = defineEmits([
-    "update:hideScores",
-    "update:useShortNames",
-    "update:hideFinishedGames",
-]);
-
-const localHideScores = computed({
-    get() {
-        return props.hideScores;
-    },
-    set(value) {
-        emit("update:hideScores", value);
-    },
-});
-
-const localUseShortNames = computed({
-    get() {
-        return props.useShortNames;
-    },
-    set(value) {
-        emit("update:useShortNames", value);
-    },
-});
-
-const localHideFinishedGames = computed({
-    get() {
-        return props.hideFinishedGames;
-    },
-    set(value) {
-        emit("update:hideFinishedGames", value);
-    },
-});
+/* 2-Way Bound Props */
+const hideScores = defineModel<boolean>("hideScores");
+const useShortNames = defineModel<boolean>("useShortNames");
+const hideFinishedGames = defineModel<boolean>("hideFinishedGames");
 </script>
 
 <template>
@@ -47,16 +11,13 @@ const localHideFinishedGames = computed({
             <q-list>
                 <q-item>
                     <q-item-section>
-                        <q-toggle
-                            v-model="localHideScores"
-                            label="Hide Scores"
-                        />
+                        <q-toggle v-model="hideScores" label="Hide Scores" />
                     </q-item-section>
                 </q-item>
                 <q-item>
                     <q-item-section>
                         <q-toggle
-                            v-model="localHideFinishedGames"
+                            v-model="hideFinishedGames"
                             label="Hide Finished Games"
                         />
                     </q-item-section>
@@ -64,7 +25,7 @@ const localHideFinishedGames = computed({
                 <q-item>
                     <q-item-section>
                         <q-toggle
-                            v-model="localUseShortNames"
+                            v-model="useShortNames"
                             label="Use Short Names"
                         />
                     </q-item-section>

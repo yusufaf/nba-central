@@ -1,24 +1,10 @@
 <script setup lang="ts">
-import { computed } from "vue";
-
-const props = defineProps<{
-    notificationsMenuOpen: boolean;
-}>();
-
-const emit = defineEmits(["update:notificationsMenuOpen"]);
-
-const localNotificationsMenuOpen = computed({
-    get() {
-        return props.notificationsMenuOpen;
-    },
-    set(value) {
-        emit("update:notificationsMenuOpen", value);
-    },
-});
+/* 2-Way Bound Props */
+const notificationsMenuOpen = defineModel<boolean>("notificationsMenuOpen");
 </script>
 
 <template>
-    <q-dialog v-model="localNotificationsMenuOpen">
+    <q-dialog v-model="notificationsMenuOpen">
         <q-card dark>
             <q-card-section class="row items-center">
                 test

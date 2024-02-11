@@ -3,9 +3,7 @@ import { ref, computed, watch } from "vue";
 import { useQuasar } from "quasar";
 import {
     HOME,
-    HOME_C,
     AWAY,
-    AWAY_C,
     GAME_STATUS,
     ZERO_CLOCK,
     NOTIFICATION_GRANTED,
@@ -89,26 +87,23 @@ const getRecordString = (teamRecords: any[], homeAway: string): string => {
     return recordString;
 };
 
-const headerValues = computed(() => {
+const timePeriodLabels = computed(() => {
     const headerVals: any[] = [...Array(4).keys()].map((i) => i + 1);
     headerVals.push("T");
     const currentTeams = props.gameTeams[props.index];
-    const linescores = currentTeams[0].linescores;
-    console.log({ currentTeams, linescores });
-    if (linescores?.length > 4) {
-        const index = 4;
-        headerVals.splice(index, 0, "OT");
+    const lineScores = currentTeams[0].linescores ?? [];
+    if (lineScores.length > 4) {
+        headerVals.splice(4, 0, "OT");
     }
-    // console.log({ headerVals });
     return headerVals;
 });
 
 const gameStatusName = computed(() => props.game.status.type.name);
 const gameNotStarted = computed(
-    () => gameStatusName.value === GAME_STATUS.SCHEDULED
+    () => gameStatusName.value === GAME_STATUS.SCHEDULED,
 );
 const gameInProgress = computed(
-    () => gameStatusName.value === GAME_STATUS.IN_PROGRESS
+    () => gameStatusName.value === GAME_STATUS.IN_PROGRESS,
 );
 
 const isGameDone = computed(() => {
@@ -282,61 +277,77 @@ const askNotificationPermission = (id: string): void => {
             </div>
         </q-card-section>
         <q-separator dark />
-        <q-card-section>
-            <div class="left-section"></div>
-
-            <div class="card-heading">
-                <div class="clock active" v-if="gameInProgress">
-                    {{ gameClockString }}
+        <q-card-section class="main-section">
+            <div class="teams-section">
+                <div class="game-status">
+                    <div class="clock active" v-if="gameInProgress">
+                        {{ gameClockString }}
+                    </div>
+                    <div class="clock" v-else-if="gameNotStarted">
+                        {{ gameTimeStart }}
+                    </div>
+                    <div class="clock" v-else>{{ gameStatusDetail }}</div>
                 </div>
-                <div class="clock" v-else-if="gameNotStarted">
-                    {{ gameTimeStart }}
+                <div
+                    class="team-row"
+                    :class="{ first: index === 0 }"
+                    v-for="(competitor, index) in gameTeamsSorted"
+                    :key="competitor.id"
+                >
+                    <img class="team-logo" :src="competitor.team.logo" />
+                    <div class="team-info">
+                        <div>{{ competitor.team.shortDisplayName }}</div>
+                        <div
+                            v-on:mouseenter="
+                                getRecordDetailsTooltip(competitor)
+                            "
+                        >
+                            <span>{{
+                                getRecordString(
+                                    competitor.records,
+                                    competitor.homeAway,
+                                )
+                            }}</span>
+                            <TeamDetailsTooltip
+                                v-if="tooltipData"
+                                :data="tooltipData"
+                                :homeAway="competitor.homeAway"
+                            />
+                        </div>
+                    </div>
                 </div>
-                <div class="clock" v-else>{{ gameStatusDetail }}</div>
-                <div v-if="!gameNotStarted" class="line-score-heading">
+            </div>
+            <div class="scores-section" v-if="!gameNotStarted">
+                <div class="time-periods">
                     <template
-                        v-for="(heading, index) in headerValues"
-                        :key="index"
+                        v-for="(
+                            timePeriod, timePeriodIndex
+                        ) in timePeriodLabels"
+                        :key="timePeriodIndex"
                     >
                         <div
                             class="time-period"
                             :class="{
-                                total: index === headerValues.length - 1,
+                                total:
+                                    timePeriodIndex ===
+                                    timePeriodLabels.length - 1,
                             }"
                         >
-                            {{ heading }}
+                            {{ timePeriod }}
                         </div>
                     </template>
                 </div>
-            </div>
-            <div
-                class="team-row"
-                :class="{ first: index === 0 }"
-                v-for="(competitor, index) in gameTeamsSorted"
-                :key="competitor.id"
-            >
-                <img class="team-logo" :src="competitor.team.logo" />
-                <div class="team-info">
-                    <div>{{ competitor.team.shortDisplayName }}</div>
-                    <div v-on:mouseenter="getRecordDetailsTooltip(competitor)">
-                        <span>{{
-                            getRecordString(
-                                competitor.records,
-                                competitor.homeAway
-                            )
-                        }}</span>
-                        <TeamDetailsTooltip
-                            v-if="tooltipData"
-                            :data="tooltipData"
-                            :homeAway="competitor.homeAway"
-                        />
+                <template
+                    v-for="(competitor, index) in gameTeamsSorted"
+                    :key="competitor.id"
+                >
+                    <div class="scores-container">
+                        <LineScore :team="competitor" />
+                        <div class="score">
+                            {{ competitor.score }}
+                        </div>
                     </div>
-                </div>
-                <LineScore :team="competitor" />
-                <!-- {{ getLineScore(competitor) }} -->
-                <div v-if="!gameNotStarted" class="score">
-                    {{ competitor.score }}
-                </div>
+                </template>
             </div>
         </q-card-section>
         <q-separator dark />
@@ -385,83 +396,11 @@ const askNotificationPermission = (id: string): void => {
 <style scoped>
 .score-card {
     height: 21.5rem;
+    font-size: 1rem;
+    overflow: hidden;
 }
 
-.card-header {
-    display: flex;
-    align-items: center;
-}
-
-.scores-container {
-    display: grid;
-    grid-template-columns: repeat(3, 35rem);
-    gap: 2rem;
-}
-
-.team-row {
-    display: flex;
-    flex-direction: row;
-    align-items: center;
-}
-
-.team-row.first {
-    margin-bottom: 0.5rem;
-}
-
-.team-logo {
-    height: 2.5rem;
-    width: 2.5rem;
-}
-
-.team-info {
-    margin-left: 1rem;
-}
-
-.card-heading {
-    display: flex;
-}
-
-.line-score-heading {
-    display: flex;
-    gap: 2rem;
-    font-weight: 600;
-    flex: 1;
-    justify-content: flex-end;
-}
-
-.clock {
-    font-weight: 600;
-}
-
-.clock.active {
-    color: var(--q-primary);
-}
-
-.time-period {
-    display: flex;
-    justify-content: center;
-}
-
-.time-period.total {
-}
-
-.score {
-    font-weight: 600;
-    font-size: 1.5rem;
-    margin-left: auto;
-}
-
-.score-column {
-    display: flex;
-    flex-direction: column;
-    gap: 0.5rem;
-}
-
-.tooltip-info {
-    white-space: pre-line;
-    font-size: 0.7rem;
-}
-
+/* Header Styling */
 .notification-bell {
     margin-left: auto;
     animation: ring 4s 0.7s ease-in-out;
@@ -564,6 +503,70 @@ const askNotificationPermission = (id: string): void => {
     100% {
         transform: rotate(0);
     }
+}
+
+.main-section {
+    display: flex;
+}
+
+.card-header {
+    display: flex;
+    align-items: center;
+}
+
+.team-row {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.team-logo {
+    height: 2.5rem;
+    width: 2.5rem;
+}
+
+.teams-section {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.game-status {
+    display: flex;
+}
+
+.clock {
+    font-weight: 600;
+}
+
+.clock.active {
+    color: var(--q-primary);
+}
+
+.scores-section {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    margin-left: 1rem;
+}
+
+.scores-container,
+.time-periods {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, 2rem);
+    align-items: center;
+    text-align: center;
+    gap: 1rem;
+}
+
+.time-period {
+}
+
+.score {
+    font-weight: 600;
+    font-size: 1.5rem;
 }
 
 .leaders-header {
