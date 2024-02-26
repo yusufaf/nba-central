@@ -63,6 +63,21 @@ const gameTimeStart = computed(() => {
 const gameTeamsSorted = computed(() => {
     /* Ensure away team shows up on top */
     const currentTeams = [...props.gameTeams[props.index]];
+
+    // Find the object with the largest value for the specified property
+    const maxObject = currentTeams.reduce((max, currentObj) => {
+        // Convert the property value to a number before comparing
+        const currentValue = parseFloat(currentObj.score);
+        const maxValue = parseFloat(max.score);
+
+        return currentValue > maxValue ? currentObj : max;
+    }, currentTeams[0]);
+
+    // Add a new property to the object with the largest value
+    if (maxObject) {
+        maxObject.winning = true;
+    }
+
     return currentTeams.sort((a: any, b: any) => {
         return a.homeAway > b.homeAway ? 1 : b.homeAway > a.homeAway ? -1 : 0;
     });
@@ -88,7 +103,7 @@ const getRecordString = (teamRecords: any[], homeAway: string): string => {
 };
 
 const timePeriodLabels = computed(() => {
-    const headerVals: any[] = [...Array(4).keys()].map((i) => i + 1);
+    const headerVals: string[] = [...Array(4).keys()].map((i) => `${i + 1}`);
     headerVals.push("T");
     const currentTeams = props.gameTeams[props.index];
     const lineScores = currentTeams[0].linescores ?? [];
@@ -113,7 +128,7 @@ const isGameDone = computed(() => {
 
 const gameStatusDetail = computed(() => props.game.status.type.detail);
 
-const gameClockString = computed(() => {
+const gameClock = computed(() => {
     const { displayClock, period } = props.game.status;
 
     let currentPeriodString = `${period}Q`;
@@ -147,66 +162,28 @@ const getRecordDetailsTooltip = (competitor: any): void => {
         });
 };
 
-/* TODO:
-- Figure out if there's a better way instead of the sequence of computed refs
-*/
-const homeLeaderData = computed(() => {
+const leaderData = computed(() => {
     const currentTeams = props.gameTeams[props.index];
-    const leaders = currentTeams[0].leaders;
-    const lastIndex = leaders.length - 1;
-    const ratingLeader = leaders[lastIndex];
-    /* Assuming there's only one leader per team */
-    return ratingLeader.leaders[0];
-});
 
-const homeLeaderPlayer = computed(() => {
-    return homeLeaderData.value.athlete;
-});
+    const teamLeadersData: any[] = currentTeams.map((value) => {
+        const { leaders } = value;
+        const ratingLeaderData = leaders[leaders.length - 1];
 
-const homeLeaderName = computed(() => {
-    return homeLeaderPlayer.value.shortName;
-});
+        const [ratingLeader] = ratingLeaderData.leaders;
+        const { athlete, displayValue } = ratingLeader;
 
-const homeLeaderStatline = computed(() => {
-    return homeLeaderData.value.displayValue;
-});
+        return {
+            name: athlete.shortName, // Other props: displayName, fullName
+            statline: displayValue,
+            position: athlete.position.abbreviation,
+            headshot: athlete.headshot,
+            data: ratingLeader,
+            id: athlete.id,
+        };
+    });
 
-const homeLeaderPosition = computed(() => {
-    return homeLeaderPlayer.value.position.abbreviation;
-});
-
-const homeLeaderPicture = computed(() => {
-    return homeLeaderPlayer.value.headshot;
-});
-
-/* Away Player w/ best rating */
-const awayLeaderData = computed(() => {
-    const currentTeams = props.gameTeams[props.index];
-    const leaders = currentTeams[1].leaders;
-    const lastIndex = leaders.length - 1;
-    const ratingLeader = leaders[lastIndex];
-    /* Assuming there's only one leader per team */
-    return ratingLeader.leaders[0];
-});
-
-const awayLeaderPlayer = computed(() => {
-    return awayLeaderData.value.athlete;
-});
-
-const awayLeaderName = computed(() => {
-    return awayLeaderPlayer.value.shortName;
-});
-
-const awayLeaderPosition = computed(() => {
-    return awayLeaderPlayer.value.position.abbreviation;
-});
-
-const awayLeaderStatline = computed(() => {
-    return awayLeaderData.value.displayValue;
-});
-
-const awayLeaderPicture = computed(() => {
-    return awayLeaderPlayer.value.headshot;
+    // Reverse to go away -> home
+    return teamLeadersData.reverse();
 });
 
 const toggleGameNotification = (id: string): void => {
@@ -281,7 +258,7 @@ const askNotificationPermission = (id: string): void => {
             <div class="teams-section">
                 <div class="game-status">
                     <div class="clock active" v-if="gameInProgress">
-                        {{ gameClockString }}
+                        {{ gameClock }}
                     </div>
                     <div class="clock" v-else-if="gameNotStarted">
                         {{ gameTimeStart }}
@@ -291,8 +268,8 @@ const askNotificationPermission = (id: string): void => {
                 <div
                     class="team-row"
                     :class="{ first: index === 0 }"
-                    v-for="(competitor, index) in gameTeamsSorted"
                     :key="competitor.id"
+                    v-for="(competitor, index) in gameTeamsSorted"
                 >
                     <img class="team-logo" :src="competitor.team.logo" />
                     <div class="team-info">
@@ -338,12 +315,20 @@ const askNotificationPermission = (id: string): void => {
                     </template>
                 </div>
                 <template
-                    v-for="(competitor, index) in gameTeamsSorted"
+                    v-for="competitor in gameTeamsSorted"
                     :key="competitor.id"
                 >
                     <div class="scores-container">
-                        <LineScore :team="competitor" />
-                        <div class="score">
+                        <LineScore
+                            :team="competitor"
+                            :numberOfTimePeriods="
+                                timePeriodLabels.slice(0, -1).length
+                            "
+                        />
+                        <div
+                            class="score"
+                            :class="{ winning: competitor.winning }"
+                        >
                             {{ competitor.score }}
                         </div>
                     </div>
@@ -356,35 +341,23 @@ const askNotificationPermission = (id: string): void => {
                 {{ gameNotStarted ? "Players to Watch" : "Top Performers" }}
             </div>
             <div class="leaders">
-                <div class="leader">
+                <div
+                    class="leader"
+                    :key="id"
+                    v-for="{
+                        id,
+                        headshot,
+                        name,
+                        position,
+                        statline,
+                    } in leaderData"
+                >
                     <q-avatar class="headshot">
-                        <q-img
-                            :src="awayLeaderPicture"
-                            height="50px"
-                            width="50px"
-                        />
+                        <q-img :src="headshot" height="50px" width="50px" />
                     </q-avatar>
                     <div class="leader-info">
-                        <span
-                            >{{ `${awayLeaderName} - ${awayLeaderPosition}` }}
-                        </span>
-                        <span>{{ awayLeaderStatline }}</span>
-                    </div>
-                </div>
-                <!-- Home Leader -->
-                <div class="leader">
-                    <q-avatar class="headshot">
-                        <q-img
-                            :src="homeLeaderPicture"
-                            height="50px"
-                            width="50px"
-                        />
-                    </q-avatar>
-                    <div class="leader-info">
-                        <span>
-                            {{ `${homeLeaderName} - ${homeLeaderPosition}` }}
-                        </span>
-                        <span>{{ homeLeaderStatline }}</span>
+                        <span>{{ `${name} - ${position}` }} </span>
+                        <span>{{ statline }}</span>
                     </div>
                 </div>
             </div>
@@ -558,15 +531,17 @@ const askNotificationPermission = (id: string): void => {
     grid-template-columns: repeat(auto-fit, 2rem);
     align-items: center;
     text-align: center;
+    justify-content: right;
     gap: 1rem;
-}
-
-.time-period {
 }
 
 .score {
     font-weight: 600;
     font-size: 1.5rem;
+}
+
+.score.winning {
+    color: var(--q-primary);
 }
 
 .leaders-header {

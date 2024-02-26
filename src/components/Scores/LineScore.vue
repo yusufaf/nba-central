@@ -1,19 +1,33 @@
 <script setup lang="tsx">
-import { ref, computed } from "vue";
+import { computed } from "vue";
 
 const props = defineProps<{
     team: any;
+    numberOfTimePeriods: number;
 }>();
 
 /* TODO: Need to work on this when games are actually going on and see what the data looks like */
 
 const lineScore = computed(() => {
     const lineScores = props.team.linescores;
-    if (lineScores === undefined) {
+    const numberOfTimePeriods = props.numberOfTimePeriods;
+    if (!lineScores) {
         return [];
-    } else {
-        return props.team.linescores.map((score: any) => score.value);
     }
+
+    const scores = lineScores.map((score: any) => score.value);
+
+    /* 
+        If the length of scores is less than numberOfTimePeriods, pad the array with empty strings
+        TODO: Re-visit scores section CSS to see if this is unnecessary
+    */
+    if (scores.length < numberOfTimePeriods) {
+        const paddingLength = numberOfTimePeriods - scores.length;
+        const paddingArray = Array(paddingLength).fill("");
+        return scores.concat(paddingArray);
+    }
+
+    return scores;
 });
 </script>
 
@@ -22,3 +36,9 @@ const lineScore = computed(() => {
         {{ score }}
     </div>
 </template>
+
+<style>
+.score-value {
+    font-size: 1.5rem;
+}
+</style>

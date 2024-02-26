@@ -1,17 +1,31 @@
 {
-  "extends": "@vue/tsconfig/tsconfig.web.json",
-  "include": ["env.d.ts", "src/**/*", "src/**/*.vue"],
-  "compilerOptions": {
-    "baseUrl": ".",
-    "paths": {
-      "@/*": ["./src/*"]
+    // https://github.com/vuejs/tsconfig/blob/main/tsconfig.json
+    "extends": "@vue/tsconfig/tsconfig.web.json",
+    "include": ["env.d.ts", "src/**/*", "src/**/*.vue"],
+    "compilerOptions": {
+        "module": "ESNext",
+        "target": "ESNext",
+        // `"noImplicitThis": true` is part of `strict`
+        // Added again here in case some users decide to disable `strict`.
+        // This enables stricter inference for data properties on `this`.
+        "noImplicitThis": true,
+        "strict": true,
+        // Recommended
+        "esModuleInterop": true,
+        "forceConsistentCasingInFileNames": true,
+        // See <https://github.com/vuejs/vue-cli/pull/5688>
+        "skipLibCheck": true,
+        "noImplicitAny": false,
+        "baseUrl": ".",
+        "paths": {
+            "@/*": ["./src/*"],
+        },
+        "jsx": "preserve",
     },
-    "jsx": "preserve"
-  },
 
-  "references": [
-    {
-      "path": "./tsconfig.config.json"
-    }
-  ],
+    "references": [
+        {
+            "path": "./tsconfig.config.json",
+        },
+    ],
 }

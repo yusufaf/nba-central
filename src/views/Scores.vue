@@ -90,14 +90,6 @@ const toggleNotificationsMenu = () => {
     notificationsMenuOpen.value = !notificationsMenuOpen.value;
 };
 
-/* Computed Refs
-- Not recommended to have computed refs based on other computed refs
-*/
-
-// const eventComps = computed(() => {
-//     return gameData.value.map((event) => event.competitions);
-// })
-
 const customizationState = computed(() => {
     const customizationMap: Map<CustomizationKey, any> = new Map();
     customizationMap.set("shortNames", useShortNames.value);
@@ -127,9 +119,11 @@ onMounted(async () => {
 <template>
     <main class="scores-page">
         <div class="header">
-            <PageTitle />
-            <h2 class="date">{{ primaryDateString }}</h2>
-            <h2>{{ numGames }} Games</h2>
+            <div class="header-center">
+                <PageTitle />
+                <h2 class="date">{{ primaryDateString }}</h2>
+                <h2>{{ numGames }} Games</h2>
+            </div>
         </div>
         <div class="buttons">
             <q-btn
@@ -137,8 +131,7 @@ onMounted(async () => {
                 icon="edit_notifications"
                 title="Manage Notifications"
                 @click="toggleNotificationsMenu"
-            >
-            </q-btn>
+            />
             <OptionsMenu
                 v-model:hideScores="hideScores"
                 v-model:useShortNames="useShortNames"
@@ -187,10 +180,16 @@ onMounted(async () => {
 
 .header {
     display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 2rem;
+}
+
+.header-center {
+    display: flex;
     flex-direction: column;
     justify-content: center;
     align-items: center;
-    margin-bottom: 2rem;
 }
 
 h2 {
