@@ -8,14 +8,22 @@ import GameReplaysWarning from "@/components/Scores/GameReplaysWarning.vue";
 import ManageNotifications from "@/components/Scores/ManageNotifications.vue";
 import OptionsMenu from "@/components/Scores/OptionsMenu.vue";
 
-/* Update scores every 5 mins */
-const SCOREBOARD_INTERVAL = 300000;
-
 const numGames = ref<number>(0);
 const scoreData = ref<any>({});
 
-const date = ref(new Date());
-const primaryDateString = date.value.toLocaleDateString("en-us", {
+/* ==== Dates === */
+const originalDate = ref(new Date());
+const startDate = new Date().toISOString().split("T")[0].replace(/-/g, "/");
+
+const restrictOptions = (date: string) => {
+    // TODO: Update to be earliest that data is available for
+    return date >= "2000/01/01" && date <= startDate;
+};
+
+const date = ref(startDate);
+const proxyDate = ref(startDate);
+
+const primaryDateString = originalDate.value.toLocaleDateString("en-us", {
     weekday: "long",
     year: "numeric",
     month: "long",
@@ -45,6 +53,15 @@ const gamesWithNotifications = ref<Map<any, any>>(new Map());
 
 */
 
+/* ==== Date Picker ==== */
+const updateProxyDate = () => {
+    proxyDate.value = date.value;
+};
+
+const saveDate = () => {
+    date.value = proxyDate.value;
+};
+
 const fetchCurrentScores = async () => {
     try {
         const response = await fetch(ESPN_SCORES_URL, {
@@ -60,7 +77,7 @@ const fetchCurrentScores = async () => {
         const { day, events } = data;
 
         scoreData.value = data;
-        date.value = new Date(day.date);
+        originalDate.value = new Date(day.date);
         numGames.value = events.length;
         gameData.value = events;
 
@@ -99,6 +116,9 @@ const customizationState = computed(() => {
 });
 
 onMounted(async () => {
+    /* Update scores every 5 mins */
+    const SCOREBOARD_INTERVAL = 300000;
+
     const scoresData = await fetchCurrentScores();
 
     const events: any[] = scoresData.events ?? [];
@@ -121,7 +141,43 @@ onMounted(async () => {
         <div class="header">
             <div class="header-center">
                 <PageTitle />
-                <h2 class="date">{{ primaryDateString }}</h2>
+                <div class="gameday-container">
+                    <h2 class="date">{{ primaryDateString }}</h2>
+                    <q-btn dark icon="event" round color="primary">
+                        <q-popup-proxy
+                            @before-show="updateProxyDate"
+                            cover
+                            transition-show="scale"
+                            transition-hide="scale"
+                        >
+                            <q-date
+                                dark
+                                minimal
+                                v-model="date"
+                                :options="restrictOptions"
+                            >
+                                <div
+                                    class="row items-center justify-end q-gutter-sm"
+                                >
+                                    <q-btn
+                                        label="Cancel"
+                                        color="primary"
+                                        flat
+                                        v-close-popup
+                                    />
+                                    <q-btn
+                                        label="OK"
+                                        color="primary"
+                                        flat
+                                        @click="saveDate"
+                                        v-close-popup
+                                    />
+                                </div>
+                            </q-date>
+                        </q-popup-proxy>
+                    </q-btn>
+                </div>
+
                 <h2>{{ numGames }} Games</h2>
             </div>
         </div>
@@ -183,6 +239,12 @@ onMounted(async () => {
     align-items: center;
     justify-content: center;
     margin-bottom: 2rem;
+}
+
+.gameday-container {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
 }
 
 .header-center {
