@@ -177,7 +177,6 @@ onMounted(async () => {
                         </q-popup-proxy>
                     </q-btn>
                 </div>
-
                 <h2>{{ numGames }} Games</h2>
             </div>
         </div>
