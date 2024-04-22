@@ -1,9 +1,9 @@
 import { Construct } from "constructs";
-import { ExtendedStackProps } from "../../models/stack";
-import { Table, AttributeType, BillingMode } from "aws-cdk-lib/aws-dynamodb";
-import { RemovalPolicy } from "aws-cdk-lib";
-import { Bucket, BlockPublicAccess } from "aws-cdk-lib/aws-s3";
+import { ExtendedStackProps } from "models/stack";
 import { TeamBuilderAPI } from "./team-builder-api";
+import { TeamBuilderDynamoDB } from "./team-builder-dynamo";
+import { TeamBuilderS3 } from "./team-builder-s3";
+import { TeamBuilderCognito } from "./team-builder-cognito";
 
 export class TeamBuilder extends Construct {
     appName: string;
@@ -17,37 +17,17 @@ export class TeamBuilder extends Construct {
         this.appName = appName;
         this.deploymentType = deploymentType;
 
-        const apiID = `${appName}-${deploymentType}-api`;
-        new TeamBuilderAPI(scope, apiID, props);
-
-        this.createDynamoDBTables();
-        this.createS3Buckets();
+        new TeamBuilderAPI(scope, `${appName}-${deploymentType}-api`, props);
+        new TeamBuilderDynamoDB(
+            scope,
+            `${appName}-${deploymentType}-dynamoDB`,
+            props
+        );
+        new TeamBuilderS3(scope, `${appName}-${deploymentType}-s3`, props);
+        new TeamBuilderCognito(
+            scope,
+            `${appName}-${deploymentType}-cognito`,
+            props
+        );
     }
-
-    createDynamoDBTables = () => {
-        const mainTableNameAndID = `${this.appName}-${this.deploymentType}-main-table`;
-        const mainDynamoDBTable = new Table(this, mainTableNameAndID, {
-            tableName: mainTableNameAndID,
-            partitionKey: { name: "PK", type: AttributeType.STRING },
-            sortKey: { name: "SK", type: AttributeType.STRING },
-            billingMode: BillingMode.PAY_PER_REQUEST,
-            pointInTimeRecovery: true,
-        });
-    };
-
-    createS3Buckets = () => {
-        const mainBucketNameAndID = `${this.appName}-${this.deploymentType}-main-bucket`;
-        const mainBucket = new Bucket(this, mainBucketNameAndID, {
-            bucketName: mainBucketNameAndID,
-            blockPublicAccess: BlockPublicAccess.BLOCK_ALL,
-            removalPolicy: RemovalPolicy.RETAIN,
-        });
-
-        const assetsBucketNameAndID = `${this.appName}-${this.deploymentType}-assets-bucket`;
-        const assetsBucket = new Bucket(this, assetsBucketNameAndID, {
-            bucketName: assetsBucketNameAndID,
-            blockPublicAccess: BlockPublicAccess.BLOCK_ALL,
-            removalPolicy: RemovalPolicy.RETAIN,
-        });
-    };
 }

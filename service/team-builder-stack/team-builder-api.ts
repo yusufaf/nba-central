@@ -1,13 +1,6 @@
 import { Construct } from "constructs";
-import { ExtendedStackProps } from "../../models/stack";
-import {
-    MethodLoggingLevel,
-    RestApi,
-    LambdaIntegration,
-    Resource,
-    ApiKey,
-    UsagePlan,
-} from "aws-cdk-lib/aws-apigateway";
+import { ExtendedStackProps, LambdaProps } from "models/stack";
+import { LambdaIntegration, Resource } from "aws-cdk-lib/aws-apigateway";
 import { Function as LambdaFunction } from "aws-cdk-lib/aws-lambda";
 import {
     Role,
@@ -17,13 +10,25 @@ import {
     Effect,
 } from "aws-cdk-lib/aws-iam";
 import { addRole } from "../../resources/roles";
-
-/* Lambdas */
-import completeMultipartUpload from "../lambdas/completeMultipartUpload";
-import getMultipartSignedUploadUrls from "../lambdas/getMultipartSignedUploadUrls";
-import initiateMultipartUpload from "../lambdas/initiateMultipartUpload";
-import deleteFile from "../lambdas/deleteFile";
-import { capitalizeFirstLetter } from "../../utilities/generalUtils";
+import {
+    capitalizeFirstLetter,
+    getDefaultExportForLambda,
+} from "../../utilities/generalUtils";
+import {
+    CfnStage,
+    CorsHttpMethod,
+    HttpApi,
+    HttpAuthorizer,
+    HttpAuthorizerType,
+    HttpMethod,
+    HttpStage,
+    IHttpRouteAuthorizer,
+} from "aws-cdk-lib/aws-apigatewayv2";
+import { HttpLambdaIntegration } from "aws-cdk-lib/aws-apigatewayv2-integrations";
+import { NodejsFunction } from "aws-cdk-lib/aws-lambda-nodejs";
+import { LogGroup } from "aws-cdk-lib/aws-logs";
+import { DEFAULT_ALLOWED_ORIGINS } from "../../constants";
+import apiAuthorizer from "../lambdas/apiAuthorizer/index";
 
 type CreateLambdaProxyIntegrationProps = {
     lambda: LambdaFunction;
@@ -57,87 +62,161 @@ export class TeamBuilderAPI extends Construct {
         this.prefix = `${appName}-${deploymentType}`;
 
         const apiNameAndID = `${this.prefix}-main`;
-        const api = new RestApi(this, apiNameAndID, {
-            restApiName: apiNameAndID,
+        const api = new HttpApi(this, apiNameAndID, {
+            apiName: apiNameAndID,
             description: `${capitalizeFirstLetter(
                 deploymentType
             )} API for Team Builder`,
-            deployOptions: {
-                metricsEnabled: true,
-                loggingLevel: MethodLoggingLevel.INFO,
-                stageName: deploymentType,
-            },
-            defaultCorsPreflightOptions: {
+            corsPreflight: {
                 allowHeaders: [
                     "Content-Type",
                     "X-Amz-Date",
                     "Authorization",
                     "X-Api-Key",
                 ],
-                allowMethods: ["GET", "POST", "PUT", "DELETE"],
+                allowMethods: [
+                    CorsHttpMethod.OPTIONS,
+                    CorsHttpMethod.GET,
+                    CorsHttpMethod.POST,
+                    CorsHttpMethod.PUT,
+                    CorsHttpMethod.PATCH,
+                    CorsHttpMethod.DELETE,
+                ],
                 allowCredentials: true,
-                allowOrigins: ["localhost:3000"],
+                allowOrigins: DEFAULT_ALLOWED_ORIGINS,
             },
-            cloudWatchRole: true,
         });
 
-        const apiKeyNameAndID = `${this.prefix}-api-key`;
-        const apiKey = new ApiKey(this, apiKeyNameAndID, {
-            apiKeyName: apiKeyNameAndID,
+        // Setup the access log for APIGWv2
+        const logGroupNameAndID = `${this.prefix}-api-AccessLogs`;
+        const accessLogs = new LogGroup(this, logGroupNameAndID, {
+            logGroupName: logGroupNameAndID,
         });
-        const usagePlan = new UsagePlan(this, `${this.prefix}-usage-plan`, {
-            name: `${capitalizeFirstLetter(this.deploymentType)} Usage Plan`,
-            apiStages: [
-                {
-                    api,
-                    stage: api.deploymentStage,
-                },
+        const stage = api.defaultStage?.node.defaultChild as CfnStage;
+        stage.accessLogSettings = {
+            destinationArn: accessLogs.logGroupArn,
+            format: JSON.stringify({
+                requestId: "$context.requestId",
+                userAgent: "$context.identity.userAgent",
+                sourceIp: "$context.identity.sourceIp",
+                requestTime: "$context.requestTime",
+                requestTimeEpoch: "$context.requestTimeEpoch",
+                httpMethod: "$context.httpMethod",
+                path: "$context.path",
+                status: "$context.status",
+                protocol: "$context.protocol",
+                responseLength: "$context.responseLength",
+                domainName: "$context.domainName",
+                authorizerError: "$context.authorizer.error",
+            }),
+        };
+
+        const apiGatewayLogWriterRole = new Role(this, "ApiGWLogWriterRole", {
+            assumedBy: new ServicePrincipal("apigateway.amazonaws.com"),
+        });
+
+        const policy = new PolicyStatement({
+            actions: [
+                "logs:CreateLogGroup",
+                "logs:CreateLogStream",
+                "logs:DescribeLogGroups",
+                "logs:DescribeLogStreams",
+                "logs:PutLogEvents",
+                "logs:GetLogEvents",
+                "logs:FilterLogEvents",
             ],
+            resources: ["*"],
         });
-        usagePlan.addApiKey(apiKey);
+        apiGatewayLogWriterRole.addToPolicy(policy);
+        accessLogs.grantWrite(apiGatewayLogWriterRole);
 
-        this.createLambdaRoles();
+        new HttpStage(this, `${deploymentType}-stage}`, {
+            httpApi: api,
+            stageName: deploymentType,
+        });
+
+        this.createUpdateLambdaRoles();
 
         const lambdaProps = {
             construct: this,
             props,
         };
 
-        const teamBuilderResource = api.root.addResource("api");
+        const authorizerNameAndID = `${this.prefix}-authorizer`;
+        const apiAuthorizerLambda = apiAuthorizer({ ...lambdaProps });
 
-        const filesResource = teamBuilderResource.addResource("files");
+        // Grant API Gateway permission to invoke the authorizer Lambda function
+        apiAuthorizerLambda.grantInvoke(
+            new ServicePrincipal("apigateway.amazonaws.com")
+        );
 
-        this.createLambdaProxyIntegration({
-            httpMethod: "POST",
-            lambda: initiateMultipartUpload({ ...lambdaProps }),
-            methodName: "initiateMultipartUpload",
-            parentResource: filesResource,
+        const authorizerUri = `arn:aws:apigateway:us-west-2:lambda:path/2015-03-31/functions/${apiAuthorizerLambda.functionArn}/invocations`;
+        const httpAuthorizer = new HttpAuthorizer(this, authorizerNameAndID, {
+            authorizerName: authorizerNameAndID,
+            authorizerUri,
+            httpApi: api,
+            identitySource: ["$request.header.Authorization"],
+            // identitySources: [IdentitySource.header("Authorization")]
+            type: HttpAuthorizerType.LAMBDA,
+            enableSimpleResponses: true,
         });
 
-        this.createLambdaProxyIntegration({
-            httpMethod: "POST",
-            lambda: completeMultipartUpload({ ...lambdaProps }),
-            methodName: "completeMultipartUpload",
-            parentResource: filesResource,
-        });
+        const httpRouteAuthorizer = HttpAuthorizer.fromHttpAuthorizerAttributes(
+            this,
+            `http-route-authorizer`,
+            {
+                authorizerId: httpAuthorizer.authorizerId,
+                authorizerType: "CUSTOM",
+            }
+        );
 
-        this.createLambdaProxyIntegration({
-            httpMethod: "POST",
-            lambda: getMultipartSignedUploadUrls({ ...lambdaProps }),
-            methodName: "getMultipartSignedUploadUrls",
-            parentResource: filesResource,
-        });
+        const filesPrefix = `/api/files`;
+        const usersPrefix = `/api/users`;
 
-        this.createLambdaProxyIntegration({
-            httpMethod: "POST",
-            lambda: deleteFile({ ...lambdaProps }),
-            methodName: "deleteFile",
-            parentResource: filesResource,
-        });
+        const FILES_ROUTES = [
+            {
+                route: `${filesPrefix}/initiate-multipart-upload`,
+                lambdaName: "initiateMultipartUpload",
+            },
+            {
+                route: `${filesPrefix}/complete-multipart-upload`,
+                lambdaName: "completeMultipartUpload",
+            },
+            {
+                route: `${filesPrefix}/get-multipart-signed-upload-urls`,
+                lambdaName: "getMultipartSignedUploadUrls",
+            },
+            {
+                route: `${filesPrefix}/delete-file`,
+                lambdaName: "deleteFile",
+            },
+        ];
+
+        const USERS_ROUTES: {
+            route: string;
+            lambdaName: string;
+            methods?: HttpMethod[] | undefined;
+        }[] = [
+            {
+                route: `${usersPrefix}/get`,
+                lambdaName: "getUser",
+            },
+        ];
+
+        const API_ROUTES = [...FILES_ROUTES, ...USERS_ROUTES];
+
+        for (const { route, lambdaName } of API_ROUTES) {
+            this.createLambdaHttpIntegration({
+                api,
+                lambdaProps,
+                path: route,
+                lambdaName,
+                authorizer: httpRouteAuthorizer,
+            });
+        }
     }
 
-    createLambdaRoles = () => {
-        // Define an IAM role for the Lambda function
+    createUpdateLambdaRoles = () => {
         const mainLambdaRoleNameAndID = `${this.deploymentType}-main-lambda-role`;
         const mainLambdaRole = new Role(this, mainLambdaRoleNameAndID, {
             assumedBy: new ServicePrincipal("lambda.amazonaws.com"),
@@ -150,7 +229,10 @@ export class TeamBuilderAPI extends Construct {
         });
 
         // Add a policy statement for DynamoDB access
-        const dynamoDBTableName = `${this.prefix}-main-table`;
+        const dynamoTableResources = [`main`, `users`].map(
+            (tableName) =>
+                `arn:aws:dynamodb:${this.region}:${this.account}:table/${this.prefix}-${tableName}`
+        );
         const dynamoDBPolicyStatement = new PolicyStatement({
             effect: Effect.ALLOW,
             actions: [
@@ -161,14 +243,17 @@ export class TeamBuilderAPI extends Construct {
                 "dynamodb:UpdateItem",
                 "dynamodb:DeleteItem",
             ],
-            resources: [
-                `arn:aws:dynamodb:${this.region}:${this.account}:table/${dynamoDBTableName}`,
-            ],
+            resources: dynamoTableResources,
         });
         mainLambdaRole.addToPolicy(dynamoDBPolicyStatement);
 
         // Add a policy statement for S3 read and write access
-        const s3BucketName = `${this.prefix}-main-bucket`;
+        const s3BucketResources = [`main`, `assets`]
+            .map((bucketName) => [
+                `arn:aws:s3:::${bucketName}`,
+                `arn:aws:s3:::${this.prefix}-${bucketName}/*`,
+            ])
+            .flat();
         const s3PolicyStatement = new PolicyStatement({
             effect: Effect.ALLOW,
             actions: [
@@ -179,13 +264,9 @@ export class TeamBuilderAPI extends Construct {
                 "s3:AbortMultipartUpload",
                 "s3:ListMultipartUploadParts",
             ],
-            resources: [
-                `arn:aws:s3:::${s3BucketName}`,
-                `arn:aws:s3:::${s3BucketName}/*`,
-            ],
+            resources: s3BucketResources,
         });
         mainLambdaRole.addToPolicy(s3PolicyStatement);
-
         addRole(mainLambdaRoleNameAndID, mainLambdaRole);
     };
 
@@ -200,5 +281,35 @@ export class TeamBuilderAPI extends Construct {
         });
         const resource = parentResource.addResource(methodName);
         resource.addMethod(httpMethod, lambdaIntegration, {});
+    };
+
+    createLambdaHttpIntegration = async ({
+        api,
+        lambdaProps,
+        methods = [HttpMethod.POST],
+        path,
+        lambdaName,
+        authorizer,
+    }: {
+        api: HttpApi;
+        lambdaName: string;
+        lambdaProps: any;
+        methods?: HttpMethod[];
+        path: string;
+        authorizer?: IHttpRouteAuthorizer;
+    }) => {
+        const lambdaFunction: (props: LambdaProps) => NodejsFunction =
+            await getDefaultExportForLambda(lambdaName);
+
+        api.addRoutes({
+            path,
+            methods,
+            integration: new HttpLambdaIntegration(
+                `${this.deploymentType}-${lambdaName}-integration`,
+                lambdaFunction({ ...lambdaProps }),
+                {}
+            ),
+            authorizer,
+        });
     };
 }

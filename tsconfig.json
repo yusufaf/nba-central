@@ -23,6 +23,12 @@
         "strictPropertyInitialization": false,
         "forceConsistentCasingInFileNames": true,
         "typeRoots": ["./node_modules/@types"],
+        "paths": {
+            "lambdas/*": ["./service/lambdas/*"],
+            "utilities/*": ["./utilities/*"],
+            "resources/*": ["./resources/*"],
+            "models/*": ["./models/*"],
+        },
     },
     "exclude": ["node_modules", "cdk.out"],
 }
