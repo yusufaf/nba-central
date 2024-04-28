@@ -218,7 +218,6 @@ onMounted(async () => {
                 :index="index"
                 :gameTeams="gameTeams"
                 :customizationState="customizationState"
-                :hideScores="hideScores"
             />
         </div>
         <GameReplaysWarning v-model:showReplayConfirm="showReplayConfirm" />

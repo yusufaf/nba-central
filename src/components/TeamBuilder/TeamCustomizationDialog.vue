@@ -157,7 +157,7 @@ onMounted(() => {
     </q-dialog>
 </template>
 
-<style>
+<style scoped>
 .customization-dialog {
     background: var(--vt-c-black-soft);
     display: flex;

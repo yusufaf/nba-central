@@ -8,11 +8,7 @@ import {
 import axios from "axios";
 import TeamCustomizationDialog from "./TeamCustomizationDialog.vue";
 
-const props = defineProps<{
-    drawerSide: any;
-}>();
-
-const emit = defineEmits(["reset", "saveTeam", "update:drawerSide"]);
+const emit = defineEmits(["reset", "saveTeam"]);
 
 /* 2-Way Bound Props */
 const headerExpanded = defineModel<boolean>("headerExpanded");
@@ -22,8 +18,7 @@ const teamCity = defineModel<string>("teamCity");
 const teamCountry = defineModel<string>("teamCountry");
 const selectedView = defineModel<string>("selectedView");
 const teamLogo = defineModel<string>("teamLogo");
-
-const localDrawerSide = ref<any>(props.drawerSide);
+const drawerSide = defineModel<string>("drawerSide");
 
 const showConfirm = ref<boolean>(false);
 const showTeamCustomizationDialog = ref<boolean>(false);
@@ -31,9 +26,6 @@ const showTeamCustomizationDialog = ref<boolean>(false);
 const nbaTeamLogos = ref<any[]>([]);
 
 /* Watchers */
-watch(localDrawerSide, (newDrawerSide) => {
-    emit("update:drawerSide", newDrawerSide);
-});
 
 const resetClick = () => {
     showConfirm.value = !showConfirm.value;
@@ -80,18 +72,6 @@ const fetchAllTeamLogos = async () => {
         return teamAbbrA.localeCompare(teamAbbrB);
     });
 };
-
-// For the q-file component:         @update:model-value="onUpdateFile"
-// const onUpdateFile = (value: any) => {
-//   const uploadDate = new Date().toLocaleDateString();
-//   const reader = new FileReader();
-//   reader.onload = () => {
-//     console.log("Result of FileReader = ", reader.result);
-//   }
-//   reader.readAsDataURL(value);
-
-//   console.log(value);
-// }
 
 onMounted(() => {
     fetchAllTeamLogos();
@@ -141,7 +121,7 @@ onMounted(() => {
                                 </q-item-section>
                                 <q-item-section>
                                     <q-btn-toggle
-                                        v-model="localDrawerSide"
+                                        v-model="drawerSide"
                                         toggle-color="primary"
                                         :options="DRAWER_OPTIONS"
                                     />

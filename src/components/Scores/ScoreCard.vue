@@ -8,17 +8,17 @@ import {
     ZERO_CLOCK,
     NOTIFICATION_GRANTED,
     NOTIFICATION_DENIED,
-    type CustomizationKey,
 } from "@/constants/constants";
 import LineScore from "./LineScore.vue";
 import TeamDetailsTooltip from "./TeamDetailsTooltip.vue";
+import type { CustomizationState } from "@/models/types";
 
 /* Resource: https://dmitripavlutin.com/props-destructure-vue-composition/ */
 const props = defineProps<{
     game: any;
     index: number;
     gameTeams: any;
-    customizationState: Map<CustomizationKey, any>;
+    customizationState: CustomizationState;
 }>();
 
 const $q = useQuasar();
@@ -46,8 +46,8 @@ const gameNameToDisplay = computed(() => {
     return nameToUse.value.replace('"', "");
 });
 
-/*TODO: 
-- Operating on the current date only until can figure out how to work with bkref to get previous games 
+/*TODO:
+- Operating on the current date only until can figure out how to work with bkref to get previous games
 - Bkref doesn't do current scores, so might have to actually differentiate data betwene previous days and current day
     - ESPN/NBA.com - current day | bkref - previous days
 */
@@ -114,7 +114,7 @@ const timePeriodLabels = computed(() => {
 });
 
 const gameStatusName = computed(() => props.game.status.type.name);
-const gameNotStarted = computed(
+const gameScheduled = computed(
     () => gameStatusName.value === GAME_STATUS.SCHEDULED,
 );
 const gameInProgress = computed(
@@ -124,6 +124,25 @@ const gameInProgress = computed(
 const isGameDone = computed(() => {
     const statusInfo = props.game.status.type;
     return statusInfo.completed;
+});
+
+const showScoresSection = computed(() => {
+    const customizationState = props.customizationState;
+    const hideFinishedGames = customizationState.get("hideFinishedGames");
+    const hideScores = customizationState.get("hideScores");
+
+    /*
+        When to show the scores section:
+        1. If the game is in progress or it finished
+        2. User hasn't toggled "Hide Scores"
+        3. Game isn't finished and user hasn't toggled "Hide Finished Games"
+    */
+
+    return Boolean(
+        (gameInProgress.value || isGameDone.value) && // Condition 1
+            !hideScores && // Condition 2
+            (!isGameDone.value || !hideFinishedGames), // Condition 3
+    );
 });
 
 const gameStatusDetail = computed(() => props.game.status.type.detail);
@@ -260,7 +279,7 @@ const askNotificationPermission = (id: string): void => {
                     <div class="clock active" v-if="gameInProgress">
                         {{ gameClock }}
                     </div>
-                    <div class="clock" v-else-if="gameNotStarted">
+                    <div class="clock" v-else-if="gameScheduled">
                         {{ gameTimeStart }}
                     </div>
                     <div class="clock" v-else>{{ gameStatusDetail }}</div>
@@ -294,7 +313,7 @@ const askNotificationPermission = (id: string): void => {
                     </div>
                 </div>
             </div>
-            <div class="scores-section" v-if="!gameNotStarted">
+            <div class="scores-section" v-if="showScoresSection">
                 <div class="time-periods">
                     <template
                         v-for="(
@@ -338,7 +357,7 @@ const askNotificationPermission = (id: string): void => {
         <q-separator dark />
         <q-card-section class="leaders-section">
             <div class="leaders-header">
-                {{ gameNotStarted ? "Players to Watch" : "Top Performers" }}
+                {{ gameScheduled ? "Players to Watch" : "Top Performers" }}
             </div>
             <div class="leaders">
                 <div

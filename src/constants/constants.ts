@@ -58,11 +58,6 @@ export const DRAWER_OPTIONS = [
 export const NOTIFICATION_GRANTED = "granted";
 export const NOTIFICATION_DENIED = "denied";
 
-export type CustomizationKey =
-    | "shortNames"
-    | "hideScores"
-    | "hideFinishedGames";
-
 /* NBA Info */
 export const NUM_TEAMS = 30;
 
@@ -113,6 +108,7 @@ export const GAME_STATUS = {
     SCHEDULED: "STATUS_SCHEDULED",
     IN_PROGRESS: "STATUS_IN_PROGRESS",
     COMPLETED: "STATUS_COMPLETED",
+    FINAL: "STATUS_FINAL",
 };
 
 /* API */

@@ -25,16 +25,6 @@ const selectedFilters = ref<string[]>([]);
 const GM_FILTERS = ["Western Conference", "Eastern Conference"];
 const sortDirection = ref<SortDirection>("asc");
 
-const localDrawerSide = ref<any>(props.selectedDrawerSide);
-
-/* Watchers */
-watch(
-    () => props.selectedDrawerSide,
-    (newVal) => {
-        localDrawerSide.value = newVal;
-    },
-);
-
 /* Computed Props */
 
 const sortedGMData = computed(() => {
@@ -120,7 +110,7 @@ const selectRandomGM = () => {
         </q-card>
         <q-drawer
             v-model="showGMDrawer"
-            :side="localDrawerSide"
+            :side="props.selectedDrawerSide"
             :width="300"
             bordered
             elevated

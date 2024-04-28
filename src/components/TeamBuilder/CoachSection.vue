@@ -15,16 +15,6 @@ const showCoachDrawer = defineModel<boolean>("showCoachDrawer");
 
 const typedCoachesData = coachesData as Coach[];
 
-const localDrawerSide = ref<any>(props.selectedDrawerSide);
-
-/* Watchers */
-watch(
-    () => props.selectedDrawerSide,
-    (newVal) => {
-        localDrawerSide.value = newVal;
-    },
-);
-
 const search = ref<string>("");
 const searchLoading = ref<boolean>(false);
 
@@ -224,7 +214,7 @@ const selectRandomCoach = () => {
         </q-card>
         <q-drawer
             v-model="showCoachDrawer"
-            :side="localDrawerSide"
+            :side="props.selectedDrawerSide"
             :width="300"
             bordered
             elevated

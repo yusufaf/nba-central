@@ -26,16 +26,6 @@ const selectedFilters = ref<string[]>([]);
 const ARENA_FILTERS = ["Western Conference", "Eastern Conference"];
 const sortDirection = ref<SortDirection>("asc");
 
-const localDrawerSide = ref<any>(props.selectedDrawerSide);
-
-/* Watchers */
-watch(
-    () => props.selectedDrawerSide,
-    (newVal) => {
-        localDrawerSide.value = newVal;
-    },
-);
-
 /* Computed Props */
 
 const sortedArenaData = computed(() => {
@@ -143,7 +133,7 @@ const selectRandomArena = () => {
         </q-card>
         <q-drawer
             v-model="showArenaDrawer"
-            :side="localDrawerSide"
+            :side="props.selectedDrawerSide"
             :width="300"
             bordered
             elevated
