@@ -5,15 +5,12 @@ import { Duration } from "aws-cdk-lib";
 import path from "path";
 import { NodejsFunction } from "aws-cdk-lib/aws-lambda-nodejs";
 
-export default ({
-    props,
-    construct
-}: LambdaProps) => {
+export default ({ props, construct }: LambdaProps) => {
     const { appName, deploymentType = "" } = props;
 
     const functionName = "sendFeedback";
-    const nameAndID = `${deploymentType}-${functionName}`
-    const role = getRole(`${deploymentType}-main-lambda-role`)
+    const nameAndID = `${appName}-${deploymentType}-${functionName}`;
+    const role = getRole(`${appName}-${deploymentType}-main-lambda-role`);
 
     const lambdaFunction = new NodejsFunction(construct, nameAndID, {
         functionName: nameAndID,
@@ -26,12 +23,11 @@ export default ({
         awsSdkConnectionReuse: true,
         environment: {
             deploymentType,
-            NODE_OPTIONS: '--enable-source-maps',
+            NODE_OPTIONS: "--enable-source-maps",
             mainDynamoDBTable: `${appName}-${deploymentType}-main-table`,
             mainS3Bucket: `${appName}-${deploymentType}-main-bucket`,
-        } 
-    })
+        },
+    });
 
     return lambdaFunction;
-}
-
+};

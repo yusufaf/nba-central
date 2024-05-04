@@ -1,15 +1,16 @@
 import {
-    APIGatewayProxyEvent,
-    APIGatewayProxyResult,
+    APIGatewayProxyEventV2WithLambdaAuthorizer,
+    APIGatewayProxyResultV2,
     Handler,
 } from "aws-lambda";
 import { S3Client, CreateMultipartUploadCommand } from "@aws-sdk/client-s3";
+import { AuthorizerContext } from "models/auth";
 
 const { mainS3Bucket = "" } = process.env;
 
 const s3Client = new S3Client();
 
-type Body = {
+type RequestBody = {
     studysetUUID: string;
     uploadType: string;
     userUUID: string;
@@ -18,20 +19,14 @@ type Body = {
 };
 
 export const handler: Handler = async (
-    event: APIGatewayProxyEvent,
+    event: APIGatewayProxyEventV2WithLambdaAuthorizer<AuthorizerContext>,
     context
-): Promise<APIGatewayProxyResult> => {
+): Promise<APIGatewayProxyResultV2> => {
     console.log(JSON.stringify({ event, context }, null, 4));
-
-    const body: Body = JSON.parse(event.body ?? "");
-    const { 
-        contentType, 
-        fileName, 
-        studysetUUID, 
-        uploadType, 
-        userUUID 
-    } = body;
-
+    
+    const body: RequestBody = JSON.parse(event.body ?? "");
+    const { contentType, fileName, studysetUUID, uploadType, userUUID } = body;
+    
     const key = `${studysetUUID}/${userUUID}/${fileName}`;
 
     try {
@@ -42,16 +37,10 @@ export const handler: Handler = async (
         });
         const multipartUploadResponse = await s3Client.send(multipartCommand);
         return {
-            headers: {
-                "Access-Control-Allow-Origin": "*",
-                "Content-Type": "application/json",
-                "Access-Control-Allow-Headers": "*",
-                "Access-Control-Allow-Methods": "OPTIONS, POST",
-            },
             statusCode: 200,
             body: JSON.stringify({
                 key,
-                uploadId: multipartUploadResponse.UploadId
+                uploadId: multipartUploadResponse.UploadId,
             }),
         };
     } catch (err) {

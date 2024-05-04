@@ -1,21 +1,26 @@
-import { APIGatewayProxyEvent, APIGatewayProxyResult, Handler } from "aws-lambda";
+import {
+    APIGatewayProxyEventV2WithLambdaAuthorizer,
+    APIGatewayProxyResultV2,
+    Handler,
+} from "aws-lambda";
 import { S3Client, DeleteObjectCommand } from "@aws-sdk/client-s3";
+import { AuthorizerContext } from "models/auth";
 
 const { mainS3Bucket = "" } = process.env;
 
 const s3Client = new S3Client();
 
-type Body = {
+type RequestBody = {
     key: string;
 };
 
 export const handler: Handler = async (
-    event: APIGatewayProxyEvent,
+    event: APIGatewayProxyEventV2WithLambdaAuthorizer<AuthorizerContext>,
     context
-): Promise<APIGatewayProxyResult> => {
+): Promise<APIGatewayProxyResultV2> => {
     console.log(JSON.stringify({ event, context }, null, 4));
 
-    const body: Body = JSON.parse(event.body ?? "");
+    const body: RequestBody = JSON.parse(event.body ?? "");
     const { key } = body;    
 
     try {

@@ -5,15 +5,12 @@ import { Duration } from "aws-cdk-lib";
 import path from "path";
 import { NodejsFunction } from "aws-cdk-lib/aws-lambda-nodejs";
 
-export default ({
-    props,
-    construct
-}: LambdaProps) => {
+export default ({ props, construct }: LambdaProps) => {
     const { appName, deploymentType = "" } = props;
 
     const functionName = "postConfirmationTrigger";
-    const nameAndID = `${deploymentType}-${functionName}`
-    const role = getRole(`${deploymentType}-main-lambda-role`)
+    const nameAndID = `${appName}-${deploymentType}-${functionName}`;
+    const role = getRole(`${appName}-${deploymentType}-main-lambda-role`);
 
     const lambdaFunction = new NodejsFunction(construct, nameAndID, {
         functionName: nameAndID,
@@ -25,11 +22,10 @@ export default ({
         handler: "handler",
         awsSdkConnectionReuse: true,
         environment: {
-            NODE_OPTIONS: '--enable-source-maps',
-            usersTable: `${appName}-${deploymentType}-users`
+            NODE_OPTIONS: "--enable-source-maps",
+            usersTable: `${appName}-${deploymentType}-users`,
         },
-    })
+    });
 
     return lambdaFunction;
-}
-
+};

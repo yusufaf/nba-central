@@ -203,7 +203,7 @@ export class TeamBuilderAPI extends Construct {
             },
         ];
 
-        const API_ROUTES = [...FILES_ROUTES, ...USERS_ROUTES];
+        const API_ROUTES = [...FILES_ROUTES];
 
         for (const { route, lambdaName } of API_ROUTES) {
             this.createLambdaHttpIntegration({
@@ -217,7 +217,7 @@ export class TeamBuilderAPI extends Construct {
     }
 
     createUpdateLambdaRoles = () => {
-        const mainLambdaRoleNameAndID = `${this.deploymentType}-main-lambda-role`;
+        const mainLambdaRoleNameAndID = `${this.appName}-${this.deploymentType}-main-lambda-role`;
         const mainLambdaRole = new Role(this, mainLambdaRoleNameAndID, {
             assumedBy: new ServicePrincipal("lambda.amazonaws.com"),
             roleName: mainLambdaRoleNameAndID,
