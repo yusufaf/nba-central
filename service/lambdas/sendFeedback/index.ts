@@ -25,7 +25,7 @@ export default ({ props, construct }: LambdaProps) => {
             deploymentType,
             NODE_OPTIONS: "--enable-source-maps",
             mainDynamoDBTable: `${appName}-${deploymentType}-main-table`,
-            mainS3Bucket: `${appName}-${deploymentType}-main-bucket`,
+            mainBucket: `${appName}-${deploymentType}-main-bucket`,
         },
     });
 

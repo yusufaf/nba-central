@@ -6,7 +6,7 @@ import {
 import { S3Client, CreateMultipartUploadCommand } from "@aws-sdk/client-s3";
 import { AuthorizerContext } from "models/auth";
 
-const { mainS3Bucket = "" } = process.env;
+const { mainBucket = "" } = process.env;
 
 const s3Client = new S3Client();
 
@@ -23,15 +23,15 @@ export const handler: Handler = async (
     context
 ): Promise<APIGatewayProxyResultV2> => {
     console.log(JSON.stringify({ event, context }, null, 4));
-    
+
     const body: RequestBody = JSON.parse(event.body ?? "");
     const { contentType, fileName, studysetUUID, uploadType, userUUID } = body;
-    
+
     const key = `${studysetUUID}/${userUUID}/${fileName}`;
 
     try {
         const multipartCommand = new CreateMultipartUploadCommand({
-            Bucket: mainS3Bucket,
+            Bucket: mainBucket,
             Key: key,
             ContentType: contentType,
         });

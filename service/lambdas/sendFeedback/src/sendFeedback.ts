@@ -1,7 +1,11 @@
-import { APIGatewayProxyEvent, APIGatewayProxyResult, Handler } from "aws-lambda";
+import {
+    APIGatewayProxyEvent,
+    APIGatewayProxyResult,
+    Handler,
+} from "aws-lambda";
 import { S3Client, DeleteObjectCommand } from "@aws-sdk/client-s3";
 
-const { mainS3Bucket = "" } = process.env;
+const { mainBucket = "" } = process.env;
 
 const s3Client = new S3Client();
 
@@ -16,14 +20,13 @@ export const handler: Handler = async (
     console.log(JSON.stringify({ event, context }, null, 4));
 
     const body: Body = JSON.parse(event.body ?? "");
-    const { key } = body;    
+    const { key } = body;
 
     try {
-
         const deleteCommand = new DeleteObjectCommand({
-            Bucket: mainS3Bucket,
+            Bucket: mainBucket,
             Key: key,
-        })
+        });
         const deleteResponse = await s3Client.send(deleteCommand);
 
         return {
