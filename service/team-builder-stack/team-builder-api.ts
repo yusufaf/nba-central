@@ -251,7 +251,7 @@ export class TeamBuilderAPI extends Construct {
         mainLambdaRole.addToPolicy(dynamoDBPolicyStatement);
 
         // Add a policy statement for S3 read and write access
-        const s3BucketResources = [`main`, `assets`]
+        const s3BucketResources = [`main`, `assets`, `static-data`]
             .map((bucketName) => [
                 `arn:aws:s3:::${bucketName}`,
                 `arn:aws:s3:::${this.prefix}-${bucketName}/*`,
