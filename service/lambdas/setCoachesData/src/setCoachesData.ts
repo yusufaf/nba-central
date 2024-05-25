@@ -92,8 +92,16 @@ export const handler: Handler = async (
                 }
                 const property = ATTRIBUTE_MAPPING.get(dataStatValue)!;
                 const tdText = tdElement.text().trim();
-                const value =
-                    property === "name" ? tdText : parseFloat(tdText || "0");
+                let value: string | number = parseFloat(tdText || "0");
+                if (property === "name") {
+                    const anchorElement = tdElement.children()[0];
+                    const href = $(anchorElement).attr("href");
+
+                    value = tdText;
+                    if (href) {
+                        coachData.href = href;
+                    }
+                }
                 coachData[property] = value;
             }
             data.push(coachData);
