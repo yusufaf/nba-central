@@ -161,7 +161,7 @@ const searchListResults = computed(() =>
             fullName,
             heightAndWeight,
         };
-    })
+    }),
 );
 
 /* TODO: See if putting this into separate function still works */
@@ -182,7 +182,7 @@ watch(
                 do {
                     const page: number | null = next_page ? next_page : "";
                     const response: any = await axios.get(
-                        `${BDL_API_PREFIX}/players?per_page=50&search=${searchedPlayer}&page=${page}`
+                        `${BDL_API_PREFIX}/players?per_page=50&search=${searchedPlayer}&page=${page}`,
                     );
                     const { data, meta } = response.data;
                     next_page = meta.next_page;
@@ -199,7 +199,7 @@ watch(
             /* Clear the search list if no longer any players being searched for */
             searchList.value = [];
         }
-    }, 600)
+    }, 600),
 );
 
 const getPlayerStats = async (playerId: number) => {
@@ -232,7 +232,7 @@ const getPlayerStats = async (playerId: number) => {
             } else {
                 console.log(
                     "Response for player in the season ",
-                    responseData.data
+                    responseData.data,
                 );
                 const playerSeasonAvgs = responseData.data[0];
                 playerStats.push(playerSeasonAvgs);
@@ -342,7 +342,7 @@ const flipCard = (n: number) => {
 const viewPlayerStats = () => {
     /* Retrieve player stats from data map */
     const { playerStats } = selectedPlayersData.value.get(
-        selectedPlayerIndex.value
+        selectedPlayerIndex.value,
     );
     /* Add an id to each for use in the table */
     const modifiedPlayerStats = playerStats.map((item: any, index: number) => {
@@ -354,7 +354,7 @@ const viewPlayerStats = () => {
 
     console.log(
         "Selected Player Stats ref being set to: ",
-        modifiedPlayerStats
+        modifiedPlayerStats,
     );
 
     /* Store it in the ref */
@@ -362,7 +362,7 @@ const viewPlayerStats = () => {
 
     console.log(
         "Actual value of selectedPlayerStats = ",
-        selectedPlayerStats.value
+        selectedPlayerStats.value,
     );
 
     /* Show the player stats popup */
@@ -743,10 +743,8 @@ const testArray = ref([]);
 
 <style scoped>
 .builder-page {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    flex-direction: column;
+    display: grid;
+    justify-items: center;
     padding: 0 4rem;
 }
 

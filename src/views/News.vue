@@ -75,10 +75,8 @@ onMounted(() => {
 
 <style scoped>
 .news-page {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    flex-direction: column;
+    display: grid;
+    justify-items: center;
     padding: 0 4rem;
 }
 
