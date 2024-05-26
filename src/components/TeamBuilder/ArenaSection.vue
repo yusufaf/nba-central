@@ -1,11 +1,11 @@
 <script setup lang="ts">
 import { ref, watch, computed } from "vue";
 import { WESTERN_TEAMS, EASTERN_TEAMS } from "@/constants/constants";
-import type { Arena, SortDirection } from "@/lib/types";
+import type { Arena, SortDirection, DrawerSide } from "@/models/types";
 import arenaData from "@/assets/data/arenas.json";
 
 const props = defineProps<{
-    selectedDrawerSide: any;
+    selectedDrawerSide: DrawerSide;
 }>();
 
 const teamArena = defineModel<any>("teamArena");

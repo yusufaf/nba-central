@@ -1,11 +1,10 @@
 <script setup lang="ts">
 import { ref, watch, computed } from "vue";
-import type { DrawerSide } from "@/constants/constants";
-import type { GM, SortDirection } from "@/lib/types";
+import type { GM, SortDirection, DrawerSide } from "@/models/types";
 import gmData from "@/assets/data/execs.json";
 
 const props = defineProps<{
-    selectedDrawerSide: any;
+    selectedDrawerSide: DrawerSide;
 }>();
 
 const teamGM = defineModel<any>("teamGM");

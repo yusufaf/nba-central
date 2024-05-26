@@ -13,10 +13,9 @@ import {
     DRAWER_SIDES,
     DEFAULT_NOTIFICATION_PROPS,
 } from "@/constants/constants";
-import type { DrawerSide } from "@/constants/constants";
-import { range } from "@/constants/functions";
+import { range } from "@/constants/utilities";
 import { debounce, useQuasar, type QNotifyCreateOptions } from "quasar";
-import type { Team } from "@/lib/types";
+import type { Team, DrawerSide } from "@/models/types";
 import { uid } from "quasar";
 import draggable from "vuedraggable";
 import axios from "axios";
@@ -63,7 +62,7 @@ const showPlayerStatsDialog = ref<boolean>(false);
 
 const sortOptions = ["Alphabetic (A-Z)", "Reverse Alphabetic (Z-A)"];
 const selectedView = ref<string>(VIEWS.DEFAULT);
-const selectedDrawerSide = ref<any>("right");
+const selectedDrawerSide = ref<DrawerSide>("right");
 const headerExpanded = ref<boolean>(false);
 
 const selectedPlayersForComparison = ref<Set<any>>(new Set());

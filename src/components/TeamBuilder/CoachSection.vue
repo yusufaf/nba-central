@@ -1,13 +1,12 @@
 <script setup lang="ts">
 import { ref, watch, computed } from "vue";
-import type { DrawerSide } from "@/constants/constants";
-import type { Coach, SortDirection } from "@/lib/types";
+import type { Coach, SortDirection, DrawerSide } from "@/models/types";
 import coachesData from "@/assets/data/coaches.json";
-import { roundValueToNPlaces } from "@/constants/functions";
+import { roundValueToNPlaces } from "@/constants/utilities";
 import { debounce } from "quasar";
 
 const props = defineProps<{
-    selectedDrawerSide: any;
+    selectedDrawerSide: DrawerSide;
 }>();
 
 const teamCoach = defineModel<Coach | null>("teamCoach");
