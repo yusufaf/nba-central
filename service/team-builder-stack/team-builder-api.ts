@@ -30,6 +30,7 @@ import { LogGroup } from "aws-cdk-lib/aws-logs";
 import { DEFAULT_ALLOWED_ORIGINS } from "../../constants";
 import apiAuthorizer from "../lambdas/apiAuthorizer/index";
 import setCoachesData from "../lambdas/setCoachesData";
+import setExecsData from "../lambdas/setExecsData";
 
 type CreateLambdaProxyIntegrationProps = {
     lambda: LambdaFunction;
@@ -144,6 +145,7 @@ export class TeamBuilderAPI extends Construct {
         };
 
         setCoachesData({ ...lambdaProps });
+        setExecsData({ ...lambdaProps });
 
         const authorizerNameAndID = `${this.prefix}-authorizer`;
         const apiAuthorizerLambda = apiAuthorizer({ ...lambdaProps });
