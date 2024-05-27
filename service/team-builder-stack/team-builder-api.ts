@@ -31,6 +31,7 @@ import { DEFAULT_ALLOWED_ORIGINS } from "../../constants";
 import apiAuthorizer from "../lambdas/apiAuthorizer/index";
 import setCoachesData from "../lambdas/setCoachesData";
 import setExecsData from "../lambdas/setExecsData";
+import setArenasData from "../lambdas/setArenasData";
 
 type CreateLambdaProxyIntegrationProps = {
     lambda: LambdaFunction;
@@ -146,6 +147,7 @@ export class TeamBuilderAPI extends Construct {
 
         setCoachesData({ ...lambdaProps });
         setExecsData({ ...lambdaProps });
+        setArenasData({ ...lambdaProps });
 
         const authorizerNameAndID = `${this.prefix}-authorizer`;
         const apiAuthorizerLambda = apiAuthorizer({ ...lambdaProps });
