@@ -3,6 +3,7 @@ import { ref, watch, computed } from "vue";
 import { WESTERN_TEAMS, EASTERN_TEAMS } from "@/constants/constants";
 import type { Arena, SortDirection, DrawerSide } from "@/models/types";
 import arenaData from "@/assets/data/arenas.json";
+import { getRandomIndex } from "@/constants/utilities";
 
 const props = defineProps<{
     selectedDrawerSide: DrawerSide;
@@ -93,7 +94,7 @@ const deleteArena = () => {
 
 const selectRandomArena = () => {
     const copyArenaData = filteredArenaData.value;
-    const randomIndex = Math.floor(Math.random() * copyArenaData.length);
+    const randomIndex = getRandomIndex(copyArenaData);
     teamArena.value = copyArenaData[randomIndex];
 };
 </script>

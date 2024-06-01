@@ -752,12 +752,13 @@ const testArray = ref([]);
     width: calc(100% - 10rem);
     height: 37rem;
     border-radius: 0.25rem;
-    /* display: grid;
-  grid-template-rows: 6rem auto; */
+    display: grid;
+    grid-template-rows: 6rem auto;
 }
 
 .builder-container.expanded {
     height: 40rem;
+    grid-template-rows: 10rem auto;
 }
 
 .header {
@@ -794,8 +795,7 @@ const testArray = ref([]);
 }
 
 .builder-main {
-    margin: 1rem 2rem 0 2rem;
-    height: 28rem;
+    padding: 1rem 2rem;
     overflow-y: auto;
 }
 

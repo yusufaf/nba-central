@@ -2,6 +2,7 @@
 import { ref, watch, computed } from "vue";
 import type { GM, SortDirection, DrawerSide } from "@/models/types";
 import gmData from "@/assets/data/execs.json";
+import { getRandomIndex } from "@/constants/utilities";
 
 const props = defineProps<{
     selectedDrawerSide: DrawerSide;
@@ -66,7 +67,7 @@ const deleteGM = () => {
 
 const selectRandomGM = () => {
     const copyGMData = filteredGMData.value;
-    const randomIndex = Math.floor(Math.random() * copyGMData.length);
+    const randomIndex = getRandomIndex(copyGMData);
     teamGM.value = copyGMData[randomIndex];
 };
 </script>

@@ -1,3 +1,5 @@
+import type { DrawerSide } from "@/models/types";
+
 /* UI */
 export const CURRENT_SEASON_START_YEAR = new Date().getFullYear() - 1;
 
@@ -45,7 +47,6 @@ export const DEFAULT_NOTIFICATION_PROPS = {
     textColor: "white",
 };
 
-export type DrawerSide = "left" | "right" | undefined;
 export const DRAWER_SIDES: { [key: string]: DrawerSide } = {
     LEFT: "left",
     RIGHT: "right",

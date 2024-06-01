@@ -2,7 +2,7 @@
 import { ref, watch, computed } from "vue";
 import type { Coach, SortDirection, DrawerSide } from "@/models/types";
 import coachesData from "@/assets/data/coaches.json";
-import { roundValueToNPlaces } from "@/constants/utilities";
+import { getRandomIndex, roundValueToNPlaces } from "@/constants/utilities";
 import { debounce } from "quasar";
 
 const props = defineProps<{
@@ -170,7 +170,7 @@ function coachWinPercent(wlPercent: string | number) {
 
 const selectRandomCoach = () => {
     const copyCoachData = filteredCoachesData.value;
-    const randomIndex = Math.floor(Math.random() * copyCoachData.length);
+    const randomIndex = getRandomIndex(copyCoachData);
     teamCoach.value = copyCoachData[randomIndex];
 };
 </script>
