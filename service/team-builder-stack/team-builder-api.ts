@@ -179,6 +179,7 @@ export class TeamBuilderAPI extends Construct {
 
         const filesPrefix = `/api/files`;
         const usersPrefix = `/api/users`;
+        const teamsPrefix = `/api/teams`;
 
         const FILES_ROUTES = [
             {
@@ -210,7 +211,18 @@ export class TeamBuilderAPI extends Construct {
             },
         ];
 
-        const API_ROUTES = [...FILES_ROUTES];
+        const TEAMS_ROUTES: {
+            route: string;
+            lambdaName: string;
+            methods?: HttpMethod[] | undefined;
+        }[] = [
+            {
+                route: `${teamsPrefix}/create`,
+                lambdaName: "createTeam",
+            },
+        ];
+
+        const API_ROUTES = [...FILES_ROUTES, ...TEAMS_ROUTES];
 
         for (const { route, lambdaName } of API_ROUTES) {
             this.createLambdaHttpIntegration({
