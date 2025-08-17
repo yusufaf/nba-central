@@ -17,6 +17,7 @@ export class TeamBuilderCognito extends Construct {
             deploymentType = "development",
             env,
         } = props;
+        
         const { account = "", region = "" } = env!;
 
         const userPoolName = `${appName}-${deploymentType}-users`;
