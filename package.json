@@ -18,15 +18,14 @@
         "@aws-sdk/client-ses": "^3.556.0",
         "@aws-sdk/lib-dynamodb": "^3.540.0",
         "@aws-sdk/s3-request-presigner": "^3.540.0",
-        "aws-cdk-lib": "^2.134.0",
+        "aws-cdk-lib": "^2.211.0",
         "aws-jwt-verify": "^4.0.1",
         "cheerio": "1.0.0-rc.12",
         "constructs": "^10.3.0",
         "dotenv": "^16.4.5",
         "jsdom": "^24.0.0",
         "node-fetch": "^3.3.2",
-        "source-map-support": "^0.5.21",
-        "uuid": "^9.0.1"
+        "source-map-support": "^0.5.21"
     },
     "devDependencies": {
         "@eslint/js": "^9.33.0",
@@ -34,7 +33,6 @@
         "@types/jest": "^29.5.12",
         "@types/jsdom": "^21.1.6",
         "@types/node": "^20.12.2",
-        "@types/uuid": "^9.0.8",
         "aws-cdk": "^2.134.0",
         "esbuild": "^0.20.2",
         "eslint": "^9.33.0",
@@ -44,7 +42,7 @@
         "ts-jest": "^29.1.2",
         "ts-node": "^10.9.2",
         "tsconfig-paths": "^4.2.0",
-        "typescript": "^5.4.3",
+        "typescript": "^5.9.2",
         "typescript-eslint": "^8.39.1"
     }
 }
