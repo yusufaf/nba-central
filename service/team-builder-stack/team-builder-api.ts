@@ -177,25 +177,26 @@ export class TeamBuilderAPI extends Construct {
 			},
 		);
 
-		const filesPrefix = `/api/files`;
-		const usersPrefix = `/api/users`;
-		const teamsPrefix = `/api/teams`;
+		const FILES_PREFIX = `/api/files`;
+		const USERS_PREFIX = `/api/users`;
+		const TEAMS_PREFIX = `/api/teams`;
+		const DATA_PREFIX = `/api/data`;
 
 		const FILES_ROUTES = [
 			{
-				route: `${filesPrefix}/initiate-multipart-upload`,
+				route: `${FILES_PREFIX}/initiate-multipart-upload`,
 				lambdaName: "initiateMultipartUpload",
 			},
 			{
-				route: `${filesPrefix}/complete-multipart-upload`,
+				route: `${FILES_PREFIX}/complete-multipart-upload`,
 				lambdaName: "completeMultipartUpload",
 			},
 			{
-				route: `${filesPrefix}/get-multipart-signed-upload-urls`,
+				route: `${FILES_PREFIX}/get-multipart-signed-upload-urls`,
 				lambdaName: "getMultipartSignedUploadUrls",
 			},
 			{
-				route: `${filesPrefix}/delete-file`,
+				route: `${FILES_PREFIX}/delete-file`,
 				lambdaName: "deleteFile",
 			},
 		];
@@ -206,7 +207,7 @@ export class TeamBuilderAPI extends Construct {
 			methods?: HttpMethod[] | undefined;
 		}[] = [
 			{
-				route: `${usersPrefix}/get`,
+				route: `${USERS_PREFIX}/get`,
 				lambdaName: "getUser",
 			},
 		];
@@ -217,12 +218,19 @@ export class TeamBuilderAPI extends Construct {
 			methods?: HttpMethod[] | undefined;
 		}[] = [
 			{
-				route: `${teamsPrefix}/create`,
+				route: `${TEAMS_PREFIX}/create`,
 				lambdaName: "createTeam",
 			},
 		];
 
-		const API_ROUTES = [...FILES_ROUTES, ...TEAMS_ROUTES];
+		const DATA_ROUTES = [
+			{
+				route: `${DATA_PREFIX}/get-team-logos`,
+				lambdaName: "getTeamLogos",
+			},
+		];
+
+		const API_ROUTES = [...FILES_ROUTES, ...TEAMS_ROUTES, ...DATA_ROUTES];
 
 		for (const { route, lambdaName } of API_ROUTES) {
 			this.createLambdaHttpIntegration({

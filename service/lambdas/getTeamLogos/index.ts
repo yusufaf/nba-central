@@ -1,20 +1,21 @@
-import { Runtime } from "aws-cdk-lib/aws-lambda";
-import { getRole } from "../../../resources/roles";
-import { LambdaProps } from "models/stack";
 import { Duration } from "aws-cdk-lib";
-import path from "path";
+import { Runtime } from "aws-cdk-lib/aws-lambda";
 import { NodejsFunction } from "aws-cdk-lib/aws-lambda-nodejs";
+import path from "path";
+import { LambdaProps } from "../../../models/stack";
+import { getRole } from "../../../resources/roles";
+import { ESPN_TEAMS_URL } from "../../../constants";
 
 export default ({ props, construct }: LambdaProps) => {
 	const { appName, deploymentType = "" } = props;
 
-	const functionName = "createTeam";
+	const functionName = "getTeamLogos";
 	const nameAndID = `${appName}-${deploymentType}-${functionName}`;
 	const role = getRole(`${appName}-${deploymentType}-main-lambda-role`);
 
-	const lambdaFunction = new NodejsFunction(construct, nameAndID, {
+	const getTeamLogos = new NodejsFunction(construct, nameAndID, {
 		functionName: nameAndID,
-		runtime: Runtime.NODEJS_20_X,
+		runtime: Runtime.NODEJS_LATEST,
 		timeout: Duration.seconds(30),
 		role,
 		memorySize: 1000,
@@ -24,9 +25,9 @@ export default ({ props, construct }: LambdaProps) => {
 		environment: {
 			deploymentType,
 			NODE_OPTIONS: "--enable-source-maps",
-			mainTable: `${appName}-${deploymentType}-main`,
+			ESPN_TEAMS_URL,
 		},
 	});
 
-	return lambdaFunction;
+	return getTeamLogos;
 };
