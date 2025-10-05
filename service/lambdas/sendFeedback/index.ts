@@ -1,33 +1,23 @@
-import { Runtime } from "aws-cdk-lib/aws-lambda";
-import { getRole } from "../../../resources/roles";
-import { LambdaProps } from "../../../models/stack";
 import { Duration } from "aws-cdk-lib";
-import path from "path";
-import { NodejsFunction } from "aws-cdk-lib/aws-lambda-nodejs";
+import { LambdaProps } from "../../../models/stack";
+import { TeamBuilderLambda } from "../../constructs/TeamBuilderLambda";
 
 export default ({ props, construct }: LambdaProps) => {
-    const { appName, deploymentType = "" } = props;
+	const functionName = "sendFeedback";
+	const { lambdaFunction } = new TeamBuilderLambda(
+		construct,
+		functionName,
+		{
+			functionName,
+			stackProps: props,
+			memorySize: 1000,
+			timeout: Duration.seconds(30),
+			environment: {
+				mainDynamoDBTable: `${props.appName}-${props.deploymentType}-main-table`,
+				mainBucket: `${props.appName}-${props.deploymentType}-main-bucket`,
+			},
+		},
+	);
 
-    const functionName = "sendFeedback";
-    const nameAndID = `${appName}-${deploymentType}-${functionName}`;
-    const role = getRole(`${appName}-${deploymentType}-main-lambda-role`);
-
-    const lambdaFunction = new NodejsFunction(construct, nameAndID, {
-        functionName: nameAndID,
-        runtime: Runtime.NODEJS_20_X,
-        timeout: Duration.seconds(30),
-        role,
-        memorySize: 1000,
-        entry: path.join(__dirname, `./src/${functionName}.ts`),
-        handler: "handler",
-        awsSdkConnectionReuse: true,
-        environment: {
-            deploymentType,
-            NODE_OPTIONS: "--enable-source-maps",
-            mainDynamoDBTable: `${appName}-${deploymentType}-main-table`,
-            mainBucket: `${appName}-${deploymentType}-main-bucket`,
-        },
-    });
-
-    return lambdaFunction;
+	return lambdaFunction;
 };

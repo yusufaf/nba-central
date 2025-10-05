@@ -1,20 +1,23 @@
-import { Duration } from "aws-cdk-lib";
+import { LayerVersion, Runtime } from "aws-cdk-lib/aws-lambda";
+import { getRole } from "../../../resources/roles";
 import { LambdaProps } from "../../../models/stack";
+import { Duration } from "aws-cdk-lib";
+import path from "path";
 import { TeamBuilderLambda } from "../../constructs/TeamBuilderLambda";
 
 export default ({ props, construct }: LambdaProps) => {
-	const functionName = "createTeam";
+	const functionName = "saveUserData";
 	const { lambdaFunction } = new TeamBuilderLambda(
 		construct,
 		functionName,
 		{
 			functionName,
 			stackProps: props,
-			memorySize: 1000,
-			timeout: Duration.seconds(30),
 			environment: {
-				mainTable: `${props.appName}-${props.deploymentType}-main`,
+				USERS_TABLE_NAME: `${props.appName}-${props.deploymentType}-users`,
 			},
+			timeout: Duration.seconds(30),
+			memorySize: 1024,
 		},
 	);
 

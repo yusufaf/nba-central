@@ -206,9 +206,13 @@ export class TeamBuilderAPI extends Construct {
 			lambdaName: string;
 			methods?: HttpMethod[] | undefined;
 		}[] = [
+			// {
+			// 	route: `${USERS_PREFIX}/get`,
+			// 	lambdaName: "getUser",
+			// },
 			{
-				route: `${USERS_PREFIX}/get`,
-				lambdaName: "getUser",
+				route: `${USERS_PREFIX}/save-data`,
+				lambdaName: "saveUserData",
 			},
 		];
 
@@ -230,7 +234,12 @@ export class TeamBuilderAPI extends Construct {
 			},
 		];
 
-		const API_ROUTES = [...FILES_ROUTES, ...TEAMS_ROUTES, ...DATA_ROUTES];
+		const API_ROUTES = [
+			...FILES_ROUTES,
+			...USERS_ROUTES,
+			...TEAMS_ROUTES,
+			...DATA_ROUTES,
+		];
 
 		for (const { route, lambdaName } of API_ROUTES) {
 			this.createLambdaHttpIntegration({
@@ -238,7 +247,7 @@ export class TeamBuilderAPI extends Construct {
 				lambdaProps,
 				path: route,
 				lambdaName,
-				authorizer: httpRouteAuthorizer,
+				// authorizer: httpRouteAuthorizer,
 			});
 		}
 	}
