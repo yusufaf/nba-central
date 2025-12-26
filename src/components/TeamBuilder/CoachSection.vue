@@ -1,9 +1,44 @@
 <script setup lang="ts">
-import { ref, watch, computed } from "vue";
+import { ref, computed } from "vue";
 import type { Coach, SortDirection, DrawerSide } from "@/models/types";
 import coachesData from "@/assets/data/coaches.json";
 import { getRandomIndex, roundValueToNPlaces } from "@/constants/utilities";
-import { debounce } from "quasar";
+import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Separator } from "@/components/ui/separator";
+import {
+    Sheet,
+    SheetContent,
+    SheetHeader,
+    SheetTitle,
+} from "@/components/ui/sheet";
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/components/ui/select";
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuCheckboxItem,
+    DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import {
+    Plus,
+    UserCircle2,
+    Trash2,
+    Search,
+    ArrowUp,
+    ArrowDown,
+    Shuffle,
+    Star,
+    Trophy,
+    Calendar,
+} from "lucide-vue-next";
 
 const props = defineProps<{
     selectedDrawerSide: DrawerSide;
@@ -102,17 +137,20 @@ const sortedCoachesData = computed(() => {
     }
 });
 
-const filteredCoachesData = computed({
-    // Getter
-    get() {
-        const copyCoachData = [...sortedCoachesData.value];
+const filteredCoachesData = computed(() => {
+    let copyCoachData = [...sortedCoachesData.value];
 
-        /* If no filters, return regular sorted data */
-        if (selectedFilters.value.length === 0) {
-            return copyCoachData;
-        }
+    /* Apply search filter */
+    if (search.value.trim()) {
+        const searchLower = search.value.toLowerCase().trim();
+        copyCoachData = copyCoachData.filter((coach: Coach) =>
+            coach.name.toLowerCase().includes(searchLower)
+        );
+    }
 
-        return copyCoachData.filter((coach: Coach) => {
+    /* Apply checkbox filters */
+    if (selectedFilters.value.length > 0) {
+        copyCoachData = copyCoachData.filter((coach: Coach) => {
             const { name } = coach;
             const isHallOfFamer = name.endsWith("*");
 
@@ -123,29 +161,10 @@ const filteredCoachesData = computed({
             }
             return true;
         });
-    },
-    // Setter
-    set(value) {
-        filteredCoachesData.value = value;
-    },
-});
+    }
 
-/* Searching */
-// watch(
-//   search,
-//   debounce(async () => {
-//     const searchedCoach = search.value;
-//     console.log({searchedCoach})
-//     if (searchedCoach) {
-//       const searchedCoachLower = searchedCoach.toLowerCase();
-//       const searchedFilteredData = [...filteredCoachesData.value].filter((value: Coach) => {
-//           const nameLower = value.name.toLowerCase();
-//           return nameLower.includes(searchedCoachLower);
-//       })
-//       filteredCoachesData.value = searchedFilteredData;
-//     }
-//   }, 600)
-// );
+    return copyCoachData;
+});
 
 const toggleSortDirection = () => {
     sortDirection.value = sortDirection.value === "asc" ? "desc" : "asc";
@@ -154,6 +173,7 @@ const toggleSortDirection = () => {
 /* Coach Select Logic */
 const setCoach = (coach: any) => {
     teamCoach.value = coach;
+    showCoachDrawer.value = false;
 };
 
 const deleteCoach = () => {
@@ -173,189 +193,265 @@ const selectRandomCoach = () => {
     const randomIndex = getRandomIndex(copyCoachData);
     teamCoach.value = copyCoachData[randomIndex];
 };
+
+const toggleFilter = (filter: string) => {
+    const index = selectedFilters.value.indexOf(filter);
+    if (index > -1) {
+        selectedFilters.value.splice(index, 1);
+    } else {
+        selectedFilters.value.push(filter);
+    }
+};
+
+const isHallOfFamer = (coachName: string) => coachName.endsWith("*");
+
+const getCleanName = (coachName: string) => coachName.replace(/\*$/, "").trim();
 </script>
 
 <template>
     <div>
-        <h6 class="section-header">Coach</h6>
-        <q-card dark class="coach-card" bordered>
-            <q-card-section>
-                <h6>Coach</h6>
-            </q-card-section>
-            <q-separator />
-            <q-card-section class="main-card-section">
-                <q-btn
-                    v-if="!teamCoach"
-                    round
-                    icon="add_circle"
-                    size="1.75rem"
-                    @click="showCoachDrawer = true"
-                />
-                <template v-else>
-                    <q-icon
-                        class="blank-avatar"
-                        name="account_circle"
-                        size="3.5rem"
-                    />
-                    <div>{{ teamCoach.name ?? "" }}</div>
-                </template>
-            </q-card-section>
-            <q-separator dark />
-            <q-card-actions>
-                <q-btn
-                    @click="deleteCoach"
-                    flat
-                    round
-                    icon="delete"
-                    color="negative"
-                />
-            </q-card-actions>
-        </q-card>
-        <q-drawer
-            v-model="showCoachDrawer"
-            :side="props.selectedDrawerSide"
-            :width="300"
-            bordered
-            elevated
-            overlay
-            dark
-        >
-            <div class="drawer-header">
-                <div class="drawer-title-container">
-                    <h6 class="drawer-title">Add Coach</h6>
-                    <q-btn
-                        @click="showCoachDrawer = false"
-                        round
-                        icon="close"
-                        class="drawer-close"
-                    />
+        <div class="card-wrapper">
+            <Card class="section-card">
+                <CardContent class="pt-6">
+                <div class="card-title-section">
+                    <h3 class="card-title">Coach</h3>
                 </div>
-                <q-input
-                    outlined
-                    v-model="search"
-                    placeholder="Search for a coach"
-                    type="search"
-                    dark
-                >
-                    <template v-slot:append>
-                        <q-icon name="search" />
-                    </template>
-                </q-input>
-                <q-linear-progress
-                    v-if="searchLoading"
-                    indeterminate
-                    color="primary"
-                />
-                <div>
-                    <q-select
-                        class="sort-select"
-                        outlined
-                        v-model="selectedSort"
-                        :options="sortOptions"
-                        label="Sort"
-                        clearable
-                        dark
+                <Separator class="mb-4" />
+                <div class="main-card-section">
+                    <Button
+                        v-if="!teamCoach"
+                        size="icon"
+                        variant="outline"
+                        class="rounded-full h-16 w-16"
+                        @click="showCoachDrawer = true"
                     >
-                        <template v-slot:prepend>
-                            <q-btn
-                                :icon="
-                                    sortDirection === 'asc'
-                                        ? 'arrow_upward'
-                                        : 'arrow_downward'
-                                "
-                                @click.stop.prevent="toggleSortDirection"
-                                round
+                        <Plus class="h-8 w-8" />
+                    </Button>
+                    <template v-else>
+                        <UserCircle2 class="h-16 w-16 text-muted-foreground" />
+                        <div class="flex items-center gap-2 mt-3">
+                            <div class="coach-name">{{ getCleanName(teamCoach.name ?? "") }}</div>
+                            <Star
+                                v-if="isHallOfFamer(teamCoach.name ?? '')"
+                                class="h-4 w-4 text-yellow-500 fill-yellow-500 self-center"
+                                title="Hall of Fame"
                             />
-                        </template>
-                    </q-select>
-                    <div class="coach-filter-container">
-                        <div class="coach-filter-buttons">
-                            <q-btn color="primary" label="Filters Menu">
-                                <q-menu dark>
-                                    <q-list style="min-width: 100px">
-                                        <template
-                                            v-for="(
-                                                filter, index
-                                            ) in COACH_FILTERS"
-                                            :key="index"
-                                        >
-                                            <q-item tag="label" avatar>
-                                                <q-item-section>
-                                                    <q-checkbox
-                                                        v-model="
-                                                            selectedFilters
-                                                        "
-                                                        :val="filter"
-                                                        dark
-                                                    />
-                                                </q-item-section>
-                                                <q-item-section>
-                                                    <q-item-label>{{
-                                                        filter
-                                                    }}</q-item-label>
-                                                </q-item-section>
-                                            </q-item>
-                                        </template>
-                                    </q-list>
-                                </q-menu>
-                            </q-btn>
-                            <q-btn
-                                icon="shuffle"
-                                round
-                                color="primary"
-                                title="Select random coach"
-                                @click="selectRandomCoach"
-                            />
-                            <span class="hof-coach"> * = Hall of Fame </span>
+                        </div>
+                    </template>
+                </div>
+                <Separator class="my-4" />
+                <div class="flex justify-end">
+                    <Button
+                        @click="deleteCoach"
+                        variant="ghost"
+                        size="icon"
+                        class="text-red-500 hover:text-red-600 hover:bg-red-950"
+                    >
+                        <Trash2 class="h-4 w-4" />
+                    </Button>
+                </div>
+            </CardContent>
+        </Card>
+        </div>
+
+        <Sheet v-model:open="showCoachDrawer">
+            <SheetContent
+                :side="props.selectedDrawerSide"
+                class="w-[28rem] flex flex-col"
+            >
+                <SheetHeader>
+                    <SheetTitle class="text-white text-xl">Add Coach</SheetTitle>
+                </SheetHeader>
+
+                <div class="drawer-header-controls">
+                    <!-- Search -->
+                    <div class="relative search-wrapper">
+                        <Input
+                            v-model="search"
+                            placeholder="Search for a coach"
+                            type="search"
+                            class="pr-10 h-11 focus-visible:ring-offset-0"
+                            style="outline-offset: -2px;"
+                        />
+                        <Search class="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
+                    </div>
+
+                    <!-- Sort Controls -->
+                    <div class="control-row">
+                        <div class="sort-button-group">
+                            <Button
+                                @click="toggleSortDirection"
+                                size="icon"
+                                variant="outline"
+                                class="sort-direction-btn"
+                                :title="sortDirection === 'asc' ? 'Ascending' : 'Descending'"
+                            >
+                                <ArrowUp v-if="sortDirection === 'asc'" class="h-4 w-4" />
+                                <ArrowDown v-else class="h-4 w-4" />
+                            </Button>
+                            <Select v-model="selectedSort">
+                                <SelectTrigger class="sort-select-trigger">
+                                    <SelectValue placeholder="Sort by..." />
+                                </SelectTrigger>
+                            <SelectContent
+                                class="!bg-[rgb(9,9,11)] border-2 shadow-xl z-[100]"
+                                position="popper"
+                                :side-offset="8"
+                                style="background-color: rgb(9, 9, 11) !important; opacity: 1 !important;"
+                            >
+                                <SelectItem
+                                    v-for="option in sortOptions"
+                                    :key="option"
+                                    :value="option"
+                                    class="cursor-pointer hover:!bg-accent focus:!bg-accent"
+                                >
+                                    {{ option }}
+                                </SelectItem>
+                            </SelectContent>
+                            </Select>
                         </div>
                     </div>
+
+                    <!-- Filter Controls -->
+                    <div class="flex items-center gap-3 control-row">
+                        <DropdownMenu>
+                            <DropdownMenuTrigger as-child>
+                                <Button variant="default" class="flex-1 h-11">
+                                    Filters
+                                    <span v-if="selectedFilters.length > 0" class="ml-2 text-xs bg-primary-foreground text-primary rounded-full px-2 py-0.5">
+                                        {{ selectedFilters.length }}
+                                    </span>
+                                </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent
+                                class="!bg-[rgb(9,9,11)] border-2 shadow-xl z-[100]"
+                                :side-offset="8"
+                                style="background-color: rgb(9, 9, 11) !important; opacity: 1 !important;"
+                            >
+                                <DropdownMenuCheckboxItem
+                                    v-for="filter in COACH_FILTERS"
+                                    :key="filter"
+                                    :checked="selectedFilters.includes(filter)"
+                                    @update:checked="() => toggleFilter(filter)"
+                                    class="cursor-pointer focus:!bg-accent"
+                                >
+                                    {{ filter }}
+                                </DropdownMenuCheckboxItem>
+                            </DropdownMenuContent>
+                        </DropdownMenu>
+
+                        <Button
+                            size="icon"
+                            variant="default"
+                            title="Select random coach"
+                            @click="selectRandomCoach"
+                            class="rounded-full shrink-0 w-11 h-11"
+                        >
+                            <Shuffle class="h-4 w-4" />
+                        </Button>
+                    </div>
+
+                    <!-- Hall of Fame Legend -->
+                    <div class="flex items-center justify-center gap-2 pt-2">
+                        <Star class="h-4 w-4 text-yellow-500 fill-yellow-500" />
+                        <span class="text-sm font-medium text-muted-foreground">Hall of Fame Coach</span>
+                    </div>
                 </div>
-            </div>
-            <q-separator dark />
-            <q-scroll-area class="fit">
-                <q-virtual-scroll
-                    style="max-height: 600px"
-                    :items="filteredCoachesData"
-                    v-slot="{ item: coach }"
-                    separator
-                >
-                    <q-item
-                        :key="coach.rank"
-                        @click="() => setCoach(coach)"
-                        clickable
-                        v-ripple
-                    >
-                        <q-item-section class="coach-item">
-                            <div>
-                                <div class="coach-name">{{ coach.name }}</div>
-                                <div>
-                                    {{ coach.generalRecord }}
+
+                <Separator class="my-4 flex-shrink-0" />
+
+                <ScrollArea class="flex-1 overflow-auto">
+                    <!-- Empty State -->
+                    <div v-if="filteredCoachesData.length === 0" class="flex flex-col items-center justify-center py-12 px-4 text-center">
+                        <UserCircle2 class="h-16 w-16 text-muted-foreground/50 mb-4" />
+                        <h3 class="text-lg font-semibold text-foreground mb-2">No coaches found</h3>
+                        <p class="text-sm text-muted-foreground">
+                            Try adjusting your search or filters
+                        </p>
+                    </div>
+
+                    <!-- Coach List -->
+                    <div v-else class="coach-list pr-2">
+                        <div
+                            v-for="coach in filteredCoachesData"
+                            :key="coach.rank"
+                            @click="() => setCoach(coach)"
+                            class="coach-item p-4 cursor-pointer rounded-lg transition-all"
+                        >
+                            <!-- Coach Header -->
+                            <div class="flex items-center gap-2 mb-3">
+                                <h4 class="coach-name-improved font-bold text-base">
+                                    {{ getCleanName(coach.name) }}
+                                </h4>
+                                <Star
+                                    v-if="isHallOfFamer(coach.name)"
+                                    class="h-4 w-4 text-yellow-500 fill-yellow-500 flex-shrink-0 self-center"
+                                    title="Hall of Fame"
+                                />
+                            </div>
+
+                            <!-- Stats Grid -->
+                            <div class="grid grid-cols-1 gap-2">
+                                <!-- Regular Season -->
+                                <div class="stats-row">
+                                    <span class="stats-label">Regular Season:</span>
+                                    <span class="stats-value">{{ coach.w }} - {{ coach.l }} ({{ coachWinPercent(coach.wlPercent) }})</span>
                                 </div>
-                                <div>
-                                    {{ coach.playoffRecord }}
+
+                                <!-- Playoffs -->
+                                <div class="stats-row">
+                                    <span class="stats-label">Playoffs:</span>
+                                    <span class="stats-value">{{ coach.playoffW }} - {{ coach.playoffL }} ({{ coachWinPercent(coach.playoffWLPercent) }})</span>
                                 </div>
-                                <div>
-                                    {{ coach.champsCount }}
+
+                                <!-- Championships -->
+                                <div class="stats-row items-center gap-1.5">
+                                    <Trophy class="h-3.5 w-3.5 text-yellow-500" />
+                                    <span class="stats-value">{{ coach.championships }} Championship{{ coach.championships !== 1 ? 's' : '' }}, {{ coach.confTitles }} Conf. Title{{ coach.confTitles !== 1 ? 's' : '' }}</span>
+                                </div>
+
+                                <!-- Years -->
+                                <div class="stats-row items-center gap-1.5">
+                                    <Calendar class="h-3.5 w-3.5 text-muted-foreground" />
+                                    <span class="stats-value">{{ coach.from }} - {{ coach.to }}</span>
                                 </div>
                             </div>
-                            <div>
-                                <div>{{ coach.yearsCoached }}</div>
-                            </div>
-                        </q-item-section>
-                    </q-item>
-                </q-virtual-scroll>
-            </q-scroll-area>
-        </q-drawer>
+                        </div>
+                    </div>
+                </ScrollArea>
+            </SheetContent>
+        </Sheet>
     </div>
 </template>
 
 <style scoped>
-.section-header {
-    margin: 1rem 0;
+.card-wrapper {
+    border-radius: 0.5rem;
+    border: 0.125rem solid;
+    border-color: hsla(var(--primary), 0.5);
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
-::-webkit-scrollbar {
-    display: none;
+.card-wrapper:hover {
+    border-color: hsl(var(--primary));
+    box-shadow: 0 0 0.5rem hsla(var(--primary), 0.3);
+}
+
+.section-card {
+    border: none !important;
+}
+
+.card-title-section {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 1rem;
+}
+
+.card-title {
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: hsl(var(--foreground));
 }
 
 .main-card-section {
@@ -363,63 +459,108 @@ const selectRandomCoach = () => {
     flex-direction: column;
     justify-content: center;
     align-items: center;
-}
-
-/* Drawer Styles */
-
-/* Hide scrollbar in header section of drawer */
-::v-deep .q-drawer__content.scroll {
-    overflow: hidden;
-}
-
-.drawer-header {
-    display: flex;
-    flex-direction: column;
-    /* height: fit-content; */
-    overflow: hidden;
-}
-
-.drawer-title-container {
-    display: flex;
-    flex-direction: row;
-    align-items: center;
-    padding-left: 1rem;
-    margin-bottom: 0.5rem;
-}
-
-.q-drawer > .q-drawer__content {
-    overflow: hidden;
-}
-
-.drawer-close {
-    margin-left: auto;
-}
-
-.coach-item {
-    display: flex;
-    flex-direction: row;
-    justify-content: space-between;
+    min-height: 10rem;
 }
 
 .coach-name {
-    font-weight: 600;
+    margin-top: 0.75rem;
+    font-size: 1rem;
+    font-weight: 500;
+    text-align: center;
 }
 
-.coach-filter-container {
+.coach-item {
+    background-color: hsl(var(--card));
+    border: 1px solid hsl(var(--border));
+    transition: all 0.2s ease;
+}
+
+.coach-item:hover {
+    background-color: hsl(var(--accent) / 0.15);
+    border-color: hsl(var(--primary) / 0.5);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+.coach-name-improved {
+    color: hsl(var(--foreground));
+    line-height: 1.3;
+}
+
+.stats-row {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.875rem;
+}
+
+.stats-label {
+    font-weight: 600;
+    color: hsl(var(--muted-foreground));
+    min-width: fit-content;
+}
+
+.stats-value {
+    color: hsl(var(--foreground) / 0.9);
+}
+
+/* Dropdown backgrounds - fully opaque - CRITICAL FIX */
+:deep(.sort-dropdown-content),
+:deep(.sort-dropdown-content) > *,
+:deep([data-reka-select-content].sort-dropdown-content) {
+    background-color: rgb(9, 9, 11) !important;
+    background: rgb(9, 9, 11) !important;
+    opacity: 1 !important;
+}
+
+:deep(.filters-dropdown-content),
+:deep(.filters-dropdown-content) > *,
+:deep([data-reka-dropdown-menu-content].filters-dropdown-content) {
+    background-color: rgb(9, 9, 11) !important;
+    background: rgb(9, 9, 11) !important;
+    opacity: 1 !important;
+}
+
+/* Drawer controls spacing */
+.drawer-header-controls {
+    margin-top: 1.5rem;
+    padding: 0 0.25rem;
+}
+
+.search-wrapper {
+    margin-bottom: 1.25rem;
+    isolation: isolate;
+}
+
+.search-wrapper :deep(input:focus) {
+    outline-offset: -0.125rem;
+}
+
+.control-row {
+    margin-bottom: 1.5rem;
+}
+
+/* Coach list spacing */
+.coach-list {
     display: flex;
     flex-direction: column;
+    gap: 1.5rem;
 }
 
-.coach-filter-buttons {
+/* Sort button group */
+.sort-button-group {
     display: flex;
-    flex-direction: row;
-    justify-content: space-between;
-    align-items: center;
+    gap: 0.5rem;
+    width: 100%;
 }
 
-.hof-coach {
-    /* margin-left: auto; */
-    margin-right: 0.5rem;
-    font-weight: 600;
+.sort-direction-btn {
+    flex-shrink: 0;
+    width: 2.75rem;
+    height: 2.75rem;
+}
+
+.sort-select-trigger {
+    flex: 1;
+    height: 2.75rem;
 }
 </style>

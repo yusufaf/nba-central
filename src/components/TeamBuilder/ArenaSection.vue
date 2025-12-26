@@ -1,9 +1,43 @@
 <script setup lang="ts">
-import { ref, watch, computed } from "vue";
+import { ref, computed } from "vue";
 import { WESTERN_TEAMS, EASTERN_TEAMS } from "@/constants/constants";
 import type { Arena, SortDirection, DrawerSide } from "@/models/types";
 import arenaData from "@/assets/data/arenas.json";
 import { getRandomIndex } from "@/constants/utilities";
+import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Separator } from "@/components/ui/separator";
+import {
+    Sheet,
+    SheetContent,
+    SheetHeader,
+    SheetTitle,
+    SheetClose,
+} from "@/components/ui/sheet";
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/components/ui/select";
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuCheckboxItem,
+    DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import {
+    Plus,
+    Trash2,
+    Search,
+    ArrowUp,
+    ArrowDown,
+    Shuffle,
+    X,
+} from "lucide-vue-next";
 
 const props = defineProps<{
     selectedDrawerSide: DrawerSide;
@@ -16,10 +50,8 @@ const typedArenaData = arenaData as Arena[];
 
 const search = ref<string>("");
 const searchLoading = ref<boolean>(false);
-/* Typing guide: https://vuejs.org/guide/typescript/composition-api.html */
-const cardsFlipped = ref<Map<any, boolean>>(new Map());
 
-const sortOptions = ["Alphabetic", "Capacity "];
+const sortOptions = ["Alphabetic", "Capacity"];
 
 /* Sorting and Filtering */
 const selectedSort = ref<string | null>(null);
@@ -28,7 +60,6 @@ const ARENA_FILTERS = ["Western Conference", "Eastern Conference"];
 const sortDirection = ref<SortDirection>("asc");
 
 /* Computed Props */
-
 const sortedArenaData = computed(() => {
     const copyArenaData = [...typedArenaData];
 
@@ -51,32 +82,40 @@ const sortedArenaData = computed(() => {
 });
 
 const filteredArenaData = computed(() => {
-    const copyArenaData = [...sortedArenaData.value];
+    let copyArenaData = [...sortedArenaData.value];
 
-    /* If no filters, return regular sorted data */
-    if (selectedFilters.value.length === 0) {
-        return copyArenaData;
+    /* Apply search filter */
+    if (search.value.trim()) {
+        const searchLower = search.value.toLowerCase().trim();
+        copyArenaData = copyArenaData.filter((arena: Arena) =>
+            arena.name.toLowerCase().includes(searchLower)
+        );
     }
 
-    return copyArenaData.filter((arena: Arena) => {
-        const { team } = arena;
+    /* Apply checkbox filters */
+    if (selectedFilters.value.length > 0) {
+        copyArenaData = copyArenaData.filter((arena: Arena) => {
+            const { team } = arena;
 
-        if (selectedFilters.value.includes("Western Conference")) {
-            const isWesternTeam = WESTERN_TEAMS.includes(team);
-            if (!isWesternTeam) {
-                return false;
+            if (selectedFilters.value.includes("Western Conference")) {
+                const isWesternTeam = WESTERN_TEAMS.includes(team);
+                if (!isWesternTeam) {
+                    return false;
+                }
             }
-        }
 
-        if (selectedFilters.value.includes("Eastern Conference")) {
-            const isEasternTeam = EASTERN_TEAMS.includes(team);
-            if (!isEasternTeam) {
-                return false;
+            if (selectedFilters.value.includes("Eastern Conference")) {
+                const isEasternTeam = EASTERN_TEAMS.includes(team);
+                if (!isEasternTeam) {
+                    return false;
+                }
             }
-        }
 
-        return true;
-    });
+            return true;
+        });
+    }
+
+    return copyArenaData;
 });
 
 const toggleSortDirection = () => {
@@ -86,6 +125,7 @@ const toggleSortDirection = () => {
 /* Arena Select Logic */
 const setArena = (arena: any) => {
     teamArena.value = arena;
+    showArenaDrawer.value = false;
 };
 
 const deleteArena = () => {
@@ -97,189 +137,216 @@ const selectRandomArena = () => {
     const randomIndex = getRandomIndex(copyArenaData);
     teamArena.value = copyArenaData[randomIndex];
 };
+
+const toggleFilter = (filter: string) => {
+    const index = selectedFilters.value.indexOf(filter);
+    if (index > -1) {
+        selectedFilters.value.splice(index, 1);
+    } else {
+        selectedFilters.value.push(filter);
+    }
+};
 </script>
 
 <template>
     <div>
-        <h6 class="section-header">Arena</h6>
-        <q-card dark class="coach-card" bordered>
-            <q-card-section>
-                <h6>Arena</h6>
-            </q-card-section>
-            <q-separator />
-            <q-card-section class="main-card-section">
-                <q-btn
-                    v-if="!teamArena"
-                    round
-                    icon="add_circle"
-                    size="1.75rem"
-                    @click="showArenaDrawer = true"
-                />
-                <template v-else>
-                    <!-- TODO: Fix image width -->
-                    <img :src="teamArena.imgLink" height="100" width="150" />
-                    <div>{{ teamArena.name }}</div>
-                </template>
-            </q-card-section>
-            <q-separator dark />
-            <q-card-actions>
-                <q-btn
-                    @click="deleteArena"
-                    flat
-                    round
-                    icon="delete"
-                    color="negative"
-                />
-            </q-card-actions>
-        </q-card>
-        <q-drawer
-            v-model="showArenaDrawer"
-            :side="props.selectedDrawerSide"
-            :width="300"
-            bordered
-            elevated
-            overlay
-            dark
-        >
-            <div class="drawer-header">
-                <div class="drawer-title-container">
-                    <h6 class="drawer-title">Add Arena</h6>
-                    <q-btn
-                        @click="showArenaDrawer = false"
-                        round
-                        icon="close"
-                        class="drawer-close"
-                    />
+        <div class="card-wrapper">
+            <Card class="section-card">
+                <CardContent class="pt-6">
+                <div class="card-title-section">
+                    <h3 class="card-title">Arena</h3>
                 </div>
-                <q-input
-                    outlined
-                    v-model="search"
-                    placeholder="Search for an arena"
-                    type="search"
-                    dark
-                >
-                    <template v-slot:append>
-                        <q-icon name="search" />
-                    </template>
-                </q-input>
-                <q-linear-progress
-                    v-if="searchLoading"
-                    indeterminate
-                    color="primary"
-                />
-                <div>
-                    <q-select
-                        outlined
-                        v-model="selectedSort"
-                        :options="sortOptions"
-                        label="Sort"
-                        clearable
-                        dark
+                <Separator class="mb-4" />
+                <div class="main-card-section">
+                    <Button
+                        v-if="!teamArena"
+                        size="icon"
+                        variant="outline"
+                        class="rounded-full h-16 w-16"
+                        @click="showArenaDrawer = true"
                     >
-                        <template v-slot:prepend>
-                            <q-btn
-                                :icon="
-                                    sortDirection === 'asc'
-                                        ? 'arrow_upward'
-                                        : 'arrow_downward'
-                                "
-                                @click.stop.prevent="toggleSortDirection"
-                                round
-                            />
-                        </template>
-                    </q-select>
-                    <div class="arena-filter-container">
-                        <q-btn color="primary" label="Filters Menu">
-                            <q-menu dark>
-                                <q-list style="min-width: 100px">
-                                    <template
-                                        v-for="(filter, index) in ARENA_FILTERS"
-                                        :key="index"
-                                    >
-                                        <q-item tag="label" avatar>
-                                            <q-item-section>
-                                                <q-checkbox
-                                                    v-model="selectedFilters"
-                                                    :val="filter"
-                                                    dark
-                                                />
-                                            </q-item-section>
-                                            <q-item-section>
-                                                <q-item-label>{{
-                                                    filter
-                                                }}</q-item-label>
-                                            </q-item-section>
-                                        </q-item>
-                                    </template>
-                                </q-list>
-                            </q-menu>
-                        </q-btn>
+                        <Plus class="h-8 w-8" />
+                    </Button>
+                    <template v-else>
+                        <img :src="teamArena.imgLink" height="100" width="150" class="rounded shadow-md" />
+                        <div class="arena-name">{{ teamArena.name }}</div>
+                    </template>
+                </div>
+                <Separator class="my-4" />
+                <div class="flex justify-end">
+                    <Button
+                        @click="deleteArena"
+                        variant="ghost"
+                        size="icon"
+                        class="text-red-500 hover:text-red-600 hover:bg-red-950"
+                    >
+                        <Trash2 class="h-4 w-4" />
+                    </Button>
+                </div>
+            </CardContent>
+        </Card>
+        </div>
 
-                        <q-btn
-                            icon="shuffle"
-                            round
-                            color="primary"
+        <Sheet v-model:open="showArenaDrawer">
+            <SheetContent
+                :side="props.selectedDrawerSide"
+                class="w-[28rem] flex flex-col"
+            >
+                <SheetHeader>
+                    <SheetTitle class="text-white text-xl">Add Arena</SheetTitle>
+                </SheetHeader>
+
+                <div class="drawer-header-controls">
+                    <!-- Search -->
+                    <div class="relative search-wrapper">
+                        <Input
+                            v-model="search"
+                            placeholder="Search for an arena"
+                            type="search"
+                            class="pr-10 h-11 focus-visible:ring-offset-0"
+                            style="outline-offset: -0.125rem;"
+                        />
+                        <Search class="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
+                    </div>
+
+                    <!-- Sort Controls -->
+                    <div class="control-row">
+                        <div class="sort-button-group">
+                            <Button
+                                @click="toggleSortDirection"
+                                size="icon"
+                                variant="outline"
+                                class="sort-direction-btn"
+                                :title="sortDirection === 'asc' ? 'Ascending' : 'Descending'"
+                            >
+                                <ArrowUp v-if="sortDirection === 'asc'" class="h-4 w-4" />
+                                <ArrowDown v-else class="h-4 w-4" />
+                            </Button>
+                            <Select v-model="selectedSort">
+                                <SelectTrigger class="sort-select-trigger">
+                                    <SelectValue placeholder="Sort by..." />
+                                </SelectTrigger>
+                                <SelectContent
+                                    class="!bg-[rgb(9,9,11)] border-2 shadow-xl z-[100]"
+                                    position="popper"
+                                    :side-offset="8"
+                                    style="background-color: rgb(9, 9, 11) !important; opacity: 1 !important;"
+                                >
+                                    <SelectItem
+                                        v-for="option in sortOptions"
+                                        :key="option"
+                                        :value="option"
+                                        class="cursor-pointer hover:!bg-accent focus:!bg-accent"
+                                    >
+                                        {{ option }}
+                                    </SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
+                    </div>
+
+                    <!-- Filter Controls -->
+                    <div class="flex items-center gap-3 control-row">
+                        <DropdownMenu>
+                            <DropdownMenuTrigger as-child>
+                                <Button variant="default" class="flex-1 h-11">
+                                    Filters
+                                    <span v-if="selectedFilters.length > 0" class="ml-2 text-xs bg-primary-foreground text-primary rounded-full px-2 py-0.5">
+                                        {{ selectedFilters.length }}
+                                    </span>
+                                </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent
+                                class="!bg-[rgb(9,9,11)] border-2 shadow-xl z-[100]"
+                                :side-offset="8"
+                                style="background-color: rgb(9, 9, 11) !important; opacity: 1 !important;"
+                            >
+                                <DropdownMenuCheckboxItem
+                                    v-for="filter in ARENA_FILTERS"
+                                    :key="filter"
+                                    :checked="selectedFilters.includes(filter)"
+                                    @update:checked="() => toggleFilter(filter)"
+                                    class="cursor-pointer focus:!bg-accent"
+                                >
+                                    {{ filter }}
+                                </DropdownMenuCheckboxItem>
+                            </DropdownMenuContent>
+                        </DropdownMenu>
+
+                        <Button
+                            size="icon"
+                            variant="default"
                             title="Select random arena"
                             @click="selectRandomArena"
-                        />
+                            class="rounded-full shrink-0 w-11 h-11"
+                        >
+                            <Shuffle class="h-4 w-4" />
+                        </Button>
                     </div>
                 </div>
-            </div>
-            <q-separator dark />
-            <q-scroll-area class="fit">
-                <q-virtual-scroll
-                    style="max-height: 600px"
-                    :items="filteredArenaData"
-                    v-slot="{ item: arena, index }"
-                    separator
-                >
-                    <q-item
-                        :key="index"
-                        @click="() => setArena(arena)"
-                        clickable
-                        v-ripple
-                    >
-                        <q-item-section thumbnail>
-                            <img :src="arena.imgLink" height="50" width="75" />
-                        </q-item-section>
-                        <q-item-section class="arena-item">
-                            <div class="right">
-                                <div class="arena-name">{{ arena.name }}</div>
-                                <div>Capacity: {{ arena.capacity }}</div>
-                                <div>Opened {{ arena.openedYear }}</div>
+
+                <Separator class="my-4 flex-shrink-0" />
+
+                <ScrollArea class="flex-1 overflow-auto">
+                    <!-- Empty State -->
+                    <div v-if="filteredArenaData.length === 0" class="flex flex-col items-center justify-center py-12 px-4 text-center">
+                        <div class="h-16 w-16 text-muted-foreground/50 mb-4 flex items-center justify-center text-4xl">🏟️</div>
+                        <h3 class="text-lg font-semibold text-foreground mb-2">No arenas found</h3>
+                        <p class="text-sm text-muted-foreground">
+                            Try adjusting your search or filters
+                        </p>
+                    </div>
+
+                    <!-- Arena List -->
+                    <div v-else class="arena-list pr-2">
+                        <div
+                            v-for="(arena, index) in filteredArenaData"
+                            :key="index"
+                            @click="() => setArena(arena)"
+                            class="arena-item p-4 cursor-pointer rounded-lg transition-all flex gap-3"
+                        >
+                            <img :src="arena.imgLink" height="60" width="90" class="rounded-md object-cover flex-shrink-0" />
+                            <div class="flex-1 min-w-0">
+                                <div class="arena-name-improved font-bold text-base mb-2">{{ arena.name }}</div>
+                                <div class="text-sm text-muted-foreground">Capacity: {{ arena.capacity }}</div>
+                                <div class="text-sm text-muted-foreground">Opened {{ arena.openedYear }}</div>
                             </div>
-                        </q-item-section>
-                    </q-item>
-                </q-virtual-scroll>
-            </q-scroll-area>
-        </q-drawer>
+                        </div>
+                    </div>
+                </ScrollArea>
+            </SheetContent>
+        </Sheet>
     </div>
 </template>
 
 <style scoped>
-.flip-enter-active,
-.flip-leave-active {
-    transition: all 0.4s ease;
+.card-wrapper {
+    border-radius: 0.5rem;
+    border: 0.125rem solid;
+    border-color: hsla(var(--primary), 0.5);
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
-.flip-enter,
-.flip-leave-to {
-    transform: rotateY(180deg);
-    opacity: 0;
+.card-wrapper:hover {
+    border-color: hsl(var(--primary));
+    box-shadow: 0 0 0.5rem hsla(var(--primary), 0.3);
 }
 
-.flip-leave,
-.flip-enter-to {
-    transform: rotateY(0);
-    opacity: 1;
+.section-card {
+    border: none !important;
 }
 
-.section-header {
-    margin: 1rem 0;
+.card-title-section {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 1rem;
 }
 
-::-webkit-scrollbar {
-    display: none;
+.card-title {
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: hsl(var(--foreground));
 }
 
 .main-card-section {
@@ -287,55 +354,74 @@ const selectRandomArena = () => {
     flex-direction: column;
     justify-content: center;
     align-items: center;
-}
-
-/* Drawer Styles */
-
-/* Hide scrollbar in header section of drawer */
-::v-deep .q-drawer__content.scroll {
-    overflow: hidden;
-}
-
-.drawer-header {
-    display: flex;
-    flex-direction: column;
-    /* height: fit-content; */
-    overflow: hidden;
-}
-
-.drawer-title-container {
-    display: flex;
-    flex-direction: row;
-    align-items: center;
-    padding-left: 1rem;
-    margin-bottom: 0.5rem;
-}
-
-.q-drawer > .q-drawer__content {
-    overflow: hidden;
-}
-
-.drawer-close {
-    margin-left: auto;
-}
-
-.arena-filter-container {
-    display: flex;
-    flex-direction: row;
-    align-items: center;
-    justify-content: space-between;
-}
-
-.arena-item {
-    display: flex;
-    flex-direction: row;
-    justify-content: space-between;
-}
-.arena-item .right {
-    justify-content: right;
+    min-height: 10rem;
 }
 
 .arena-name {
-    font-weight: 600;
+    margin-top: 0.75rem;
+    font-size: 1rem;
+    font-weight: 500;
+    text-align: center;
+}
+
+/* Drawer controls spacing */
+.drawer-header-controls {
+    margin-top: 1.5rem;
+    padding: 0 0.25rem;
+}
+
+.search-wrapper {
+    margin-bottom: 1.25rem;
+    isolation: isolate;
+}
+
+.search-wrapper :deep(input:focus) {
+    outline-offset: -0.125rem;
+}
+
+.control-row {
+    margin-bottom: 1.5rem;
+}
+
+/* Sort button group */
+.sort-button-group {
+    display: flex;
+    gap: 0.5rem;
+    width: 100%;
+}
+
+.sort-direction-btn {
+    flex-shrink: 0;
+    width: 2.75rem;
+    height: 2.75rem;
+}
+
+.sort-select-trigger {
+    flex: 1;
+    height: 2.75rem;
+}
+
+/* Arena list spacing */
+.arena-list {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+.arena-item {
+    background-color: hsl(var(--card));
+    border: 1px solid hsl(var(--border));
+    transition: all 0.2s ease;
+}
+
+.arena-item:hover {
+    background-color: hsl(var(--accent) / 0.15);
+    border-color: hsl(var(--primary) / 0.5);
+    box-shadow: 0 0.125rem 0.5rem rgba(0, 0, 0, 0.15);
+}
+
+.arena-name-improved {
+    color: hsl(var(--foreground));
+    line-height: 1.3;
 }
 </style>
