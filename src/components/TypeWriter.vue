@@ -80,12 +80,12 @@ h1 {
 }
 
 span.typed-text {
-  color: var(--q-primary);
+  color: hsl(var(--primary));
 }
 
 .blinking-cursor {
   font-size: 6rem;
-  color: var(--q-primary);
+  color: hsl(var(--primary));
   /* color: #2c3e50; */
   -webkit-animation: 1s blink step-end infinite;
   -moz-animation: 1s blink step-end infinite;
@@ -101,7 +101,7 @@ span.typed-text {
   }
 
   50% {
-    color: var(--q-primary);
+    color: hsl(var(--primary));
   }
 }
 
@@ -112,7 +112,7 @@ span.typed-text {
   }
 
   50% {
-    color: var(--q-primary);
+    color: hsl(var(--primary));
   }
 }
 
@@ -123,7 +123,7 @@ span.typed-text {
   }
 
   50% {
-    color: var(--q-primary);
+    color: hsl(var(--primary));
   }
 }
 
@@ -134,7 +134,7 @@ span.typed-text {
   }
 
   50% {
-    color: var(--q-primary);
+    color: hsl(var(--primary));
   }
 }
 
@@ -145,12 +145,12 @@ span.typed-text {
   }
 
   50% {
-    color: var(--q-primary);
+    color: hsl(var(--primary));
   }
 }
 
 .typing {
-  border-right: 0.2rem solid var(--q-primary);
+  border-right: 0.2rem solid hsl(var(--primary));
 }
 
 .close-text {

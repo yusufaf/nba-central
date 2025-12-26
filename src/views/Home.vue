@@ -1,38 +1,42 @@
 <script setup lang="ts">
 import TypeWriter from "@/components/TypeWriter.vue";
 import { TYPE_WRITER_PROPS } from "@/constants/constants";
+import { Button } from "@/components/ui/button";
+import { ChevronsDown } from "lucide-vue-next";
+import { useRouter } from "vue-router";
+
+const router = useRouter();
 </script>
 
-<!-- When using the video tag inside QParallax, you must provide the width and height attributes in order for QParallax to work properly -->
 <template>
   <main class="home-page">
-    <q-parallax>
-      <template v-slot:media>
-        <video
-          src="@/assets/NBA_Highlights_First6min.mp4"
-          class="video"
-          height="500"
-          width="1080"
-          autoplay
-          loop
-          muted
-        />
-      </template>
-      <template v-slot:content="scope">
-        <div class="absolute column items-center">
-          <TypeWriter
-            :textDisplayArray="TYPE_WRITER_PROPS.textDisplayArray"
-            :leadInText="TYPE_WRITER_PROPS.leadInText"
-            :closingText="TYPE_WRITER_PROPS.closingText"
-          />
-          <q-icon color="white" name="keyboard_double_arrow_down" size="6rem" />
+    <div class="relative w-full h-full overflow-hidden">
+      <!-- Video Background -->
+      <video
+        src="@/assets/NBA_Highlights_First6min.mp4"
+        class="video"
+        autoplay
+        loop
+        muted
+      />
 
-          <q-btn primary class="q-mt-md" color="primary" to="teambuilder" size="1.25rem">
-            Get Started Now
-          </q-btn>
-        </div>
-      </template>
-    </q-parallax>
+      <!-- Content Overlay -->
+      <div class="absolute inset-0 flex flex-col items-center justify-center">
+        <TypeWriter
+          :textDisplayArray="TYPE_WRITER_PROPS.textDisplayArray"
+          :leadInText="TYPE_WRITER_PROPS.leadInText"
+          :closingText="TYPE_WRITER_PROPS.closingText"
+        />
+        <ChevronsDown class="text-white w-24 h-24 mt-4" />
+
+        <Button
+          class="mt-4 text-xl px-8 py-6"
+          @click="router.push('/teambuilder')"
+        >
+          Get Started Now
+        </Button>
+      </div>
+    </div>
   </main>
 </template>
 
@@ -42,18 +46,15 @@ import { TYPE_WRITER_PROPS } from "@/constants/constants";
 }
 
 .video {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
   object-fit: cover;
-  /* position: fixed;
-  right: 0;
-  bottom: 0;
-  min-width: 100%;
-  min-height: 100%; */
+  z-index: 0;
 }
 
-/*
-  Enter and leave animations can use different
-  durations and timing functions.
-*/
 .fade-enter-active {
   transition: all 0.3s ease-out;
 }

@@ -1,20 +1,27 @@
 <script setup lang="ts">
-import { RouterLink, RouterView } from "vue-router";
-import { ROUTES } from "@/constants/constants";
+import { RouterLink } from 'vue-router';
+import { ROUTES } from '@/constants/constants';
+import { Button } from '@/components/ui/button';
+import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
+import { Separator } from '@/components/ui/separator';
+import { Menu } from 'lucide-vue-next';
 </script>
 
 <template>
-    <q-header elevated class="bg-primary text-black shadow-8">
-        <q-toolbar>
-            <q-toolbar-title shrink>
+    <header class="bg-primary text-black shadow-lg sticky top-0 z-50">
+        <div class="flex items-center px-4 h-16">
+            <div class="shrink-0">
                 <a href="/">
                     <img
                         src="@/assets/TeamBuilderLogo1_Transparent2.png"
                         alt="NBA Team Builder Logo"
+                        class="h-12"
                     />
                 </a>
-            </q-toolbar-title>
-            <nav class="gt-sm">
+            </div>
+
+            <!-- Desktop Nav -->
+            <nav class="md:flex flex-1 ml-8">
                 <ul>
                     <template v-for="route in ROUTES" :key="route.id">
                         <RouterLink :class="route?.class" :to="route.path">
@@ -22,36 +29,36 @@ import { ROUTES } from "@/constants/constants";
                         </RouterLink>
                     </template>
                 </ul>
-                <q-btn
-                    class="lt-md"
-                    color="black"
-                    icon="more_vert"
-                    title="More"
-                >
-                    <q-menu
-                        dark
-                        transition-show="jump-down"
-                        transition-hide="jump-up"
-                    >
-                        <q-list>
-                            <q-item>
-                                <q-item-section> </q-item-section>
-                            </q-item>
-                            <q-item>
-                                <q-item-section> </q-item-section>
-                            </q-item>
-                            <q-separator />
-                        </q-list>
-                    </q-menu>
-                </q-btn>
             </nav>
-        </q-toolbar>
-    </q-header>
+
+            <!-- Mobile Menu -->
+            <Sheet>
+                <SheetTrigger as-child class="md:hidden ml-auto">
+                    <Button variant="ghost" size="icon">
+                        <Menu class="h-6 w-6" />
+                    </Button>
+                </SheetTrigger>
+                <SheetContent>
+                    <nav class="flex flex-col gap-4 mt-8">
+                        <template v-for="route in ROUTES" :key="route.id">
+                            <RouterLink
+                                :class="['text-lg font-semibold', route?.class]"
+                                :to="route.path"
+                            >
+                                {{ route.name }}
+                            </RouterLink>
+                            <Separator />
+                        </template>
+                    </nav>
+                </SheetContent>
+            </Sheet>
+        </div>
+    </header>
 </template>
 
 <style scoped>
 nav {
-    width: calc(100vw - 15rem);
+    width: calc(100vw - 18rem);
 }
 
 nav a.router-link-exact-active {
@@ -73,6 +80,11 @@ nav a {
     text-decoration: none;
     font-size: 1.15rem;
     color: var(--vt-c-black-soft);
+    padding: 0.5rem 0;
+}
+
+nav a:hover {
+    opacity: 0.8;
 }
 
 .login {

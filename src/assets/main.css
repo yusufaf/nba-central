@@ -1,3 +1,209 @@
+@import 'tailwindcss';
+
+@layer base {
+  :root {
+    --background: 0 0% 10%;
+    --foreground: 0 0% 98%;
+    --card: 0 0% 11%;
+    --card-foreground: 0 0% 98%;
+    --popover: 0 0% 11%;
+    --popover-foreground: 0 0% 98%;
+    --primary: 35 100% 50%;
+    --primary-foreground: 0 0% 13%;
+    --secondary: 0 0% 20%;
+    --secondary-foreground: 0 0% 98%;
+    --muted: 0 0% 20%;
+    --muted-foreground: 0 0% 63.9%;
+    --accent: 35 100% 50%;
+    --accent-foreground: 0 0% 13%;
+    --destructive: 0 62.8% 50%;
+    --destructive-foreground: 0 0% 98%;
+    --success: 142 76% 36%;
+    --border: 0 0% 25%;
+    --input: 0 0% 20%;
+    --ring: 35 100% 50%;
+    --radius: 0.5rem;
+  }
+
+  .dark {
+    --background: 0 0% 10%;
+    --foreground: 0 0% 98%;
+    --card: 0 0% 11%;
+    --card-foreground: 0 0% 98%;
+    --popover: 0 0% 11%;
+    --popover-foreground: 0 0% 98%;
+    --primary: 35 100% 50%;
+    --primary-foreground: 0 0% 13%;
+    --secondary: 0 0% 20%;
+    --secondary-foreground: 0 0% 98%;
+    --muted: 0 0% 20%;
+    --muted-foreground: 0 0% 63.9%;
+    --accent: 35 100% 50%;
+    --accent-foreground: 0 0% 13%;
+    --destructive: 0 62.8% 50%;
+    --destructive-foreground: 0 0% 98%;
+    --success: 142 76% 36%;
+    --border: 0 0% 25%;
+    --input: 0 0% 20%;
+    --ring: 35 100% 50%;
+  }
+}
+
+@layer base {
+  * {
+    border-color: hsl(var(--border));
+  }
+  body {
+    background-color: hsl(var(--background));
+    color: hsl(var(--foreground));
+  }
+}
+
+@layer components {
+  /* Toggle Group Styling - Selected State */
+  [data-state="on"] {
+    background-color: hsl(var(--accent)) !important;
+    color: #1a1a1a !important;
+    box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.4);
+  }
+
+  /* Hover state for unselected */
+  button[data-state="off"]:hover,
+  [role="radio"][data-state="off"]:hover {
+    background-color: hsl(var(--muted));
+  }
+
+  /* Options Menu Dropdown Styling */
+  .options-dropdown {
+    background-color: hsl(0 0% 11%) !important;
+    border: 1px solid hsl(var(--border)) !important;
+    min-width: 240px !important;
+    box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.3), 0 2px 4px -2px rgb(0 0 0 / 0.3) !important;
+  }
+
+  .options-item {
+    padding: 0.75rem 1rem !important;
+    cursor: default !important;
+    color: hsl(0 0% 98%) !important;
+  }
+
+  .options-item:hover {
+    background-color: hsl(var(--accent) / 0.15) !important;
+  }
+
+  .options-item label {
+    color: hsl(0 0% 98%) !important;
+    font-size: 0.95rem !important;
+    font-weight: 500 !important;
+  }
+
+  /* Switch Styling - Target all switches in the app */
+  button[role="switch"] {
+    background-color: hsl(0 0% 35%) !important;
+    border: none !important;
+  }
+
+  button[role="switch"][data-state="checked"] {
+    background-color: hsl(var(--primary)) !important;
+  }
+
+  button[role="switch"] span {
+    background-color: white !important;
+    box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.3) !important;
+  }
+
+  /* Global Dialog Styling - Refined & Wider */
+  [role="dialog"] {
+    background: rgb(48, 48, 50) !important;
+    border: 1.5px solid rgb(110, 110, 115) !important;
+    box-shadow:
+      0 0 0 1px rgba(255, 255, 255, 0.1) inset,
+      0 30px 60px -15px rgba(0, 0, 0, 0.9) !important;
+    padding: 2.25rem 2.5rem !important;
+    max-width: 720px !important;
+    border-radius: 14px !important;
+  }
+
+  [role="dialog"] h2 {
+    font-size: 2rem !important;
+    font-weight: 700 !important;
+    color: rgb(255, 255, 255) !important;
+    letter-spacing: -0.03em !important;
+    margin-bottom: 1.25rem !important;
+    line-height: 1.2 !important;
+  }
+
+  [role="dialog"] p {
+    font-size: 1.0625rem !important;
+    font-weight: 400 !important;
+    color: rgb(235, 235, 235) !important;
+    line-height: 1.6 !important;
+    margin-bottom: 2rem !important;
+  }
+
+  /* Close Button - Clear X Icon */
+  [role="dialog"] > button[type="button"]:last-of-type {
+    position: absolute !important;
+    top: 1.5rem !important;
+    right: 1.5rem !important;
+    width: 36px !important;
+    height: 36px !important;
+    border-radius: 8px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    cursor: pointer !important;
+    background-color: rgba(255, 255, 255, 0.08) !important;
+    border: 1.5px solid rgba(255, 255, 255, 0.25) !important;
+    transition: all 0.2s ease !important;
+  }
+
+  [role="dialog"] > button[type="button"]:last-of-type:hover {
+    background-color: rgba(255, 255, 255, 0.15) !important;
+    border-color: rgba(255, 255, 255, 0.4) !important;
+    transform: scale(1.08) !important;
+  }
+
+  [role="dialog"] > button[type="button"]:last-of-type svg {
+    display: block !important;
+    width: 20px !important;
+    height: 20px !important;
+    min-width: 20px !important;
+    min-height: 20px !important;
+    color: rgb(255, 255, 255) !important;
+    stroke: rgb(255, 255, 255) !important;
+    stroke-width: 2 !important;
+    fill: none !important;
+  }
+
+  /* Ensure X icon paths are visible */
+  [role="dialog"] > button[type="button"]:last-of-type svg path,
+  [role="dialog"] > button[type="button"]:last-of-type svg line {
+    stroke: rgb(255, 255, 255) !important;
+    stroke-width: 2 !important;
+    stroke-linecap: round !important;
+  }
+
+  /* Dialog Action Buttons - Refined */
+  [role="dialog"] button {
+    font-weight: 600 !important;
+    font-size: 1rem !important;
+    padding: 0.75rem 2rem !important;
+    min-height: 44px !important;
+    border-radius: 10px !important;
+    transition: all 0.2s ease !important;
+  }
+
+  /* Dropdown Menu Styling */
+  [data-radix-dropdown-menu-content],
+  [data-reka-menu-content] {
+    background-color: rgb(24, 24, 27) !important;
+    backdrop-filter: blur(12px) !important;
+    border: 2px solid rgb(80, 80, 90) !important;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.8) !important;
+  }
+}
+
 @import './base.css';
 
 

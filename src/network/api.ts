@@ -26,19 +26,36 @@ export const api = axios.create({
 
 // Files API - matches FILES_ROUTES in CDK
 export const fileApi = {
-    initiateMultipartUpload: async (payload: InitiateMultipartUploadPayload): Promise<InitiateMultipartUploadResponse> => {
-        const response = await api.post('/api/files/initiate-multipart-upload', payload);
+    initiateMultipartUpload: async (
+        payload: InitiateMultipartUploadPayload,
+    ): Promise<InitiateMultipartUploadResponse> => {
+        const response = await api.post(
+            '/api/files/initiate-multipart-upload',
+            payload,
+        );
         return response.data;
     },
-    completeMultipartUpload: async (payload: CompleteMultipartUploadPayload): Promise<CompleteMultipartUploadResponse> => {
-        const response = await api.post('/api/files/complete-multipart-upload', payload);
+    completeMultipartUpload: async (
+        payload: CompleteMultipartUploadPayload,
+    ): Promise<CompleteMultipartUploadResponse> => {
+        const response = await api.post(
+            '/api/files/complete-multipart-upload',
+            payload,
+        );
         return response.data;
     },
-    getMultipartSignedUploadUrls: async (payload: GetMultipartSignedUrlsPayload): Promise<GetMultipartSignedUrlsResponse> => {
-        const response = await api.post('/api/files/get-multipart-signed-upload-urls', payload);
+    getMultipartSignedUploadUrls: async (
+        payload: GetMultipartSignedUrlsPayload,
+    ): Promise<GetMultipartSignedUrlsResponse> => {
+        const response = await api.post(
+            '/api/files/get-multipart-signed-upload-urls',
+            payload,
+        );
         return response.data;
     },
-    deleteFile: async (payload: DeleteFilePayload): Promise<DeleteFileResponse> => {
+    deleteFile: async (
+        payload: DeleteFilePayload,
+    ): Promise<DeleteFileResponse> => {
         const response = await api.post('/api/files/delete-file', payload);
         return response.data;
     },
@@ -50,11 +67,20 @@ export const userApi = {
         const response = await api.post('/api/users/get', payload);
         return response.data;
     },
+    saveUserData: async (payload: {
+        clerkUserID: string;
+        [key: string]: any;
+    }): Promise<any> => {
+        const response = await api.post('/api/users/save-data', payload);
+        return response.data;
+    },
 };
 
 // Teams API - matches TEAMS_ROUTES in CDK
 export const teamApi = {
-    createTeam: async (payload: CreateTeamPayload): Promise<CreateTeamResponse> => {
+    createTeam: async (
+        payload: CreateTeamPayload,
+    ): Promise<CreateTeamResponse> => {
         const response = await api.post('/api/teams/create', payload);
         return response.data;
     },

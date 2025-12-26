@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, watch } from "vue";
-import { useQuasar } from "quasar";
+import { toast } from "vue-sonner";
 import {
     HOME,
     AWAY,
@@ -12,6 +12,11 @@ import {
 import LineScore from "./LineScore.vue";
 import TeamDetailsTooltip from "./TeamDetailsTooltip.vue";
 import type { CustomizationState } from "@/models/types";
+import { Card, CardHeader, CardContent } from "@/components/ui/card";
+import { Separator } from "@/components/ui/separator";
+import { Button } from "@/components/ui/button";
+import { Avatar, AvatarImage } from "@/components/ui/avatar";
+import { Bell } from "lucide-vue-next";
 
 /* Resource: https://dmitripavlutin.com/props-destructure-vue-composition/ */
 const props = defineProps<{
@@ -19,12 +24,11 @@ const props = defineProps<{
     index: number;
     gameTeams: any;
     customizationState: CustomizationState;
+    conferenceType?: "EAST" | "WEST" | "CROSS" | null;
 }>();
 
-const $q = useQuasar();
 
 /* Refs */
-const tooltipData = ref<any>(null);
 const notificationPermission = ref<string>("");
 const gameNotificationsMap = ref<any>(new Map());
 
@@ -126,22 +130,27 @@ const isGameDone = computed(() => {
     return statusInfo.completed;
 });
 
+const showCard = computed(() => {
+    const hideFinishedGames = props.customizationState.get("hideFinishedGames");
+    // Hide the entire card if the game is finished and hideFinishedGames is toggled
+    return !isGameDone.value || !hideFinishedGames;
+});
+
 const showScoresSection = computed(() => {
     const customizationState = props.customizationState;
-    const hideFinishedGames = customizationState.get("hideFinishedGames");
     const hideScores = customizationState.get("hideScores");
 
     /*
         When to show the scores section:
-        1. If the game is in progress or it finished
+        1. If the game is not scheduled (has started or finished) - check via !completed or has score data
         2. User hasn't toggled "Hide Scores"
-        3. Game isn't finished and user hasn't toggled "Hide Finished Games"
     */
 
+    // Show scores if game has started (not scheduled) or is done
+    const hasStarted = !gameScheduled.value || isGameDone.value;
+
     return Boolean(
-        (gameInProgress.value || isGameDone.value) && // Condition 1
-            !hideScores && // Condition 2
-            (!isGameDone.value || !hideFinishedGames), // Condition 3
+        hasStarted && !hideScores
     );
 });
 
@@ -163,23 +172,6 @@ const gameClock = computed(() => {
     }
     return clockString;
 });
-
-const getRecordDetailsTooltip = (competitor: any): void => {
-    const { id } = competitor;
-    const teamURL = `https://site.api.espn.com/apis/site/v2/sports/basketball/nba/teams/${id}`;
-
-    fetch(teamURL, {
-        method: "GET",
-    })
-        .then((response) => {
-            response.json().then((res) => {
-                tooltipData.value = res.team;
-            });
-        })
-        .catch((err) => {
-            console.error(err);
-        });
-};
 
 const leaderData = computed(() => {
     const currentTeams = props.gameTeams[props.index];
@@ -225,12 +217,9 @@ const askNotificationPermission = (id: string): void => {
         return;
     } else if (notificationPermission.value === NOTIFICATION_DENIED) {
         /* Send toast instructing what user needs to change, return early because browser won't ask again */
-        $q.notify({
-            message:
-                "Please update your browser permissions to allow us to send you notifications",
-            type: "negative",
-            position: "bottom-left",
-        });
+        toast.error(
+            "Please update your browser permissions to allow us to send you notifications"
+        );
         return;
     }
 
@@ -256,24 +245,33 @@ const askNotificationPermission = (id: string): void => {
 </script>
 
 <template>
-    <q-card dark class="score-card" bordered :key="game.uid">
-        <q-card-section class="card-header">
+    <div
+        v-if="showCard"
+        class="score-card-wrapper"
+        :class="{
+            'east': props.conferenceType === 'EAST',
+            'west': props.conferenceType === 'WEST',
+            'cross': props.conferenceType === 'CROSS'
+        }"
+        :key="game.uid"
+    >
+        <Card class="score-card">
+        <CardHeader class="card-header">
             <h6>{{ gameNameToDisplay }}</h6>
             <!-- Toggled styling here ==> notifications vs notifications active -->
             <!-- v-if="!isGameDone" -->
-            <div>
-                <q-btn
-                    @click="toggleGameNotification(game.uid)"
-                    class="notification-bell"
-                    flat
-                    round
-                    icon="notifications"
-                    title="Notify me about the game"
-                />
-            </div>
-        </q-card-section>
-        <q-separator dark />
-        <q-card-section class="main-section">
+            <Button
+                @click="toggleGameNotification(game.uid)"
+                class="notification-bell"
+                variant="ghost"
+                size="icon"
+                title="Notify me about the game"
+            >
+                <Bell class="h-5 w-5" />
+            </Button>
+        </CardHeader>
+        <Separator />
+        <CardContent class="main-section">
             <div class="teams-section">
                 <div class="game-status">
                     <div class="clock active" v-if="gameInProgress">
@@ -293,23 +291,17 @@ const askNotificationPermission = (id: string): void => {
                     <img class="team-logo" :src="competitor.team.logo" />
                     <div class="team-info">
                         <div>{{ competitor.team.shortDisplayName }}</div>
-                        <div
-                            v-on:mouseenter="
-                                getRecordDetailsTooltip(competitor)
-                            "
+                        <TeamDetailsTooltip
+                            :competitor-id="competitor.id"
+                            :homeAway="competitor.homeAway"
                         >
-                            <span>{{
+                            <span class="cursor-help">{{
                                 getRecordString(
                                     competitor.records,
                                     competitor.homeAway,
                                 )
                             }}</span>
-                            <TeamDetailsTooltip
-                                v-if="tooltipData"
-                                :data="tooltipData"
-                                :homeAway="competitor.homeAway"
-                            />
-                        </div>
+                        </TeamDetailsTooltip>
                     </div>
                 </div>
             </div>
@@ -353,9 +345,9 @@ const askNotificationPermission = (id: string): void => {
                     </div>
                 </template>
             </div>
-        </q-card-section>
-        <q-separator dark />
-        <q-card-section class="leaders-section">
+        </CardContent>
+        <Separator />
+        <CardContent class="leaders-section">
             <div class="leaders-header">
                 {{ gameScheduled ? "Players to Watch" : "Top Performers" }}
             </div>
@@ -371,25 +363,80 @@ const askNotificationPermission = (id: string): void => {
                         statline,
                     } in leaderData"
                 >
-                    <q-avatar class="headshot">
-                        <q-img :src="headshot" height="50px" width="50px" />
-                    </q-avatar>
+                    <Avatar class="headshot">
+                        <AvatarImage :src="headshot" />
+                    </Avatar>
                     <div class="leader-info">
                         <span>{{ `${name} - ${position}` }} </span>
                         <span>{{ statline }}</span>
                     </div>
                 </div>
             </div>
-        </q-card-section>
-        <q-card-actions> </q-card-actions>
-    </q-card>
+        </CardContent>
+    </Card>
+    </div>
 </template>
 
+<!-- Unscoped styles for wrapper with conference border colors -->
+<style>
+.score-card-wrapper {
+    border-radius: 0.5rem;
+    border: 0.125rem solid;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.score-card-wrapper.east {
+    border-color: hsla(217, 91%, 60%, 0.5);
+}
+
+.score-card-wrapper.east:hover {
+    border-color: hsl(217, 91%, 60%);
+    box-shadow: 0 0 0.5rem hsla(217, 91%, 60%, 0.3);
+}
+
+.score-card-wrapper.west {
+    border-color: hsla(0, 84%, 60%, 0.5);
+}
+
+.score-card-wrapper.west:hover {
+    border-color: hsl(0, 84%, 60%);
+    box-shadow: 0 0 0.5rem hsla(0, 84%, 60%, 0.3);
+}
+
+.score-card-wrapper.cross {
+    border-color: hsla(270, 65%, 60%, 0.5);
+}
+
+.score-card-wrapper.cross:hover {
+    border-color: hsl(270, 65%, 60%);
+    box-shadow: 0 0 0.5rem hsla(270, 65%, 60%, 0.3);
+}
+
+.score-card-wrapper:not(.east):not(.west):not(.cross) {
+    border-color: hsla(var(--primary), 0.5);
+}
+
+.score-card-wrapper:not(.east):not(.west):not(.cross):hover {
+    border-color: hsl(var(--primary));
+    box-shadow: 0 0 0.5rem hsla(var(--primary), 0.3);
+}
+
+.score-card-wrapper > .score-card {
+    border: none !important;
+    height: 100%;
+}
+
+.score-card {
+    border: none !important;
+    height: 100%;
+}
+</style>
+
+<!-- Scoped styles for component-specific styling -->
 <style scoped>
 .score-card {
-    height: 21.5rem;
+    min-height: 21.5rem;
     font-size: 1rem;
-    overflow: hidden;
 }
 
 /* Header Styling */
@@ -503,7 +550,9 @@ const askNotificationPermission = (id: string): void => {
 
 .card-header {
     display: flex;
+    flex-direction: row;
     align-items: center;
+    justify-content: space-between;
 }
 
 .team-row {
@@ -533,7 +582,7 @@ const askNotificationPermission = (id: string): void => {
 }
 
 .clock.active {
-    color: var(--q-primary);
+    color: hsl(var(--primary));
 }
 
 .scores-section {
@@ -560,7 +609,7 @@ const askNotificationPermission = (id: string): void => {
 }
 
 .score.winning {
-    color: var(--q-primary);
+    color: hsl(var(--primary));
 }
 
 .leaders-header {
@@ -584,16 +633,135 @@ const askNotificationPermission = (id: string): void => {
 
 .headshot {
     height: 3rem;
-    width: 3.5rem;
+    width: 3rem;
+    flex-shrink: 0;
+}
+
+.headshot :deep(img) {
+    object-fit: cover;
 }
 
 .leader {
     display: flex;
     flex-direction: row;
+    align-items: center;
+    gap: 0.5rem;
 }
 
 .leader-info {
     display: flex;
     flex-direction: column;
+    overflow: hidden;
+}
+
+/* Responsive breakpoints */
+@media (max-width: 1400px) {
+    .scores-section {
+        margin-left: 0.5rem;
+    }
+
+    .scores-container,
+    .time-periods {
+        gap: 0.5rem;
+    }
+
+    .leader-info {
+        font-size: 0.85rem;
+    }
+
+    .headshot {
+        height: 2.5rem;
+        width: 2.5rem;
+    }
+}
+
+@media (max-width: 900px) {
+    .main-section {
+        flex-direction: column;
+        gap: 1rem;
+    }
+
+    .scores-section {
+        margin-left: 0;
+        margin-top: 0.5rem;
+    }
+
+    .teams-section {
+        gap: 0.75rem;
+    }
+
+    .team-logo {
+        height: 2rem;
+        width: 2rem;
+    }
+
+    .score {
+        font-size: 1.25rem;
+    }
+
+    .leaders {
+        flex-direction: column;
+        gap: 0.75rem;
+    }
+
+    .leader {
+        width: 100%;
+    }
+}
+
+@media (max-width: 640px) {
+    .score-card {
+        min-height: auto;
+        font-size: 0.9rem;
+    }
+
+    .card-header h6 {
+        font-size: 0.85rem;
+    }
+
+    .clock {
+        font-size: 0.85rem;
+    }
+
+    .team-info {
+        font-size: 0.85rem;
+    }
+
+    .scores-container,
+    .time-periods {
+        grid-template-columns: repeat(auto-fit, 1.5rem);
+        gap: 0.25rem;
+        font-size: 0.85rem;
+    }
+
+    .score {
+        font-size: 1.1rem;
+    }
+
+    .time-period {
+        font-size: 0.75rem;
+    }
+
+    .leaders-header {
+        font-size: 0.8rem;
+    }
+
+    .headshot {
+        height: 2rem;
+        width: 2rem;
+    }
+
+    .leader-info {
+        font-size: 0.75rem;
+    }
+
+    .notification-bell {
+        padding: 0.5rem;
+    }
+
+    .notification-bell :deep(svg) {
+        height: 1rem;
+        width: 1rem;
+    }
 }
 </style>

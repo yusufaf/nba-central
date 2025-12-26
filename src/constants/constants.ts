@@ -36,8 +36,8 @@ export const VIEWS = {
     LIST: "List",
 };
 export const VIEW_OPTIONS = [
-    { label: VIEWS.DEFAULT, value: VIEWS.DEFAULT },
-    { label: VIEWS.LIST, value: VIEWS.LIST },
+    { label: "DEFAULT", value: VIEWS.DEFAULT },
+    { label: "LIST", value: VIEWS.LIST },
 ];
 
 export const DEFAULT_NOTIFICATION_PROPS = {
@@ -68,6 +68,7 @@ export const WESTERN_TEAMS = [
     "Golden State Warriors",
     "Houston Rockets",
     "Los Angeles Clippers",
+    "LA Clippers", // API returns this variant
     "Los Angeles Lakers",
     "Memphis Grizzlies",
     "Minnesota Timberwolves",

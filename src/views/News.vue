@@ -1,14 +1,15 @@
 <script setup lang="ts">
-import { ref, watch, computed, onMounted } from "vue";
+import { ref, onMounted } from "vue";
 import PageTitle from "@/components/PageTitle.vue";
 import { ESPN_NEWS_URL } from "@/constants/constants";
 import axios from "axios";
-import { useQuasar } from "quasar";
+import { Card, CardContent } from "@/components/ui/card";
+import { Separator } from "@/components/ui/separator";
+import { CalendarDays } from "lucide-vue-next";
+import { useMediaQuery } from "@vueuse/core";
 
-const $q = useQuasar();
-
-const isMobile = $q.platform.is.mobile;
-const linkProperty = isMobile ? "mobile" : "web";
+const isMobile = useMediaQuery('(max-width: 768px)');
+const linkProperty = isMobile.value ? "mobile" : "web";
 
 const espnArticles = ref<any[]>([]);
 
@@ -47,8 +48,8 @@ onMounted(() => {
                 } in espnArticles"
                 :key="dataSourceIdentifier"
             >
-                <q-card dark>
-                    <q-card-section class="main-card-section">
+                <Card class="dark:bg-slate-800">
+                    <CardContent class="main-card-section pt-6">
                         <div>
                             <a
                                 class="link"
@@ -57,17 +58,19 @@ onMounted(() => {
                             >
                                 {{ headline ?? "" }}
                             </a>
-                            <div v-if="byline">by {{ byline }}</div>
+                            <div v-if="byline" class="text-sm text-muted-foreground mt-1">
+                                by {{ byline }}
+                            </div>
                         </div>
                         <div class="date-container">
-                            <q-icon name="calendar_today" />
-                            <span>
+                            <CalendarDays class="w-4 h-4" />
+                            <span class="text-sm">
                                 {{ formatDateTime(published) ?? "" }}
                             </span>
                         </div>
-                    </q-card-section>
-                    <q-separator />
-                </q-card>
+                    </CardContent>
+                    <Separator />
+                </Card>
             </template>
         </div>
     </main>
@@ -93,10 +96,10 @@ onMounted(() => {
 }
 
 .link {
-    color: var(--q-primary);
+    color: hsl(var(--primary));
 }
 
 .link:visited {
-    color: var(--q-secondary);
+    color: hsl(var(--muted-foreground));
 }
 </style>

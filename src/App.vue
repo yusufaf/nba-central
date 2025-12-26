@@ -1,9 +1,19 @@
 <script setup lang="ts">
 import { RouterLink, RouterView } from "vue-router";
+import { onMounted } from 'vue';
 import AppHeader from "./views/Header.vue";
+import { useTeamsStore } from '@/stores/teams';
+import { Toaster } from "vue-sonner";
+
+const teamsStore = useTeamsStore();
+
+onMounted(async () => {
+    await teamsStore.fetchTeamLogos();
+});
 </script>
 
 <template>
+    <Toaster position="bottom-left" />
     <q-layout view="hhh lpR fff">
         <AppHeader />
         <q-page-container>

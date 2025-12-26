@@ -1,6 +1,21 @@
 <script setup lang="ts">
 import { ref, watch } from "vue";
-import {} from "@/constants/constants";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { Button } from "@/components/ui/button";
 
 const props = defineProps<{
   data: any;
@@ -16,7 +31,6 @@ watch(localVisible, (newVisible) => {
   emit("update:visible", newVisible);
 });
 
-
 watch(() => props.visible, (value) => {
   localVisible.value = value;
 });
@@ -25,15 +39,12 @@ watch(() => props.data, (value) => {
   localData.value = value;
 });
 
-
 const onClose = () => {
   localVisible.value = false;
 };
 
 const columns = ref<any[]>([
   { name: 'games_played', label: 'Games Played', field: 'games_played', sortable: true},
-  { name: 'player_id', label: 'Player ID', field: 'player_id' },
-  { name: 'id', label: 'ID', field: 'id' },
   { name: 'season', label: 'Season', field: 'season' , sortable: true},
   { name: 'min', label: 'Minutes', field: 'min' , sortable: true},
   { name: 'fgm', label: 'FG Made', field: 'fgm', sortable: true },
@@ -58,23 +69,48 @@ const columns = ref<any[]>([
 </script>
 
 <template>
-  <q-dialog v-model="localVisible" >
-    <q-card class="my-card" dark>
-      <q-card-section>
-        <div class="text-h6">Player Stats</div>
-      </q-card-section>
-      <q-card-section>
-        <q-table
-          :rows="localData"
-          :columns="columns"
-          row-key="id"
-          dark
-        >
-        </q-table>
-      </q-card-section>
-      <q-card-actions align="right">
-        <q-btn flat label="Close" @click="onClose" />
-      </q-card-actions>
-    </q-card>
-  </q-dialog>
+  <Dialog v-model:open="localVisible">
+    <DialogContent class="max-w-7xl max-h-[90vh] overflow-y-auto">
+      <DialogHeader>
+        <DialogTitle>Player Stats</DialogTitle>
+      </DialogHeader>
+
+      <div class="overflow-x-auto">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead
+                v-for="column in columns"
+                :key="column.name"
+                class="text-white"
+              >
+                {{ column.label }}
+              </TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            <TableRow
+              v-for="(row, index) in localData"
+              :key="row.id || index"
+              class="border-gray-700"
+            >
+              <TableCell
+                v-for="column in columns"
+                :key="column.name"
+                class="text-gray-300"
+              >
+                {{ row[column.field] }}
+              </TableCell>
+            </TableRow>
+          </TableBody>
+        </Table>
+      </div>
+
+      <DialogFooter>
+        <Button variant="outline" @click="onClose">
+          Close
+        </Button>
+      </DialogFooter>
+    </DialogContent>
+  </Dialog>
 </template>

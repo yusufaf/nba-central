@@ -23,6 +23,7 @@ const isScorePage = computed(() => {
     font-size: 3rem;
     margin: 2rem 0;
     font-weight: 600;
+    text-align: center;
 }
 .title.scores {
     margin: 2rem 0 0 0;

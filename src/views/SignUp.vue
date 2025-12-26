@@ -1,11 +1,8 @@
 <script setup lang="ts">
-import { SignIn } from '@clerk/vue';
-import type { SignInProps } from '@clerk/types';
-import { useRouter } from 'vue-router';
+import { SignUp } from '@clerk/vue';
+import type { SignUpProps } from '@clerk/types';
 
-const router = useRouter();
-
-const appearance: SignInProps['appearance'] = {
+const appearance: SignUpProps['appearance'] = {
     layout: {
         socialButtonsPlacement: 'bottom',
         socialButtonsVariant: 'iconButton',
@@ -32,7 +29,11 @@ const appearance: SignInProps['appearance'] = {
 
 <template>
     <div class="auth-container">
-        <SignIn :appearance="appearance" sign-up-url="/sign-up" />
+        <SignUp 
+            :appearance="appearance" 
+            signInUrl="/login" 
+        
+        />
     </div>
 </template>
 
