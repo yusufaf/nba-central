@@ -37,6 +37,10 @@ const BENCH_INDICES = [6, 7, 8, 9, 10, 11, 12, 13, 14, 15];
 const starterCount = computed(() => {
   return STARTER_INDICES.filter(i => props.selectedPlayers.has(i)).length;
 });
+
+const benchCount = computed(() => {
+  return BENCH_INDICES.filter(i => props.selectedPlayers.has(i)).length;
+});
 </script>
 
 <template>
@@ -68,6 +72,7 @@ const starterCount = computed(() => {
     <div class="lineup-section">
       <div class="section-header">
         <h3 class="section-subtitle">Bench</h3>
+        <div class="starter-count">{{ benchCount }}/10</div>
       </div>
       <div class="bench-grid">
         <PlayerSlot

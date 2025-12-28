@@ -151,6 +151,7 @@ onMounted(() => {
                                         v-model="drawerSide"
                                         type="single"
                                         class="toggle-group"
+                                        @update:model-value="(value) => { if (!value) drawerSide = 'right' }"
                                     >
                                         <ToggleGroupItem
                                             v-for="option in DRAWER_OPTIONS"
@@ -168,6 +169,7 @@ onMounted(() => {
                                         v-model="selectedView"
                                         type="single"
                                         class="toggle-group"
+                                        @update:model-value="(value) => { if (!value) selectedView = 'Default' }"
                                     >
                                         <ToggleGroupItem
                                             v-for="option in VIEW_OPTIONS"
@@ -197,7 +199,7 @@ onMounted(() => {
                         size="sm"
                         variant="default"
                         title="Save team"
-                        class="font-bold shadow-md save-button"
+                        class="font-extrabold shadow-md save-button"
                     >
                         <Save class="h-4 w-4 mr-2" />
                         Save
@@ -339,7 +341,7 @@ onMounted(() => {
 .save-button {
     background-color: hsl(var(--primary));
     color: hsl(var(--primary-foreground)) !important;
-    font-weight: 700;
+    font-weight: 800 !important;
 }
 
 .save-button:hover {

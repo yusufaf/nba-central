@@ -3,6 +3,7 @@ import { ref, computed, watch } from 'vue';
 import { debounce } from 'quasar';
 import axios from 'axios';
 import type { DrawerSide } from '@/models/types';
+import { useCustomPlayers } from '@/composables/useCustomPlayers';
 import {
   Sheet,
   SheetContent,
@@ -23,7 +24,12 @@ import {
   ArrowUp,
   ArrowDown,
   X,
+  Plus,
+  Edit2,
+  Trash,
 } from 'lucide-vue-next';
+import CreateCustomPlayerModal from './CreateCustomPlayerModal.vue';
+import ConfirmDialog from '@/components/ui/confirm-dialog/ConfirmDialog.vue';
 
 interface Props {
   open: boolean;
@@ -49,6 +55,14 @@ const selectedPosition = ref<string>('All');
 const selectedSort = ref<string>('');
 const sortDirection = ref<'asc' | 'desc'>('asc');
 
+// Custom Players
+const { customPlayers, createPlayer, updatePlayer, deletePlayer: deleteCustomPlayer } = useCustomPlayers();
+const showCreatePlayerModal = ref<boolean>(false);
+const editingPlayer = ref<any>(null);
+const createPlayerModalRef = ref<any>(null);
+const showDeleteDialog = ref<boolean>(false);
+const playerToDelete = ref<any>(null);
+
 const POSITION_FILTERS = ['All', 'PG', 'SG', 'SF', 'PF', 'C'];
 const SORT_OPTIONS = ['Alphabetic', 'Team Name'];
 
@@ -62,7 +76,22 @@ const toggleSortDirection = () => {
 };
 
 const searchListResults = computed(() => {
-  let results = searchList.value.map((player: any) => {
+  // Map custom players to match the structure
+  const customPlayersMapped = customPlayers.value.map((player: any) => {
+    const heightString = player.heightFeet && player.heightInches
+      ? `${player.heightFeet}' ${player.heightInches}"`
+      : 'N/A';
+    const weightString = player.weightPounds ? `${player.weightPounds}lbs` : 'N/A';
+    return {
+      ...player,
+      fullName: player.name,
+      heightAndWeight: `${heightString}, ${weightString}`,
+      isCustom: true,
+    };
+  });
+
+  // Map API players
+  let apiResults = searchList.value.map((player: any) => {
     const {
       first_name,
       last_name,
@@ -84,6 +113,9 @@ const searchListResults = computed(() => {
     };
   });
 
+  // Merge custom players at the top
+  let results = [...customPlayersMapped, ...apiResults];
+
   // Filter by position
   if (selectedPosition.value && selectedPosition.value !== 'All') {
     results = results.filter(p => p.position === selectedPosition.value);
@@ -95,7 +127,11 @@ const searchListResults = computed(() => {
   if (selectedSort.value === 'Alphabetic') {
     results.sort((a, b) => sortModifier * a.fullName.localeCompare(b.fullName));
   } else if (selectedSort.value === 'Team Name') {
-    results.sort((a, b) => sortModifier * a.team.full_name.localeCompare(b.team.full_name));
+    results.sort((a, b) => {
+      const aTeam = a.team?.full_name || '';
+      const bTeam = b.team?.full_name || '';
+      return sortModifier * aTeam.localeCompare(bTeam);
+    });
   }
 
   return results;
@@ -140,7 +176,83 @@ const handleSelect = (player: any) => {
 };
 
 const getPlayerInitials = (player: any) => {
+  if (player.isCustom) {
+    const names = player.name.split(' ');
+    return names.length > 1 ? `${names[0][0]}${names[names.length - 1][0]}` : player.name.substring(0, 2).toUpperCase();
+  }
   return `${player.first_name[0]}${player.last_name[0]}`;
+};
+
+/* Custom Player Handlers */
+const openCreateModal = () => {
+  editingPlayer.value = null;
+  showCreatePlayerModal.value = true;
+};
+
+const openEditModal = (player: any) => {
+  editingPlayer.value = player;
+  showCreatePlayerModal.value = true;
+};
+
+const handleCreatePlayer = async () => {
+  if (!createPlayerModalRef.value) return;
+
+  const name = createPlayerModalRef.value.getName();
+  const position = createPlayerModalRef.value.getPosition();
+  const heightFeet = createPlayerModalRef.value.getHeightFeet();
+  const heightInches = createPlayerModalRef.value.getHeightInches();
+  const weightPounds = createPlayerModalRef.value.getWeight();
+  const overallRating = createPlayerModalRef.value.getOverallRating();
+
+  createPlayerModalRef.value.setLoading(true);
+  const result = await createPlayer({ name, position, heightFeet, heightInches, weightPounds, overallRating });
+  createPlayerModalRef.value.setLoading(false);
+
+  if (result) {
+    showCreatePlayerModal.value = false;
+    createPlayerModalRef.value.reset();
+  }
+};
+
+const handleUpdatePlayer = async () => {
+  if (!createPlayerModalRef.value || !editingPlayer.value?.playerUUID) return;
+
+  const name = createPlayerModalRef.value.getName();
+  const position = createPlayerModalRef.value.getPosition();
+  const heightFeet = createPlayerModalRef.value.getHeightFeet();
+  const heightInches = createPlayerModalRef.value.getHeightInches();
+  const weightPounds = createPlayerModalRef.value.getWeight();
+  const overallRating = createPlayerModalRef.value.getOverallRating();
+
+  createPlayerModalRef.value.setLoading(true);
+  const result = await updatePlayer(editingPlayer.value.playerUUID, {
+    name, position, heightFeet, heightInches, weightPounds, overallRating
+  });
+  createPlayerModalRef.value.setLoading(false);
+
+  if (result) {
+    showCreatePlayerModal.value = false;
+    createPlayerModalRef.value.reset();
+    editingPlayer.value = null;
+  }
+};
+
+const openDeleteDialog = (player: any) => {
+  playerToDelete.value = player;
+  showDeleteDialog.value = true;
+};
+
+const handleDeletePlayer = async () => {
+  if (!playerToDelete.value?.playerUUID) return;
+
+  const playerUUID = playerToDelete.value.playerUUID;
+  const playerName = playerToDelete.value.name;
+
+  const result = await deleteCustomPlayer(playerUUID, playerName);
+  if (result) {
+    showDeleteDialog.value = false;
+    playerToDelete.value = null;
+  }
 };
 </script>
 
@@ -148,17 +260,23 @@ const getPlayerInitials = (player: any) => {
   <Sheet v-model:open="sheetModel">
     <SheetContent
       :side="props.selectedDrawerSide"
-      class="w-96 overflow-y-auto"
+      class="w-[28rem] flex flex-col"
     >
-      <SheetHeader class="pr-12 pb-4 border-b border-primary/20">
-        <SheetTitle class="text-white text-2xl font-bold">
-          Add Player
-          <span v-if="position" class="text-primary"> - {{ position }}</span>
-        </SheetTitle>
-        <p class="text-sm text-muted-foreground/80 mt-2">Search and select a player for your team</p>
+      <SheetHeader>
+        <SheetTitle class="text-white text-xl">Add Player</SheetTitle>
       </SheetHeader>
 
-      <div class="drawer-header mt-5 space-y-4 px-1">
+      <!-- Create Custom Player Button -->
+      <Button
+        @click="openCreateModal"
+        class="mt-4 mx-1 w-auto"
+        variant="default"
+      >
+        <Plus class="h-4 w-4 mr-2" />
+        Create Custom Player
+      </Button>
+
+      <div class="drawer-header-controls">
         <div class="relative group mb-6">
           <Input
             v-model="search"
@@ -217,9 +335,9 @@ const getPlayerInitials = (player: any) => {
         </div>
       </div>
 
-      <Separator class="my-5 bg-primary/20" />
+      <Separator class="my-4 flex-shrink-0" />
 
-      <ScrollArea class="h-[calc(100vh-22rem)]">
+      <ScrollArea class="flex-1 overflow-auto">
         <div v-if="searchLoading" class="flex items-center justify-center py-16 px-6">
           <div class="text-center">
             <div class="relative inline-block mb-3">
@@ -248,40 +366,95 @@ const getPlayerInitials = (player: any) => {
         <div v-else class="space-y-3 pb-6 px-1">
           <div
             v-for="player in searchListResults"
-            :key="player.id"
-            @click="handleSelect(player)"
-            class="player-item p-4 cursor-pointer rounded-xl transition-all flex items-center gap-4 hover:bg-primary/15 hover:border-primary/50 hover:shadow-lg hover:shadow-primary/10 active:scale-[0.98]"
+            :key="player.playerUUID || player.id"
+            class="player-item p-4 rounded-xl transition-all flex items-center gap-4 hover:bg-primary/15 hover:border-primary/50 hover:shadow-lg hover:shadow-primary/10 active:scale-[0.98] relative group"
           >
-            <Avatar class="h-14 w-14 border-2 border-primary shrink-0 shadow-md">
-              <AvatarFallback class="bg-gradient-to-br from-primary to-primary/80 text-primary-foreground font-bold text-lg">
-                {{ getPlayerInitials(player) }}
-              </AvatarFallback>
-            </Avatar>
+            <div @click="handleSelect(player)" class="flex items-center gap-4 flex-1 cursor-pointer">
+              <Avatar class="h-14 w-14 border-2 border-primary shrink-0 shadow-md">
+                <AvatarFallback class="bg-gradient-to-br from-primary to-primary/80 text-primary-foreground font-bold text-lg">
+                  {{ getPlayerInitials(player) }}
+                </AvatarFallback>
+              </Avatar>
 
-            <div class="flex-1 min-w-0">
-              <h4 class="font-bold text-base truncate text-foreground mb-0.5">
-                {{ player.fullName }}
-              </h4>
-              <p class="text-sm text-muted-foreground truncate mb-2">
-                {{ player.team.full_name }}
-              </p>
-              <div class="flex items-center gap-2">
-                <Badge variant="secondary" class="text-xs font-semibold bg-primary/25 text-primary border border-primary/40 px-2 py-0.5">
-                  {{ player.position }}
-                </Badge>
-                <span class="text-xs text-muted-foreground font-medium">
-                  {{ player.heightAndWeight }}
-                </span>
+              <div class="flex-1 min-w-0">
+                <div class="flex items-center gap-2 mb-0.5">
+                  <h4 class="font-bold text-base truncate text-foreground">
+                    {{ player.fullName }}
+                  </h4>
+                  <Badge v-if="player.isCustom" variant="secondary" class="text-xs">
+                    Custom
+                  </Badge>
+                </div>
+                <p class="text-sm text-muted-foreground truncate mb-2">
+                  {{ player.team?.full_name || (player.isCustom ? `Overall: ${player.overallRating}` : 'N/A') }}
+                </p>
+                <div class="flex items-center gap-2">
+                  <Badge variant="secondary" class="text-xs font-semibold bg-primary/25 text-primary border border-primary/40 px-2 py-0.5">
+                    {{ player.position }}
+                  </Badge>
+                  <span class="text-xs text-muted-foreground font-medium">
+                    {{ player.heightAndWeight }}
+                  </span>
+                </div>
               </div>
+            </div>
+
+            <!-- Edit/Delete buttons for custom players -->
+            <div
+              v-if="player.isCustom"
+              class="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity"
+              @click.stop
+            >
+              <Button
+                size="icon"
+                variant="ghost"
+                class="h-8 w-8 hover:bg-primary/20"
+                @click="openEditModal(player)"
+              >
+                <Edit2 class="h-4 w-4" />
+              </Button>
+              <Button
+                size="icon"
+                variant="ghost"
+                class="h-8 w-8 hover:bg-destructive/20 hover:text-destructive"
+                @click="openDeleteDialog(player)"
+              >
+                <Trash class="h-4 w-4" />
+              </Button>
             </div>
           </div>
         </div>
       </ScrollArea>
     </SheetContent>
   </Sheet>
+
+  <!-- Create/Edit Player Modal -->
+  <CreateCustomPlayerModal
+    ref="createPlayerModalRef"
+    v-model:open="showCreatePlayerModal"
+    :editing-player="editingPlayer"
+    @created="handleCreatePlayer"
+    @updated="handleUpdatePlayer"
+  />
+
+  <!-- Delete Confirmation Dialog -->
+  <ConfirmDialog
+    v-model:open="showDeleteDialog"
+    title="Delete Custom Player?"
+    :description="`Are you sure you want to delete ${playerToDelete?.name}? This action cannot be undone.`"
+    confirm-text="Delete"
+    variant="destructive"
+    @confirm="handleDeletePlayer"
+  />
 </template>
 
 <style scoped>
+/* Drawer controls spacing */
+.drawer-header-controls {
+  margin-top: 1.5rem;
+  padding: 0 0.25rem;
+}
+
 .player-item {
   border: 2px solid hsl(var(--border) / 0.4);
   background: linear-gradient(to right, hsl(var(--background) / 0.6), hsl(var(--background) / 0.3));

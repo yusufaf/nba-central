@@ -3,10 +3,12 @@ import { ref, computed } from "vue";
 import type { GM, SortDirection, DrawerSide } from "@/models/types";
 import gmData from "@/assets/data/execs.json";
 import { getRandomIndex } from "@/constants/utilities";
+import { useCustomGMs } from "@/composables/useCustomGMs";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
+import { Badge } from "@/components/ui/badge";
 import {
     Sheet,
     SheetContent,
@@ -37,7 +39,11 @@ import {
     ArrowDown,
     Shuffle,
     X,
+    Edit2,
+    Trash,
 } from "lucide-vue-next";
+import CreateCustomGMModal from "./CreateCustomGMModal.vue";
+import ConfirmDialog from "@/components/ui/confirm-dialog/ConfirmDialog.vue";
 
 const props = defineProps<{
     selectedDrawerSide: DrawerSide;
@@ -51,6 +57,14 @@ const typedGMData = gmData as GM[];
 const search = ref<string>("");
 const searchLoading = ref<boolean>(false);
 
+// Custom GMs
+const { customGMs, createGM, updateGM, deleteGM: deleteCustomGM } = useCustomGMs();
+const showCreateGMModal = ref<boolean>(false);
+const editingGM = ref<GM | null>(null);
+const createGMModalRef = ref<any>(null);
+const showDeleteDialog = ref<boolean>(false);
+const gmToDelete = ref<GM | null>(null);
+
 const sortOptions = ["Alphabetic"];
 
 /* Sorting and Filtering */
@@ -60,8 +74,14 @@ const GM_FILTERS = ["Western Conference", "Eastern Conference"];
 const sortDirection = ref<SortDirection>("asc");
 
 /* Computed Props */
+const allGMs = computed(() => {
+    const custom = customGMs.value.map(gm => ({ ...gm, isCustom: true }));
+    const predefined = typedGMData;
+    return [...custom, ...predefined];
+});
+
 const sortedGMData = computed(() => {
-    const copyGMData = [...typedGMData];
+    const copyGMData = [...allGMs.value];
 
     const sortModifier = sortDirection.value === "asc" ? 1 : -1;
 
@@ -71,7 +91,7 @@ const sortedGMData = computed(() => {
                 return sortModifier * a.name.localeCompare(b.name);
             });
         default:
-            return typedGMData;
+            return allGMs.value;
     }
 });
 
@@ -123,6 +143,73 @@ const toggleFilter = (filter: string) => {
         selectedFilters.value.push(filter);
     }
 };
+
+/* Custom GM Handlers */
+const openCreateModal = () => {
+    editingGM.value = null;
+    showCreateGMModal.value = true;
+};
+
+const openEditModal = (gm: GM) => {
+    editingGM.value = gm;
+    showCreateGMModal.value = true;
+};
+
+const handleCreateGM = async () => {
+    if (!createGMModalRef.value) return;
+
+    const name = createGMModalRef.value.getName();
+    const teams = createGMModalRef.value.getTeams();
+
+    createGMModalRef.value.setLoading(true);
+    const result = await createGM({ name, teams });
+    createGMModalRef.value.setLoading(false);
+
+    if (result) {
+        showCreateGMModal.value = false;
+        createGMModalRef.value.reset();
+    }
+};
+
+const handleUpdateGM = async () => {
+    if (!createGMModalRef.value || !editingGM.value?.gmUUID) return;
+
+    const name = createGMModalRef.value.getName();
+    const teams = createGMModalRef.value.getTeams();
+
+    createGMModalRef.value.setLoading(true);
+    const result = await updateGM(editingGM.value.gmUUID, { name, teams });
+    createGMModalRef.value.setLoading(false);
+
+    if (result) {
+        showCreateGMModal.value = false;
+        createGMModalRef.value.reset();
+        editingGM.value = null;
+    }
+};
+
+const openDeleteDialog = (gm: GM) => {
+    gmToDelete.value = gm;
+    showDeleteDialog.value = true;
+};
+
+const handleDeleteGM = async () => {
+    if (!gmToDelete.value?.gmUUID) return;
+
+    const gmUUID = gmToDelete.value.gmUUID;
+    const gmName = gmToDelete.value.name;
+
+    const result = await deleteCustomGM(gmUUID, gmName);
+    if (result) {
+        showDeleteDialog.value = false;
+        gmToDelete.value = null;
+
+        // Clear from team if currently selected
+        if (teamGM.value?.gmUUID === gmUUID) {
+            teamGM.value = null;
+        }
+    }
+};
 </script>
 
 <template>
@@ -172,6 +259,16 @@ const toggleFilter = (filter: string) => {
                 <SheetHeader>
                     <SheetTitle class="text-white text-xl">Add GM</SheetTitle>
                 </SheetHeader>
+
+                <!-- Create Custom GM Button -->
+                <Button
+                    @click="openCreateModal"
+                    class="mt-4 mx-1 w-auto"
+                    variant="default"
+                >
+                    <Plus class="h-4 w-4 mr-2" />
+                    Create Custom GM
+                </Button>
 
                 <div class="drawer-header-controls">
                     <!-- Search -->
@@ -279,15 +376,67 @@ const toggleFilter = (filter: string) => {
                         <div
                             v-for="(gm, index) in filteredGMData"
                             :key="index"
-                            @click="() => setGM(gm)"
-                            class="gm-item p-4 cursor-pointer rounded-lg transition-all"
+                            class="gm-item p-4 rounded-lg transition-all relative group"
                         >
-                            <div class="gm-name-improved font-bold text-base">{{ gm.name }}</div>
+                            <div
+                                @click="() => setGM(gm)"
+                                class="cursor-pointer flex items-center justify-between gap-2"
+                            >
+                                <div class="flex items-center gap-2 flex-1">
+                                    <div class="gm-name-improved font-bold text-base">{{ gm.name }}</div>
+                                    <Badge v-if="gm.isCustom" variant="secondary" class="text-xs">
+                                        Custom
+                                    </Badge>
+                                </div>
+
+                                <!-- Edit/Delete buttons for custom GMs -->
+                                <div
+                                    v-if="gm.isCustom"
+                                    class="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                                    @click.stop
+                                >
+                                    <Button
+                                        size="icon"
+                                        variant="ghost"
+                                        class="h-8 w-8 hover:bg-primary/20"
+                                        @click="openEditModal(gm)"
+                                    >
+                                        <Edit2 class="h-4 w-4" />
+                                    </Button>
+                                    <Button
+                                        size="icon"
+                                        variant="ghost"
+                                        class="h-8 w-8 hover:bg-destructive/20 hover:text-destructive"
+                                        @click="openDeleteDialog(gm)"
+                                    >
+                                        <Trash class="h-4 w-4" />
+                                    </Button>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </ScrollArea>
             </SheetContent>
         </Sheet>
+
+        <!-- Create/Edit GM Modal -->
+        <CreateCustomGMModal
+            ref="createGMModalRef"
+            v-model:open="showCreateGMModal"
+            :editing-g-m="editingGM"
+            @created="handleCreateGM"
+            @updated="handleUpdateGM"
+        />
+
+        <!-- Delete Confirmation Dialog -->
+        <ConfirmDialog
+            v-model:open="showDeleteDialog"
+            title="Delete Custom GM?"
+            :description="`Are you sure you want to delete ${gmToDelete?.name}? This action cannot be undone.`"
+            confirm-text="Delete"
+            variant="destructive"
+            @confirm="handleDeleteGM"
+        />
     </div>
 </template>
 

@@ -36,8 +36,8 @@ export const VIEWS = {
     LIST: "List",
 };
 export const VIEW_OPTIONS = [
-    { label: "DEFAULT", value: VIEWS.DEFAULT },
-    { label: "LIST", value: VIEWS.LIST },
+    { label: "Default", value: VIEWS.DEFAULT },
+    { label: "List", value: VIEWS.LIST },
 ];
 
 export const DEFAULT_NOTIFICATION_PROPS = {

@@ -55,10 +55,10 @@ const notificationsMenuOpen = defineModel<boolean>("notificationsMenuOpen");
 .coming-soon-badge {
     background-color: rgb(45, 35, 20);
     background-image: linear-gradient(to bottom right, rgb(50, 38, 22), rgb(40, 32, 18));
-    border: 2px solid rgb(100, 75, 35);
-    border-radius: 14px;
+    border: 0.125rem solid rgb(100, 75, 35);
+    border-radius: 0.875rem;
     padding: 1.5rem 1.75rem;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    box-shadow: 0 0.25rem 0.75rem rgba(0, 0, 0, 0.3);
 }
 
 .badge-text {
@@ -82,12 +82,12 @@ const notificationsMenuOpen = defineModel<boolean>("notificationsMenuOpen");
     font-weight: 600 !important;
     background-color: hsl(var(--primary)) !important;
     color: rgb(20, 20, 20) !important;
-    box-shadow: 0 2px 8px rgba(255, 165, 0, 0.25) !important;
+    box-shadow: 0 0.125rem 0.5rem rgba(255, 165, 0, 0.25) !important;
 }
 
 .close-btn:hover {
     background-color: hsl(var(--primary) / 0.9) !important;
-    box-shadow: 0 4px 12px rgba(255, 165, 0, 0.35) !important;
-    transform: translateY(-1px);
+    box-shadow: 0 0.25rem 0.75rem rgba(255, 165, 0, 0.35) !important;
+    transform: translateY(-0.0625rem);
 }
 </style>

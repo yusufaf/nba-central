@@ -33,8 +33,8 @@ const handleChange = (event: Event) => {
 .switch {
     position: relative;
     display: inline-block;
-    width: 44px;
-    height: 24px;
+    width: 2.75rem;
+    height: 1.5rem;
     cursor: pointer;
 }
 
@@ -51,21 +51,21 @@ const handleChange = (event: Event) => {
     right: 0;
     bottom: 0;
     background-color: hsl(0 0% 35%);
-    border-radius: 24px;
+    border-radius: 1.5rem;
     transition: background-color 0.2s ease;
 }
 
 .switch-slider::before {
     position: absolute;
     content: "";
-    height: 20px;
-    width: 20px;
-    left: 2px;
-    bottom: 2px;
+    height: 1.25rem;
+    width: 1.25rem;
+    left: 0.125rem;
+    bottom: 0.125rem;
     background-color: white;
     border-radius: 50%;
     transition: transform 0.2s ease;
-    box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.3);
+    box-shadow: 0 0.0625rem 0.1875rem 0 rgb(0 0 0 / 0.3);
 }
 
 .switch-input:checked + .switch-slider {
@@ -73,12 +73,12 @@ const handleChange = (event: Event) => {
 }
 
 .switch-input:checked + .switch-slider::before {
-    transform: translateX(20px);
+    transform: translateX(1.25rem);
 }
 
 .switch-input:focus-visible + .switch-slider {
-    outline: 2px solid hsl(var(--ring));
-    outline-offset: 2px;
+    outline: 0.125rem solid hsl(var(--ring));
+    outline-offset: 0.125rem;
 }
 
 .switch-input:disabled + .switch-slider {

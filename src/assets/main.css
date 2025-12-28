@@ -60,6 +60,28 @@
 }
 
 @layer components {
+  /* Force all buttons to have bold font-weight */
+  button {
+    font-weight: 700 !important;
+  }
+
+  /* Ensure all primary background buttons use dark/black text for readability */
+  .bg-primary,
+  button.bg-primary,
+  [class*="bg-primary"] {
+    color: hsl(var(--primary-foreground)) !important;
+  }
+
+  /* Force orange focus borders for all inputs and textareas */
+  input:focus,
+  input:focus-visible,
+  textarea:focus,
+  textarea:focus-visible {
+    border-color: hsl(var(--primary)) !important;
+    box-shadow: none !important;
+    outline: none !important;
+  }
+
   /* Toggle Group Styling - Selected State */
   [data-state="on"] {
     background-color: hsl(var(--accent)) !important;
@@ -76,9 +98,9 @@
   /* Options Menu Dropdown Styling */
   .options-dropdown {
     background-color: hsl(0 0% 11%) !important;
-    border: 1px solid hsl(var(--border)) !important;
-    min-width: 240px !important;
-    box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.3), 0 2px 4px -2px rgb(0 0 0 / 0.3) !important;
+    border: 0.0625rem solid hsl(var(--border)) !important;
+    min-width: 15rem !important;
+    box-shadow: 0 0.25rem 0.375rem -0.0625rem rgb(0 0 0 / 0.3), 0 0.125rem 0.25rem -0.125rem rgb(0 0 0 / 0.3) !important;
   }
 
   .options-item {
@@ -115,13 +137,13 @@
   /* Global Dialog Styling - Refined & Wider */
   [role="dialog"] {
     background: rgb(48, 48, 50) !important;
-    border: 1.5px solid rgb(110, 110, 115) !important;
+    border: 0.09375rem solid rgb(110, 110, 115) !important;
     box-shadow:
-      0 0 0 1px rgba(255, 255, 255, 0.1) inset,
-      0 30px 60px -15px rgba(0, 0, 0, 0.9) !important;
+      0 0 0 0.0625rem rgba(255, 255, 255, 0.1) inset,
+      0 1.875rem 3.75rem -0.9375rem rgba(0, 0, 0, 0.9) !important;
     padding: 2.25rem 2.5rem !important;
-    max-width: 720px !important;
-    border-radius: 14px !important;
+    max-width: 45rem !important;
+    border-radius: 0.875rem !important;
   }
 
   [role="dialog"] h2 {
@@ -146,15 +168,15 @@
     position: absolute !important;
     top: 1.5rem !important;
     right: 1.5rem !important;
-    width: 36px !important;
-    height: 36px !important;
-    border-radius: 8px !important;
+    width: 2.25rem !important;
+    height: 2.25rem !important;
+    border-radius: 0.5rem !important;
     display: flex !important;
     align-items: center !important;
     justify-content: center !important;
     cursor: pointer !important;
     background-color: rgba(255, 255, 255, 0.08) !important;
-    border: 1.5px solid rgba(255, 255, 255, 0.25) !important;
+    border: 0.09375rem solid rgba(255, 255, 255, 0.25) !important;
     transition: all 0.2s ease !important;
   }
 
@@ -166,13 +188,13 @@
 
   [role="dialog"] > button[type="button"]:last-of-type svg {
     display: block !important;
-    width: 20px !important;
-    height: 20px !important;
-    min-width: 20px !important;
-    min-height: 20px !important;
+    width: 1.25rem !important;
+    height: 1.25rem !important;
+    min-width: 1.25rem !important;
+    min-height: 1.25rem !important;
     color: rgb(255, 255, 255) !important;
     stroke: rgb(255, 255, 255) !important;
-    stroke-width: 2 !important;
+    stroke-width: 0.125rem !important;
     fill: none !important;
   }
 
@@ -180,7 +202,7 @@
   [role="dialog"] > button[type="button"]:last-of-type svg path,
   [role="dialog"] > button[type="button"]:last-of-type svg line {
     stroke: rgb(255, 255, 255) !important;
-    stroke-width: 2 !important;
+    stroke-width: 0.125rem !important;
     stroke-linecap: round !important;
   }
 
@@ -189,8 +211,8 @@
     font-weight: 600 !important;
     font-size: 1rem !important;
     padding: 0.75rem 2rem !important;
-    min-height: 44px !important;
-    border-radius: 10px !important;
+    min-height: 2.75rem !important;
+    border-radius: 0.625rem !important;
     transition: all 0.2s ease !important;
   }
 
@@ -198,9 +220,9 @@
   [data-radix-dropdown-menu-content],
   [data-reka-menu-content] {
     background-color: rgb(24, 24, 27) !important;
-    backdrop-filter: blur(12px) !important;
-    border: 2px solid rgb(80, 80, 90) !important;
-    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.8) !important;
+    backdrop-filter: blur(0.75rem) !important;
+    border: 0.125rem solid rgb(80, 80, 90) !important;
+    box-shadow: 0 0.625rem 1.5625rem rgba(0, 0, 0, 0.8) !important;
   }
 }
 

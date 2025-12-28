@@ -31,6 +31,12 @@ export type Coach = {
     wGreaterThan500: number;
     wlPercent: string;
     yrs: number;
+    // Custom coach fields
+    isCustom?: boolean;
+    coachUUID?: string;
+    created?: string;
+    overallRating?: number;
+    specialty?: 'Offensive' | 'Defensive' | 'Balanced';
 };
 
 export type Arena = {
@@ -45,7 +51,43 @@ export type Arena = {
 export type GM = {
     name: string;
     teams: string[];
+    isCustom?: boolean;
+    gmUUID?: string;
+    created?: string;
 };
+
+export type NBATeam = {
+    abbr: string;
+    name: string;
+};
+
+export type Player = {
+    // API player fields (from BallDontLie API - snake_case)
+    id?: number;
+    first_name?: string;
+    last_name?: string;
+    fullName?: string;
+    position?: string;
+    height_feet?: number;
+    height_inches?: number;
+    weight_pounds?: number;
+    team?: {
+        full_name?: string;
+        abbreviation?: string;
+    };
+    // Custom player fields (camelCase)
+    isCustom?: boolean;
+    playerUUID?: string;
+    created?: string;
+    name?: string;
+    heightFeet?: number;
+    heightInches?: number;
+    weightPounds?: number;
+    overallRating?: number;
+};
+
+export type CoachSpecialty = 'Offensive' | 'Defensive' | 'Balanced';
+export type PlayerPosition = 'PG' | 'SG' | 'SF' | 'PF' | 'C';
 
 export type SortDirection = "asc" | "desc";
 

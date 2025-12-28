@@ -107,7 +107,7 @@ onMounted(() => {
                     <textarea
                         id="team-description"
                         v-model="teamDescription"
-                        class="flex min-h-[120px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                        class="flex min-h-[120px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus:!border-primary focus-visible:!border-primary focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                         placeholder="Enter team description..."
                     />
                 </div>
@@ -150,7 +150,7 @@ onMounted(() => {
                             type="file"
                             accept="image/*,.jpg,.png"
                             @change="handleFileChange"
-                            class="flex h-10 w-full rounded-md border border-input bg-background px-10 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                            class="flex h-10 w-full rounded-md border border-input bg-background px-10 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus:!border-primary focus-visible:!border-primary focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                         />
                     </div>
                 </div>
@@ -190,6 +190,16 @@ onMounted(() => {
 </template>
 
 <style scoped>
+/* Force orange focus borders for inputs and textareas */
+input:focus,
+input:focus-visible,
+textarea:focus,
+textarea:focus-visible {
+    border-color: hsl(var(--primary)) !important;
+    box-shadow: none !important;
+    outline: none !important;
+}
+
 .team-logos {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(6.25rem, 1fr));

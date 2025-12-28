@@ -93,3 +93,77 @@ export const dataApi = {
         return response.data;
     },
 };
+
+// Custom GM API
+export const customGMApi = {
+    create: async (data: { name: string; teams: string[] }) => {
+        const response = await api.post('/api/custom-entities/gm/create', data);
+        return response.data;
+    },
+    list: async () => {
+        const response = await api.get('/api/custom-entities/gm/list');
+        return response.data;
+    },
+    update: async (gmUUID: string, data: { name: string; teams: string[] }) => {
+        const response = await api.put('/api/custom-entities/gm/update', { gmUUID, ...data });
+        return response.data;
+    },
+    delete: async (gmUUID: string) => {
+        const response = await api.delete(`/api/custom-entities/gm/delete/${gmUUID}`);
+        return response.data;
+    },
+};
+
+// Custom Coach API
+export const customCoachApi = {
+    create: async (data: { name: string; overallRating: number; specialty: string }) => {
+        const response = await api.post('/api/custom-entities/coach/create', data);
+        return response.data;
+    },
+    list: async () => {
+        const response = await api.get('/api/custom-entities/coach/list');
+        return response.data;
+    },
+    update: async (coachUUID: string, data: { name: string; overallRating: number; specialty: string }) => {
+        const response = await api.put('/api/custom-entities/coach/update', { coachUUID, ...data });
+        return response.data;
+    },
+    delete: async (coachUUID: string) => {
+        const response = await api.delete(`/api/custom-entities/coach/delete/${coachUUID}`);
+        return response.data;
+    },
+};
+
+// Custom Player API
+export const customPlayerApi = {
+    create: async (data: {
+        name: string;
+        position: string;
+        heightFeet: number;
+        heightInches: number;
+        weightPounds: number;
+        overallRating: number;
+    }) => {
+        const response = await api.post('/api/custom-entities/player/create', data);
+        return response.data;
+    },
+    list: async () => {
+        const response = await api.get('/api/custom-entities/player/list');
+        return response.data;
+    },
+    update: async (playerUUID: string, data: {
+        name: string;
+        position: string;
+        heightFeet: number;
+        heightInches: number;
+        weightPounds: number;
+        overallRating: number;
+    }) => {
+        const response = await api.put('/api/custom-entities/player/update', { playerUUID, ...data });
+        return response.data;
+    },
+    delete: async (playerUUID: string) => {
+        const response = await api.delete(`/api/custom-entities/player/delete/${playerUUID}`);
+        return response.data;
+    },
+};

@@ -39,7 +39,7 @@ const selectedPlayerStats = ref<any>([]);
 const cardsFlipped = ref<Map<any, boolean>>(new Map());
 const showPlayerStatsDialog = ref<boolean>(false);
 
-const selectedView = ref<string>("DEFAULT");
+const selectedView = ref<string>("Default");
 const selectedDrawerSide = ref<string>("right");
 const headerExpanded = ref<boolean>(false);
 
