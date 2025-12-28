@@ -11,6 +11,60 @@ Access Patterns:
     - SK: `team#${teamUUID}`
     - Use: Store team data associated with users
 
+- Custom GMs
+    - PK: `userUUID#${userUUID}`
+    - SK: `customGM#${gmUUID}`
+    - Use: Store custom General Managers created by users
+    - Data: `{ gmUUID, name, teams[], createdBy, created, updated }`
+    - Common Queries:
+        ```typescript
+        // List all custom GMs for a user
+        QueryInput = {
+        	TableName: "team-builder-development-main",
+        	KeyConditionExpression: "PK = :pk AND begins_with(SK, :sk)",
+        	ExpressionAttributeValues: {
+        		":pk": "userUUID#" + userUUID,
+        		":sk": "customGM#",
+        	},
+        };
+        ```
+
+- Custom Coaches
+    - PK: `userUUID#${userUUID}`
+    - SK: `customCoach#${coachUUID}`
+    - Use: Store custom Coaches created by users
+    - Data: `{ coachUUID, name, overallRating, specialty, createdBy, created, updated }`
+    - Common Queries:
+        ```typescript
+        // List all custom coaches for a user
+        QueryInput = {
+        	TableName: "team-builder-development-main",
+        	KeyConditionExpression: "PK = :pk AND begins_with(SK, :sk)",
+        	ExpressionAttributeValues: {
+        		":pk": "userUUID#" + userUUID,
+        		":sk": "customCoach#",
+        	},
+        };
+        ```
+
+- Custom Players
+    - PK: `userUUID#${userUUID}`
+    - SK: `customPlayer#${playerUUID}`
+    - Use: Store custom Players created by users
+    - Data: `{ playerUUID, name, position, heightFeet, heightInches, weightPounds, overallRating, createdBy, created, updated }`
+    - Common Queries:
+        ```typescript
+        // List all custom players for a user
+        QueryInput = {
+        	TableName: "team-builder-development-main",
+        	KeyConditionExpression: "PK = :pk AND begins_with(SK, :sk)",
+        	ExpressionAttributeValues: {
+        		":pk": "userUUID#" + userUUID,
+        		":sk": "customPlayer#",
+        	},
+        };
+        ```
+
 ### team-builder-{deploymentType}-users
 
 Access Patterns:

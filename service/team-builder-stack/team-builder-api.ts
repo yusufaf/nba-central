@@ -181,6 +181,7 @@ export class TeamBuilderAPI extends Construct {
 		const USERS_PREFIX = `/api/users`;
 		const TEAMS_PREFIX = `/api/teams`;
 		const DATA_PREFIX = `/api/data`;
+		const CUSTOM_ENTITIES_PREFIX = `/api/custom-entities`;
 
 		const FILES_ROUTES = [
 			{
@@ -234,19 +235,91 @@ export class TeamBuilderAPI extends Construct {
 			},
 		];
 
+		const CUSTOM_ENTITIES_ROUTES: {
+			route: string;
+			lambdaName: string;
+			methods?: HttpMethod[] | undefined;
+		}[] = [
+			// GM routes
+			{
+				route: `${CUSTOM_ENTITIES_PREFIX}/gm/create`,
+				lambdaName: "createCustomGM",
+				methods: [HttpMethod.POST],
+			},
+			{
+				route: `${CUSTOM_ENTITIES_PREFIX}/gm/list`,
+				lambdaName: "listCustomGMs",
+				methods: [HttpMethod.GET],
+			},
+			{
+				route: `${CUSTOM_ENTITIES_PREFIX}/gm/update`,
+				lambdaName: "updateCustomGM",
+				methods: [HttpMethod.PUT],
+			},
+			{
+				route: `${CUSTOM_ENTITIES_PREFIX}/gm/delete/{gmUUID}`,
+				lambdaName: "deleteCustomGM",
+				methods: [HttpMethod.DELETE],
+			},
+			// Coach routes
+			{
+				route: `${CUSTOM_ENTITIES_PREFIX}/coach/create`,
+				lambdaName: "createCustomCoach",
+				methods: [HttpMethod.POST],
+			},
+			{
+				route: `${CUSTOM_ENTITIES_PREFIX}/coach/list`,
+				lambdaName: "listCustomCoaches",
+				methods: [HttpMethod.GET],
+			},
+			{
+				route: `${CUSTOM_ENTITIES_PREFIX}/coach/update`,
+				lambdaName: "updateCustomCoach",
+				methods: [HttpMethod.PUT],
+			},
+			{
+				route: `${CUSTOM_ENTITIES_PREFIX}/coach/delete/{coachUUID}`,
+				lambdaName: "deleteCustomCoach",
+				methods: [HttpMethod.DELETE],
+			},
+			// Player routes
+			{
+				route: `${CUSTOM_ENTITIES_PREFIX}/player/create`,
+				lambdaName: "createCustomPlayer",
+				methods: [HttpMethod.POST],
+			},
+			{
+				route: `${CUSTOM_ENTITIES_PREFIX}/player/list`,
+				lambdaName: "listCustomPlayers",
+				methods: [HttpMethod.GET],
+			},
+			{
+				route: `${CUSTOM_ENTITIES_PREFIX}/player/update`,
+				lambdaName: "updateCustomPlayer",
+				methods: [HttpMethod.PUT],
+			},
+			{
+				route: `${CUSTOM_ENTITIES_PREFIX}/player/delete/{playerUUID}`,
+				lambdaName: "deleteCustomPlayer",
+				methods: [HttpMethod.DELETE],
+			},
+		];
+
 		const API_ROUTES = [
 			...FILES_ROUTES,
 			...USERS_ROUTES,
 			...TEAMS_ROUTES,
 			...DATA_ROUTES,
+			...CUSTOM_ENTITIES_ROUTES,
 		];
 
-		for (const { route, lambdaName } of API_ROUTES) {
+		for (const { route, lambdaName, methods } of API_ROUTES) {
 			this.createLambdaHttpIntegration({
 				api,
 				lambdaProps,
 				path: route,
 				lambdaName,
+				methods,
 				// authorizer: httpRouteAuthorizer,
 			});
 		}
