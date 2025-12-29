@@ -224,6 +224,47 @@
     border: 0.125rem solid rgb(80, 80, 90) !important;
     box-shadow: 0 0.625rem 1.5625rem rgba(0, 0, 0, 0.8) !important;
   }
+
+  /* Toast/Sonner Styling - Dark theme with app colors */
+  .toaster {
+    position: fixed !important;
+    z-index: 9999 !important;
+    pointer-events: none;
+  }
+
+  .toaster > * {
+    pointer-events: auto;
+  }
+
+  /* Force dark theme styling for toasts */
+  [data-sonner-toast] {
+    background-color: hsl(var(--card)) !important;
+    border-color: hsl(var(--border)) !important;
+    color: hsl(var(--foreground)) !important;
+  }
+
+  [data-sonner-toast][data-type="success"] {
+    background-color: hsl(var(--card)) !important;
+    border-color: hsl(var(--success)) !important;
+  }
+
+  [data-sonner-toast][data-type="error"] {
+    background-color: hsl(var(--card)) !important;
+    border-color: hsl(var(--destructive)) !important;
+  }
+
+  [data-sonner-toast][data-type="error"] [data-icon] {
+    color: hsl(var(--destructive)) !important;
+  }
+
+  [data-sonner-toast][data-type="warning"] {
+    background-color: hsl(var(--card)) !important;
+    border-color: hsl(var(--primary)) !important;
+  }
+
+  [data-sonner-toast][data-description] {
+    color: hsl(var(--muted-foreground)) !important;
+  }
 }
 
 @import './base.css';

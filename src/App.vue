@@ -3,7 +3,7 @@ import { RouterLink, RouterView } from "vue-router";
 import { onMounted } from 'vue';
 import AppHeader from "./views/Header.vue";
 import { useTeamsStore } from '@/stores/teams';
-import { Toaster } from "vue-sonner";
+import { Sonner } from "@/components/ui/sonner";
 
 const teamsStore = useTeamsStore();
 
@@ -13,7 +13,7 @@ onMounted(async () => {
 </script>
 
 <template>
-    <Toaster position="bottom-left" />
+    <Sonner position="bottom-right" theme="dark" rich-colors />
     <q-layout view="hhh lpR fff">
         <AppHeader />
         <q-page-container>

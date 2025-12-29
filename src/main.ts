@@ -11,6 +11,9 @@ import '@quasar/extras/fontawesome-v6/fontawesome-v6.css';
 /* Import Quasar css */
 import 'quasar/dist/quasar.css';
 
+/* Import vue-sonner styles */
+import 'vue-sonner/style.css';
+
 import App from './App.vue';
 import router from './router';
 

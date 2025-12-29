@@ -242,7 +242,10 @@ const handleDeleteGM = async () => {
                         @click="deleteGM"
                         variant="ghost"
                         size="icon"
-                        class="text-red-500 hover:text-red-600 hover:bg-red-950"
+                        :class="[
+                            'text-red-500 hover:text-red-600 hover:bg-red-950',
+                            { 'invisible pointer-events-none': !teamGM }
+                        ]"
                     >
                         <Trash2 class="h-4 w-4" />
                     </Button>

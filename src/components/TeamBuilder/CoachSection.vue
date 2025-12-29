@@ -338,7 +338,10 @@ const getCleanName = (coachName: string) => coachName.replace(/\*$/, '').trim();
                             @click="deleteCoach"
                             variant="ghost"
                             size="icon"
-                            class="text-red-500 hover:text-red-600 hover:bg-red-950"
+                            :class="[
+                                'text-red-500 hover:text-red-600 hover:bg-red-950',
+                                { 'invisible pointer-events-none': !teamCoach }
+                            ]"
                         >
                             <Trash2 class="h-4 w-4" />
                         </Button>

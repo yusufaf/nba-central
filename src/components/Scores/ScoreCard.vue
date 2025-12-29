@@ -112,7 +112,11 @@ const timePeriodLabels = computed(() => {
     const currentTeams = props.gameTeams[props.index];
     const lineScores = currentTeams[0].linescores ?? [];
     if (lineScores.length > 4) {
-        headerVals.splice(4, 0, "OT");
+        const overtimePeriods = lineScores.length - 4;
+        for (let i = 0; i < overtimePeriods; i++) {
+            const otLabel = overtimePeriods === 1 ? "OT" : `${i + 1}OT`;
+            headerVals.splice(4 + i, 0, otLabel);
+        }
     }
     return headerVals;
 });
@@ -571,6 +575,14 @@ const askNotificationPermission = (id: string): void => {
     display: flex;
     flex-direction: column;
     gap: 0.5rem;
+    flex-shrink: 0;
+    min-width: 12rem;
+}
+
+.team-info {
+    display: flex;
+    flex-direction: column;
+    white-space: nowrap;
 }
 
 .game-status {
@@ -596,7 +608,8 @@ const askNotificationPermission = (id: string): void => {
 .scores-container,
 .time-periods {
     display: grid;
-    grid-template-columns: repeat(auto-fit, 2rem);
+    grid-auto-flow: column;
+    grid-auto-columns: 2rem;
     align-items: center;
     text-align: center;
     justify-content: right;
@@ -729,7 +742,7 @@ const askNotificationPermission = (id: string): void => {
 
     .scores-container,
     .time-periods {
-        grid-template-columns: repeat(auto-fit, 1.5rem);
+        grid-auto-columns: 1.5rem;
         gap: 0.25rem;
         font-size: 0.85rem;
     }
