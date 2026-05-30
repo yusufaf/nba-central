@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue';
-import { debounce } from 'quasar';
+import { useDebounceFn } from '@vueuse/core';
 import axios from 'axios';
 import type { DrawerSide } from '@/models/types';
 import { useCustomPlayers } from '@/composables/useCustomPlayers';
@@ -139,7 +139,7 @@ const searchListResults = computed(() => {
 
 watch(
   search,
-  debounce(async () => {
+  useDebounceFn(async () => {
     const searchedPlayer = search.value;
 
     if (searchedPlayer) {

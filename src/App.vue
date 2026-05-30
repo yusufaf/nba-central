@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { RouterLink, RouterView } from "vue-router";
+import { RouterView } from "vue-router";
 import { onMounted } from 'vue';
 import AppHeader from "./views/Header.vue";
 import { useTeamsStore } from '@/stores/teams';
@@ -14,33 +14,52 @@ onMounted(async () => {
 
 <template>
     <Sonner position="bottom-right" theme="dark" rich-colors />
-    <q-layout view="hhh lpR fff">
+    <div class="app-shell">
         <AppHeader />
-        <q-page-container>
+        <main class="app-main">
             <RouterView />
-        </q-page-container>
-        <q-footer elevated class="bg-primary text-black">
-            <q-toolbar>
-                <a
-                    class="github-logo"
-                    href="https://github.com/yusufaf/nba-central"
-                >
-                    <img
-                        alt="Github logo"
-                        src="@/assets/github.png"
-                        width="32"
-                        height="32"
-                        title="Team Builder GitHub"
-                    />
-                </a>
-            </q-toolbar>
-        </q-footer>
-    </q-layout>
+        </main>
+        <footer class="app-footer">
+            <a
+                class="github-logo"
+                href="https://github.com/yusufaf/nba-central"
+                target="_blank"
+                rel="noopener noreferrer"
+            >
+                <img
+                    alt="Github logo"
+                    src="@/assets/github.png"
+                    width="32"
+                    height="32"
+                    title="Team Builder GitHub"
+                />
+            </a>
+        </footer>
+    </div>
 </template>
 
 <style scoped>
+.app-shell {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+}
+
+.app-main {
+    flex: 1;
+}
+
+.app-footer {
+    display: flex;
+    align-items: center;
+    padding: 0.75rem 1rem;
+    background-color: hsl(var(--primary));
+    color: #000;
+}
+
 .github-logo {
     margin-left: auto;
     margin-right: 0.75rem;
+    display: inline-flex;
 }
 </style>

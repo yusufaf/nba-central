@@ -13,8 +13,8 @@
                     <!-- Away Team -->
                     <div class="flex items-center gap-0.75rem flex-1 justify-end">
                         <div class="flex flex-col text-right">
-                            <span class="text-muted-foreground uppercase" style="font-size: 0.65rem; letter-spacing: 0.06em;">{{ awayTeam.team.displayName }}</span>
-                            <span v-if="awayTeamRecord" class="text-muted-foreground" style="font-size: 0.6rem;">{{ awayTeamRecord }}</span>
+                            <span class="uppercase" style="font-size: 0.8rem; letter-spacing: 0.06em; color: hsl(var(--foreground) / 0.8);">{{ awayTeam.team.displayName }}</span>
+                            <span v-if="awayTeamRecord" style="font-size: 0.75rem; color: hsl(var(--foreground) / 0.5);">{{ awayTeamRecord }}</span>
                         </div>
                         <div class="shrink-0" style="width: 3rem; height: 3rem;">
                             <img
@@ -36,7 +36,7 @@
                             >
                                 {{ awayTeam.score || '0' }}
                             </span>
-                            <span style="font-size: 1rem; color: #444; font-weight: 300; line-height: 1;">—</span>
+                            <span style="font-size: 1rem; color: #999; font-weight: 300; line-height: 1;">—</span>
                             <span
                                 class="font-extrabold tabular-nums"
                                 :class="homeTeam.winner ? 'text-primary' : 'text-muted-foreground'"
@@ -48,7 +48,7 @@
                         <Badge
                             :variant="statusVariant"
                             :class="isLive ? 'bg-primary/15 text-primary border-transparent' : ''"
-                            style="margin-top: 0.5rem; font-size: 0.6rem; padding: 0.15rem 0.6rem; font-weight: 600;"
+                            style="margin-top: 0.5rem; font-size: 0.7rem; padding: 0.2rem 0.65rem; font-weight: 600;"
                         >
                             {{ statusText }}
                         </Badge>
@@ -65,8 +65,8 @@
                             />
                         </div>
                         <div class="flex flex-col">
-                            <span class="text-muted-foreground uppercase" style="font-size: 0.65rem; letter-spacing: 0.06em;">{{ homeTeam.team.displayName }}</span>
-                            <span v-if="homeTeamRecord" class="text-muted-foreground" style="font-size: 0.6rem;">{{ homeTeamRecord }}</span>
+                            <span class="uppercase" style="font-size: 0.8rem; letter-spacing: 0.06em; color: hsl(var(--foreground) / 0.8);">{{ homeTeam.team.displayName }}</span>
+                            <span v-if="homeTeamRecord" style="font-size: 0.75rem; color: hsl(var(--foreground) / 0.5);">{{ homeTeamRecord }}</span>
                         </div>
                     </div>
                 </div>
@@ -74,19 +74,19 @@
                 <!-- Game Info Footer -->
                 <div
                     class="flex items-center justify-center flex-wrap"
-                    style="margin-top: 0.75rem; padding-top: 0.6rem; border-top: 1px solid hsl(var(--primary) / 0.12); font-size: 0.6rem; gap: 0.5rem;"
+                    style="margin-top: 0.75rem; padding-top: 0.6rem; border-top: 1px solid hsl(var(--primary) / 0.12); font-size: 0.75rem; gap: 0.5rem;"
                 >
-                    <span v-if="gameDate" class="text-muted-foreground flex items-center gap-0.25rem">
+                    <span v-if="gameDate" class="flex items-center" style="color: hsl(var(--foreground) / 0.6); gap: 0.25rem;">
                         <Calendar :size="12" class="shrink-0" />
                         {{ gameDate }}
                     </span>
                     <span v-if="gameDate && venue" class="text-primary/30">·</span>
-                    <span v-if="venue" class="text-muted-foreground flex items-center gap-0.25rem">
+                    <span v-if="venue" class="flex items-center" style="color: hsl(var(--foreground) / 0.6); gap: 0.25rem;">
                         <MapPin :size="12" class="shrink-0" />
                         {{ venue }}
                     </span>
                     <span v-if="venue && broadcasts" class="text-primary/30">·</span>
-                    <span v-if="broadcasts" class="text-muted-foreground flex items-center gap-0.25rem">
+                    <span v-if="broadcasts" class="flex items-center" style="color: hsl(var(--foreground) / 0.6); gap: 0.25rem;">
                         <Tv :size="12" class="shrink-0" />
                         {{ broadcasts }}
                     </span>

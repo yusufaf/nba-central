@@ -3,16 +3,16 @@
         <CardContent class="p-0.75rem overflow-x-auto">
             <Table>
                 <TableHeader>
-                    <TableRow style="font-size: 0.6rem; text-transform: uppercase;">
-                        <TableHead class="w-[10rem] py-0.35rem text-muted-foreground">Team</TableHead>
+                    <TableRow style="font-size: 0.75rem; text-transform: uppercase; color: hsl(var(--foreground) / 0.6);">
+                        <TableHead class="w-[10rem]" style="padding-top: 0.35rem; padding-bottom: 0.35rem;">Team</TableHead>
                         <TableHead
                             v-for="period in periods"
                             :key="period.period"
-                            class="text-center py-0.35rem text-muted-foreground"
+                            class="text-center" style="padding-top: 0.35rem; padding-bottom: 0.35rem;"
                         >
                             {{ period.label }}
                         </TableHead>
-                        <TableHead class="text-center font-bold py-0.35rem text-muted-foreground">Total</TableHead>
+                        <TableHead class="text-center font-bold" style="padding-top: 0.35rem; padding-bottom: 0.35rem;">Total</TableHead>
                     </TableRow>
                 </TableHeader>
                 <TableBody>

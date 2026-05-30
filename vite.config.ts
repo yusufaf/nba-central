@@ -2,7 +2,6 @@ import { fileURLToPath, URL } from "node:url";
 
 import { defineConfig } from "vite";
 import vue from "@vitejs/plugin-vue";
-import { quasar, transformAssetUrls } from "@quasar/vite-plugin";
 import tailwindcss from "@tailwindcss/vite";
 
 // https://vitejs.dev/config/
@@ -21,13 +20,7 @@ export default defineConfig({
         //   }
         // }
     },
-    plugins: [
-        vue({
-            template: { transformAssetUrls },
-        }),
-        quasar(),
-        tailwindcss(),
-    ],
+    plugins: [vue(), tailwindcss()],
     resolve: {
         alias: {
             "@": fileURLToPath(new URL("./src", import.meta.url)),
@@ -36,11 +29,11 @@ export default defineConfig({
     server: {
         proxy: {
             "/api": {
-                /* Doesn't work with localhost instead of actual address */
-                target: "http://127.0.0.1:8000/",
+                target:
+                    process.env.VITE_API_BASE_URL ||
+                    "https://sdqs628gwf.execute-api.us-west-2.amazonaws.com",
                 changeOrigin: true,
-                secure: false,
-                ws: true,
+                secure: true,
             },
         },
         port: 3000,

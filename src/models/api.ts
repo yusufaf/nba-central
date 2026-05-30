@@ -104,3 +104,20 @@ export interface GetTeamLogosResponse {
     teams: TeamData[];
 }
 // #endregion
+
+//#region News API Types
+export type NewsSource = "ESPN" | "Reddit" | "Bluesky";
+
+export interface NewsArticle {
+    id: string;
+    source: NewsSource;
+    headline: string;
+    url: string;
+    author: string;
+    publishedAt: string;
+    thumbnailUrl?: string;
+    summary?: string;
+}
+
+export type GetNewsResponse = NewsArticle[];
+// #endregion

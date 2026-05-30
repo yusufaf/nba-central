@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, watch } from "vue";
+import { useRouter } from "vue-router";
 import { toast } from "vue-sonner";
 import {
     HOME,
@@ -17,6 +18,8 @@ import { Separator } from "@/components/ui/separator";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarImage } from "@/components/ui/avatar";
 import { Bell } from "lucide-vue-next";
+
+const router = useRouter();
 
 /* Resource: https://dmitripavlutin.com/props-destructure-vue-composition/ */
 const props = defineProps<{
@@ -259,13 +262,13 @@ const askNotificationPermission = (id: string): void => {
         }"
         :key="game.uid"
     >
-        <Card class="score-card">
+        <Card class="score-card cursor-pointer hover:shadow-lg transition-all hover:scale-[1.02]" @click="() => router.push(`/game/${game.id}`)">
         <CardHeader class="card-header">
             <h6>{{ gameNameToDisplay }}</h6>
             <!-- Toggled styling here ==> notifications vs notifications active -->
             <!-- v-if="!isGameDone" -->
             <Button
-                @click="toggleGameNotification(game.uid)"
+                @click.stop="toggleGameNotification(game.uid)"
                 class="notification-bell"
                 variant="ghost"
                 size="icon"

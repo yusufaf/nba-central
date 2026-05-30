@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Separator } from '@/components/ui/separator';
+import { X, UserPlus, Plus, BarChart3, ArrowLeftRight, GitCompareArrows } from 'lucide-vue-next';
 
 interface Player {
   id: number;
@@ -72,7 +73,7 @@ const averageStats = computed(() => {
             size="icon"
             class="h-7 w-7 text-red-500 hover:text-red-400 hover:bg-red-500/10"
           >
-            <i class="material-icons text-sm">close</i>
+            <X class="w-4 h-4" />
           </Button>
         </div>
       </CardHeader>
@@ -84,7 +85,7 @@ const averageStats = computed(() => {
         <template v-if="!hasPlayer">
           <div class="empty-state">
             <div class="empty-icon-wrapper">
-              <i class="material-icons empty-icon">person_add</i>
+              <UserPlus class="empty-icon" />
             </div>
             <p class="empty-text">No player selected</p>
             <Button
@@ -93,7 +94,7 @@ const averageStats = computed(() => {
               size="sm"
               class="add-button"
             >
-              <i class="material-icons mr-1 text-base">add</i>
+              <Plus class="w-4 h-4 mr-1" />
               Add Player
             </Button>
           </div>
@@ -141,7 +142,7 @@ const averageStats = computed(() => {
               size="sm"
               class="action-btn"
             >
-              <i class="material-icons mr-1 text-base">analytics</i>
+              <BarChart3 class="w-4 h-4 mr-1" />
               View Stats
             </Button>
             <Button
@@ -150,7 +151,7 @@ const averageStats = computed(() => {
               size="sm"
               class="action-btn"
             >
-              <i class="material-icons mr-1 text-base">swap_horiz</i>
+              <ArrowLeftRight class="w-4 h-4 mr-1" />
               Replace
             </Button>
             <Button
@@ -159,7 +160,7 @@ const averageStats = computed(() => {
               size="sm"
               class="action-btn"
             >
-              <i class="material-icons mr-1 text-base">compare_arrows</i>
+              <GitCompareArrows class="w-4 h-4 mr-1" />
               Compare
             </Button>
           </div>
@@ -230,7 +231,8 @@ const averageStats = computed(() => {
 }
 
 .empty-icon {
-  font-size: 2rem;
+  width: 2rem;
+  height: 2rem;
   color: hsl(var(--muted-foreground));
 }
 

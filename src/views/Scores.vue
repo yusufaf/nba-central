@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, ref, computed } from "vue";
+import { onMounted, ref, computed, watch } from "vue";
 import {
     ESPN_SCORES_URL,
     VIEW_OPTIONS,
@@ -25,23 +25,26 @@ const numGames = ref<number>(0);
 const scoreData = ref<ESPNScoreboardResponse | null>(null);
 
 /* ==== Dates === */
-const originalDate = ref(new Date());
-const startDate = new Date().toISOString().split("T")[0].replace(/-/g, "/");
+const today = new Date();
+const minDate = new Date("2000/01/01");
 
-const restrictOptions = (date: string) => {
-    // TODO: Update to be earliest that data is available for
-    return date >= "2000/01/01" && date <= startDate;
+const selectedDate = ref<Date>(today);
+
+const primaryDateString = computed(() =>
+    selectedDate.value.toLocaleDateString("en-us", {
+        weekday: "long",
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+    })
+);
+
+const formatDateForEspn = (d: Date): string => {
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, "0");
+    const day = String(d.getDate()).padStart(2, "0");
+    return `${year}${month}${day}`;
 };
-
-const date = ref(startDate);
-const proxyDate = ref(startDate);
-
-const primaryDateString = originalDate.value.toLocaleDateString("en-us", {
-    weekday: "long",
-    year: "numeric",
-    month: "long",
-    day: "numeric",
-});
 
 // const gameStatus = ref([] as any[]);
 const gameData = ref<ESPNEvent[]>([]);
@@ -75,31 +78,21 @@ const gamesWithNotifications = ref<Map<any, any>>(new Map());
 
 */
 
-/* ==== Date Picker ==== */
-const updateProxyDate = () => {
-    proxyDate.value = date.value;
-};
-
-const saveDate = () => {
-    date.value = proxyDate.value;
-};
-
-const fetchCurrentScores = async () => {
+const fetchCurrentScores = async (forDate?: Date) => {
     try {
-        const response = await fetch(ESPN_SCORES_URL, {
-            method: "GET",
-        });
+        const url = forDate
+            ? `${ESPN_SCORES_URL}?dates=${formatDateForEspn(forDate)}`
+            : ESPN_SCORES_URL;
+        const response = await fetch(url, { method: "GET" });
 
         if (!response.ok) {
             throw new Error(`Failed to fetch data. Status: ${response.status}`);
         }
 
         const data: ESPNScoreboardResponse = await response.json();
-        console.log("Response JSON = ", data);
-        const { day, events } = data;
+        const { events } = data;
 
         scoreData.value = data;
-        originalDate.value = new Date(day?.date || new Date().toISOString());
         numGames.value = events?.length || 0;
         gameData.value = events || [];
 
@@ -222,24 +215,38 @@ const sortedGameData = computed(() => {
 
 const displayedGamesCount = computed(() => filteredGameData.value.length);
 
-onMounted(async () => {
-    /* Update scores every 5 mins */
-    const SCOREBOARD_INTERVAL = 300000;
+const isSameDay = (a: Date, b: Date) =>
+    a.getFullYear() === b.getFullYear() &&
+    a.getMonth() === b.getMonth() &&
+    a.getDate() === b.getDate();
 
-    const scoresData = await fetchCurrentScores();
+let pollIntervalId: ReturnType<typeof setInterval> | null = null;
 
-    const events: ESPNEvent[] = scoresData.events ?? [];
-
-    /* Determine if at least one game is not done */
-    const isAnyGameNotDone = events.some((event) => {
-        return !event.competitions[0]?.status.type.completed;
-    });
-
-    if (isAnyGameNotDone) {
-        setInterval(() => {
-            fetchCurrentScores();
-        }, SCOREBOARD_INTERVAL);
+const startScorePolling = (events: ESPNEvent[], forDate: Date) => {
+    if (pollIntervalId) {
+        clearInterval(pollIntervalId);
+        pollIntervalId = null;
     }
+    /* Only poll for live updates if viewing today AND at least one game is in progress */
+    if (!isSameDay(forDate, new Date())) return;
+    const isAnyGameNotDone = events.some(
+        (event) => !event.competitions[0]?.status.type.completed
+    );
+    if (!isAnyGameNotDone) return;
+    const SCOREBOARD_INTERVAL = 300000;
+    pollIntervalId = setInterval(() => {
+        fetchCurrentScores(selectedDate.value);
+    }, SCOREBOARD_INTERVAL);
+};
+
+watch(selectedDate, async (newDate) => {
+    const scoresData = await fetchCurrentScores(newDate);
+    startScorePolling(scoresData.events ?? [], newDate);
+});
+
+onMounted(async () => {
+    const scoresData = await fetchCurrentScores(selectedDate.value);
+    startScorePolling(scoresData.events ?? [], selectedDate.value);
 });
 </script>
 
@@ -256,13 +263,15 @@ onMounted(async () => {
                                 <CalendarIcon class="h-5 w-5" />
                             </Button>
                         </PopoverTrigger>
-                        <PopoverContent class="w-auto p-0">
+                        <PopoverContent class="date-picker-popover w-auto p-0">
                             <DatePicker
-                                v-model="date"
-                                :max-date="new Date(startDate)"
-                                :min-date="new Date('2000/01/01')"
+                                v-model="selectedDate"
+                                :max-date="today"
+                                :min-date="minDate"
                                 mode="date"
-                                @update:modelValue="saveDate"
+                                color="orange"
+                                is-dark
+                                borderless
                             />
                         </PopoverContent>
                     </Popover>

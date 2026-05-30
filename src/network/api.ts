@@ -13,6 +13,7 @@ import type {
     CreateTeamPayload,
     CreateTeamResponse,
     GetTeamLogosResponse,
+    GetNewsResponse,
 } from '@/models/api';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '';
@@ -90,6 +91,14 @@ export const teamApi = {
 export const dataApi = {
     getTeamLogos: async (): Promise<GetTeamLogosResponse> => {
         const response = await api.post('/api/data/get-team-logos');
+        return response.data;
+    },
+};
+
+// News API
+export const newsApi = {
+    getNews: async (): Promise<GetNewsResponse> => {
+        const response = await api.get<GetNewsResponse>('/api/news/get');
         return response.data;
     },
 };

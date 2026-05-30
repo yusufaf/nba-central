@@ -178,7 +178,10 @@ export type ESPNAthlete = {
     displayName: string;
     shortName: string;
     links: ESPNLink[];
-    headshot: string;
+    headshot?: {
+        href: string;
+        alt: string;
+    };
     jersey: string;
     position: ESPNPosition;
     team: { id: string };
@@ -361,5 +364,121 @@ export type ESPNScoreboardResponse = {
     events: ESPNEvent[];
     day?: {
         date: string;
+    };
+};
+
+/* ESPN Game Summary API Types */
+
+export type ESPNOfficial = {
+    fullName: string;
+    displayName?: string;
+    position?: string;
+    order?: number;
+};
+
+export type ESPNPlayerStat = {
+    athlete: ESPNAthlete;
+    starter: boolean;
+    stats: string[];
+    didNotPlay?: boolean;
+    ejected?: boolean;
+    reason?: string;
+};
+
+export type ESPNPlayerStatistics = {
+    names: string[];
+    keys: string[];
+    labels: string[];
+    descriptions: string[];
+    athletes: ESPNPlayerStat[];
+    totals?: string[];
+};
+
+export type ESPNTeamPlayers = {
+    team: ESPNTeamInfo;
+    statistics: ESPNPlayerStatistics[];
+};
+
+export type ESPNBoxScoreTeam = {
+    team: ESPNTeamInfo;
+    statistics: ESPNStatistic[];
+};
+
+export type ESPNPlay = {
+    id: string;
+    sequenceNumber: string;
+    type: {
+        id: string;
+        text: string;
+        abbreviation?: string;
+    };
+    text: string;
+    awayScore?: number;
+    homeScore?: number;
+    period: {
+        number: number;
+        displayValue: string;
+    };
+    clock: {
+        displayValue: string;
+    };
+    scoringPlay?: boolean;
+    scoreValue?: number;
+    team?: {
+        id: string;
+    };
+    participants?: Array<{
+        athlete: {
+            id: string;
+            displayName: string;
+        };
+    }>;
+};
+
+export type ESPNGameInfo = {
+    venue: ESPNVenue;
+    attendance?: number;
+    capacity?: number;
+    officials?: ESPNOfficial[];
+};
+
+export type ESPNGameSummary = {
+    boxscore?: {
+        teams: ESPNBoxScoreTeam[];
+        players: ESPNTeamPlayers[];
+    };
+    gameInfo?: ESPNGameInfo;
+    leaders?: ESPNLeader[][];
+    broadcasts?: ESPNBroadcast[];
+    plays?: ESPNPlay[];
+    winprobability?: Array<{
+        tiePercentage: number;
+        homeWinPercentage: number;
+        playId: string;
+    }>;
+    header?: {
+        id: string;
+        uid: string;
+        season: {
+            year: number;
+            type: number;
+        };
+        timeValid: boolean;
+        competitions: Array<{
+            id: string;
+            uid: string;
+            date: string;
+            attendance?: number;
+            competitors: ESPNCompetitor[];
+            status: ESPNStatus;
+            broadcasts?: ESPNBroadcast[];
+            venue: ESPNVenue;
+        }>;
+        league: {
+            id: string;
+            uid: string;
+            name: string;
+            abbreviation: string;
+        };
     };
 };

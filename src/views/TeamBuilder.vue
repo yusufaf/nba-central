@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { ref, computed } from "vue";
 import { toast } from 'vue-sonner';
-import { uid } from "quasar";
 import axios from "axios";
 import PageTitle from "@/components/PageTitle.vue";
 import TeamBuilderHeader from "@/components/TeamBuilder/TeamBuilderHeader.vue";
@@ -189,7 +188,7 @@ const resetTeam = () => {
 };
 
 const saveTeam = () => {
-    const uuid = uid();
+    const uuid = crypto.randomUUID();
 
     const players = Array.from(selectedPlayersData.value.values()).map(
         (p) => p.fullName

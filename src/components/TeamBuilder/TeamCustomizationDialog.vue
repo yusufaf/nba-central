@@ -100,10 +100,10 @@ onMounted(() => {
                 <DialogTitle>Team Customization</DialogTitle>
             </DialogHeader>
 
-            <div class="space-y-4">
+            <div class="space-y-8">
                 <!-- Team Description -->
-                <div class="space-y-2">
-                    <Label for="team-description">Team Description</Label>
+                <div class="space-y-2 pb-4">
+                    <Label for="team-description" class="text-base font-semibold text-foreground">Team Description</Label>
                     <textarea
                         id="team-description"
                         v-model="teamDescription"
@@ -113,8 +113,8 @@ onMounted(() => {
                 </div>
 
                 <!-- City -->
-                <div class="space-y-2">
-                    <Label for="team-city">City</Label>
+                <div class="space-y-2 pb-4">
+                    <Label for="team-city" class="text-base font-semibold text-foreground">City</Label>
                     <div class="relative">
                         <MapPin class="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                         <Input
@@ -127,8 +127,8 @@ onMounted(() => {
                 </div>
 
                 <!-- Country -->
-                <div class="space-y-2">
-                    <Label for="team-country">Country</Label>
+                <div class="space-y-2 pb-4">
+                    <Label for="team-country" class="text-base font-semibold text-foreground">Country</Label>
                     <div class="relative">
                         <Flag class="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                         <Input
@@ -141,8 +141,8 @@ onMounted(() => {
                 </div>
 
                 <!-- Team Logo Upload -->
-                <div class="space-y-2">
-                    <Label for="team-logo-upload">Team Logo</Label>
+                <div class="space-y-2 pb-4">
+                    <Label for="team-logo-upload" class="text-base font-semibold text-foreground">Team Logo</Label>
                     <div class="relative">
                         <Paperclip class="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground z-10" />
                         <input
@@ -156,8 +156,8 @@ onMounted(() => {
                 </div>
 
                 <!-- Existing Team Logos -->
-                <div class="space-y-2">
-                    <Label>Or select an existing team's logo:</Label>
+                <div class="space-y-2 pb-4">
+                    <Label class="text-base font-semibold text-foreground">Or select an existing team's logo:</Label>
                     <div class="team-logos">
                         <template v-for="logo in props.nbaTeamLogos" :key="logo.href">
                             <img
@@ -173,16 +173,18 @@ onMounted(() => {
 
                 <!-- Team Jersey Canvas -->
                 <div class="space-y-2">
-                    <Label>Team Jersey</Label>
-                    <canvas
-                        ref="drawingCanvas"
-                        :width="canvasWidth"
-                        :height="canvasHeight"
-                        @mousedown="startDrawing"
-                        @mousemove="draw"
-                        @mouseup="stopDrawing"
-                        class="w-full border border-border rounded-md"
-                    />
+                    <Label class="text-base font-semibold text-foreground">Team Jersey</Label>
+                    <div class="canvas-container">
+                        <canvas
+                            ref="drawingCanvas"
+                            :width="canvasWidth"
+                            :height="canvasHeight"
+                            @mousedown="startDrawing"
+                            @mousemove="draw"
+                            @mouseup="stopDrawing"
+                            class="border border-border rounded-md"
+                        />
+                    </div>
                 </div>
             </div>
         </DialogContent>
@@ -225,9 +227,16 @@ textarea:focus-visible {
     box-shadow: 0 0 0 2px hsl(var(--primary) / 0.2);
 }
 
-canvas {
-    max-width: 100%;
-    height: auto;
+.canvas-container {
+    width: 100%;
+    max-width: 31.25rem;
+    aspect-ratio: 1 / 1;
+    overflow: hidden;
+}
+
+.canvas-container canvas {
+    width: 100%;
+    height: 100%;
     display: block;
 }
 </style>

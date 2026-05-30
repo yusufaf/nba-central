@@ -113,12 +113,27 @@ export const GAME_STATUS = {
     FINAL: "STATUS_FINAL",
 };
 
+export const STAT_COLUMNS = {
+    STANDARD: ["MIN", "PTS", "FG", "3PT", "FT", "REB", "AST", "TO", "STL", "BLK", "PF", "+/-"],
+    ADVANCED: ["OREB", "DREB", "FG%", "3P%", "FT%"],
+} as const;
+
+export const PLAY_TYPES = {
+    ALL: "all",
+    SHOT: "shot",
+    FOUL: "foul",
+    TURNOVER: "turnover",
+    SUBSTITUTION: "substitution",
+} as const;
+
 /* API */
 export const BDL_API_PREFIX = "https://www.balldontlie.io/api/v1";
 export const ESPN_SCORES_URL =
     "https://site.api.espn.com/apis/site/v2/sports/basketball/nba/scoreboard";
 export const ESPN_NEWS_URL =
     "https://site.api.espn.com/apis/site/v2/sports/basketball/nba/news";
+export const ESPN_GAME_SUMMARY_URL =
+    "https://site.api.espn.com/apis/site/v2/sports/basketball/nba/summary";
 
 export const ESPN_TEAM_URL =
     "https://site.api.espn.com/apis/site/v2/sports/basketball/nba/teams/";

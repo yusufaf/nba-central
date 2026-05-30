@@ -40,10 +40,10 @@
             <!-- Tabs Navigation -->
             <Tabs default-value="box-score" class="mt-0.5rem">
                 <TabsList class="grid w-full grid-cols-4 h-auto bg-muted/30 p-0.25rem gap-0.125rem" style="border-bottom: 1px solid hsl(var(--primary) / 0.1);">
-                    <TabsTrigger value="box-score" class="text-0.75rem py-0.5rem font-medium text-muted-foreground hover:text-foreground data-[state=active]:bg-primary/15 data-[state=active]:text-primary data-[state=active]:font-semibold">Box Score</TabsTrigger>
-                    <TabsTrigger value="play-by-play" class="text-0.75rem py-0.5rem font-medium text-muted-foreground hover:text-foreground data-[state=active]:bg-primary/15 data-[state=active]:text-primary data-[state=active]:font-semibold">Play-by-Play</TabsTrigger>
-                    <TabsTrigger value="team-stats" class="text-0.75rem py-0.5rem font-medium text-muted-foreground hover:text-foreground data-[state=active]:bg-primary/15 data-[state=active]:text-primary data-[state=active]:font-semibold">Team Stats</TabsTrigger>
-                    <TabsTrigger value="advanced" class="text-0.75rem py-0.5rem font-medium text-muted-foreground hover:text-foreground data-[state=active]:bg-primary/15 data-[state=active]:text-primary data-[state=active]:font-semibold">Advanced</TabsTrigger>
+                    <TabsTrigger value="box-score" class="font-medium hover:text-foreground data-[state=active]:bg-primary/15 data-[state=active]:text-primary data-[state=active]:font-semibold" style="font-size: 0.85rem; padding-top: 0.5rem; padding-bottom: 0.5rem; color: hsl(var(--foreground) / 0.6);">Box Score</TabsTrigger>
+                    <TabsTrigger value="play-by-play" class="font-medium hover:text-foreground data-[state=active]:bg-primary/15 data-[state=active]:text-primary data-[state=active]:font-semibold" style="font-size: 0.85rem; padding-top: 0.5rem; padding-bottom: 0.5rem; color: hsl(var(--foreground) / 0.6);">Play-by-Play</TabsTrigger>
+                    <TabsTrigger value="team-stats" class="font-medium hover:text-foreground data-[state=active]:bg-primary/15 data-[state=active]:text-primary data-[state=active]:font-semibold" style="font-size: 0.85rem; padding-top: 0.5rem; padding-bottom: 0.5rem; color: hsl(var(--foreground) / 0.6);">Team Stats</TabsTrigger>
+                    <TabsTrigger value="advanced" class="font-medium hover:text-foreground data-[state=active]:bg-primary/15 data-[state=active]:text-primary data-[state=active]:font-semibold" style="font-size: 0.85rem; padding-top: 0.5rem; padding-bottom: 0.5rem; color: hsl(var(--foreground) / 0.6);">Advanced</TabsTrigger>
                 </TabsList>
 
                 <!-- Box Score Tab -->

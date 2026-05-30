@@ -2,6 +2,7 @@ import { createRouter, createWebHistory } from 'vue-router';
 import Home from '../views/Home.vue';
 import TeamBuilder from '@/views/TeamBuilder.vue';
 import Scores from '@/views/Scores.vue';
+import BoxScore from '@/views/BoxScore.vue';
 import News from '@/views/News.vue';
 import Teams from '@/views/Teams.vue';
 import Login from '@/views/Login.vue';
@@ -24,6 +25,12 @@ const router = createRouter({
             path: '/scores',
             name: 'scores',
             component: Scores,
+        },
+        {
+            path: '/game/:gameId',
+            name: 'boxScore',
+            component: BoxScore,
+            props: true,
         },
         {
             path: '/news',

@@ -8,15 +8,15 @@
                     style="width: 2rem; height: 2rem;"
                     class="object-contain shrink-0"
                 />
-                <h3 class="text-1rem font-bold">{{ team.displayName }}</h3>
+                <h3 class="font-bold" style="font-size: 1rem;">{{ team.displayName }}</h3>
             </div>
         </CardHeader>
         <CardContent class="p-0 overflow-x-auto">
             <Table>
                 <TableHeader class="sticky top-0 bg-background z-10">
-                    <TableRow class="bg-primary/5" style="font-size: 0.55rem; text-transform: uppercase; letter-spacing: 0.04em;">
-                        <TableHead class="w-[10rem] sticky left-0 bg-primary/5 py-0.35rem text-muted-foreground font-semibold">
-                            <button @click="sortBy('name')" class="flex items-center gap-0.25rem hover:text-foreground/80 text-muted-foreground font-semibold">
+                    <TableRow class="bg-primary/5" style="font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.04em; color: hsl(var(--foreground) / 0.6);">
+                        <TableHead class="w-[10rem] sticky left-0 bg-primary/5 font-semibold" style="padding-top: 0.35rem; padding-bottom: 0.35rem;">
+                            <button @click="sortBy('name')" class="flex items-center font-semibold" style="gap: 0.25rem; color: hsl(var(--foreground) / 0.6);">
                                 Player
                                 <SortIcon :active="sortColumn === 'name'" :direction="sortDirection" />
                             </button>
@@ -24,11 +24,11 @@
                         <TableHead
                             v-for="(statName, index) in statistics.names"
                             :key="statName"
-                            class="text-center min-w-[2.5rem] py-0.35rem text-muted-foreground font-semibold"
+                            class="text-center min-w-[2.5rem] font-semibold" style="padding-top: 0.35rem; padding-bottom: 0.35rem;"
                         >
                             <button
                                 @click="sortBy(index)"
-                                class="flex items-center justify-center gap-0.25rem w-full hover:text-foreground/80 text-muted-foreground font-semibold"
+                                class="flex items-center justify-center w-full font-semibold" style="gap: 0.25rem; color: hsl(var(--foreground) / 0.6);"
                             >
                                 {{ statName }}
                                 <SortIcon :active="sortColumn === index" :direction="sortDirection" />
@@ -43,7 +43,7 @@
                             <TableCell
                                 colspan="100%"
                                 class="text-primary bg-primary/6 py-0.25rem"
-                                style="font-size: 0.5rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em;"
+                                style="font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em;"
                             >
                                 Starters
                             </TableCell>
@@ -64,8 +64,8 @@
                                         class="rounded-full object-cover shrink-0"
                                     />
                                     <div class="flex flex-col">
-                                        <span class="leading-tight" style="font-size: 0.7rem; font-weight: 600;">{{ player.athlete.displayName }}</span>
-                                        <span class="text-muted-foreground leading-tight" style="font-size: 0.5rem;">
+                                        <span class="leading-tight" style="font-size: 0.8rem; font-weight: 600;">{{ player.athlete.displayName }}</span>
+                                        <span class="leading-tight" style="font-size: 0.65rem; color: hsl(var(--foreground) / 0.4);">
                                             {{ player.athlete.position?.abbreviation }} · #{{ player.athlete.jersey }}
                                         </span>
                                     </div>
@@ -76,7 +76,7 @@
                                 :key="index"
                                 class="text-center py-0.25rem"
                                 :class="getCellClass(player, index, stat)"
-                                style="font-size: 0.65rem;"
+                                style="font-size: 0.8rem;"
                             >
                                 {{ stat }}
                             </TableCell>
@@ -89,7 +89,7 @@
                             <TableCell
                                 colspan="100%"
                                 class="text-primary bg-primary/6 py-0.25rem"
-                                style="font-size: 0.5rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em;"
+                                style="font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em;"
                             >
                                 Bench
                             </TableCell>
@@ -110,8 +110,8 @@
                                         class="rounded-full object-cover shrink-0"
                                     />
                                     <div class="flex flex-col">
-                                        <span class="leading-tight" style="font-size: 0.7rem; font-weight: 600;">{{ player.athlete.displayName }}</span>
-                                        <span class="text-muted-foreground leading-tight" style="font-size: 0.5rem;">
+                                        <span class="leading-tight" style="font-size: 0.8rem; font-weight: 600;">{{ player.athlete.displayName }}</span>
+                                        <span class="leading-tight" style="font-size: 0.65rem; color: hsl(var(--foreground) / 0.4);">
                                             {{ player.athlete.position?.abbreviation }} · #{{ player.athlete.jersey }}
                                         </span>
                                     </div>
@@ -122,7 +122,7 @@
                                 :key="index"
                                 class="text-center py-0.25rem"
                                 :class="getCellClass(player, index, stat)"
-                                style="font-size: 0.65rem;"
+                                style="font-size: 0.8rem;"
                             >
                                 {{ stat }}
                             </TableCell>
@@ -135,8 +135,8 @@
                             <TableCell colspan="100%" class="py-0.25rem bg-muted/20">
                                 <button
                                     @click="dnpExpanded = !dnpExpanded"
-                                    class="flex items-center justify-between w-full text-muted-foreground hover:text-foreground transition-colors"
-                                    style="font-size: 0.5rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em;"
+                                    class="flex items-center justify-between w-full hover:text-foreground transition-colors"
+                                    style="font-size: 0.7rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: hsl(var(--foreground) / 0.6);"
                                 >
                                     <span>Did Not Play ({{ dnpPlayers.length }})</span>
                                     <span>{{ dnpExpanded ? '▾' : '▸' }}</span>
@@ -150,15 +150,15 @@
                                 class="opacity-50"
                             >
                                 <TableCell class="sticky left-0 bg-background py-0.125rem">
-                                    <span style="font-size: 0.65rem; font-weight: 500;">
+                                    <span style="font-size: 0.8rem; font-weight: 500;">
                                         {{ player.athlete.displayName }}
-                                        <span class="text-muted-foreground" style="font-size: 0.5rem;">
+                                        <span style="font-size: 0.65rem; color: hsl(var(--foreground) / 0.4);">
                                             · {{ player.athlete.position?.abbreviation }}
                                             <span v-if="player.reason"> — {{ player.reason }}</span>
                                         </span>
                                     </span>
                                 </TableCell>
-                                <TableCell colspan="100%" class="text-center text-muted-foreground italic" style="font-size: 0.6rem;">
+                                <TableCell colspan="100%" class="text-center italic" style="font-size: 0.75rem; color: hsl(var(--foreground) / 0.4);">
                                     DNP
                                 </TableCell>
                             </TableRow>

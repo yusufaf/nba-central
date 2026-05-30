@@ -1,15 +1,15 @@
 <template>
     <Card style="border-left: 3px solid hsl(var(--primary));">
         <CardHeader class="pb-0.25rem py-0.5rem">
-            <h3 class="text-0.75rem font-semibold">Game Leaders</h3>
+            <h3 class="font-semibold" style="font-size: 0.875rem;">Game Leaders</h3>
         </CardHeader>
         <CardContent class="p-0.75rem">
             <div class="grid grid-cols-3 gap-1rem">
                 <!-- Points Leaders -->
                 <div v-if="pointsLeaders.length > 0">
                     <h4
-                        class="text-muted-foreground uppercase mb-0.25rem tracking-wide"
-                        style="font-size: 0.6rem; font-weight: 600;"
+                        class="uppercase tracking-wide"
+                        style="font-size: 0.75rem; font-weight: 600; color: hsl(var(--foreground) / 0.6); margin-bottom: 0.25rem;"
                     >Points</h4>
                     <div class="space-y-0.375rem">
                         <div
@@ -25,8 +25,8 @@
                                 class="rounded-full object-cover shrink-0"
                             />
                             <div class="flex-1 min-w-0">
-                                <p class="font-medium truncate leading-tight" style="font-size: 0.7rem;">{{ leader.athlete.displayName }}</p>
-                                <p class="text-muted-foreground leading-tight" style="font-size: 0.55rem;">
+                                <p class="font-medium truncate leading-tight" style="font-size: 0.8rem;">{{ leader.athlete.displayName }}</p>
+                                <p class="leading-tight" style="font-size: 0.7rem; color: hsl(var(--foreground) / 0.5);">
                                     {{ getTeamAbbr(leader.team.id) }}
                                 </p>
                             </div>
@@ -40,8 +40,8 @@
                 <!-- Rebounds Leaders -->
                 <div v-if="reboundsLeaders.length > 0">
                     <h4
-                        class="text-muted-foreground uppercase mb-0.25rem tracking-wide"
-                        style="font-size: 0.6rem; font-weight: 600;"
+                        class="uppercase tracking-wide"
+                        style="font-size: 0.75rem; font-weight: 600; color: hsl(var(--foreground) / 0.6); margin-bottom: 0.25rem;"
                     >Rebounds</h4>
                     <div class="space-y-0.375rem">
                         <div
@@ -57,8 +57,8 @@
                                 class="rounded-full object-cover shrink-0"
                             />
                             <div class="flex-1 min-w-0">
-                                <p class="font-medium truncate leading-tight" style="font-size: 0.7rem;">{{ leader.athlete.displayName }}</p>
-                                <p class="text-muted-foreground leading-tight" style="font-size: 0.55rem;">
+                                <p class="font-medium truncate leading-tight" style="font-size: 0.8rem;">{{ leader.athlete.displayName }}</p>
+                                <p class="leading-tight" style="font-size: 0.7rem; color: hsl(var(--foreground) / 0.5);">
                                     {{ getTeamAbbr(leader.team.id) }}
                                 </p>
                             </div>
@@ -72,8 +72,8 @@
                 <!-- Assists Leaders -->
                 <div v-if="assistsLeaders.length > 0">
                     <h4
-                        class="text-muted-foreground uppercase mb-0.25rem tracking-wide"
-                        style="font-size: 0.6rem; font-weight: 600;"
+                        class="uppercase tracking-wide"
+                        style="font-size: 0.75rem; font-weight: 600; color: hsl(var(--foreground) / 0.6); margin-bottom: 0.25rem;"
                     >Assists</h4>
                     <div class="space-y-0.375rem">
                         <div
@@ -89,8 +89,8 @@
                                 class="rounded-full object-cover shrink-0"
                             />
                             <div class="flex-1 min-w-0">
-                                <p class="font-medium truncate leading-tight" style="font-size: 0.7rem;">{{ leader.athlete.displayName }}</p>
-                                <p class="text-muted-foreground leading-tight" style="font-size: 0.55rem;">
+                                <p class="font-medium truncate leading-tight" style="font-size: 0.8rem;">{{ leader.athlete.displayName }}</p>
+                                <p class="leading-tight" style="font-size: 0.7rem; color: hsl(var(--foreground) / 0.5);">
                                     {{ getTeamAbbr(leader.team.id) }}
                                 </p>
                             </div>

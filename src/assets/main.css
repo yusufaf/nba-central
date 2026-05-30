@@ -1,5 +1,29 @@
 @import 'tailwindcss';
 
+@theme {
+  --color-background: hsl(0 0% 10%);
+  --color-foreground: hsl(0 0% 98%);
+  --color-card: hsl(0 0% 11%);
+  --color-card-foreground: hsl(0 0% 98%);
+  --color-popover: hsl(0 0% 11%);
+  --color-popover-foreground: hsl(0 0% 98%);
+  --color-primary: hsl(35 100% 50%);
+  --color-primary-foreground: hsl(0 0% 13%);
+  --color-secondary: hsl(0 0% 20%);
+  --color-secondary-foreground: hsl(0 0% 98%);
+  --color-muted: hsl(0 0% 20%);
+  --color-muted-foreground: hsl(0 0% 63.9%);
+  --color-accent: hsl(35 100% 50%);
+  --color-accent-foreground: hsl(0 0% 13%);
+  --color-destructive: hsl(0 62.8% 50%);
+  --color-destructive-foreground: hsl(0 0% 98%);
+  --color-success: hsl(142 76% 36%);
+  --color-border: hsl(0 0% 25%);
+  --color-input: hsl(0 0% 20%);
+  --color-ring: hsl(35 100% 50%);
+  --radius: 0.5rem;
+}
+
 @layer base {
   :root {
     --background: 0 0% 10%;
@@ -264,6 +288,123 @@
 
   [data-sonner-toast][data-description] {
     color: hsl(var(--muted-foreground)) !important;
+  }
+
+  /* Date Picker (v-calendar) - dark theme with orange accents
+     Higher-specificity overrides for the global [role="dialog"] rules above */
+  [role="dialog"].date-picker-popover {
+    background: hsl(var(--popover)) !important;
+    border: 0.0625rem solid hsl(var(--border)) !important;
+    border-radius: 0.5rem !important;
+    padding: 0 !important;
+    max-width: none !important;
+    overflow: hidden !important;
+    box-shadow: 0 0.625rem 1.5625rem rgba(0, 0, 0, 0.5) !important;
+  }
+
+  [role="dialog"].date-picker-popover .vc-container {
+    background-color: hsl(var(--popover)) !important;
+    border: none !important;
+    border-radius: 0 !important;
+    color: hsl(var(--foreground)) !important;
+    font-family: inherit !important;
+  }
+
+  [role="dialog"].date-picker-popover .vc-header,
+  [role="dialog"].date-picker-popover .vc-weeks,
+  [role="dialog"].date-picker-popover .vc-weekday,
+  [role="dialog"].date-picker-popover .vc-title,
+  [role="dialog"].date-picker-popover .vc-arrow {
+    background-color: transparent !important;
+    color: hsl(var(--foreground)) !important;
+  }
+
+  [role="dialog"].date-picker-popover .vc-weekday {
+    color: hsl(var(--primary)) !important;
+    font-weight: 600 !important;
+  }
+
+  /* Override global dialog button bloat */
+  [role="dialog"].date-picker-popover button {
+    padding: 0.25rem !important;
+    min-height: 0 !important;
+    font-size: inherit !important;
+    border-radius: 0.375rem !important;
+  }
+
+  [role="dialog"].date-picker-popover .vc-title {
+    padding: 0.25rem 0.5rem !important;
+    font-weight: 700 !important;
+  }
+
+  [role="dialog"].date-picker-popover .vc-arrow,
+  [role="dialog"].date-picker-popover .vc-title {
+    /* v-calendar's .vc-header paints over its children;
+       elevate clickable controls so the user actually hits them */
+    position: relative !important;
+    z-index: 1 !important;
+    cursor: pointer !important;
+  }
+
+  [role="dialog"].date-picker-popover .vc-arrow {
+    width: 1.875rem !important;
+    height: 1.875rem !important;
+    color: hsl(var(--foreground)) !important;
+    box-shadow: none !important;
+  }
+
+  /* Arrow icons - v-calendar's polyline doesn't always inherit stroke reliably */
+  [role="dialog"].date-picker-popover .vc-arrow svg {
+    width: 1.125rem !important;
+    height: 1.125rem !important;
+    min-width: 0 !important;
+    min-height: 0 !important;
+    color: hsl(var(--foreground)) !important;
+    stroke: hsl(var(--foreground)) !important;
+    fill: none !important;
+  }
+
+  [role="dialog"].date-picker-popover .vc-arrow svg polyline,
+  [role="dialog"].date-picker-popover .vc-arrow svg path,
+  [role="dialog"].date-picker-popover .vc-arrow svg line {
+    stroke: hsl(var(--foreground)) !important;
+    fill: none !important;
+    stroke-width: 0.125rem !important;
+  }
+
+  [role="dialog"].date-picker-popover .vc-arrow:hover {
+    background-color: hsl(var(--accent) / 0.2) !important;
+  }
+
+  [role="dialog"].date-picker-popover .vc-title:hover {
+    background-color: hsl(var(--accent) / 0.2) !important;
+  }
+
+  [role="dialog"].date-picker-popover .vc-arrow:focus,
+  [role="dialog"].date-picker-popover .vc-focus:focus-within {
+    box-shadow: none !important;
+    outline: none !important;
+  }
+
+  [role="dialog"].date-picker-popover .vc-day-content:hover {
+    background-color: hsl(var(--accent) / 0.2) !important;
+  }
+
+  [role="dialog"].date-picker-popover .vc-day-content.vc-highlight-content-light,
+  [role="dialog"].date-picker-popover .vc-day-content.vc-highlight-content-solid {
+    color: hsl(var(--primary-foreground)) !important;
+    background-color: hsl(var(--primary)) !important;
+  }
+
+  [role="dialog"].date-picker-popover .vc-day.is-not-in-month .vc-day-content {
+    color: hsl(var(--muted-foreground)) !important;
+    opacity: 0.4 !important;
+  }
+
+  [role="dialog"].date-picker-popover .vc-day-content.vc-disabled {
+    color: hsl(var(--muted-foreground)) !important;
+    opacity: 0.3 !important;
+    cursor: not-allowed !important;
   }
 }
 
