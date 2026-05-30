@@ -12,7 +12,7 @@ import ArenaSection from "@/components/TeamBuilder/ArenaSection.vue";
 import GMSection from "@/components/TeamBuilder/GMSection.vue";
 import PlayerComparison from "@/components/TeamBuilder/PlayerComparison.vue";
 import { BDL_API_PREFIX } from "@/constants/constants";
-import type { Team } from "@/models/types";
+import type { Team, DrawerSide } from "@/models/types";
 
 /* Team Metadata */
 const teamName = ref<string>("");
@@ -39,7 +39,7 @@ const cardsFlipped = ref<Map<any, boolean>>(new Map());
 const showPlayerStatsDialog = ref<boolean>(false);
 
 const selectedView = ref<string>("Default");
-const selectedDrawerSide = ref<string>("right");
+const selectedDrawerSide = ref<DrawerSide>("right");
 const headerExpanded = ref<boolean>(false);
 
 const selectedPlayersForComparison = ref<Set<any>>(new Set());
@@ -271,7 +271,7 @@ const saveTeam = () => {
         <AddPlayerDialog
             v-model:open="showPlayerDialog"
             :position="selectedPlayerIndex !== null && selectedPlayerIndex <= 5 ? ['PG', 'SG', 'SF', 'PF', 'C'][selectedPlayerIndex - 1] : undefined"
-            :slot-index="selectedPlayerIndex"
+            :slot-index="selectedPlayerIndex ?? undefined"
             :selectedDrawerSide="selectedDrawerSide"
             @select="addPlayerFromDialog"
         />

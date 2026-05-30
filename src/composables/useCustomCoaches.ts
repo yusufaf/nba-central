@@ -18,7 +18,7 @@ export function useCustomCoaches() {
                 customCoaches.value = response.data.customCoaches || [];
             } else {
                 error.value = response.error || 'Failed to fetch custom coaches';
-                toast.error(error.value);
+                toast.error(error.value ?? 'An error occurred');
             }
         } catch (err: any) {
             error.value = err.message || 'Failed to fetch custom coaches';
@@ -41,7 +41,7 @@ export function useCustomCoaches() {
                 return response.data;
             } else {
                 error.value = response.error || 'Failed to create coach';
-                toast.error(error.value);
+                toast.error(error.value ?? 'An error occurred');
                 return null;
             }
         } catch (err: any) {
@@ -66,7 +66,7 @@ export function useCustomCoaches() {
                 return response.data;
             } else {
                 error.value = response.error || 'Failed to update coach';
-                toast.error(error.value);
+                toast.error(error.value ?? 'An error occurred');
                 return null;
             }
         } catch (err: any) {
@@ -91,7 +91,7 @@ export function useCustomCoaches() {
                 return true;
             } else {
                 error.value = response.error || 'Failed to delete coach';
-                toast.error(error.value);
+                toast.error(error.value ?? 'An error occurred');
                 return false;
             }
         } catch (err: any) {

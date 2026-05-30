@@ -175,7 +175,7 @@ defineExpose({
                         </div>
 
                         <!-- Team Selector -->
-                        <Select @update:model-value="addTeam" :disabled="loading || availableTeams.length === 0">
+                        <Select @update:model-value="(v) => addTeam(v as string)" :disabled="loading || availableTeams.length === 0">
                             <SelectTrigger class="h-11">
                                 <SelectValue placeholder="Add a team..." />
                             </SelectTrigger>

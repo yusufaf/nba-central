@@ -195,7 +195,7 @@ const broadcasts = computed(() => {
     if (competitionBroadcasts && competitionBroadcasts.length > 0) {
         const result = competitionBroadcasts
             .filter(b => b.media?.shortName)
-            .map(b => b.media.shortName)
+            .map(b => b.media?.shortName)
             .filter(Boolean)
             .join(' • ');
         if (result) return result;

@@ -3,8 +3,13 @@
     "extends": "@vue/tsconfig/tsconfig.web.json",
     "include": ["env.d.ts", "src/**/*", "src/**/*.vue"],
     "compilerOptions": {
+        // @vue/tsconfig@0.1.3 sets `importsNotUsedAsValues`/`preserveValueImports`,
+        // which TS 5.5 deprecated. They are no-ops here; silence until the base
+        // config is upgraded (which would enable stricter verbatimModuleSyntax).
+        "ignoreDeprecations": "5.0",
         "module": "ESNext",
         "target": "ESNext",
+        "lib": ["ESNext", "DOM", "DOM.Iterable"],
         // `"noImplicitThis": true` is part of `strict`
         // Added again here in case some users decide to disable `strict`.
         // This enables stricter inference for data properties on `this`.

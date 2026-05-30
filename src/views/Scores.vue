@@ -7,7 +7,7 @@ import {
     EASTERN_TEAMS,
     WESTERN_TEAMS
 } from "@/constants/constants";
-import type { CustomizationKey } from "@/constants/constants";
+import type { CustomizationKey } from "@/models/types";
 import type { ESPNScoreboardResponse, ESPNEvent } from "@/models/types";
 import ScoreCard from "@/components/Scores/ScoreCard.vue";
 import PageTitle from "@/components/PageTitle.vue";
@@ -282,7 +282,7 @@ onMounted(async () => {
         <div class="buttons">
             <ToggleGroup
                 :model-value="conferenceFilter"
-                @update:modelValue="handleConferenceFilterChange"
+                @update:modelValue="(v) => handleConferenceFilterChange(v as string | undefined)"
                 type="single"
                 class="conference-toggle"
             >

@@ -257,6 +257,9 @@ export type ESPNStatus = {
 export type ESPNBroadcast = {
     market: string;
     names: string[];
+    media?: {
+        shortName: string;
+    };
 };
 
 export type ESPNGeoBroadcastType = {

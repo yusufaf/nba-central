@@ -109,12 +109,12 @@ const averageStats = computed(() => {
               </AvatarFallback>
             </Avatar>
             <h4 class="player-name">
-              {{ player.fullName }}
+              {{ player?.fullName }}
             </h4>
             <div class="player-meta">
-              <span class="meta-item">{{ player.team.abbreviation }}</span>
-              <span class="meta-divider">•</span>
-              <span class="meta-item">{{ player.position }}</span>
+              <span v-if="player?.team?.abbreviation" class="meta-item">{{ player.team.abbreviation }}</span>
+              <span v-if="player?.team?.abbreviation" class="meta-divider">•</span>
+              <span class="meta-item">{{ player?.position }}</span>
             </div>
             <div v-if="averageStats" class="stats-grid">
               <div class="stat-item">

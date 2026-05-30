@@ -106,7 +106,7 @@ export function useGameSummary(gameId: string) {
             return data;
         } catch (err: any) {
             error.value = err.message || 'Failed to fetch game summary';
-            toast.error(error.value);
+            toast.error(error.value ?? 'An error occurred');
             console.error('Error fetching game summary:', err);
             return null;
         } finally {

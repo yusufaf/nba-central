@@ -149,7 +149,7 @@ watch(
       try {
         let next_page = null;
         do {
-          const page: number | null = next_page ? next_page : '';
+          const page: number | string = next_page ? next_page : '';
           const response: any = await axios.get(
             `${BDL_API_PREFIX}/players?per_page=50&search=${searchedPlayer}&page=${page}`,
           );

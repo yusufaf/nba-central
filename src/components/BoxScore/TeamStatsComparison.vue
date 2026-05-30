@@ -108,6 +108,6 @@ const comparisonStats = computed(() => {
                 homeWins,
             };
         })
-        .filter(Boolean);
+        .filter((stat): stat is NonNullable<typeof stat> => stat !== null);
 });
 </script>

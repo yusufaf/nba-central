@@ -18,7 +18,7 @@ export function useCustomGMs() {
                 customGMs.value = response.data.customGMs || [];
             } else {
                 error.value = response.error || 'Failed to fetch custom GMs';
-                toast.error(error.value);
+                toast.error(error.value ?? 'An error occurred');
             }
         } catch (err: any) {
             error.value = err.message || 'Failed to fetch custom GMs';
@@ -41,7 +41,7 @@ export function useCustomGMs() {
                 return response.data;
             } else {
                 error.value = response.error || 'Failed to create GM';
-                toast.error(error.value);
+                toast.error(error.value ?? 'An error occurred');
                 return null;
             }
         } catch (err: any) {
@@ -66,7 +66,7 @@ export function useCustomGMs() {
                 return response.data;
             } else {
                 error.value = response.error || 'Failed to update GM';
-                toast.error(error.value);
+                toast.error(error.value ?? 'An error occurred');
                 return null;
             }
         } catch (err: any) {
@@ -91,7 +91,7 @@ export function useCustomGMs() {
                 return true;
             } else {
                 error.value = response.error || 'Failed to delete GM';
-                toast.error(error.value);
+                toast.error(error.value ?? 'An error occurred');
                 return false;
             }
         } catch (err: any) {

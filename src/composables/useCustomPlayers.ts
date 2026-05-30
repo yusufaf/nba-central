@@ -18,7 +18,7 @@ export function useCustomPlayers() {
                 customPlayers.value = response.data.customPlayers || [];
             } else {
                 error.value = response.error || 'Failed to fetch custom players';
-                toast.error(error.value);
+                toast.error(error.value ?? 'An error occurred');
             }
         } catch (err: any) {
             error.value = err.message || 'Failed to fetch custom players';
@@ -48,7 +48,7 @@ export function useCustomPlayers() {
                 return response.data;
             } else {
                 error.value = response.error || 'Failed to create player';
-                toast.error(error.value);
+                toast.error(error.value ?? 'An error occurred');
                 return null;
             }
         } catch (err: any) {
@@ -80,7 +80,7 @@ export function useCustomPlayers() {
                 return response.data;
             } else {
                 error.value = response.error || 'Failed to update player';
-                toast.error(error.value);
+                toast.error(error.value ?? 'An error occurred');
                 return null;
             }
         } catch (err: any) {
@@ -105,7 +105,7 @@ export function useCustomPlayers() {
                 return true;
             } else {
                 error.value = response.error || 'Failed to delete player';
-                toast.error(error.value);
+                toast.error(error.value ?? 'An error occurred');
                 return false;
             }
         } catch (err: any) {
