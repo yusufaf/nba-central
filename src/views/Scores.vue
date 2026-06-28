@@ -30,6 +30,44 @@ const minDate = new Date("2000/01/01");
 
 const selectedDate = ref<Date>(today);
 
+const gameCounts = ref<Map<string, number>>(new Map());
+const fetchedMonths = ref<Set<string>>(new Set());
+
+const calendarAttributes = computed(() => {
+    const attrs: any[] = [];
+    for (const [dateStr, count] of gameCounts.value.entries()) {
+        const year = parseInt(dateStr.substring(0, 4));
+        const month = parseInt(dateStr.substring(4, 6)) - 1;
+        const day = parseInt(dateStr.substring(6, 8));
+        
+        if (count === 0) {
+            attrs.push({
+                key: dateStr,
+                dates: new Date(year, month, day),
+                content: {
+                    class: "opacity-40"
+                },
+                popover: {
+                    label: "0 Games",
+                    visibility: "hover",
+                    hideIndicator: true
+                }
+            });
+        } else {
+            attrs.push({
+                key: dateStr,
+                dates: new Date(year, month, day),
+                popover: {
+                    label: `${count} Game${count !== 1 ? 's' : ''}`,
+                    visibility: "hover",
+                    hideIndicator: true
+                }
+            });
+        }
+    }
+    return attrs;
+});
+
 const primaryDateString = computed(() =>
     selectedDate.value.toLocaleDateString("en-us", {
         weekday: "long",
@@ -110,6 +148,57 @@ const fetchCurrentScores = async (forDate?: Date) => {
     } catch (err) {
         console.error(err);
         throw err; // Rethrow the error to be caught by the caller
+    }
+};
+
+const handleCalendarMove = async (event: any) => {
+    const pages = Array.isArray(event) ? event : (event ? [event] : []);
+    
+    for (const page of pages) {
+        if (!page.month || !page.year) continue;
+        
+        const year = page.year;
+        const month = page.month;
+        
+        // Start date of the month
+        const startDate = new Date(year, month - 1, 1);
+        // End date of the month (0th day of next month)
+        const endDate = new Date(year, month, 0);
+        
+        const startStr = formatDateForEspn(startDate);
+        const endStr = formatDateForEspn(endDate);
+        const monthKey = `${year}-${month}`;
+        
+        if (fetchedMonths.value.has(monthKey)) continue;
+        fetchedMonths.value.add(monthKey);
+        
+        try {
+            const url = `${ESPN_SCORES_URL}?dates=${startStr}-${endStr}&limit=1000`;
+            const response = await fetch(url);
+            if (!response.ok) continue;
+            
+            const data = await response.json();
+            const counts = new Map<string, number>();
+            
+            // Initialize all days in this month to 0
+            for (let d = 1; d <= endDate.getDate(); d++) {
+                const dayDate = new Date(year, month - 1, d);
+                counts.set(formatDateForEspn(dayDate), 0);
+            }
+            
+            data.events?.forEach((game: any) => {
+                const gameDate = new Date(game.date);
+                const dateKey = formatDateForEspn(gameDate);
+                counts.set(dateKey, (counts.get(dateKey) || 0) + 1);
+            });
+            
+            for (const [dateKey, count] of counts.entries()) {
+                gameCounts.value.set(dateKey, count);
+            }
+        } catch (err) {
+            console.error('Failed to fetch calendar game counts', err);
+            fetchedMonths.value.delete(monthKey);
+        }
     }
 };
 
@@ -272,6 +361,8 @@ onMounted(async () => {
                                 color="orange"
                                 is-dark
                                 borderless
+                                :attributes="calendarAttributes"
+                                @did-move="handleCalendarMove"
                             />
                         </PopoverContent>
                     </Popover>
