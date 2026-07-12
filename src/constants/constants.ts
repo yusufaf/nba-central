@@ -147,6 +147,7 @@ export const ESPN_TEAM_URL =
 */
 
 const BBALL_REF_PREFIX = "https://www.basketball-reference.com";
+export const WIKIPEDIA_PREFIX = "https://en.wikipedia.org/wiki/";
 
 const COACH_COLUMNS = ["Coach", "From", "To", "Birth Date", "College"];
 
