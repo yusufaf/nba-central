@@ -111,7 +111,7 @@ const averageStats = computed(() => {
                 {{ playerInitials }}
               </AvatarFallback>
             </Avatar>
-            <div class="flex items-center gap-1.5">
+            <div class="flex items-center justify-center gap-1.5 w-full">
               <h4 class="player-name">
                 {{ player?.fullName }}
               </h4>
@@ -284,6 +284,7 @@ const averageStats = computed(() => {
   text-align: center;
   line-height: 1.3;
   margin: 0.25rem 0 0;
+  min-width: 0;
   max-width: 100%;
   overflow: hidden;
   text-overflow: ellipsis;
