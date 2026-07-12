@@ -332,7 +332,7 @@ const getCleanName = (coachName: string) => coachName.replace(/\*$/, '').trim();
                                 />
                                 <ExternalLinksMenu
                                     v-if="!teamCoach.isCustom"
-                                    :links="[{ label: 'Wikipedia', url: getWikipediaUrl(teamCoach.name ?? '') }]"
+                                    :links="[{ label: 'Wikipedia', url: getWikipediaUrl(getCleanName(teamCoach.name ?? '')) }]"
                                 />
                             </div>
                         </template>
