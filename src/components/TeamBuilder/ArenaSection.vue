@@ -3,7 +3,8 @@ import { ref, computed } from "vue";
 import { WESTERN_TEAMS, EASTERN_TEAMS } from "@/constants/constants";
 import type { Arena, SortDirection, DrawerSide } from "@/models/types";
 import arenaData from "@/assets/data/arenas.json";
-import { getRandomIndex } from "@/constants/utilities";
+import { getRandomIndex, getWikipediaUrl } from "@/constants/utilities";
+import ExternalLinksMenu from "@/components/ExternalLinksMenu.vue";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -169,7 +170,10 @@ const toggleFilter = (filter: string) => {
                     </Button>
                     <template v-else>
                         <img :src="teamArena.imgLink" height="100" width="150" class="rounded shadow-md" />
-                        <div class="arena-name">{{ teamArena.name }}</div>
+                        <div class="flex items-center gap-2 mt-3">
+                            <div class="arena-name !mt-0">{{ teamArena.name }}</div>
+                            <ExternalLinksMenu :links="[{ label: 'Wikipedia', url: getWikipediaUrl(teamArena.name) }]" />
+                        </div>
                     </template>
                 </div>
                 <Separator class="my-4" />
