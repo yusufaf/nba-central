@@ -366,9 +366,13 @@ onMounted(() => {
         max-width: 32rem;
     }
 
-    .team-name-input {
+    .team-info {
         flex: 1;
         min-width: 0;
+    }
+
+    .team-name-input {
+        width: 100%;
     }
 
     .action-buttons {

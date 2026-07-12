@@ -1,6 +1,7 @@
 import { ref, onMounted } from 'vue';
 import { toast } from 'vue-sonner';
 import { customPlayerApi } from '@/network/api';
+import { getApiErrorMessage } from '@/composables/useApiErrorMessage';
 import type { Player } from '@/models/types';
 
 export function useCustomPlayers() {
@@ -52,8 +53,9 @@ export function useCustomPlayers() {
                 return null;
             }
         } catch (err: any) {
-            error.value = err.message || 'Failed to create player';
-            toast.error('Failed to create player');
+            const message = getApiErrorMessage(err, 'Failed to create player');
+            error.value = message;
+            toast.error(message);
             console.error('Error creating player:', err);
             return null;
         } finally {
@@ -84,8 +86,9 @@ export function useCustomPlayers() {
                 return null;
             }
         } catch (err: any) {
-            error.value = err.message || 'Failed to update player';
-            toast.error('Failed to update player');
+            const message = getApiErrorMessage(err, 'Failed to update player');
+            error.value = message;
+            toast.error(message);
             console.error('Error updating player:', err);
             return null;
         } finally {
@@ -109,8 +112,9 @@ export function useCustomPlayers() {
                 return false;
             }
         } catch (err: any) {
-            error.value = err.message || 'Failed to delete player';
-            toast.error('Failed to delete player');
+            const message = getApiErrorMessage(err, 'Failed to delete player');
+            error.value = message;
+            toast.error(message);
             console.error('Error deleting player:', err);
             return false;
         } finally {

@@ -10,6 +10,13 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { MapPin, Flag, Paperclip } from 'lucide-vue-next';
+import HistoricalTeamCombobox from './HistoricalTeamCombobox.vue';
+
+interface HistoricalTeam {
+    name: string;
+    city: string;
+    country: string;
+}
 
 const props = defineProps<{
     nbaTeamLogos: any[];
@@ -36,6 +43,11 @@ const canvasHeight = 500;
 
 const handleLogoClick = (value: any) => {
     teamLogo.value = value;
+};
+
+const handleHistoricalTeamSelect = (team: HistoricalTeam) => {
+    teamCity.value = team.city;
+    teamCountry.value = team.country;
 };
 
 const handleFileChange = (event: Event) => {
@@ -110,6 +122,15 @@ onMounted(() => {
                         class="flex min-h-[120px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus:!border-primary focus-visible:!border-primary focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                         placeholder="Enter team description..."
                     />
+                </div>
+
+                <!-- Historical Team -->
+                <div class="space-y-2 pb-4">
+                    <Label class="text-base font-semibold text-foreground">Base on a Historical Team</Label>
+                    <HistoricalTeamCombobox @select="handleHistoricalTeamSelect" />
+                    <p class="text-xs text-muted-foreground">
+                        Picking a team fills in City and Country below — feel free to edit them afterward.
+                    </p>
                 </div>
 
                 <!-- City -->
