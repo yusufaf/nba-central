@@ -2,7 +2,8 @@
 import { ref, computed } from "vue";
 import type { GM, SortDirection, DrawerSide } from "@/models/types";
 import gmData from "@/assets/data/execs.json";
-import { getRandomIndex } from "@/constants/utilities";
+import { getRandomIndex, getWikipediaUrl } from "@/constants/utilities";
+import ExternalLinksMenu from "@/components/ExternalLinksMenu.vue";
 import { useCustomGMs } from "@/composables/useCustomGMs";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -233,7 +234,13 @@ const handleDeleteGM = async () => {
                     </Button>
                     <template v-else>
                         <UserCircle2 class="h-16 w-16 text-muted-foreground" />
-                        <div class="gm-name">{{ teamGM.name }}</div>
+                        <div class="flex items-center gap-2 mt-3">
+                            <div class="gm-name !mt-0">{{ teamGM.name }}</div>
+                            <ExternalLinksMenu
+                                v-if="!teamGM.isCustom"
+                                :links="[{ label: 'Wikipedia', url: getWikipediaUrl(teamGM.name) }]"
+                            />
+                        </div>
                     </template>
                 </div>
                 <Separator class="my-4" />

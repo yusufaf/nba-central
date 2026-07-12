@@ -6,6 +6,8 @@ import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Separator } from '@/components/ui/separator';
 import { X, UserPlus, Plus, BarChart3, ArrowLeftRight, GitCompareArrows } from 'lucide-vue-next';
+import { getWikipediaUrl } from '@/constants/utilities';
+import ExternalLinksMenu from '@/components/ExternalLinksMenu.vue';
 
 interface Player {
   id: number;
@@ -18,6 +20,7 @@ interface Player {
     abbreviation: string;
   };
   playerStats?: any[];
+  isCustom?: boolean;
 }
 
 interface Props {
@@ -108,9 +111,15 @@ const averageStats = computed(() => {
                 {{ playerInitials }}
               </AvatarFallback>
             </Avatar>
-            <h4 class="player-name">
-              {{ player?.fullName }}
-            </h4>
+            <div class="flex items-center justify-center gap-1.5 w-full">
+              <h4 class="player-name">
+                {{ player?.fullName }}
+              </h4>
+              <ExternalLinksMenu
+                v-if="player && !player.isCustom"
+                :links="[{ label: 'Wikipedia', url: getWikipediaUrl(player.fullName) }]"
+              />
+            </div>
             <div class="player-meta">
               <span v-if="player?.team?.abbreviation" class="meta-item">{{ player.team.abbreviation }}</span>
               <span v-if="player?.team?.abbreviation" class="meta-divider">•</span>
@@ -275,6 +284,7 @@ const averageStats = computed(() => {
   text-align: center;
   line-height: 1.3;
   margin: 0.25rem 0 0;
+  min-width: 0;
   max-width: 100%;
   overflow: hidden;
   text-overflow: ellipsis;

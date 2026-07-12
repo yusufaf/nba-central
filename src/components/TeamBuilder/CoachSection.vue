@@ -2,7 +2,8 @@
 import { ref, computed } from 'vue';
 import type { Coach, SortDirection, DrawerSide } from '@/models/types';
 import coachesData from '@/assets/data/coaches.json';
-import { getRandomIndex, roundValueToNPlaces } from '@/constants/utilities';
+import { getRandomIndex, roundValueToNPlaces, getWikipediaUrl } from '@/constants/utilities';
+import ExternalLinksMenu from '@/components/ExternalLinksMenu.vue';
 import { useCustomCoaches } from '@/composables/useCustomCoaches';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -328,6 +329,10 @@ const getCleanName = (coachName: string) => coachName.replace(/\*$/, '').trim();
                                     v-if="isHallOfFamer(teamCoach.name ?? '')"
                                     class="h-4 w-4 text-yellow-500 fill-yellow-500 self-center"
                                     title="Hall of Fame"
+                                />
+                                <ExternalLinksMenu
+                                    v-if="!teamCoach.isCustom"
+                                    :links="[{ label: 'Wikipedia', url: getWikipediaUrl(getCleanName(teamCoach.name ?? '')) }]"
                                 />
                             </div>
                         </template>
