@@ -1,6 +1,7 @@
 import { ref, onMounted } from 'vue';
 import { toast } from 'vue-sonner';
 import { customCoachApi } from '@/network/api';
+import { getApiErrorMessage } from '@/composables/useApiErrorMessage';
 import type { Coach } from '@/models/types';
 
 export function useCustomCoaches() {
@@ -45,8 +46,9 @@ export function useCustomCoaches() {
                 return null;
             }
         } catch (err: any) {
-            error.value = err.message || 'Failed to create coach';
-            toast.error('Failed to create coach');
+            const message = getApiErrorMessage(err, 'Failed to create coach');
+            error.value = message;
+            toast.error(message);
             console.error('Error creating coach:', err);
             return null;
         } finally {
@@ -70,8 +72,9 @@ export function useCustomCoaches() {
                 return null;
             }
         } catch (err: any) {
-            error.value = err.message || 'Failed to update coach';
-            toast.error('Failed to update coach');
+            const message = getApiErrorMessage(err, 'Failed to update coach');
+            error.value = message;
+            toast.error(message);
             console.error('Error updating coach:', err);
             return null;
         } finally {
@@ -95,8 +98,9 @@ export function useCustomCoaches() {
                 return false;
             }
         } catch (err: any) {
-            error.value = err.message || 'Failed to delete coach';
-            toast.error('Failed to delete coach');
+            const message = getApiErrorMessage(err, 'Failed to delete coach');
+            error.value = message;
+            toast.error(message);
             console.error('Error deleting coach:', err);
             return false;
         } finally {

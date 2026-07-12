@@ -1,6 +1,7 @@
 import { ref, onMounted } from 'vue';
 import { toast } from 'vue-sonner';
 import { customGMApi } from '@/network/api';
+import { getApiErrorMessage } from '@/composables/useApiErrorMessage';
 import type { GM } from '@/models/types';
 
 export function useCustomGMs() {
@@ -45,8 +46,9 @@ export function useCustomGMs() {
                 return null;
             }
         } catch (err: any) {
-            error.value = err.message || 'Failed to create GM';
-            toast.error('Failed to create GM');
+            const message = getApiErrorMessage(err, 'Failed to create GM');
+            error.value = message;
+            toast.error(message);
             console.error('Error creating GM:', err);
             return null;
         } finally {
@@ -70,8 +72,9 @@ export function useCustomGMs() {
                 return null;
             }
         } catch (err: any) {
-            error.value = err.message || 'Failed to update GM';
-            toast.error('Failed to update GM');
+            const message = getApiErrorMessage(err, 'Failed to update GM');
+            error.value = message;
+            toast.error(message);
             console.error('Error updating GM:', err);
             return null;
         } finally {
@@ -95,8 +98,9 @@ export function useCustomGMs() {
                 return false;
             }
         } catch (err: any) {
-            error.value = err.message || 'Failed to delete GM';
-            toast.error('Failed to delete GM');
+            const message = getApiErrorMessage(err, 'Failed to delete GM');
+            error.value = message;
+            toast.error(message);
             console.error('Error deleting GM:', err);
             return false;
         } finally {
