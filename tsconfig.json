@@ -1,19 +1,19 @@
 {
     // https://github.com/vuejs/tsconfig/blob/main/tsconfig.json
-    // Not extending @vue/tsconfig/tsconfig.web.json: that package is pinned to
-    // the 0.1.x line (package.json "@vue/tsconfig": "^0.1.3"), whose base
-    // tsconfig sets `importsNotUsedAsValues`/`preserveValueImports`. TypeScript
-    // extends-merges compilerOptions per key with no way to unset an inherited
-    // key, and TS 5.6+ removed those two options outright (TS5102), so any
-    // fresh `npm install` (typescript resolves to 5.9.3 per package-lock.json)
-    // fails type-check before this project's own code is even considered. The
-    // handful of settings actually needed from that base are inlined below,
-    // with `verbatimModuleSyntax` replacing the two removed options as
-    // TypeScript's own error message recommends.
+    // These options are inlined rather than inherited from
+    // @vue/tsconfig/tsconfig.dom.json. The original reason is obsolete: that
+    // package used to be pinned to 0.1.x, whose base set the since-removed
+    // `importsNotUsedAsValues`/`preserveValueImports` (TS5102), which an
+    // `extends` cannot unset. It now resolves to 0.9.1 and no longer sets
+    // them, so extending it (as tsconfig.app.json already does) would work and
+    // would drop most of the duplication below. Left inlined for now — the
+    // switch changes `lib` (ES2022 vs ESNext) and adds `jsxImportSource`,
+    // `moduleDetection: force` and `allowImportingTsExtensions`, so it wants
+    // its own verification pass.
     "include": ["env.d.ts", "src/**/*", "src/**/*.vue"],
     "compilerOptions": {
         "module": "ESNext",
-        "moduleResolution": "Node",
+        "moduleResolution": "Bundler",
         "resolveJsonModule": true,
         "useDefineForClassFields": true,
         "isolatedModules": true,
@@ -32,15 +32,11 @@
         // See <https://github.com/vuejs/vue-cli/pull/5688>
         "skipLibCheck": true,
         "noImplicitAny": false,
-        "baseUrl": ".",
+        // No `baseUrl`: deprecated in TS 6 (TS5101). `paths` patterns resolve
+        // relative to this file's directory without it.
         "paths": {
             "@/*": ["./src/*"],
         },
         "jsx": "preserve",
     },
-    "references": [
-        {
-            "path": "./tsconfig.config.json",
-        },
-    ],
 }
