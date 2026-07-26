@@ -1,0 +1,33 @@
+name: ci
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # No `version:` here — action-setup reads the pnpm version from the
+      # "packageManager" field in package.json. Specifying both errors with
+      # ERR_PNPM_BAD_PM_VERSION.
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          # Matches local dev (v24.x). Node 20 is EOL as of April 2026.
+          node-version: 24
+          cache: pnpm
+
+      # --frozen-lockfile is the guard that matters: it fails if package.json
+      # and pnpm-lock.yaml have drifted apart, which is exactly how a stale
+      # lockfile silently reintroduced a bad `typescript` pin before.
+      - run: pnpm install --frozen-lockfile
+
+      - run: pnpm type-check
+
+      - run: pnpm build
