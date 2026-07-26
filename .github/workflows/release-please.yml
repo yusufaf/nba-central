@@ -16,4 +16,9 @@ jobs:
     steps:
       - uses: google-github-actions/release-please-action@v4
         with:
-          release-type: node
+          # Manifest mode. `release-type` now lives in release-please-config.json
+          # alongside bump-minor-pre-major, which keeps this pre-1.0 project in
+          # the 0.x line: breaking changes bump the minor rather than jumping to
+          # 1.0.0. Cutting 1.0.0 should be a deliberate decision, not a default.
+          config-file: release-please-config.json
+          manifest-file: .release-please-manifest.json
