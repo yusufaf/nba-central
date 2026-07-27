@@ -8,9 +8,11 @@ import { Separator } from '@/components/ui/separator';
 import { X, UserPlus, Plus, BarChart3, ArrowLeftRight, GitCompareArrows } from 'lucide-vue-next';
 import { getWikipediaUrl } from '@/constants/utilities';
 import ExternalLinksMenu from '@/components/ExternalLinksMenu.vue';
+import { ratingTier, ratingSourceLabel } from '@/constants/ratings';
+import type { RatingSource } from '@/models/types';
 
 interface Player {
-  id: number;
+  id: string;
   fullName: string;
   first_name: string;
   last_name: string;
@@ -21,6 +23,9 @@ interface Player {
   };
   playerStats?: any[];
   isCustom?: boolean;
+  rating?: number;
+  ratingSource?: RatingSource;
+  overallRating?: number;
 }
 
 interface Props {
@@ -50,6 +55,16 @@ const playerInitials = computed(() => {
   return `${props.player.first_name[0]}${props.player.last_name[0]}`;
 });
 
+// Real players carry a 2K rating; custom players carry the one the user typed.
+// Both are 0-99, so the card renders them the same way.
+const displayRating = computed(
+  () => props.player?.rating ?? props.player?.overallRating ?? null,
+);
+
+const ratingLabel = computed(() =>
+  ratingSourceLabel(props.player?.isCustom ? undefined : props.player?.ratingSource),
+);
+
 const averageStats = computed(() => {
   if (!props.player?.playerStats?.length) return null;
   const latestSeason = props.player.playerStats[0];
@@ -66,9 +81,19 @@ const averageStats = computed(() => {
     <Card class="player-card">
       <CardHeader class="card-header">
         <div class="flex items-center justify-between w-full">
-          <Badge variant="secondary" class="position-badge">
-            {{ position || `Slot ${slotIndex}` }}
-          </Badge>
+          <div class="flex items-center gap-2 min-w-0">
+            <Badge variant="secondary" class="position-badge">
+              {{ position || `Slot ${slotIndex}` }}
+            </Badge>
+            <span
+              v-if="hasPlayer && displayRating !== null"
+              class="rating-badge"
+              :class="`rating-${ratingTier(displayRating)}`"
+              :title="ratingLabel"
+            >
+              {{ displayRating }}
+            </span>
+          </div>
           <Button
             v-if="hasPlayer"
             @click.stop="emit('remove', slotIndex)"
@@ -207,6 +232,46 @@ const averageStats = computed(() => {
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.025em;
+}
+
+/* Rating Badge */
+.rating-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 2rem;
+  padding: 0.125rem 0.375rem;
+  border-radius: 0.25rem;
+  border: 0.0625rem solid;
+  font-size: 0.875rem;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.2;
+  cursor: default;
+}
+
+.rating-elite {
+  color: hsl(45 93% 58%);
+  border-color: hsl(45 93% 58% / 0.5);
+  background-color: hsl(45 93% 58% / 0.12);
+}
+
+.rating-great {
+  color: hsl(142 71% 45%);
+  border-color: hsl(142 71% 45% / 0.5);
+  background-color: hsl(142 71% 45% / 0.12);
+}
+
+.rating-good {
+  color: hsl(199 89% 55%);
+  border-color: hsl(199 89% 55% / 0.5);
+  background-color: hsl(199 89% 55% / 0.12);
+}
+
+.rating-average {
+  color: hsl(var(--muted-foreground));
+  border-color: hsl(var(--muted-foreground) / 0.4);
+  background-color: hsl(var(--muted-foreground) / 0.1);
 }
 
 .main-content {

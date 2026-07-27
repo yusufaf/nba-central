@@ -1,8 +1,11 @@
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue';
 import { useDebounceFn } from '@vueuse/core';
-import axios from 'axios';
 import type { DrawerSide } from '@/models/types';
+import type { PlayerRecord } from '@/models/api';
+import { dataApi } from '@/network/api';
+import { ratingTier, ratingSourceLabel } from '@/constants/ratings';
+import { playsPosition } from '@/constants/positions';
 import { useCustomPlayers } from '@/composables/useCustomPlayers';
 import {
   Sheet,
@@ -18,7 +21,6 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { BDL_API_PREFIX } from '@/constants/constants';
 import {
   Search,
   ArrowUp,
@@ -49,7 +51,7 @@ const emit = defineEmits<{
 }>();
 
 const search = ref('');
-const searchList = ref<any[]>([]);
+const searchList = ref<PlayerRecord[]>([]);
 const searchLoading = ref(false);
 const selectedPosition = ref<string>('All');
 const selectedSort = ref<string>('');
@@ -64,7 +66,11 @@ const showDeleteDialog = ref<boolean>(false);
 const playerToDelete = ref<any>(null);
 
 const POSITION_FILTERS = ['All', 'PG', 'SG', 'SF', 'PF', 'C'];
-const SORT_OPTIONS = ['Alphabetic', 'Team Name'];
+const SORT_OPTIONS = ['Alphabetic', 'Team Name', 'Rating'];
+
+// The pool is ~5.4k players; a name search that matches hundreds of them is a
+// browsing action, not a lookup. Cap what we pull back per keystroke batch.
+const SEARCH_RESULT_LIMIT = 100;
 
 const sheetModel = computed({
   get: () => props.open,
@@ -74,6 +80,9 @@ const sheetModel = computed({
 const toggleSortDirection = () => {
   sortDirection.value = sortDirection.value === 'asc' ? 'desc' : 'asc';
 };
+
+const playerRating = (player: any): number | null =>
+  player.rating ?? player.overallRating ?? null;
 
 const searchListResults = computed(() => {
   // Map custom players to match the structure
@@ -118,7 +127,7 @@ const searchListResults = computed(() => {
 
   // Filter by position
   if (selectedPosition.value && selectedPosition.value !== 'All') {
-    results = results.filter(p => p.position === selectedPosition.value);
+    results = results.filter(p => playsPosition(p, selectedPosition.value));
   }
 
   // Sort
@@ -131,6 +140,17 @@ const searchListResults = computed(() => {
       const aTeam = a.team?.full_name || '';
       const bTeam = b.team?.full_name || '';
       return sortModifier * aTeam.localeCompare(bTeam);
+    });
+  } else if (selectedSort.value === 'Rating') {
+    // Unrated players sink in both directions - most of the pool has no 2K
+    // rating, and an absent rating isn't a zero.
+    results.sort((a, b) => {
+      const aRating = playerRating(a);
+      const bRating = playerRating(b);
+      if (aRating === null && bRating === null) return 0;
+      if (aRating === null) return 1;
+      if (bRating === null) return -1;
+      return sortModifier * (aRating - bRating);
     });
   }
 
@@ -147,20 +167,18 @@ watch(
       searchList.value = [];
 
       try {
-        let next_page = null;
-        do {
-          const page: number | string = next_page ? next_page : '';
-          const response: any = await axios.get(
-            `${BDL_API_PREFIX}/players?per_page=50&search=${searchedPlayer}&page=${page}`,
-          );
-          const { data, meta } = response.data;
-          next_page = meta.next_page;
-          searchList.value = [...searchList.value, ...data];
-        } while (next_page != null);
+        const { data } = await dataApi.getPlayers({
+          search: searchedPlayer,
+          limit: SEARCH_RESULT_LIMIT,
+        });
+        // Drop the response if the user typed again while it was in flight.
+        if (search.value !== searchedPlayer) return;
+        searchList.value = data;
       } catch (error) {
+        if (search.value !== searchedPlayer) return;
         console.error('Error searching players: ', error);
       } finally {
-        searchLoading.value = false;
+        if (search.value === searchedPlayer) searchLoading.value = false;
       }
     } else {
       searchList.value = [];
@@ -386,12 +404,20 @@ const handleDeletePlayer = async () => {
                   </Badge>
                 </div>
                 <p class="text-sm text-muted-foreground truncate mb-2">
-                  {{ player.team?.full_name || (player.isCustom ? `Overall: ${player.overallRating}` : 'N/A') }}
+                  {{ player.team?.full_name || (player.isCustom ? 'Custom player' : 'Free Agent / Retired') }}
                 </p>
                 <div class="flex items-center gap-2">
                   <Badge variant="secondary" class="text-xs font-semibold bg-primary/25 text-primary border border-primary/40 px-2 py-0.5">
                     {{ player.position }}
                   </Badge>
+                  <span
+                    v-if="playerRating(player) !== null"
+                    class="rating-chip"
+                    :class="`rating-${ratingTier(playerRating(player)!)}`"
+                    :title="ratingSourceLabel(player.isCustom ? undefined : player.ratingSource)"
+                  >
+                    {{ playerRating(player) }}
+                  </span>
                   <span class="text-xs text-muted-foreground font-medium">
                     {{ player.heightAndWeight }}
                   </span>
@@ -461,6 +487,45 @@ const handleDeletePlayer = async () => {
 }
 
 .player-item:hover {
-  transform: translateX(4px);
+  transform: translateX(0.25rem);
+}
+
+/* NBA 2K rating chip - bands match PlayerSlot's card badge */
+.rating-chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.75rem;
+  padding: 0.0625rem 0.3125rem;
+  border-radius: 0.25rem;
+  border: 0.0625rem solid;
+  font-size: 0.75rem;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  cursor: default;
+}
+
+.rating-elite {
+  color: hsl(45 93% 58%);
+  border-color: hsl(45 93% 58% / 0.5);
+  background-color: hsl(45 93% 58% / 0.12);
+}
+
+.rating-great {
+  color: hsl(142 71% 45%);
+  border-color: hsl(142 71% 45% / 0.5);
+  background-color: hsl(142 71% 45% / 0.12);
+}
+
+.rating-good {
+  color: hsl(199 89% 55%);
+  border-color: hsl(199 89% 55% / 0.5);
+  background-color: hsl(199 89% 55% / 0.12);
+}
+
+.rating-average {
+  color: hsl(var(--muted-foreground));
+  border-color: hsl(var(--muted-foreground) / 0.4);
+  background-color: hsl(var(--muted-foreground) / 0.1);
 }
 </style>

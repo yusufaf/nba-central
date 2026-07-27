@@ -1,9 +1,11 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 import PlayerSlot from './PlayerSlot.vue';
+import { ratingTier, averageRating } from '@/constants/ratings';
+import type { RatingSource } from '@/models/types';
 
 interface Player {
-  id: number;
+  id: string;
   fullName: string;
   first_name: string;
   last_name: string;
@@ -13,6 +15,9 @@ interface Player {
     abbreviation: string;
   };
   playerStats?: any[];
+  rating?: number;
+  ratingSource?: RatingSource;
+  overallRating?: number;
 }
 
 interface Props {
@@ -41,6 +46,22 @@ const starterCount = computed(() => {
 const benchCount = computed(() => {
   return BENCH_INDICES.filter(i => props.selectedPlayers.has(i)).length;
 });
+
+const ratingOf = (index: number): number | undefined => {
+  const player = props.selectedPlayers.get(index);
+  return player?.rating ?? player?.overallRating;
+};
+
+// The headline number for the lineup. Averages only the starters that have a
+// rating, so an unrated player doesn't drag the team down to zero - and shows
+// how many of the five it's actually based on.
+const starterRating = computed(() =>
+  averageRating(STARTER_INDICES.map(ratingOf)),
+);
+
+const ratedStarterCount = computed(
+  () => STARTER_INDICES.filter(i => ratingOf(i) !== undefined).length,
+);
 </script>
 
 <template>
@@ -49,7 +70,18 @@ const benchCount = computed(() => {
     <div class="lineup-section">
       <div class="section-header">
         <h3 class="section-subtitle">Starting Lineup</h3>
-        <div class="starter-count">{{ starterCount }}/5</div>
+        <div class="header-meta">
+          <div
+            v-if="starterRating !== null"
+            class="team-rating"
+            :class="`rating-${ratingTier(starterRating)}`"
+            :title="`Average NBA 2K rating of ${ratedStarterCount} rated starter${ratedStarterCount === 1 ? '' : 's'}`"
+          >
+            <span class="team-rating-value">{{ starterRating }}</span>
+            <span class="team-rating-label">OVR</span>
+          </div>
+          <div class="starter-count">{{ starterCount }}/5</div>
+        </div>
       </div>
       <div class="starters-grid">
         <PlayerSlot
@@ -120,6 +152,61 @@ const benchCount = computed(() => {
   color: hsl(var(--foreground));
   letter-spacing: -0.025em;
   margin: 0;
+}
+
+.header-meta {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+/* Team Rating */
+.team-rating {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.25rem;
+  padding: 0.25rem 0.625rem;
+  border-radius: 0.375rem;
+  border: 0.0625rem solid;
+  cursor: default;
+}
+
+.team-rating-value {
+  font-size: 1.125rem;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+
+.team-rating-label {
+  font-size: 0.625rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  opacity: 0.75;
+}
+
+.team-rating.rating-elite {
+  color: hsl(45 93% 58%);
+  border-color: hsl(45 93% 58% / 0.5);
+  background-color: hsl(45 93% 58% / 0.12);
+}
+
+.team-rating.rating-great {
+  color: hsl(142 71% 45%);
+  border-color: hsl(142 71% 45% / 0.5);
+  background-color: hsl(142 71% 45% / 0.12);
+}
+
+.team-rating.rating-good {
+  color: hsl(199 89% 55%);
+  border-color: hsl(199 89% 55% / 0.5);
+  background-color: hsl(199 89% 55% / 0.12);
+}
+
+.team-rating.rating-average {
+  color: hsl(var(--muted-foreground));
+  border-color: hsl(var(--muted-foreground) / 0.4);
+  background-color: hsl(var(--muted-foreground) / 0.1);
 }
 
 .starter-count {

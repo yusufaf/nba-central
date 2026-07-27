@@ -1,3 +1,5 @@
+import type { NBA2KRating, RatingSource } from './types';
+
 // #region File API Types
 export interface InitiateMultipartUploadPayload {
     fileName: string;
@@ -102,6 +104,78 @@ export interface TeamData {
 
 export interface GetTeamLogosResponse {
     teams: TeamData[];
+}
+
+export interface GetPlayersParams {
+    search?: string;
+    position?: string;
+    sort?: 'name' | 'team' | 'rating';
+    direction?: 'asc' | 'desc';
+    minRating?: number;
+    limit?: number;
+    cursor?: string;
+}
+
+// A player record as returned by the getPlayers Lambda. `id` is the
+// Basketball-Reference id (e.g. "jamesle01"), not a number.
+export interface PlayerRecord {
+    id: string;
+    first_name: string;
+    last_name: string;
+    position: string;
+    team: {
+        full_name: string;
+        abbreviation: string;
+    };
+    height_feet: number | null;
+    height_inches: number | null;
+    weight_pounds: number | null;
+    active: boolean;
+    rating?: number;
+    ratingSource?: RatingSource;
+    // Specific positions (PG/SG/SF/PF/C) from 2K, when the player is rated.
+    positions?: string[];
+}
+
+export interface GetPlayersResponse {
+    data: PlayerRecord[];
+    nextCursor?: string | null;
+    total?: number;
+    /** Which NBA 2K release the ratings in this response come from. */
+    gameVersion?: string;
+}
+
+export interface PlayerSeasonStats {
+    season: number;
+    games_played: number;
+    min: number;
+    fgm: number;
+    fga: number;
+    fg_pct: number;
+    fg3m: number;
+    fg3a: number;
+    fg3_pct: number;
+    ftm: number;
+    fta: number;
+    ft_pct: number;
+    oreb: number;
+    dreb: number;
+    reb: number;
+    ast: number;
+    stl: number;
+    blk: number;
+    turnover: number;
+    pf: number;
+    pts: number;
+}
+
+export interface GetPlayerStatsResponse {
+    data: PlayerSeasonStats[];
+    rating?: number;
+    ratingSource?: RatingSource;
+    /** Overall per NBA 2K release, newest first. Current players only. */
+    ratingHistory?: NBA2KRating[];
+    gameVersion?: string;
 }
 // #endregion
 

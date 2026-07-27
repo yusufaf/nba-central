@@ -127,7 +127,6 @@ export const PLAY_TYPES = {
 } as const;
 
 /* API */
-export const BDL_API_PREFIX = "https://www.balldontlie.io/api/v1";
 export const ESPN_SCORES_URL =
     "https://site.api.espn.com/apis/site/v2/sports/basketball/nba/scoreboard";
 export const ESPN_NEWS_URL =

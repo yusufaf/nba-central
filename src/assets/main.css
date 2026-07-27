@@ -172,6 +172,14 @@
     border-radius: 0.875rem !important;
   }
 
+  /* Opt-out for dialogs holding wide tabular data. The player stats table is
+     21 columns; at 45rem only about a third of it is reachable. Needs to beat
+     the !important above, hence the class + attribute selector. */
+  [role="dialog"].wide-dialog {
+    max-width: min(95vw, 110rem) !important;
+    padding: 2rem !important;
+  }
+
   [role="dialog"] h2 {
     font-size: 2rem !important;
     font-weight: 700 !important;
@@ -240,6 +248,17 @@
     min-height: 2.75rem !important;
     border-radius: 0.625rem !important;
     transition: all 0.2s ease !important;
+  }
+
+  /* Not every button in a dialog is an action button. Controls that sit inline
+     with text - sortable table headers, for one - must keep the surrounding
+     text's metrics; action-button padding adds 4rem per table column. */
+  [role="dialog"] button[data-inline-control] {
+    font-weight: inherit !important;
+    font-size: inherit !important;
+    padding: 0 !important;
+    min-height: 0 !important;
+    border-radius: 0.125rem !important;
   }
 
   /* Dropdown Menu Styling */

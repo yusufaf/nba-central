@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed } from "vue";
+import { ref, computed, watch } from "vue";
 import { toast } from 'vue-sonner';
 import axios from "axios";
 import PageTitle from "@/components/PageTitle.vue";
@@ -11,8 +11,9 @@ import CoachSection from "@/components/TeamBuilder/CoachSection.vue";
 import ArenaSection from "@/components/TeamBuilder/ArenaSection.vue";
 import GMSection from "@/components/TeamBuilder/GMSection.vue";
 import PlayerComparison from "@/components/TeamBuilder/PlayerComparison.vue";
-import { BDL_API_PREFIX } from "@/constants/constants";
-import type { Team, DrawerSide } from "@/models/types";
+import { dataApi } from "@/network/api";
+import type { Team, DrawerSide, NBA2KRating } from "@/models/types";
+import type { GetPlayerStatsResponse } from "@/models/api";
 
 /* Team Metadata */
 const teamName = ref<string>("");
@@ -34,6 +35,8 @@ const showGMDrawer = ref<boolean>(false);
 const selectedPlayerIndex = ref<number | null>(null);
 const selectedPlayersData = ref<Map<any, any>>(new Map());
 const selectedPlayerStats = ref<any>([]);
+const selectedPlayerRatingHistory = ref<NBA2KRating[]>([]);
+const selectedPlayerName = ref<string>("");
 
 const cardsFlipped = ref<Map<any, boolean>>(new Map());
 const showPlayerStatsDialog = ref<boolean>(false);
@@ -43,10 +46,20 @@ const selectedDrawerSide = ref<DrawerSide>("right");
 const headerExpanded = ref<boolean>(false);
 
 const selectedPlayersForComparison = ref<Set<any>>(new Set());
+const showPlayerComparison = ref<boolean>(false);
+
 const selectedComparePlayers = computed(() => {
     const comparePlayers = [...selectedPlayersForComparison.value];
     return comparePlayers.slice(0, 2);
 });
+
+// The full player objects - each carries its own playerStats array, which is
+// what the comparison averages. Indexing anything by slot number here is a bug.
+const comparisonPlayers = computed(() =>
+    selectedComparePlayers.value.map((slotIndex) =>
+        selectedPlayersData.value.get(slotIndex),
+    ),
+);
 
 const playerCount = computed(() => selectedPlayersData.value.size);
 const starterCount = computed(() => {
@@ -66,37 +79,20 @@ const playerStatsData = computed(() => {
     });
 });
 
-const getPlayerStats = async (playerId: number) => {
-    const MAX_SEASON = 1983;
-    const MAX_SEASONS_MISSED = 5;
+// One request for the player's whole career (most recent season first) plus
+// their NBA 2K rating history, which only this endpoint returns.
+const getPlayerStats = async (
+    playerId: string,
+): Promise<GetPlayerStatsResponse> => {
+    if (!playerId) return { data: [] };
 
-    let season = 2022;
-    let seasonsWithNoData = 0;
-
-    const playerStats: any[] = [];
-    while (season !== MAX_SEASON && seasonsWithNoData !== MAX_SEASONS_MISSED) {
-        const url = `${BDL_API_PREFIX}/season_averages?season=${season}&player_ids[]=${playerId}`;
-        try {
-            const response = await axios.get(url);
-            const responseData = response.data;
-
-            if (responseData.data.length === 0) {
-                seasonsWithNoData++;
-                if (seasonsWithNoData === MAX_SEASONS_MISSED) {
-                    break;
-                }
-            } else {
-                const playerSeasonAvgs = responseData.data[0];
-                playerStats.push(playerSeasonAvgs);
-            }
-        } catch (err) {
-            console.error(err);
-        }
-
-        season--;
+    try {
+        const response = await dataApi.getPlayerStats(playerId);
+        return { ...response, data: response.data ?? [] };
+    } catch (err) {
+        console.error("Error fetching player stats: ", err);
+        return { data: [] };
     }
-
-    return playerStats;
 };
 
 const addPlayer = (index: number) => {
@@ -110,8 +106,9 @@ const addPlayerFromDialog = async (player: any) => {
     toast.promise(
         async () => {
             const { id } = player;
-            const playerStats = await getPlayerStats(id);
-            const updatedPlayerData = { ...player, playerStats };
+            const { data: playerStats, ratingHistory } =
+                await getPlayerStats(id);
+            const updatedPlayerData = { ...player, playerStats, ratingHistory };
             selectedPlayersData.value.set(playerIndex, updatedPlayerData);
             cardsFlipped.value.set(playerIndex, false);
         },
@@ -141,15 +138,19 @@ const flipCard = (n: number) => {
 
 const viewPlayerStats = (index: number) => {
     selectedPlayerIndex.value = index;
-    const { playerStats } = selectedPlayersData.value.get(index);
-    const modifiedPlayerStats = playerStats.map((item: any, idx: number) => {
-        return {
-            ...item,
-            id: idx,
-        };
-    });
+    const player = selectedPlayersData.value.get(index);
+    const modifiedPlayerStats = player.playerStats.map(
+        (item: any, idx: number) => {
+            return {
+                ...item,
+                id: idx,
+            };
+        },
+    );
 
     selectedPlayerStats.value = modifiedPlayerStats;
+    selectedPlayerRatingHistory.value = player.ratingHistory ?? [];
+    selectedPlayerName.value = player.fullName ?? "";
     showPlayerStatsDialog.value = true;
 };
 
@@ -169,7 +170,19 @@ const togglePlayerInComparison = (n: number) => {
         selectedPlayersForComparison.value.add(n);
         toast.info(`Added ${playerName} to comparison`);
     }
+
+    // Two picked is the whole gesture - open the comparison rather than making
+    // the user hunt for another control.
+    if (selectedPlayersForComparison.value.size === 2) {
+        showPlayerComparison.value = true;
+    }
 };
+
+// Clear the picks on close, otherwise the pair is still selected and the dialog
+// reopens the moment anything re-evaluates.
+watch(showPlayerComparison, (open) => {
+    if (!open) selectedPlayersForComparison.value.clear();
+});
 
 const resetTeam = () => {
     selectedPlayersData.value.clear();
@@ -280,13 +293,15 @@ const saveTeam = () => {
         <PlayerStatsDialog
             v-model:visible="showPlayerStatsDialog"
             :data="playerStatsData"
+            :rating-history="selectedPlayerRatingHistory"
+            :player-name="selectedPlayerName"
         />
 
         <!-- Player Comparison -->
         <PlayerComparison
-            v-if="selectedPlayersForComparison.size === 2"
-            :player1Data="playerStatsData[selectedComparePlayers[0]]"
-            :player2Data="playerStatsData[selectedComparePlayers[1]]"
+            v-model:visible="showPlayerComparison"
+            :player1="comparisonPlayers[0]"
+            :player2="comparisonPlayers[1]"
         />
     </main>
 </template>

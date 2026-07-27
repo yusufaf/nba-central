@@ -14,6 +14,9 @@ import type {
     CreateTeamResponse,
     GetTeamLogosResponse,
     GetNewsResponse,
+    GetPlayersParams,
+    GetPlayersResponse,
+    GetPlayerStatsResponse,
 } from '@/models/api';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '';
@@ -91,6 +94,24 @@ export const teamApi = {
 export const dataApi = {
     getTeamLogos: async (): Promise<GetTeamLogosResponse> => {
         const response = await api.post('/api/data/get-team-logos');
+        return response.data;
+    },
+    getPlayers: async (
+        params: GetPlayersParams = {},
+    ): Promise<GetPlayersResponse> => {
+        const response = await api.get<GetPlayersResponse>(
+            '/api/data/get-players',
+            { params },
+        );
+        return response.data;
+    },
+    getPlayerStats: async (
+        playerId: string,
+    ): Promise<GetPlayerStatsResponse> => {
+        const response = await api.get<GetPlayerStatsResponse>(
+            '/api/data/get-player-stats',
+            { params: { playerId } },
+        );
         return response.data;
     },
 };

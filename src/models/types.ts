@@ -61,9 +61,19 @@ export type NBATeam = {
     name: string;
 };
 
+// Which pool of the NBA 2K roster a player's rating was taken from. Active
+// players match the current-game roster; retired players fall back to their
+// All-Time franchise entry, then to the best of their Classic-team versions.
+export type RatingSource = 'current' | 'all-time' | 'classic-peak';
+
+export type NBA2KRating = {
+    gameVersion: string;
+    overall: number;
+};
+
 export type Player = {
-    // API player fields (from BallDontLie API - snake_case)
-    id?: number;
+    // API player fields (snake_case) - id is the Basketball-Reference id
+    id?: string;
     first_name?: string;
     last_name?: string;
     fullName?: string;
@@ -75,6 +85,11 @@ export type Player = {
         full_name?: string;
         abbreviation?: string;
     };
+    active?: boolean;
+    // NBA 2K rating overlay - absent when the player isn't rated in 2K
+    rating?: number;
+    ratingSource?: RatingSource;
+    ratingHistory?: NBA2KRating[];
     // Custom player fields (camelCase)
     isCustom?: boolean;
     playerUUID?: string;
