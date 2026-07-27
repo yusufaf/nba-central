@@ -1,48 +1,53 @@
 {
-    "name": "team-builder-cdk",
-    "version": "0.1.0",
-    "bin": {
-        "cdk": "bin/cdk.js"
-    },
-    "scripts": {
-        "build": "tsc",
-        "watch": "tsc -w",
-        "test": "jest",
-        "cdk": "cdk"
-    },
-    "dependencies": {
-        "@aws-sdk/client-cognito-identity-provider": "^3.554.0",
-        "@aws-sdk/client-dynamodb": "^3.540.0",
-        "@aws-sdk/client-lambda": "^3.540.0",
-        "@aws-sdk/client-s3": "^3.540.0",
-        "@aws-sdk/client-ses": "^3.556.0",
-        "@aws-sdk/lib-dynamodb": "^3.540.0",
-        "@aws-sdk/s3-request-presigner": "^3.540.0",
-        "aws-cdk-lib": "^2.211.0",
-        "aws-jwt-verify": "^4.0.1",
-        "cheerio": "1.0.0-rc.12",
-        "constructs": "^10.3.0",
-        "dotenv": "^16.4.5",
-        "jsdom": "^24.0.0",
-        "node-fetch": "^3.3.2",
-        "source-map-support": "^0.5.21"
-    },
-    "devDependencies": {
-        "@eslint/js": "^9.33.0",
-        "@types/aws-lambda": "^8.10.136",
-        "@types/jest": "^29.5.12",
-        "@types/jsdom": "^21.1.6",
-        "@types/node": "^20.12.2",
-        "aws-cdk": "^2.134.0",
-        "esbuild": "^0.20.2",
-        "eslint": "^9.33.0",
-        "globals": "^16.3.0",
-        "jest": "^29.7.0",
-        "prettier": "3.6.2",
-        "ts-jest": "^29.1.2",
-        "ts-node": "^10.9.2",
-        "tsconfig-paths": "^4.2.0",
-        "typescript": "^5.9.2",
-        "typescript-eslint": "^8.39.1"
-    }
+  "name": "team-builder-cdk",
+  "version": "0.1.0",
+  "bin": {
+    "cdk": "bin/cdk.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "watch": "tsc -w",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage",
+    "cdk": "cdk",
+    "prepare": "husky"
+  },
+  "dependencies": {
+    "@aws-sdk/client-cognito-identity-provider": "^3.554.0",
+    "@aws-sdk/client-dynamodb": "^3.540.0",
+    "@aws-sdk/client-lambda": "^3.540.0",
+    "@aws-sdk/client-s3": "^3.540.0",
+    "@aws-sdk/client-ses": "^3.556.0",
+    "@aws-sdk/lib-dynamodb": "^3.540.0",
+    "@aws-sdk/s3-request-presigner": "^3.540.0",
+    "aws-cdk-lib": "^2.254.0",
+    "aws-jwt-verify": "^4.0.1",
+    "cheerio": "1.0.0-rc.12",
+    "constructs": "^10.6.0",
+    "dotenv": "^16.4.5",
+    "jsdom": "^24.0.0",
+    "node-fetch": "^3.3.2",
+    "source-map-support": "^0.5.21"
+  },
+  "devDependencies": {
+    "@commitlint/cli": "^20.5.3",
+    "@commitlint/config-conventional": "^20.5.3",
+    "@eslint/js": "^9.33.0",
+    "@types/aws-lambda": "^8.10.136",
+    "@types/jsdom": "^21.1.6",
+    "@types/node": "^20.12.2",
+    "@vitest/coverage-v8": "2.1.9",
+    "aws-cdk": "^2.1122.0",
+    "esbuild": "^0.20.2",
+    "eslint": "^9.33.0",
+    "globals": "^16.3.0",
+    "husky": "^9.1.7",
+    "prettier": "3.6.2",
+    "ts-node": "^10.9.2",
+    "tsconfig-paths": "^4.2.0",
+    "typescript": "^5.9.2",
+    "typescript-eslint": "^8.39.1",
+    "vitest": "2.1.9"
+  }
 }

@@ -6,6 +6,10 @@
         "lib": ["es2020", "dom"],
         "strict": true,
         "noEmit": true,
+        // @types/node 20 predates the TS 5.7 Buffer/Uint8Array generic change,
+        // so checking its .d.ts files fails on Buffer vs Uint8Array<ArrayBuffer>
+        // (and cascades into aws-jwt-verify). We don't type-check deps anyway.
+        "skipLibCheck": true,
         "esModuleInterop": true,
         "declaration": true,
         "noImplicitAny": false,
@@ -30,5 +34,5 @@
             "models/*": ["./models/*"]
         }
     },
-    "exclude": ["node_modules", "cdk.out"]
+    "exclude": ["node_modules", "cdk.out", "vitest.config.ts", "test"]
 }
