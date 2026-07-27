@@ -19,7 +19,14 @@ export const handler: Handler = async (
 ): Promise<APIGatewayProxyResultV2> => {
 	console.log(JSON.stringify({ event, context }, null, 4));
 
-	const { sub: userUUID } = event.requestContext.authorizer.lambda;
+	const userUUID = event.requestContext.authorizer?.lambda?.sub;
+	if (!userUUID) {
+		const response: ListCustomPlayersResponse = {
+			success: true,
+			data: { customPlayers: [] },
+		};
+		return { statusCode: 200, body: JSON.stringify(response) };
+	}
 
 	try {
 		const queryCommand = new QueryCommand({
