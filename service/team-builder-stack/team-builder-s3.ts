@@ -75,6 +75,7 @@ export class TeamBuilderS3 extends Construct {
             bucketName,
             blockPublicAccess: BlockPublicAccess.BLOCK_ALL,
             removalPolicy: RemovalPolicy.RETAIN,
+            versioned: true,
             cors,
         });
         return s3Bucket;

@@ -32,6 +32,11 @@ import apiAuthorizer from "../lambdas/apiAuthorizer/index";
 import setCoachesData from "../lambdas/setCoachesData";
 import setExecsData from "../lambdas/setExecsData";
 import setArenasData from "../lambdas/setArenasData";
+import setHistoricalLogosData from "../lambdas/setHistoricalLogosData";
+import setPlayersData from "../lambdas/setPlayersData";
+import setPlayerRatingsData from "../lambdas/setPlayerRatingsData";
+import fetchNewsCron from "../lambdas/fetchNewsCron";
+import getNews from "../lambdas/getNews";
 
 type CreateLambdaProxyIntegrationProps = {
 	lambda: LambdaFunction;
@@ -148,6 +153,10 @@ export class TeamBuilderAPI extends Construct {
 		setCoachesData({ ...lambdaProps });
 		setExecsData({ ...lambdaProps });
 		setArenasData({ ...lambdaProps });
+		setHistoricalLogosData({ ...lambdaProps });
+		setPlayersData({ ...lambdaProps });
+		setPlayerRatingsData({ ...lambdaProps });
+		fetchNewsCron({ ...lambdaProps });
 
 		const authorizerNameAndID = `${this.prefix}-authorizer`;
 		const apiAuthorizerLambda = apiAuthorizer({ ...lambdaProps });
@@ -183,7 +192,11 @@ export class TeamBuilderAPI extends Construct {
 		const DATA_PREFIX = `/api/data`;
 		const CUSTOM_ENTITIES_PREFIX = `/api/custom-entities`;
 
-		const FILES_ROUTES = [
+		const FILES_ROUTES: {
+			route: string;
+			lambdaName: string;
+			methods?: HttpMethod[] | undefined;
+		}[] = [
 			{
 				route: `${FILES_PREFIX}/initiate-multipart-upload`,
 				lambdaName: "initiateMultipartUpload",
@@ -228,10 +241,37 @@ export class TeamBuilderAPI extends Construct {
 			},
 		];
 
-		const DATA_ROUTES = [
+		const DATA_ROUTES: {
+			route: string;
+			lambdaName: string;
+			methods?: HttpMethod[] | undefined;
+		}[] = [
 			{
 				route: `${DATA_PREFIX}/get-team-logos`,
 				lambdaName: "getTeamLogos",
+				methods: [HttpMethod.GET],
+			},
+			{
+				route: `${DATA_PREFIX}/get-players`,
+				lambdaName: "getPlayers",
+				methods: [HttpMethod.GET],
+			},
+			{
+				route: `${DATA_PREFIX}/get-player-stats`,
+				lambdaName: "getPlayerStats",
+				methods: [HttpMethod.GET],
+			},
+		];
+
+		const NEWS_ROUTES: {
+			route: string;
+			lambdaName: string;
+			methods?: HttpMethod[] | undefined;
+		}[] = [
+			{
+				route: `/api/news/get`,
+				lambdaName: "getNews",
+				methods: [HttpMethod.GET],
 			},
 		];
 
@@ -310,6 +350,7 @@ export class TeamBuilderAPI extends Construct {
 			...USERS_ROUTES,
 			...TEAMS_ROUTES,
 			...DATA_ROUTES,
+			...NEWS_ROUTES,
 			...CUSTOM_ENTITIES_ROUTES,
 		];
 
@@ -351,6 +392,8 @@ export class TeamBuilderAPI extends Construct {
 				"dynamodb:PutItem",
 				"dynamodb:UpdateItem",
 				"dynamodb:DeleteItem",
+				"dynamodb:BatchWriteItem",
+				"dynamodb:BatchGetItem",
 			],
 			resources: dynamoTableResources,
 		});

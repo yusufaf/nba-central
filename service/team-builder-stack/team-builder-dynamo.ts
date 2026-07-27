@@ -40,6 +40,7 @@ export class TeamBuilderDynamoDB extends Construct {
 			pointInTimeRecoverySpecification: {
 				pointInTimeRecoveryEnabled: true,
 			},
+			timeToLiveAttribute: "ttl",
 		});
 
 		if (addGSIs) {

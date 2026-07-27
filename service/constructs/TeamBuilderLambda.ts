@@ -104,6 +104,12 @@ export class TeamBuilderLambda extends Construct {
 					layerARNLookup[layerName],
 				),
 			);
+
+			// Note: layer-provided packages are deliberately NOT marked
+			// external. node-fetch v3 is ESM-only, so requiring it from the
+			// layer at runtime fails with ERR_REQUIRE_ESM - esbuild has to
+			// bundle it into the CommonJS output instead. The layers stay
+			// attached, but the bundle is what actually gets used.
 			nodejsFunctionProps = {
 				...nodejsFunctionProps,
 				layers: layerVersions,

@@ -65,6 +65,25 @@ Access Patterns:
         };
         ```
 
+- News Aggregator
+    - PK: `NEWS`
+    - SK: `PUBLISHED_AT#${publishedAt}#ID#${id}`
+    - Use: Store aggregated news articles from various sources (ESPN, Reddit, Bluesky).
+    - Data: `{ id, source, headline, url, author, publishedAt, thumbnailUrl, summary, ttl }`
+    - Common Queries:
+        ```typescript
+        // Get newest articles first
+        QueryInput = {
+        	TableName: "team-builder-development-main",
+        	KeyConditionExpression: "PK = :pk",
+        	ExpressionAttributeValues: {
+        		":pk": "NEWS",
+        	},
+            ScanIndexForward: false, // newest first based on SK
+            Limit: 100,
+        };
+        ```
+
 ### team-builder-{deploymentType}-users
 
 Access Patterns:
