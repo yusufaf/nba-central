@@ -28,7 +28,7 @@ export const handler: Handler = async (
 
         const tbodyElement = $("#executives-index > tbody");
         console.log("Tbody\n", tbodyElement);
-        const data = [];
+        const data: { [key: string]: any }[] = [];
         for (const tr of tbodyElement.children()) {
             const trElement = $(tr);
             if (trElement.hasClass("thead")) {

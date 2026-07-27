@@ -56,7 +56,13 @@ export const handler: Handler = async (
 		const theadChildren = theadElement.children();
 		const headerRow = theadChildren[1];
 
-		const attributes = [];
+		// Annotated because noImplicitAny is off, which makes a bare `[]`
+		// infer as never[] rather than an evolving any[].
+		const attributes: {
+			description: string;
+			label: string;
+			property: string | undefined;
+		}[] = [];
 		for (const th of headerRow.children) {
 			const thElement = $(th);
 			const dataStatValue = thElement.data("stat") as string;
@@ -76,7 +82,7 @@ export const handler: Handler = async (
 		}
 
 		const tbodyElement = $("#coaches > tbody");
-		const data = [];
+		const data: { [key: string]: any }[] = [];
 		for (const tr of tbodyElement.children()) {
 			const trElement = $(tr);
 			if (trElement.hasClass("thead")) {

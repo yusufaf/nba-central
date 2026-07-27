@@ -45,8 +45,11 @@ export const handler: Handler = async (
 
 		await docClient.send(deleteCommand);
 
+		// `data` is void here, but the discriminated union still requires the
+		// key. JSON.stringify drops it, so the wire format is unchanged.
 		const response: DeleteCustomGMResponse = {
 			success: true,
+			data: undefined,
 		};
 		return {
 			statusCode: 200,
