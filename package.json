@@ -1,6 +1,7 @@
 {
   "name": "team-builder-cdk",
   "version": "0.1.0",
+  "packageManager": "pnpm@10.24.0",
   "bin": {
     "cdk": "bin/cdk.js"
   },
