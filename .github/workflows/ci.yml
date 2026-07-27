@@ -30,4 +30,8 @@ jobs:
 
       - run: pnpm type-check
 
+      # Runs before build: a failing unit test should fail the job without
+      # waiting on the slower Vite production build.
+      - run: pnpm test
+
       - run: pnpm build
