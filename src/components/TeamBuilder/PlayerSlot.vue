@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Separator } from '@/components/ui/separator';
-import { X, UserPlus, Plus, BarChart3, ArrowLeftRight, GitCompareArrows } from 'lucide-vue-next';
+import { X, UserPlus, Plus, BarChart3, ArrowLeftRight, GitCompareArrows, GripVertical } from 'lucide-vue-next';
 import { getWikipediaUrl } from '@/constants/utilities';
 import ExternalLinksMenu from '@/components/ExternalLinksMenu.vue';
 import { ratingTier, ratingSourceLabel } from '@/constants/ratings';
@@ -33,12 +33,21 @@ interface Props {
   player?: Player | null;
   position?: string;
   isFlipped?: boolean;
+  isDragging?: boolean;
+  isDropTarget?: boolean;
+  isPickedUp?: boolean;
+  /** True while some card - anywhere in the roster - is held by the keyboard flow. */
+  isPickupActive?: boolean;
 }
 
 const props = withDefaults(defineProps<Props>(), {
   player: null,
   position: undefined,
   isFlipped: false,
+  isDragging: false,
+  isDropTarget: false,
+  isPickedUp: false,
+  isPickupActive: false,
 });
 
 const emit = defineEmits<{
@@ -47,9 +56,21 @@ const emit = defineEmits<{
   'flip': [index: number];
   'viewStats': [index: number];
   'compare': [index: number];
+  'dragStart': [index: number, event: DragEvent];
+  'dragEnd': [];
+  'dragOver': [index: number, event: DragEvent];
+  'dragLeave': [index: number];
+  'drop': [index: number, event: DragEvent];
+  'pickup': [index: number];
 }>();
 
 const hasPlayer = computed(() => !!props.player);
+const slotLabel = computed(() => props.position || `Slot ${props.slotIndex}`);
+const moveLabel = computed(() => {
+  if (props.isPickedUp) return `Put ${props.player?.fullName} back in ${slotLabel.value}`;
+  if (props.isPickupActive) return `Swap into ${slotLabel.value}`;
+  return `Move ${props.player?.fullName} from ${slotLabel.value}`;
+});
 const playerInitials = computed(() => {
   if (!props.player) return '?';
   return `${props.player.first_name[0]}${props.player.last_name[0]}`;
@@ -77,13 +98,38 @@ const averageStats = computed(() => {
 </script>
 
 <template>
-  <div class="player-card-wrapper">
+  <div
+    class="player-card-wrapper"
+    :class="{
+      'is-draggable': hasPlayer,
+      'is-dragging': isDragging,
+      'is-drop-target': isDropTarget,
+      'is-picked-up': isPickedUp,
+    }"
+    :draggable="hasPlayer"
+    @dragstart="emit('dragStart', slotIndex, $event)"
+    @dragend="emit('dragEnd')"
+    @dragover="emit('dragOver', slotIndex, $event)"
+    @dragleave="emit('dragLeave', slotIndex)"
+    @drop="emit('drop', slotIndex, $event)"
+  >
     <Card class="player-card">
       <CardHeader class="card-header">
         <div class="flex items-center justify-between w-full">
           <div class="flex items-center gap-2 min-w-0">
+            <Button
+              v-if="hasPlayer"
+              @click.stop="emit('pickup', slotIndex)"
+              variant="ghost"
+              size="icon"
+              class="drag-handle h-7 w-7 text-muted-foreground hover:text-foreground"
+              :aria-label="moveLabel"
+              :aria-pressed="isPickedUp"
+            >
+              <GripVertical class="w-4 h-4" />
+            </Button>
             <Badge variant="secondary" class="position-badge">
-              {{ position || `Slot ${slotIndex}` }}
+              {{ slotLabel }}
             </Badge>
             <span
               v-if="hasPlayer && displayRating !== null"
@@ -124,6 +170,19 @@ const averageStats = computed(() => {
             >
               <Plus class="w-4 h-4 mr-1" />
               Add Player
+            </Button>
+            <!-- Only reachable while a card is held by the keyboard flow -
+                 pointer users drop straight onto the card. -->
+            <Button
+              v-if="isPickupActive"
+              @click.stop="emit('pickup', slotIndex)"
+              variant="outline"
+              size="sm"
+              class="add-button"
+              :aria-label="`Move held player into ${slotLabel}`"
+            >
+              <GripVertical class="w-4 h-4 mr-1" />
+              Move here
             </Button>
           </div>
         </template>
@@ -215,6 +274,51 @@ const averageStats = computed(() => {
 .player-card-wrapper:hover {
   border-color: hsl(var(--primary));
   box-shadow: 0 0 0.5rem hsla(var(--primary), 0.3);
+}
+
+/* Drag & Drop states */
+.player-card-wrapper.is-draggable {
+  cursor: grab;
+}
+
+.player-card-wrapper.is-dragging {
+  opacity: 0.4;
+  cursor: grabbing;
+}
+
+/* The card the pointer is currently over - reads as "release here". */
+.player-card-wrapper.is-drop-target {
+  border-color: hsl(var(--primary));
+  border-style: dashed;
+  box-shadow: 0 0 0.75rem hsla(var(--primary), 0.5);
+  transform: scale(1.02);
+}
+
+/* The card held by the keyboard flow, which persists between keypresses. */
+.player-card-wrapper.is-picked-up {
+  border-style: dashed;
+  border-color: hsl(var(--primary));
+  box-shadow: 0 0 0.75rem hsla(var(--primary), 0.5);
+}
+
+.drag-handle {
+  cursor: grab;
+  flex-shrink: 0;
+}
+
+.player-card-wrapper.is-dragging .drag-handle {
+  cursor: grabbing;
+}
+
+/* Drag feedback is a transform; honour reduced-motion by dropping it. */
+@media (prefers-reduced-motion: reduce) {
+  .player-card-wrapper {
+    transition: none;
+  }
+
+  .player-card-wrapper.is-drop-target {
+    transform: none;
+  }
 }
 
 .player-card {

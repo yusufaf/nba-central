@@ -11,6 +11,11 @@ import CoachSection from "@/components/TeamBuilder/CoachSection.vue";
 import ArenaSection from "@/components/TeamBuilder/ArenaSection.vue";
 import GMSection from "@/components/TeamBuilder/GMSection.vue";
 import PlayerComparison from "@/components/TeamBuilder/PlayerComparison.vue";
+import {
+    useRosterDragDrop,
+    swapMapEntries,
+    swapSetMembers,
+} from "@/composables/useRosterDragDrop";
 import { dataApi } from "@/network/api";
 import type { Team, DrawerSide, NBA2KRating } from "@/models/types";
 import type { GetPlayerStatsResponse } from "@/models/api";
@@ -122,6 +127,8 @@ const addPlayerFromDialog = async (player: any) => {
 
 const deletePlayer = (index: number) => {
     const player = selectedPlayersData.value.get(index);
+    // A held card that's just been removed has nothing left to drop.
+    if (pickedUpSlot.value === index) cancelPickup();
     selectedPlayersData.value.delete(index);
     cardsFlipped.value.delete(index);
     selectedPlayersForComparison.value.delete(index);
@@ -130,6 +137,49 @@ const deletePlayer = (index: number) => {
         toast.success(`Removed ${player.fullName} from team`);
     }
 };
+
+// Slots are fixed positions, not a list, so a drag is a swap: the two cards
+// trade places and nothing else in the roster shifts. Flip state and comparison
+// picks are keyed by slot as well, so they have to travel with the card or
+// they'd end up attached to whoever landed in that slot.
+const swapSlots = (from: number, to: number) => {
+    if (from === to) return;
+
+    const players = selectedPlayersData.value;
+    if (!players.has(from) && !players.has(to)) return;
+
+    swapMapEntries(players, from, to);
+    swapMapEntries(cardsFlipped.value, from, to);
+    swapSetMembers(selectedPlayersForComparison.value, from, to);
+};
+
+const slotLabel = (slot: number) =>
+    slot <= 5 ? ["PG", "SG", "SF", "PF", "C"][slot - 1] : `slot ${slot}`;
+
+const describeSlot = (slot: number) => {
+    const player = selectedPlayersData.value.get(slot);
+    return player
+        ? `${player.fullName} in ${slotLabel(slot)}`
+        : `empty ${slotLabel(slot)}`;
+};
+
+const {
+    draggingSlot,
+    dropTargetSlot,
+    pickedUpSlot,
+    liveMessage,
+    startDrag,
+    endDrag,
+    dragOverSlot,
+    leaveSlot,
+    dropOnSlot,
+    togglePickup,
+    cancelPickup,
+} = useRosterDragDrop({
+    onSwap: swapSlots,
+    isOccupied: (slot) => selectedPlayersData.value.has(slot),
+    describeSlot,
+});
 
 const flipCard = (n: number) => {
     const isFlipped = cardsFlipped.value.get(n);
@@ -185,6 +235,7 @@ watch(showPlayerComparison, (open) => {
 });
 
 const resetTeam = () => {
+    cancelPickup();
     selectedPlayersData.value.clear();
     cardsFlipped.value.clear();
     selectedPlayersForComparison.value.clear();
@@ -203,9 +254,11 @@ const resetTeam = () => {
 const saveTeam = () => {
     const uuid = crypto.randomUUID();
 
-    const players = Array.from(selectedPlayersData.value.values()).map(
-        (p) => p.fullName
-    );
+    // Sort by slot - Map iteration is insertion order, which would save a
+    // reordered roster in the order the players happened to be added.
+    const players = Array.from(selectedPlayersData.value.entries())
+        .sort(([a], [b]) => a - b)
+        .map(([, p]) => p.fullName);
 
     const newTeam: Team = {
         uuid,
@@ -250,11 +303,22 @@ const saveTeam = () => {
             <RosterSection
                 :selected-players="selectedPlayersData"
                 :cards-flipped="cardsFlipped"
+                :dragging-slot="draggingSlot"
+                :drop-target-slot="dropTargetSlot"
+                :picked-up-slot="pickedUpSlot"
+                :live-message="liveMessage"
                 @add-player="addPlayer"
                 @remove-player="deletePlayer"
                 @flip-card="flipCard"
                 @view-stats="viewPlayerStats"
                 @compare="togglePlayerInComparison"
+                @drag-start="startDrag"
+                @drag-end="endDrag"
+                @drag-over="dragOverSlot"
+                @drag-leave="leaveSlot"
+                @drop-slot="dropOnSlot"
+                @pickup="togglePickup"
+                @cancel-pickup="cancelPickup"
             />
 
             <!-- Team Staff Section -->
