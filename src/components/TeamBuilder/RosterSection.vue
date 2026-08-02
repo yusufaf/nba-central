@@ -23,9 +23,18 @@ interface Player {
 interface Props {
   selectedPlayers: Map<number, Player>;
   cardsFlipped: Map<number, boolean>;
+  draggingSlot?: number | null;
+  dropTargetSlot?: number | null;
+  pickedUpSlot?: number | null;
+  liveMessage?: string;
 }
 
-const props = defineProps<Props>();
+const props = withDefaults(defineProps<Props>(), {
+  draggingSlot: null,
+  dropTargetSlot: null,
+  pickedUpSlot: null,
+  liveMessage: '',
+});
 
 const emit = defineEmits<{
   'addPlayer': [index: number];
@@ -33,6 +42,13 @@ const emit = defineEmits<{
   'flipCard': [index: number];
   'viewStats': [index: number];
   'compare': [index: number];
+  'dragStart': [index: number, event: DragEvent];
+  'dragEnd': [];
+  'dragOver': [index: number, event: DragEvent];
+  'dragLeave': [index: number];
+  'dropSlot': [index: number, event: DragEvent];
+  'pickup': [index: number];
+  'cancelPickup': [];
 }>();
 
 const POSITIONS = ['PG', 'SG', 'SF', 'PF', 'C'];
@@ -62,10 +78,24 @@ const starterRating = computed(() =>
 const ratedStarterCount = computed(
   () => STARTER_INDICES.filter(i => ratingOf(i) !== undefined).length,
 );
+
+const isPickupActive = computed(() => props.pickedUpSlot !== null);
+
+// Escape cancels a keyboard pickup from anywhere in the roster, so it's bound
+// once here rather than on every slot.
+const onKeydown = (event: KeyboardEvent) => {
+  if (event.key === 'Escape' && isPickupActive.value) {
+    event.stopPropagation();
+    emit('cancelPickup');
+  }
+};
 </script>
 
 <template>
-  <div class="roster-section">
+  <div class="roster-section" @keydown="onKeydown">
+    <!-- Announces the keyboard move flow, which has no visible text of its own. -->
+    <div class="sr-only" role="status" aria-live="polite">{{ liveMessage }}</div>
+
     <!-- Starting Lineup Section -->
     <div class="lineup-section">
       <div class="section-header">
@@ -91,11 +121,21 @@ const ratedStarterCount = computed(
           :position="POSITIONS[posIndex]"
           :player="selectedPlayers.get(index)"
           :is-flipped="cardsFlipped.get(index)"
+          :is-dragging="draggingSlot === index"
+          :is-drop-target="dropTargetSlot === index"
+          :is-picked-up="pickedUpSlot === index"
+          :is-pickup-active="isPickupActive"
           @add="emit('addPlayer', $event)"
           @remove="emit('removePlayer', $event)"
           @flip="emit('flipCard', $event)"
           @view-stats="emit('viewStats', $event)"
           @compare="emit('compare', $event)"
+          @drag-start="(slot, event) => emit('dragStart', slot, event)"
+          @drag-end="emit('dragEnd')"
+          @drag-over="(slot, event) => emit('dragOver', slot, event)"
+          @drag-leave="emit('dragLeave', $event)"
+          @drop="(slot, event) => emit('dropSlot', slot, event)"
+          @pickup="emit('pickup', $event)"
         />
       </div>
     </div>
@@ -113,11 +153,21 @@ const ratedStarterCount = computed(
           :slot-index="index"
           :player="selectedPlayers.get(index)"
           :is-flipped="cardsFlipped.get(index)"
+          :is-dragging="draggingSlot === index"
+          :is-drop-target="dropTargetSlot === index"
+          :is-picked-up="pickedUpSlot === index"
+          :is-pickup-active="isPickupActive"
           @add="emit('addPlayer', $event)"
           @remove="emit('removePlayer', $event)"
           @flip="emit('flipCard', $event)"
           @view-stats="emit('viewStats', $event)"
           @compare="emit('compare', $event)"
+          @drag-start="(slot, event) => emit('dragStart', slot, event)"
+          @drag-end="emit('dragEnd')"
+          @drag-over="(slot, event) => emit('dragOver', slot, event)"
+          @drag-leave="emit('dragLeave', $event)"
+          @drop="(slot, event) => emit('dropSlot', slot, event)"
+          @pickup="emit('pickup', $event)"
         />
       </div>
     </div>
