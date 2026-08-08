@@ -69,11 +69,12 @@ describe("swapSetMembers", () => {
 });
 
 // Slots 6 and 7 hold players; 9 is empty. Mirrors the bench in the UI.
-const setup = (occupied = new Set([6, 7])) => {
+const setup = (occupied = new Set([6, 7]), pending = new Set<number>()) => {
     const onSwap = vi.fn();
     const dragDrop = useRosterDragDrop({
         onSwap,
         isOccupied: (slot) => occupied.has(slot),
+        isPending: (slot) => pending.has(slot),
         describeSlot: (slot) => `slot ${slot}`,
     });
     return { onSwap, ...dragDrop };
@@ -191,5 +192,52 @@ describe("useRosterDragDrop - keyboard pickup", () => {
         togglePickup(6);
         startDrag(7, dragEvent());
         expect(pickedUpSlot.value).toBeNull();
+    });
+});
+
+// A pending slot renders empty but already has a player on the way. Anything
+// moved into it would be overwritten the moment that fetch lands.
+describe("useRosterDragDrop - pending slots", () => {
+    it("refuses a pointer drop onto a pending slot", () => {
+        const { onSwap, startDrag, dropOnSlot } = setup(new Set([6]), new Set([9]));
+
+        startDrag(6, dragEvent());
+        dropOnSlot(9, dragEvent());
+        expect(onSwap).not.toHaveBeenCalled();
+    });
+
+    it("does not offer a pending slot as a drop target", () => {
+        const { startDrag, dragOverSlot, dropTargetSlot } = setup(
+            new Set([6]),
+            new Set([9]),
+        );
+        const event = dragEvent();
+
+        startDrag(6, dragEvent());
+        dragOverSlot(9, event);
+        expect(dropTargetSlot.value).toBeNull();
+        // Leaving the default in place is what makes the browser refuse the drop.
+        expect(event.preventDefault).not.toHaveBeenCalled();
+    });
+
+    it("keeps a keyboard pickup held when the target slot is pending", () => {
+        const { onSwap, togglePickup, pickedUpSlot, liveMessage } = setup(
+            new Set([6]),
+            new Set([9]),
+        );
+
+        togglePickup(6);
+        togglePickup(9);
+        expect(onSwap).not.toHaveBeenCalled();
+        expect(pickedUpSlot.value).toBe(6);
+        expect(liveMessage.value).toContain("still loading");
+    });
+
+    it("still allows moves between slots that are not pending", () => {
+        const { onSwap, startDrag, dropOnSlot } = setup(new Set([6]), new Set([9]));
+
+        startDrag(6, dragEvent());
+        dropOnSlot(7, dragEvent());
+        expect(onSwap).toHaveBeenCalledWith(6, 7);
     });
 });

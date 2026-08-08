@@ -45,8 +45,11 @@ const LOWER_IS_BETTER = new Set(['turnover', 'pf']);
 export const isBetter = (field: string, value: number, other: number): boolean =>
     LOWER_IS_BETTER.has(field) ? value < other : value > other;
 
+export type SeasonFormat = 'YYYY-YY' | 'YYYY-YYYY' | 'YYYY' | 'YYYY+1';
+export type StatDisplayMode = 'per_game' | 'totals';
+
 /** Shooting percentages must be recomputed from makes and attempts, never averaged. */
-const PERCENTAGE_SOURCES: Record<string, [string, string]> = {
+export const PERCENTAGE_SOURCES: Record<string, [string, string]> = {
     fg_pct: ['fgm', 'fga'],
     fg3_pct: ['fg3m', 'fg3a'],
     ft_pct: ['ftm', 'fta'],
@@ -55,7 +58,7 @@ const PERCENTAGE_SOURCES: Record<string, [string, string]> = {
 // Season rows are already per-game, so a career rate is the games-weighted mean
 // of the seasons - a plain mean would let a 5-game season count as much as an
 // 82-game one.
-const COUNTING_STATS = [
+export const COUNTING_STATS = [
     'min', 'fgm', 'fga', 'fg3m', 'fg3a', 'ftm', 'fta',
     'oreb', 'dreb', 'reb', 'ast', 'stl', 'blk', 'turnover', 'pf', 'pts',
 ];
@@ -99,6 +102,46 @@ export const careerAverages = (
     return out as CareerAverages;
 };
 
+export type CareerTotals = Record<string, number> & {
+    games_played: number;
+    seasons: number;
+};
+
+export const careerTotals = (
+    seasons: PlayerSeasonStats[] | undefined | null,
+): CareerTotals | null => {
+    const rows = (seasons ?? []).filter(
+        (row) => row && Number.isFinite(Number(row.games_played)),
+    );
+    if (!rows.length) return null;
+
+    const totalGames = rows.reduce((sum, row) => sum + Number(row.games_played), 0);
+    if (totalGames <= 0) return null;
+
+    const out: Record<string, number> = {
+        games_played: totalGames,
+        seasons: rows.length,
+    };
+
+    for (const field of COUNTING_STATS) {
+        const sumTotal = rows.reduce((sum, row) => {
+            const value = Number((row as any)[field]);
+            const games = Number(row.games_played);
+            return Number.isFinite(value) && Number.isFinite(games)
+                ? sum + Math.round(value * games)
+                : sum;
+        }, 0);
+        out[field] = sumTotal;
+    }
+
+    for (const [pct, [madeField, attemptedField]] of Object.entries(PERCENTAGE_SOURCES)) {
+        const attempted = out[attemptedField];
+        out[pct] = attempted > 0 ? out[madeField] / attempted : 0;
+    }
+
+    return out as CareerTotals;
+};
+
 /** Percentages read as .513; counting stats as 24.4; games played as a whole number. */
 export const formatStat = (field: string, value: number | undefined): string => {
     if (value === undefined || !Number.isFinite(value)) return '—';
@@ -108,3 +151,69 @@ export const formatStat = (field: string, value: number | undefined): string => 
     }
     return value.toFixed(1);
 };
+
+/**
+ * Formats a season start year into standard NBA or custom year formats.
+ * E.g., for start year 2010:
+ * - YYYY-YY: '2010-11' (Standard NBA format)
+ * - YYYY-YYYY: '2010-2011' (Full year range)
+ * - YYYY: '2010' (Start year)
+ * - YYYY+1: '2011' (End year)
+ */
+export const formatSeason = (
+    season: number | string | undefined | null,
+    format: SeasonFormat = 'YYYY-YY',
+): string => {
+    if (season === undefined || season === null) return '—';
+    if (typeof season === 'string' && season.includes('-')) return season;
+
+    const year = typeof season === 'number' ? season : parseInt(String(season), 10);
+    if (isNaN(year)) return String(season);
+
+    switch (format) {
+        case 'YYYY-YY': {
+            const nextYear = Math.abs(year + 1) % 100;
+            const nextYearStr = nextYear < 10 ? `0${nextYear}` : `${nextYear}`;
+            return `${year}-${nextYearStr}`;
+        }
+        case 'YYYY-YYYY':
+            return `${year}-${year + 1}`;
+        case 'YYYY+1':
+            return `${year + 1}`;
+        case 'YYYY':
+        default:
+            return `${year}`;
+    }
+};
+
+/** Formats a table cell value based on column field, season format preference, and stat mode. */
+export const formatCellValue = (
+    field: string,
+    row: any,
+    seasonFormat: SeasonFormat = 'YYYY-YY',
+    statMode: StatDisplayMode = 'per_game',
+): string => {
+    if (!row) return '—';
+
+    if (field === 'season') {
+        return formatSeason(row.season, seasonFormat);
+    }
+
+    if (field === 'games_played') {
+        return formatStat('games_played', row.games_played);
+    }
+
+    const val = Number(row[field]);
+    if (!Number.isFinite(val)) return '—';
+
+    if (statMode === 'totals') {
+        const games = Number(row.games_played);
+        if (COUNTING_STATS.includes(field) && Number.isFinite(games) && games > 0) {
+            const total = Math.round(val * games);
+            return total.toLocaleString();
+        }
+    }
+
+    return formatStat(field, val);
+};
+

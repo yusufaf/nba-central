@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Separator } from '@/components/ui/separator';
-import { X, UserPlus, Plus, BarChart3, ArrowLeftRight, GitCompareArrows, GripVertical } from 'lucide-vue-next';
+import { X, UserPlus, Plus, BarChart3, ArrowLeftRight, GitCompareArrows, GripVertical, Loader2 } from 'lucide-vue-next';
 import { getWikipediaUrl } from '@/constants/utilities';
 import ExternalLinksMenu from '@/components/ExternalLinksMenu.vue';
 import { ratingTier, ratingSourceLabel } from '@/constants/ratings';
@@ -32,6 +32,8 @@ interface Props {
   slotIndex: number;
   player?: Player | null;
   position?: string;
+  /** Name of the player being fetched into this slot, while that is in flight. */
+  pendingName?: string;
   isFlipped?: boolean;
   isDragging?: boolean;
   isDropTarget?: boolean;
@@ -43,6 +45,7 @@ interface Props {
 const props = withDefaults(defineProps<Props>(), {
   player: null,
   position: undefined,
+  pendingName: undefined,
   isFlipped: false,
   isDragging: false,
   isDropTarget: false,
@@ -65,6 +68,9 @@ const emit = defineEmits<{
 }>();
 
 const hasPlayer = computed(() => !!props.player);
+// The player lands in the slot only once their stats have been fetched, so a
+// pending slot is still empty - it just shouldn't offer to be filled again.
+const isPending = computed(() => !props.player && !!props.pendingName);
 const slotLabel = computed(() => props.position || `Slot ${props.slotIndex}`);
 const moveLabel = computed(() => {
   if (props.isPickedUp) return `Put ${props.player?.fullName} back in ${slotLabel.value}`;
@@ -105,6 +111,7 @@ const averageStats = computed(() => {
       'is-dragging': isDragging,
       'is-drop-target': isDropTarget,
       'is-picked-up': isPickedUp,
+      'is-pending': isPending,
     }"
     :draggable="hasPlayer"
     @dragstart="emit('dragStart', slotIndex, $event)"
@@ -155,8 +162,19 @@ const averageStats = computed(() => {
       <Separator />
 
       <CardContent class="main-content" @click="hasPlayer ? emit('flip', slotIndex) : undefined" :class="{ 'cursor-pointer': hasPlayer }">
+        <!-- Pending State - this slot's player is still being fetched -->
+        <template v-if="isPending">
+          <div class="empty-state" role="status" aria-live="polite">
+            <div class="empty-icon-wrapper is-pending">
+              <Loader2 class="empty-icon pending-spinner" />
+            </div>
+            <p class="pending-name">{{ pendingName }}</p>
+            <p class="empty-text">Adding to {{ slotLabel }}...</p>
+          </div>
+        </template>
+
         <!-- Empty State -->
-        <template v-if="!hasPlayer">
+        <template v-else-if="!hasPlayer">
           <div class="empty-state">
             <div class="empty-icon-wrapper">
               <UserPlus class="empty-icon" />
@@ -294,6 +312,12 @@ const averageStats = computed(() => {
   transform: scale(1.02);
 }
 
+/* Solid rather than dashed: the slot is committed, not awaiting a drop. */
+.player-card-wrapper.is-pending {
+  border-color: hsl(var(--primary) / 0.6);
+  box-shadow: 0 0 0.75rem hsla(var(--primary), 0.25);
+}
+
 /* The card held by the keyboard flow, which persists between keypresses. */
 .player-card-wrapper.is-picked-up {
   border-style: dashed;
@@ -412,6 +436,39 @@ const averageStats = computed(() => {
   width: 2rem;
   height: 2rem;
   color: hsl(var(--muted-foreground));
+}
+
+/* Pending State */
+.empty-icon-wrapper.is-pending {
+  background-color: hsl(var(--primary) / 0.12);
+}
+
+.pending-spinner {
+  color: hsl(var(--primary));
+  animation: pending-spin 0.9s linear infinite;
+}
+
+@keyframes pending-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pending-spinner {
+    animation-duration: 2.5s;
+  }
+}
+
+.pending-name {
+  font-size: 0.9375rem;
+  font-weight: 700;
+  color: hsl(var(--foreground));
+  text-align: center;
+  margin: 0;
+  /* Long names must not widen the card out of its grid track. */
+  max-width: 100%;
+  overflow-wrap: anywhere;
 }
 
 .empty-text {
