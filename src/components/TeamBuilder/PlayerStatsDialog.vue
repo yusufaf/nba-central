@@ -15,6 +15,7 @@ import {
   TableHead,
   TableHeader,
   TableRow,
+  TableFooter,
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import {
@@ -23,8 +24,21 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { ArrowDown, ArrowUp } from "lucide-vue-next";
-import { STAT_COLUMNS } from "@/constants/playerStats";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Label } from "@/components/ui/label";
+import { ArrowDown, ArrowUp, Settings, SlidersHorizontal, RotateCcw } from "lucide-vue-next";
+import {
+  STAT_COLUMNS,
+  COUNTING_STATS,
+  formatStat,
+  formatCellValue,
+  careerAverages,
+  careerTotals,
+  type StatColumn,
+} from "@/constants/playerStats";
+import { usePlayerStatsPreferences } from "@/composables/usePlayerStatsPreferences";
 
 const props = withDefaults(
   defineProps<{
@@ -38,6 +52,17 @@ const props = withDefaults(
     playerName: '',
   },
 );
+
+const { preferences, resetPreferences } = usePlayerStatsPreferences();
+
+// Each option shows the same season rendered its own way, so the choice is made
+// by reading the samples rather than by decoding the format token.
+const seasonFormatOptions = [
+  { value: 'YYYY-YY', sample: '2010-11', hint: 'NBA style' },
+  { value: 'YYYY-YYYY', sample: '2010-2011', hint: 'Full years' },
+  { value: 'YYYY', sample: '2010', hint: 'Start year' },
+  { value: 'YYYY+1', sample: '2011', hint: 'End year' },
+] as const;
 
 // Oldest release on the left, so the line reads left-to-right as a career.
 const ratingTimeline = computed(() =>
@@ -138,6 +163,22 @@ const sortedRows = computed(() => {
   });
 });
 
+const summaryData = computed(() => {
+  const rows = Array.isArray(localData.value) ? localData.value : [];
+  if (!rows.length) return null;
+  if (preferences.value.statMode === 'totals') {
+    return careerTotals(rows);
+  }
+  return careerAverages(rows);
+});
+
+const getColumnTitle = (column: StatColumn) => {
+  if (preferences.value.statMode === 'totals' && COUNTING_STATS.includes(column.field)) {
+    return column.title.replace(' per Game', ' Total in Season');
+  }
+  return column.title;
+};
+
 // A new player's stats shouldn't inherit the previous player's sort.
 watch(() => props.data, () => {
   sortField.value = null;
@@ -152,13 +193,110 @@ const columns = STAT_COLUMNS;
     <!-- wide-dialog opts out of the global 45rem cap in main.css, which is
          !important and beats any max-w-* utility. -->
     <DialogContent class="wide-dialog w-[95vw] max-h-[90vh] overflow-y-auto">
-      <DialogHeader>
-        <DialogTitle>{{ playerName ? `${playerName} — Stats` : 'Player Stats' }}</DialogTitle>
+      <!-- pr-14 keeps the title clear of the close button, which DialogContent
+           positions absolutely in this same corner. -->
+      <!-- No bottom padding: the global `[role="dialog"] h2` rule already puts
+           1.25rem under the title, and doubling it strands the rule. -->
+      <DialogHeader class="border-b border-zinc-800/60 pr-14">
+        <DialogTitle class="text-xl font-bold text-white tracking-tight">
+          {{ playerName ? `${playerName} — Stats` : 'Player Stats' }}
+        </DialogTitle>
       </DialogHeader>
+
+      <!-- The preferences trigger gets its own row rather than sharing the
+           header: beside the title it collides with the absolutely-positioned
+           close button, which sits outside this flow and can't be flexed around. -->
+      <div class="flex justify-end -mt-1 -mb-2">
+        <Popover>
+          <PopoverTrigger as-child>
+            <Button
+              variant="outline"
+              size="sm"
+              class="prefs-trigger"
+              title="Stats display preferences"
+            >
+              <Settings class="h-3.5 w-3.5 text-primary" />
+              <span>Preferences</span>
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent
+            align="end"
+            :side-offset="8"
+            class="stats-preferences-popover prefs-panel"
+          >
+            <header class="prefs-head">
+              <span class="prefs-head-icon">
+                <SlidersHorizontal class="h-4 w-4" />
+              </span>
+              <div class="prefs-head-text">
+                <h4>Stats Display</h4>
+                <p>Applies to every player's stats table.</p>
+              </div>
+            </header>
+
+            <section class="prefs-section">
+              <Label class="prefs-label">Season format</Label>
+              <ToggleGroup
+                v-model="preferences.seasonFormat"
+                type="single"
+                class="prefs-toggle-grid"
+                @update:model-value="(val) => { if (!val) preferences.seasonFormat = 'YYYY-YY'; }"
+              >
+                <ToggleGroupItem
+                  v-for="option in seasonFormatOptions"
+                  :key="option.value"
+                  :value="option.value"
+                  class="prefs-toggle"
+                >
+                  <span class="prefs-toggle-value">{{ option.sample }}</span>
+                  <span class="prefs-toggle-hint">{{ option.hint }}</span>
+                </ToggleGroupItem>
+              </ToggleGroup>
+            </section>
+
+            <section class="prefs-section">
+              <Label class="prefs-label">Stat values</Label>
+              <ToggleGroup
+                v-model="preferences.statMode"
+                type="single"
+                class="prefs-toggle-grid"
+                @update:model-value="(val) => { if (!val) preferences.statMode = 'per_game'; }"
+              >
+                <ToggleGroupItem value="per_game" class="prefs-toggle">
+                  <span class="prefs-toggle-value">Per game</span>
+                  <span class="prefs-toggle-hint">Averages</span>
+                </ToggleGroupItem>
+                <ToggleGroupItem value="totals" class="prefs-toggle">
+                  <span class="prefs-toggle-value">Totals</span>
+                  <span class="prefs-toggle-hint">Season sums</span>
+                </ToggleGroupItem>
+              </ToggleGroup>
+            </section>
+
+            <label for="show-career-summary" class="prefs-check-row">
+              <Checkbox
+                id="show-career-summary"
+                v-model:checked="preferences.showCareerSummary"
+              />
+              <span class="prefs-check-text">
+                <span class="prefs-check-title">Career summary row</span>
+                <p>Totals line pinned to the bottom of the table.</p>
+              </span>
+            </label>
+
+            <footer class="prefs-foot">
+              <Button variant="ghost" size="sm" class="prefs-reset" @click="resetPreferences">
+                <RotateCcw class="h-3 w-3" />
+                Reset defaults
+              </Button>
+            </footer>
+          </PopoverContent>
+        </Popover>
+      </div>
 
       <!-- NBA 2K rating history. Only current-roster players have one; retired
            players are rated as their All-Time selves, with no year-by-year run. -->
-      <section v-if="ratingTimeline.length > 1" class="rating-history">
+      <section v-if="ratingTimeline.length > 1" class="rating-history mt-2">
         <header class="rating-history-header">
           <h4 class="rating-history-title">NBA 2K Rating History</h4>
           <span v-if="ratingRange" class="rating-history-range">
@@ -222,7 +360,7 @@ const columns = STAT_COLUMNS;
                       />
                     </TooltipTrigger>
                     <TooltipContent>
-                      {{ column.title }}
+                      {{ getColumnTitle(column) }}
                       <span class="stat-sort-hint">Click to sort</span>
                     </TooltipContent>
                   </Tooltip>
@@ -240,10 +378,32 @@ const columns = STAT_COLUMNS;
                   :key="column.name"
                   class="text-gray-300 whitespace-nowrap"
                 >
-                  {{ row[column.field] }}
+                  {{ formatCellValue(column.field, row, preferences.seasonFormat, preferences.statMode) }}
                 </TableCell>
               </TableRow>
             </TableBody>
+            <TableFooter v-if="preferences.showCareerSummary && summaryData">
+              <TableRow class="bg-zinc-800/80 font-bold border-t-2 border-primary/50">
+                <TableCell
+                  v-for="column in columns"
+                  :key="column.name"
+                  class="whitespace-nowrap font-bold text-primary"
+                >
+                  <template v-if="column.field === 'season'">
+                    {{ preferences.statMode === 'totals' ? 'Career Total' : 'Career' }}
+                  </template>
+                  <template v-else-if="column.field === 'games_played'">
+                    {{ summaryData.games_played }}
+                  </template>
+                  <template v-else-if="preferences.statMode === 'totals' && COUNTING_STATS.includes(column.field)">
+                    {{ summaryData[column.field]?.toLocaleString() }}
+                  </template>
+                  <template v-else>
+                    {{ formatStat(column.field, summaryData[column.field]) }}
+                  </template>
+                </TableCell>
+              </TableRow>
+            </TableFooter>
           </Table>
         </TooltipProvider>
       </div>
@@ -258,6 +418,13 @@ const columns = STAT_COLUMNS;
 </template>
 
 <style scoped>
+/* The preferences trigger and popover are styled in main.css, not here. The
+   popover is teleported out of this component by PopoverPortal so the scope
+   attribute never reaches it, and both have to override modal-scale
+   `[role="dialog"]` rules that are !important inside a cascade layer - which
+   unlayered scoped styles cannot beat, since layer order reverses for
+   important declarations. */
+
 /* Dotted underline is the convention for "this abbreviation has a definition";
    the arrow carries the sortable affordance. */
 .stat-header {
