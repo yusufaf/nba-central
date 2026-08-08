@@ -39,12 +39,19 @@ interface RosterDragDropOptions {
     onSwap: (from: number, to: number) => void;
     /** True when the slot holds a player - empty slots can be dropped on but not dragged. */
     isOccupied: (slot: number) => boolean;
+    /**
+     * True when a player is still being fetched into the slot. Such a slot
+     * reads as empty but is already spoken for: anything moved into it would be
+     * overwritten the moment the fetch lands, so it refuses moves entirely.
+     */
+    isPending?: (slot: number) => boolean;
     /** Human-readable slot description used for the aria-live announcements. */
     describeSlot: (slot: number) => string;
 }
 
 export function useRosterDragDrop(options: RosterDragDropOptions) {
     const { onSwap, isOccupied, describeSlot } = options;
+    const isPending = options.isPending ?? (() => false);
 
     // The slot the pointer drag started from. This - not dataTransfer - is the
     // source of truth, because getData() is unreadable during dragover.
@@ -59,6 +66,7 @@ export function useRosterDragDrop(options: RosterDragDropOptions) {
     const applySwap = (from: number, to: number) => {
         if (from === to) return false;
         if (!isOccupied(from) && !isOccupied(to)) return false;
+        if (isPending(from) || isPending(to)) return false;
         onSwap(from, to);
         return true;
     };
@@ -85,6 +93,9 @@ export function useRosterDragDrop(options: RosterDragDropOptions) {
 
     const dragOverSlot = (slot: number, event: DragEvent) => {
         if (draggingSlot.value === null || draggingSlot.value === slot) return;
+        // Skipping preventDefault below leaves the browser showing "no drop"
+        // over a pending slot, which is the feedback we want anyway.
+        if (isPending(slot)) return;
 
         // Without preventDefault the browser refuses the drop entirely.
         event.preventDefault();
@@ -128,6 +139,13 @@ export function useRosterDragDrop(options: RosterDragDropOptions) {
         if (held === slot) {
             pickedUpSlot.value = null;
             liveMessage.value = `${describeSlot(slot)} put back.`;
+            return;
+        }
+
+        // Keep the card held rather than dropping it into a slot that is about
+        // to be filled - the user still has somewhere to put it.
+        if (isPending(slot)) {
+            liveMessage.value = 'That slot is still loading. Choose another slot.';
             return;
         }
 

@@ -23,6 +23,8 @@ interface Player {
 interface Props {
   selectedPlayers: Map<number, Player>;
   cardsFlipped: Map<number, boolean>;
+  /** Slot index -> name of the player currently being fetched into that slot. */
+  pendingPlayers?: Map<number, string>;
   draggingSlot?: number | null;
   dropTargetSlot?: number | null;
   pickedUpSlot?: number | null;
@@ -30,6 +32,7 @@ interface Props {
 }
 
 const props = withDefaults(defineProps<Props>(), {
+  pendingPlayers: () => new Map(),
   draggingSlot: null,
   dropTargetSlot: null,
   pickedUpSlot: null,
@@ -121,6 +124,7 @@ const onKeydown = (event: KeyboardEvent) => {
           :position="POSITIONS[posIndex]"
           :player="selectedPlayers.get(index)"
           :is-flipped="cardsFlipped.get(index)"
+          :pending-name="pendingPlayers.get(index)"
           :is-dragging="draggingSlot === index"
           :is-drop-target="dropTargetSlot === index"
           :is-picked-up="pickedUpSlot === index"
@@ -153,6 +157,7 @@ const onKeydown = (event: KeyboardEvent) => {
           :slot-index="index"
           :player="selectedPlayers.get(index)"
           :is-flipped="cardsFlipped.get(index)"
+          :pending-name="pendingPlayers.get(index)"
           :is-dragging="draggingSlot === index"
           :is-drop-target="dropTargetSlot === index"
           :is-picked-up="pickedUpSlot === index"

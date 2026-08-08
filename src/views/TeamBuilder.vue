@@ -44,6 +44,10 @@ const selectedPlayerRatingHistory = ref<NBA2KRating[]>([]);
 const selectedPlayerName = ref<string>("");
 
 const cardsFlipped = ref<Map<any, boolean>>(new Map());
+
+// Slot index -> name of the player being fetched into it. Keyed by slot rather
+// than a single flag so two slots can be filling at once.
+const pendingPlayers = ref<Map<number, string>>(new Map());
 const showPlayerStatsDialog = ref<boolean>(false);
 
 const selectedView = ref<string>("Default");
@@ -107,20 +111,33 @@ const addPlayer = (index: number) => {
 
 const addPlayerFromDialog = async (player: any) => {
     const playerIndex = selectedPlayerIndex.value;
+    // The dialog is only opened from a slot, so this is set - but the ref is
+    // nullable and there is no slot to report progress against without it.
+    if (playerIndex === null) return;
+
+    const playerName = `${player.first_name} ${player.last_name}`;
+
+    // The toast lives in the corner, far from the slot the player is landing
+    // in. Marking the slot pending lets the card show the same wait in place.
+    pendingPlayers.value.set(playerIndex, playerName);
 
     toast.promise(
         async () => {
-            const { id } = player;
-            const { data: playerStats, ratingHistory } =
-                await getPlayerStats(id);
-            const updatedPlayerData = { ...player, playerStats, ratingHistory };
-            selectedPlayersData.value.set(playerIndex, updatedPlayerData);
-            cardsFlipped.value.set(playerIndex, false);
+            try {
+                const { id } = player;
+                const { data: playerStats, ratingHistory } =
+                    await getPlayerStats(id);
+                const updatedPlayerData = { ...player, playerStats, ratingHistory };
+                selectedPlayersData.value.set(playerIndex, updatedPlayerData);
+                cardsFlipped.value.set(playerIndex, false);
+            } finally {
+                pendingPlayers.value.delete(playerIndex);
+            }
         },
         {
-            loading: 'Adding player...',
-            success: `Added ${player.first_name} ${player.last_name} to your team`,
-            error: 'Failed to add player',
+            loading: `Adding ${playerName} to ${slotLabel(playerIndex)}...`,
+            success: `Added ${playerName} to ${slotLabel(playerIndex)}`,
+            error: `Failed to add ${playerName} to ${slotLabel(playerIndex)}`,
         }
     );
 };
@@ -178,6 +195,7 @@ const {
 } = useRosterDragDrop({
     onSwap: swapSlots,
     isOccupied: (slot) => selectedPlayersData.value.has(slot),
+    isPending: (slot) => pendingPlayers.value.has(slot),
     describeSlot,
 });
 
@@ -303,6 +321,7 @@ const saveTeam = () => {
             <RosterSection
                 :selected-players="selectedPlayersData"
                 :cards-flipped="cardsFlipped"
+                :pending-players="pendingPlayers"
                 :dragging-slot="draggingSlot"
                 :drop-target-slot="dropTargetSlot"
                 :picked-up-slot="pickedUpSlot"
