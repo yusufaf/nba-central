@@ -40,7 +40,7 @@ export const STAT_COLUMNS: StatColumn[] = [
 ];
 
 /** Stats where a lower number is the better performance. */
-const LOWER_IS_BETTER = new Set(['turnover', 'pf']);
+export const LOWER_IS_BETTER = new Set(['turnover', 'pf']);
 
 export const isBetter = (field: string, value: number, other: number): boolean =>
     LOWER_IS_BETTER.has(field) ? value < other : value > other;
@@ -184,6 +184,98 @@ export const formatSeason = (
         default:
             return `${year}`;
     }
+};
+
+/**
+ * The number a cell shows, as a number rather than a string, rounded to the
+ * precision it is displayed at so that two seasons printed identically are also
+ * compared identically. Returns null for cells that aren't a comparable stat.
+ */
+export const statCellValue = (
+    field: string,
+    row: any,
+    statMode: StatDisplayMode = 'per_game',
+): number | null => {
+    if (!row || field === 'season') return null;
+
+    if (field === 'games_played') {
+        const games = Number(row.games_played);
+        return Number.isFinite(games) ? Math.round(games) : null;
+    }
+
+    const val = Number(row[field]);
+    if (!Number.isFinite(val)) return null;
+
+    if (field in PERCENTAGE_SOURCES) return Math.round(val * 1000) / 1000;
+
+    if (statMode === 'totals' && COUNTING_STATS.includes(field)) {
+        const games = Number(row.games_played);
+        if (Number.isFinite(games) && games > 0) return Math.round(val * games);
+    }
+
+    return Math.round(val * 10) / 10;
+};
+
+/**
+ * Seasons shorter than this are left out of the career-high hunt: a 6-game
+ * cameo can top a percentage column on a handful of attempts, which is a
+ * sample-size artefact rather than a peak.
+ */
+export const CAREER_BEST_MIN_GAMES = 15;
+
+export type CareerBests = {
+    /** Best displayed value per stat field. Fields with no usable value are absent. */
+    values: Record<string, number>;
+    /** Games a season needs to be eligible; 0 when the threshold was dropped. */
+    minGames: number;
+};
+
+/**
+ * Per-column career best across a player's seasons. "Best" follows
+ * LOWER_IS_BETTER, so the marked turnover and foul seasons are the cleanest
+ * ones rather than the worst ones.
+ */
+export const careerBests = (
+    seasons: PlayerSeasonStats[] | undefined | null,
+    statMode: StatDisplayMode = 'per_game',
+): CareerBests => {
+    const rows = (seasons ?? []).filter(Boolean) as any[];
+    const qualified = rows.filter(
+        (row) => Number(row.games_played) >= CAREER_BEST_MIN_GAMES,
+    );
+    // A career made up entirely of short seasons still has a peak, so only
+    // apply the threshold when it leaves something to compare.
+    const pool = qualified.length ? qualified : rows;
+    const minGames = qualified.length ? CAREER_BEST_MIN_GAMES : 0;
+
+    const values: Record<string, number> = {};
+    for (const column of STAT_COLUMNS) {
+        if (column.field === 'season') continue;
+
+        let best: number | null = null;
+        for (const row of pool) {
+            const value = statCellValue(column.field, row, statMode);
+            if (value === null) continue;
+            if (best === null || isBetter(column.field, value, best)) best = value;
+        }
+        if (best !== null) values[column.field] = best;
+    }
+
+    return { values, minGames };
+};
+
+/** Whether this cell is the player's career best in its column. Ties all mark. */
+export const isCareerBest = (
+    field: string,
+    row: any,
+    bests: CareerBests | null,
+    statMode: StatDisplayMode = 'per_game',
+): boolean => {
+    if (!bests || !(field in bests.values)) return false;
+    if (Number(row?.games_played) < bests.minGames) return false;
+
+    const value = statCellValue(field, row, statMode);
+    return value !== null && value === bests.values[field];
 };
 
 /** Formats a table cell value based on column field, season format preference, and stat mode. */

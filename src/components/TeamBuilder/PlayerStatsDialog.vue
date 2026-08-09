@@ -36,6 +36,10 @@ import {
   formatCellValue,
   careerAverages,
   careerTotals,
+  careerBests,
+  isCareerBest,
+  CAREER_BEST_MIN_GAMES,
+  LOWER_IS_BETTER,
   type StatColumn,
 } from "@/constants/playerStats";
 import { usePlayerStatsPreferences } from "@/composables/usePlayerStatsPreferences";
@@ -172,6 +176,22 @@ const summaryData = computed(() => {
   return careerAverages(rows);
 });
 
+// Highs are read off the unsorted rows, and recomputed for totals mode because
+// a 60-game season can lead per game while a 82-game one leads on the season.
+const bests = computed(() => {
+  if (!preferences.value.highlightCareerHighs) return null;
+  const rows = Array.isArray(localData.value) ? localData.value : [];
+  if (rows.length < 2) return null;
+  return careerBests(rows, preferences.value.statMode);
+});
+
+const highlightCell = (field: string, row: any) =>
+  isCareerBest(field, row, bests.value, preferences.value.statMode);
+
+// Colour alone can't carry the meaning, so the marked cell says what it is.
+const highlightTitle = (field: string) =>
+  LOWER_IS_BETTER.has(field) ? 'Career low' : 'Career high';
+
 const getColumnTitle = (column: StatColumn) => {
   if (preferences.value.statMode === 'totals' && COUNTING_STATS.includes(column.field)) {
     return column.title.replace(' per Game', ' Total in Season');
@@ -284,6 +304,20 @@ const columns = STAT_COLUMNS;
               </span>
             </label>
 
+            <label for="highlight-career-highs" class="prefs-check-row">
+              <Checkbox
+                id="highlight-career-highs"
+                v-model:checked="preferences.highlightCareerHighs"
+              />
+              <span class="prefs-check-text">
+                <span class="prefs-check-title">Highlight career highs</span>
+                <p>
+                  Best season in each column, in orange. Seasons under
+                  {{ CAREER_BEST_MIN_GAMES }} games don't count.
+                </p>
+              </span>
+            </label>
+
             <footer class="prefs-foot">
               <Button variant="ghost" size="sm" class="prefs-reset" @click="resetPreferences">
                 <RotateCcw class="h-3 w-3" />
@@ -377,6 +411,8 @@ const columns = STAT_COLUMNS;
                   v-for="column in columns"
                   :key="column.name"
                   class="text-gray-300 whitespace-nowrap"
+                  :class="{ 'stat-career-best': highlightCell(column.field, row) }"
+                  :title="highlightCell(column.field, row) ? highlightTitle(column.field) : undefined"
                 >
                   {{ formatCellValue(column.field, row, preferences.seasonFormat, preferences.statMode) }}
                 </TableCell>
@@ -468,6 +504,13 @@ const columns = STAT_COLUMNS;
   margin-top: 0.125rem;
   font-size: 0.6875rem;
   opacity: 0.7;
+}
+
+/* Career best in a column. The scoped attribute takes this past the .text-gray-300
+   utility on the same cell, so no !important is needed. */
+.stat-career-best {
+  color: hsl(var(--primary));
+  font-weight: 700;
 }
 
 .rating-history {
