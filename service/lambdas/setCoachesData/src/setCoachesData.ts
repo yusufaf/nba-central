@@ -2,41 +2,96 @@ import { EventBridgeEvent, Handler } from "aws-lambda";
 import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
 import fetch from "node-fetch";
 import * as cheerio from "cheerio";
-import { capitalizeFirstLetter } from "utilities/general";
 
 const { staticDataBucket = "" } = process.env;
 
 const s3Client = new S3Client();
 
+// Basketball-Reference `data-stat` -> the key the frontend's `Coach` type
+// (nba-central/src/models/types.ts) expects. Anything not listed here is
+// dropped rather than written under an undefined key.
 const ATTRIBUTE_MAPPING = new Map([
 	["ranker", "rank"],
 	["coach", "name"],
-	["year_min", "from"],
-	["year_max", "to"],
-	["years", "years"],
-	["g", "games"],
-	["wins", "wins"],
-	["losses", "losses"],
-	["win_loss_pct", "winLossPercent"],
-	["wins_over_500", "winsOver500"],
-	["g_playoffs", "playoffGames"],
-	["wins_playoffs", "playoffWins"],
-	["losses_playoffs", "playoffLosses"],
-	["win_loss_pct_playoffs", "playoffWinLossPercent"],
-	["years_conference_champion", "conferenceTitles"],
+	["season_min", "from"],
+	["season_max", "to"],
+	["years", "yrs"],
+	["g", "g"],
+	["wins", "w"],
+	["losses", "l"],
+	["win_loss_pct", "wlPercent"],
+	["wins_over_500", "wGreaterThan500"],
+	["g_playoffs", "playoffG"],
+	["wins_playoffs", "playoffW"],
+	["losses_playoffs", "playoffL"],
+	["win_loss_pct_playoffs", "playoffWLPercent"],
+	["years_conference_champion", "confTitles"],
 	["years_league_champion", "championships"],
 ]);
 
-const LABEL_MAPPING = new Map([
-	["years", "Years Coached"],
-	["winLossPercent", "Win Loss %"],
-	["winsOver500", "Wins Over .500"],
-	["playoffGames", "Playoff Games"],
-	["playoffWins", "Playoff Wins"],
-	["playoffLosses", "Playoff Losses"],
-	["playoffWinLossPercent", "Playoff Win Loss %"],
-	["conferenceTitles", "Conference Titles"],
-]);
+// The frontend renders these verbatim - coachWinPercent() in CoachSection.vue
+// returns "0%" for anything numeric, so a parsed ".671" would silently show as
+// 0% across the drawer.
+const STRING_ATTRIBUTES = new Set(["name", "wlPercent", "playoffWLPercent"]);
+
+export const parseCoaches = (body: string) => {
+	const $ = cheerio.load(body);
+
+	const tbodyElement = $("#coaches > tbody");
+
+	// Annotated because noImplicitAny is off, which makes a bare `[]` infer as
+	// never[] rather than an evolving any[].
+	const data: { [key: string]: any }[] = [];
+	for (const tr of tbodyElement.children()) {
+		const trElement = $(tr);
+		// The column headers are repeated every 20 rows or so.
+		if (trElement.hasClass("thead")) {
+			continue;
+		}
+
+		const coachData: { [key: string]: any } = {};
+		for (const td of trElement.children()) {
+			const tdElement = $(td);
+			const dataStatValue = tdElement.data("stat") as string;
+			if (!dataStatValue) {
+				continue;
+			}
+
+			// Upstream renames columns from time to time (season_min used to be
+			// year_min). Skipping the unmapped case keeps a rename from writing
+			// an "undefined" key; the refresh scripts' row validation is what
+			// turns the resulting missing field into a loud failure.
+			const property = ATTRIBUTE_MAPPING.get(dataStatValue);
+			if (!property) {
+				continue;
+			}
+
+			// The trailing "*" on Hall of Famers has to survive - isHallOfFamer()
+			// in CoachSection.vue keys off it.
+			const tdText = tdElement.text().trim();
+
+			if (property === "name") {
+				const href = tdElement.children().first().attr("href");
+				if (href) {
+					coachData.href = href;
+				}
+			}
+
+			// A coach with no playoff appearances has an empty win_loss_pct_playoffs
+			// cell. Fall back to "0" (matching the numeric columns' fallback) so
+			// coachWinPercent() in CoachSection.vue doesn't parseFloat("") into NaN.
+			coachData[property] = STRING_ATTRIBUTES.has(property)
+				? tdText || "0"
+				: parseFloat(tdText || "0");
+		}
+
+		if (Object.keys(coachData).length > 0) {
+			data.push(coachData);
+		}
+	}
+
+	return data;
+};
 
 export const handler: Handler = async (
 	event: EventBridgeEvent<any, any>,
@@ -50,78 +105,21 @@ export const handler: Handler = async (
 		);
 		const body = await response.text();
 
-		const $ = cheerio.load(body);
-
-		const theadElement = $("#coaches > thead");
-		const theadChildren = theadElement.children();
-		const headerRow = theadChildren[1];
-
-		// Annotated because noImplicitAny is off, which makes a bare `[]`
-		// infer as never[] rather than an evolving any[].
-		const attributes: {
-			description: string;
-			label: string;
-			property: string | undefined;
-		}[] = [];
-		for (const th of headerRow.children) {
-			const thElement = $(th);
-			const dataStatValue = thElement.data("stat") as string;
-			if (!dataStatValue) {
-				continue;
-			}
-			const dataTooltipValue = thElement.data("tip") as string;
-
-			const property = ATTRIBUTE_MAPPING.get(dataStatValue)!;
-			attributes.push({
-				description: dataTooltipValue ?? "",
-				label:
-					LABEL_MAPPING.get(property) ??
-					capitalizeFirstLetter(property),
-				property: ATTRIBUTE_MAPPING.get(dataStatValue),
-			});
+		const data = parseCoaches(body);
+		if (data.length === 0) {
+			throw new Error(
+				"No coaches parsed - the Basketball-Reference table layout likely changed",
+			);
 		}
+		console.log(`Parsed ${data.length} coaches`);
 
-		const tbodyElement = $("#coaches > tbody");
-		const data: { [key: string]: any }[] = [];
-		for (const tr of tbodyElement.children()) {
-			const trElement = $(tr);
-			if (trElement.hasClass("thead")) {
-				continue;
-			}
-
-			const coachData: { [key: string]: any } = {};
-			for (const td of trElement.children()) {
-				const tdElement = $(td);
-				const dataStatValue = tdElement.data("stat") as string;
-				if (!dataStatValue) {
-					continue;
-				}
-				const property = ATTRIBUTE_MAPPING.get(dataStatValue)!;
-				const tdText = tdElement.text().trim();
-				let value: string | number = parseFloat(tdText || "0");
-				if (property === "name") {
-					const anchorElement = tdElement.children()[0];
-					const href = $(anchorElement).attr("href");
-
-					value = tdText;
-					if (href) {
-						coachData.href = href;
-					}
-				}
-				coachData[property] = value;
-			}
-			data.push(coachData);
-		}
-
-		const coachesDataJSON = {
-			attributes,
-			data,
-		};
-
+		// Written as a bare array so the object is drop-in compatible with
+		// nba-central/src/assets/data/coaches.json, which the frontend imports
+		// directly. See the refresh-coaches script.
 		const putObjectCommand = new PutObjectCommand({
 			Bucket: staticDataBucket,
 			Key: "coaches.json",
-			Body: JSON.stringify(coachesDataJSON, null, 4),
+			Body: JSON.stringify(data, null, 4),
 		});
 		const putObjectResponse = await s3Client.send(putObjectCommand);
 	} catch (err) {
