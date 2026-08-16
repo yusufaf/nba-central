@@ -51,6 +51,7 @@ export class TeamBuilderAPI extends Construct {
 	deploymentType: string;
 	region: string;
 	prefix: string;
+	api: HttpApi;
 
 	constructor(scope: Construct, id: string, props: ExtendedStackProps) {
 		super(scope, id);
@@ -70,30 +71,39 @@ export class TeamBuilderAPI extends Construct {
 		this.prefix = `${appName}-${deploymentType}`;
 
 		const apiNameAndID = `${this.prefix}-main`;
+		// CORS preflight is only relevant when the frontend calls the API
+		// cross-origin. In development the Vite dev server proxies /api
+		// same-origin; in production the API sits behind CloudFront at
+		// /api/* on the same domain as the site (nba.yusufaf.dev) — no CORS
+		// preflight is needed there either. Scope corsPreflight to non-
+		// production only so production carries no CORS config at all.
 		const api = new HttpApi(this, apiNameAndID, {
 			apiName: apiNameAndID,
 			description: `${capitalizeFirstLetter(
 				deploymentType,
 			)} API for Team Builder`,
-			corsPreflight: {
-				allowHeaders: [
-					"Content-Type",
-					"X-Amz-Date",
-					"Authorization",
-					"X-Api-Key",
-				],
-				allowMethods: [
-					CorsHttpMethod.OPTIONS,
-					CorsHttpMethod.GET,
-					CorsHttpMethod.POST,
-					CorsHttpMethod.PUT,
-					CorsHttpMethod.PATCH,
-					CorsHttpMethod.DELETE,
-				],
-				allowCredentials: true,
-				allowOrigins: DEFAULT_ALLOWED_ORIGINS,
-			},
+			...(deploymentType !== "production" && {
+				corsPreflight: {
+					allowHeaders: [
+						"Content-Type",
+						"X-Amz-Date",
+						"Authorization",
+						"X-Api-Key",
+					],
+					allowMethods: [
+						CorsHttpMethod.OPTIONS,
+						CorsHttpMethod.GET,
+						CorsHttpMethod.POST,
+						CorsHttpMethod.PUT,
+						CorsHttpMethod.PATCH,
+						CorsHttpMethod.DELETE,
+					],
+					allowCredentials: true,
+					allowOrigins: DEFAULT_ALLOWED_ORIGINS,
+				},
+			}),
 		});
+		this.api = api;
 
 		// Setup the access log for APIGWv2
 		const logGroupNameAndID = `${this.prefix}-api-AccessLogs`;

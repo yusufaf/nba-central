@@ -1,9 +1,11 @@
+import { Fn } from "aws-cdk-lib";
 import { Construct } from "constructs";
 import { ExtendedStackProps } from "models/stack";
 import { TeamBuilderAPI } from "./team-builder-api";
 import { TeamBuilderDynamoDB } from "./team-builder-dynamo";
 import { TeamBuilderS3 } from "./team-builder-s3";
 import { TeamBuilderCognito } from "./team-builder-cognito";
+import { TeamBuilderWeb } from "./team-builder-web";
 
 export class TeamBuilder extends Construct {
     appName: string;
@@ -17,7 +19,11 @@ export class TeamBuilder extends Construct {
         this.appName = appName;
         this.deploymentType = deploymentType;
 
-        new TeamBuilderAPI(scope, `${appName}-${deploymentType}-api`, props);
+        const api = new TeamBuilderAPI(
+            scope,
+            `${appName}-${deploymentType}-api`,
+            props
+        );
         new TeamBuilderDynamoDB(
             scope,
             `${appName}-${deploymentType}-dynamoDB`,
@@ -29,5 +35,19 @@ export class TeamBuilder extends Construct {
             `${appName}-${deploymentType}-cognito`,
             props
         );
+
+        // S3 + CloudFront for the public site is production-only — no
+        // public domain exists for development.
+        if (deploymentType === "production") {
+            // HttpApi.apiEndpoint is a full URL token
+            // ("https://{id}.execute-api.{region}.amazonaws.com"); strip the
+            // scheme to get the regional domain name HttpOrigin expects.
+            const apiDomainName = Fn.select(2, Fn.split("/", api.api.apiEndpoint));
+
+            new TeamBuilderWeb(scope, `${appName}-${deploymentType}-web`, {
+                ...props,
+                apiDomainName,
+            });
+        }
     }
 }
