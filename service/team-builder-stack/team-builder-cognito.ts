@@ -73,9 +73,8 @@ export class TeamBuilderCognito extends Construct {
 				idTokenValidity: Duration.days(1),
 				// No frontend route consumes these yet (nba-central's live
 				// auth is Clerk, not Cognito — see team-builder-cognito.ts
-				// module doc). Placeholder callback/logout URLs so the
-				// hosted UI domain below is fully wired and adjustable later
-				// without re-provisioning the domain.
+				// module doc). Placeholder callback/logout URLs, kept
+				// adjustable now that this UserPool has no custom domain.
 				oAuth: {
 					flows: {
 						authorizationCodeGrant: true,
