@@ -28,6 +28,25 @@ export const api = axios.create({
     },
 });
 
+// Wired up by App.vue on mount, once useLogto() is available inside a
+// component's setup context (this module isn't one). Before that happens —
+// or if the user isn't signed in — requests simply go out unauthenticated,
+// same as today; apiAuthorizer.ts is what actually enforces auth.
+type AccessTokenGetter = () => Promise<string | undefined>;
+let getAccessToken: AccessTokenGetter | undefined;
+
+export const setAccessTokenGetter = (getter: AccessTokenGetter): void => {
+    getAccessToken = getter;
+};
+
+api.interceptors.request.use(async (config) => {
+    const token = await getAccessToken?.();
+    if (token) {
+        config.headers.Authorization = `Bearer ${token}`;
+    }
+    return config;
+});
+
 // Files API - matches FILES_ROUTES in CDK
 export const fileApi = {
     initiateMultipartUpload: async (
@@ -72,7 +91,7 @@ export const userApi = {
         return response.data;
     },
     saveUserData: async (payload: {
-        clerkUserID: string;
+        userId: string;
         [key: string]: any;
     }): Promise<any> => {
         const response = await api.post('/api/users/save-data', payload);
