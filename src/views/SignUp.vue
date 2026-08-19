@@ -1,39 +1,26 @@
 <script setup lang="ts">
-import { SignUp } from '@clerk/vue';
-import type { SignUpProps } from '@clerk/types';
+import { onMounted } from 'vue';
+import { useLogto } from '@logto/vue';
 
-const appearance: SignUpProps['appearance'] = {
-    layout: {
-        socialButtonsPlacement: 'bottom',
-        socialButtonsVariant: 'iconButton',
-    },
-    variables: {
-        colorPrimary: '#e08210',
-        colorText: '#1d1d1d',
-    },
-    elements: {
-        card: {
-            boxShadow: '0px 2px 4px rgba(0, 0, 0, 0.2)',
-            backgroundColor: '#ffffff',
-        },
-        headerTitle: {
-            fontSize: '24px',
-            textAlign: 'center',
-        },
-        socialButtons: {
-            justifyContent: 'center',
-        },
-    },
-};
+const { signIn, isAuthenticated } = useLogto();
+
+// Same redirect as Login.vue, just landing on Logto's registration screen
+// first instead of sign-in — Logto's hosted sign-in/register pages cross-link
+// to each other from there, same as the sign-in-vs-create-account link on
+// Logto's own demo app.
+onMounted(() => {
+    if (!isAuthenticated.value) {
+        signIn({
+            redirectUri: `${window.location.origin}/callback`,
+            firstScreen: 'register',
+        });
+    }
+});
 </script>
 
 <template>
     <div class="auth-container">
-        <SignUp 
-            :appearance="appearance" 
-            signInUrl="/login" 
-        
-        />
+        <p>Redirecting to sign up...</p>
     </div>
 </template>
 
