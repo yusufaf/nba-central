@@ -4,12 +4,8 @@ import {
 	OAuthScope,
 	UserPool,
 	UserPoolClient,
-	UserPoolDomain,
 	UserPoolOperation,
 } from "aws-cdk-lib/aws-cognito";
-import { Certificate } from "aws-cdk-lib/aws-certificatemanager";
-import { HostedZone, ARecord, RecordTarget } from "aws-cdk-lib/aws-route53";
-import { UserPoolDomainTarget } from "aws-cdk-lib/aws-route53-targets";
 import { Construct } from "constructs";
 import postConfirmationTrigger from "../lambdas/postConfirmationTrigger";
 import { ExtendedStackProps } from "models/stack";
@@ -21,9 +17,6 @@ export class TeamBuilderCognito extends Construct {
 			appName = "team-builder",
 			deploymentType = "development",
 			env,
-			hostedZoneId,
-			hostedZoneName,
-			authCertificateArn,
 		} = props;
 
 		const { account = "", region = "" } = env!;
@@ -98,57 +91,12 @@ export class TeamBuilderCognito extends Construct {
 			},
 		);
 
-		// Cognito custom domains are globally unique across all of AWS — one
-		// hostname, one User Pool. If both `development` and `production`
-		// tried to claim auth.yusufaf.dev, the second deploy would fail with
-		// a domain-already-associated CloudFormation error. Hard gate to
-		// production only — not an oversight, a genuine correctness
-		// requirement. nba-central keeps using Clerk; this domain is
-		// reserved infra only (see the plan's Phase 5 section for the
-		// larger, separately-scoped Clerk-to-Cognito migration).
-		if (deploymentType === "production") {
-			if (!hostedZoneId || !hostedZoneName || !authCertificateArn) {
-				throw new Error(
-					"TeamBuilderCognito production deploys require hostedZoneId, hostedZoneName, and authCertificateArn to provision the auth.yusufaf.dev UserPoolDomain.",
-				);
-			}
-
-			const authCertificate = Certificate.fromCertificateArn(
-				this,
-				`${appName}-${deploymentType}-auth-cert`,
-				authCertificateArn,
-			);
-
-			const userPoolDomainNameAndId = `${appName}-${deploymentType}-user-pool-domain`;
-			const userPoolDomain = new UserPoolDomain(
-				this,
-				userPoolDomainNameAndId,
-				{
-					userPool,
-					customDomain: {
-						domainName: "auth.yusufaf.dev",
-						certificate: authCertificate,
-					},
-				},
-			);
-
-			const hostedZoneNameAndId = `${appName}-${deploymentType}-auth-hosted-zone`;
-			const hostedZone = HostedZone.fromHostedZoneAttributes(
-				this,
-				hostedZoneNameAndId,
-				{
-					hostedZoneId,
-					zoneName: hostedZoneName,
-				},
-			);
-
-			new ARecord(this, `${appName}-${deploymentType}-auth-a-record`, {
-				zone: hostedZone,
-				recordName: "auth",
-				target: RecordTarget.fromAlias(
-					new UserPoolDomainTarget(userPoolDomain),
-				),
-			});
-		}
+		// This construct used to provision a Cognito hosted-UI custom domain
+		// at auth.yusufaf.dev for production deploys (UserPoolDomain +
+		// Route 53 ARecord). That's gone — auth.yusufaf.dev is now Logto on
+		// Fly (logto-flyio), not Cognito. See the auth migration plan for
+		// context. This UserPool has no custom domain; it's slated for
+		// deletion once nba-central and Quizaroni are both verified live on
+		// Logto.
 	}
 }

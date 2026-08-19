@@ -10,7 +10,6 @@ export interface ExtendedStackProps extends StackProps {
     hostedZoneId?: string;
     hostedZoneName?: string;
     webCertificateArn?: string;
-    authCertificateArn?: string;
 }
 
 export interface StackConstructsProps {

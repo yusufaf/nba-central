@@ -6,15 +6,19 @@ import {
 } from "aws-cdk-lib/aws-certificatemanager";
 import { HostedZone } from "aws-cdk-lib/aws-route53";
 
-// Cross-region ACM certificate stack. CloudFront and Cognito hosted-UI custom
-// domains both require their certificate to live in us-east-1, regardless of
-// which region the rest of the app deploys to (team-builder-cdk deploys to
-// us-west-2). This has to be a dedicated Stack (not a Construct) pinned to
-// env.region: "us-east-1" — cross-region references only work stack-to-stack,
-// with crossRegionReferences: true set on both the producer (this stack) and
+// Cross-region ACM certificate stack. CloudFront custom domains require
+// their certificate to live in us-east-1, regardless of which region the
+// rest of the app deploys to (team-builder-cdk deploys to us-west-2). This
+// has to be a dedicated Stack (not a Construct) pinned to env.region:
+// "us-east-1" — cross-region references only work stack-to-stack, with
+// crossRegionReferences: true set on both the producer (this stack) and
 // the consumer (TeamBuilderStack). There's no DnsValidatedCertificate
 // construct in aws-cdk-lib@2.254.0 (removed) — this uses the plain
 // Certificate construct with CertificateValidation.fromDns() instead.
+//
+// auth.yusufaf.dev used to be provisioned here for a Cognito hosted-UI
+// custom domain. That's gone — auth.yusufaf.dev is now Logto on Fly
+// (logto-flyio), not this stack. See the auth migration plan for context.
 //
 // HostedZone.fromHostedZoneAttributes() is used deliberately instead of
 // HostedZone.fromLookup() — fromLookup() performs a live AWS context lookup
@@ -29,7 +33,6 @@ export interface TeamBuilderCertStackProps extends StackProps {
 
 export class TeamBuilderCertStack extends Stack {
 	readonly webCertificateArn: string;
-	readonly authCertificateArn: string;
 
 	constructor(scope: Construct, id: string, props: TeamBuilderCertStackProps) {
 		super(scope, id, props);
@@ -57,13 +60,6 @@ export class TeamBuilderCertStack extends Stack {
 			validation: CertificateValidation.fromDns(hostedZone),
 		});
 
-		const authCertificateNameAndId = `${appName}-${deploymentType}-auth-cert`;
-		const authCertificate = new Certificate(this, authCertificateNameAndId, {
-			domainName: "auth.yusufaf.dev",
-			validation: CertificateValidation.fromDns(hostedZone),
-		});
-
 		this.webCertificateArn = webCertificate.certificateArn;
-		this.authCertificateArn = authCertificate.certificateArn;
 	}
 }

@@ -17,13 +17,11 @@ const env = {
 const appName = process.env.appName;
 const deploymentType = process.env.deploymentType;
 
-// Cross-region ACM certs (CloudFront + Cognito hosted UI both need
-// us-east-1) and the Route 53-dependent web/auth domain resources are
-// production-only. `development` has never needed a public domain and must
-// not also try to claim auth.yusufaf.dev/nba.yusufaf.dev — see
-// team-builder-cognito.ts for the Cognito custom-domain uniqueness gotcha.
+// Cross-region ACM certs (CloudFront needs us-east-1) and the Route
+// 53-dependent web domain resources are production-only. `development` has
+// never needed a public domain and must not also try to claim
+// nba.yusufaf.dev.
 let webCertificateArn: string | undefined;
-let authCertificateArn: string | undefined;
 
 if (deploymentType === "production") {
 	const hostedZoneId = process.env.hostedZoneId;
@@ -31,7 +29,7 @@ if (deploymentType === "production") {
 
 	if (!hostedZoneId || !hostedZoneName) {
 		throw new Error(
-			"Production deploys require hostedZoneId and hostedZoneName env vars to provision the nba.yusufaf.dev / auth.yusufaf.dev certificates.",
+			"Production deploys require hostedZoneId and hostedZoneName env vars to provision the nba.yusufaf.dev certificate.",
 		);
 	}
 
@@ -49,7 +47,6 @@ if (deploymentType === "production") {
 	);
 
 	webCertificateArn = certStack.webCertificateArn;
-	authCertificateArn = certStack.authCertificateArn;
 }
 
 new TeamBuilderStack(app, `${appName}-${deploymentType}-stack`, {
@@ -60,5 +57,4 @@ new TeamBuilderStack(app, `${appName}-${deploymentType}-stack`, {
 	hostedZoneId: process.env.hostedZoneId,
 	hostedZoneName: process.env.hostedZoneName,
 	webCertificateArn,
-	authCertificateArn,
 });
