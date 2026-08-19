@@ -3,79 +3,62 @@ import {
     APIGatewaySimpleAuthorizerWithContextResult,
     Handler,
 } from "aws-lambda";
-import { CognitoIdentityProviderClient, GetUserCommand } from "@aws-sdk/client-cognito-identity-provider";
-import { CognitoJwtVerifier } from "aws-jwt-verify";
+import { createRemoteJWKSet, jwtVerify } from "jose";
 
-type AuthorizerContext = { [key: string]: any }
+type AuthorizerContext = { [key: string]: any };
 
-const { userPoolId = "", clientId = "" } = process.env;
+const { logtoEndpoint = "", apiResource = "" } = process.env;
 
-const cognitoClient = new CognitoIdentityProviderClient({});
+// Logto's OIDC issuer is the endpoint plus /oidc (see the OIDC discovery
+// document at `${logtoEndpoint}/oidc/.well-known/openid-configuration`).
+const issuer = `${logtoEndpoint}/oidc`;
+const jwksUri = new URL(`${issuer}/jwks`);
 
-console.log({userPoolId, clientId })
-// Verifier that expects valid access tokens:
-const verifier = CognitoJwtVerifier.create({
-    userPoolId,
-    tokenUse: "access",
-    clientId,
-});
+// createRemoteJWKSet caches the key set in module scope, so a warm Lambda
+// invocation verifies locally with no network call — unlike the Cognito
+// version this replaces, which called GetUser on every single request.
+const jwks = createRemoteJWKSet(jwksUri);
 
 export const handler: Handler = async (
     event: APIGatewayRequestAuthorizerEvent,
-    context
 ): Promise<APIGatewaySimpleAuthorizerWithContextResult<AuthorizerContext>> => {
-    console.log(JSON.stringify({ event, context }, null, 4));
-
     try {
-        const authorization = event.headers?.Authorization ?? event.headers?.authorization ?? "";
-        const [accessToken, idToken] = authorization.split(" ");
-        console.log({accessToken, idToken})
+        const authorization =
+            event.headers?.Authorization ?? event.headers?.authorization ?? "";
+        const [, accessToken] = authorization.split(" ");
 
-        const { userAttributes, username } = await getCognitoUserAttributes(accessToken, idToken);
+        if (!accessToken) {
+            throw new Error("Missing bearer token");
+        }
 
-        const payload = await verifier.verify(accessToken);
-        console.log("Token is valid. Payload:", payload);
+        const { payload } = await jwtVerify(accessToken, jwks, {
+            issuer,
+            // Reject a token issued for a different project's API resource —
+            // e.g. a Quizaroni access token must not authorize NBA Central
+            // requests. See the auth migration plan's Security section.
+            audience: apiResource,
+        });
+
+        // username comes from a Logto Custom JWT (Console > Custom JWT > User
+        // access token) baking `context.user.username` into the access
+        // token's claims, so this stays a local verify with no per-request
+        // network call — see logto-flyio's console setup notes.
+        const { sub, username } = payload as { sub?: string; username?: string };
 
         return {
             isAuthorized: true,
             context: {
                 username,
-                userAttributes,
-                sub: payload.sub,
-            }
-        }
+                userAttributes: {},
+                sub,
+            },
+        };
     } catch (err) {
-        console.error(err);
+        console.error("Authorization failed:", err);
 
         return {
             isAuthorized: false,
-            context: {
-
-            },
-        }
+            context: {},
+        };
     }
 };
-
-const getCognitoUserAttributes = async (accessToken: string, idToken: string) => {
-    const getUserCommand = new GetUserCommand({
-        AccessToken: accessToken
-    });
-    const response = await cognitoClient.send(getUserCommand);
-    const { UserAttributes, Username: username} = response;
-
-    // Reduce user attributes into an object instead of an array
-    const userAttributes = (UserAttributes ?? []).reduce((acc, attribute ) => {
-        const { Name, Value } = attribute
-        if (!Name || !Value) {
-            return acc;
-        }
-        // @ts-ignore Using Name as index type
-        acc[Name] = Value;
-        return acc;
-    }, {})
-
-    return {
-        userAttributes,
-        username,
-    };
-}

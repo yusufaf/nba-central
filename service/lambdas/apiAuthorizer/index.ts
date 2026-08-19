@@ -1,10 +1,7 @@
 import { Duration } from "aws-cdk-lib";
 import { LambdaProps } from "../../../models/stack";
 import { TeamBuilderLambda } from "../../constructs/TeamBuilderLambda";
-import {
-	USER_POOL_CLIENT_IDS,
-	USER_POOL_IDS,
-} from "../../../resources/cognito";
+import { LOGTO_API_RESOURCE, LOGTO_ENDPOINT } from "../../../resources/logto";
 
 export default ({ props, construct }: LambdaProps) => {
 	const functionName = "apiAuthorizer";
@@ -14,8 +11,8 @@ export default ({ props, construct }: LambdaProps) => {
 		memorySize: 1000,
 		timeout: Duration.seconds(30),
 		environment: {
-			userPoolId: USER_POOL_IDS[props.deploymentType || ""],
-			clientId: USER_POOL_CLIENT_IDS[props.deploymentType || ""],
+			logtoEndpoint: LOGTO_ENDPOINT[props.deploymentType || ""],
+			apiResource: LOGTO_API_RESOURCE[props.deploymentType || ""],
 		},
 	});
 
