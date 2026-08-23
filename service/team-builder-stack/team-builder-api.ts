@@ -371,7 +371,7 @@ export class TeamBuilderAPI extends Construct {
 				path: route,
 				lambdaName,
 				methods,
-				// authorizer: httpRouteAuthorizer,
+				authorizer: httpRouteAuthorizer,
 			});
 		}
 	}
