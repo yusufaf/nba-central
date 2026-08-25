@@ -1,0 +1,49 @@
+name: deploy
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  id-token: write # required for aws-actions/configure-aws-credentials OIDC
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - uses: actions/checkout@v5
+
+      # No `version:` here — action-setup reads the pnpm version from the
+      # "packageManager" field in package.json. Specifying both errors with
+      # ERR_PNPM_BAD_PM_VERSION.
+      - uses: pnpm/action-setup@v6
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      # VITE_API_BASE_URL is deliberately NOT set here — leaving it unset
+      # makes axios calls relative, and CloudFront's /api/* behavior routes
+      # them same-origin. Setting it would break that.
+      - run: pnpm build
+        env:
+          VITE_LOGTO_ENDPOINT: ${{ vars.VITE_LOGTO_ENDPOINT }}
+          VITE_LOGTO_APP_ID: ${{ vars.VITE_LOGTO_APP_ID }}
+          VITE_LOGTO_API_RESOURCE: ${{ vars.VITE_LOGTO_API_RESOURCE }}
+
+      - uses: aws-actions/configure-aws-credentials@v5
+        with:
+          role-to-assume: ${{ vars.AWS_DEPLOY_ROLE_ARN }}
+          aws-region: us-west-2
+
+      - run: aws s3 sync dist/ s3://${{ vars.AWS_WEB_BUCKET_NAME }} --delete
+
+      - run: |
+          aws cloudfront create-invalidation \
+            --distribution-id ${{ vars.AWS_DISTRIBUTION_ID }} \
+            --paths '/*'
