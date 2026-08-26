@@ -69,19 +69,21 @@ export interface GetUserResponse {
 export interface CreateTeamPayload {
     name: string;
     description?: string;
-    city?: string;
-    country?: string;
-    logo?: string;
+    players?: string[];
 }
 
 export interface CreateTeamResponse {
-    id: string;
-    name: string;
-    description: string;
-    city: string;
-    country: string;
-    logo: string;
-    createdAt: string;
+    message: string;
+    team: {
+        teamUUID: string;
+        title: string;
+        description: string;
+        players: string[];
+        username: string;
+        userUUID: string;
+        createdAt: number;
+        updatedAt: number;
+    };
 }
 
 // #endregion
