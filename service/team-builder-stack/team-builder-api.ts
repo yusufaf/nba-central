@@ -37,6 +37,7 @@ import setPlayersData from "../lambdas/setPlayersData";
 import setPlayerRatingsData from "../lambdas/setPlayerRatingsData";
 import fetchNewsCron from "../lambdas/fetchNewsCron";
 import getNews from "../lambdas/getNews";
+import { PUBLIC_ROUTES, PRIVATE_ROUTES } from "./team-builder-api-routes";
 
 type CreateLambdaProxyIntegrationProps = {
 	lambda: LambdaFunction;
@@ -196,175 +197,17 @@ export class TeamBuilderAPI extends Construct {
 			},
 		);
 
-		const FILES_PREFIX = `/api/files`;
-		const USERS_PREFIX = `/api/users`;
-		const TEAMS_PREFIX = `/api/teams`;
-		const DATA_PREFIX = `/api/data`;
-		const CUSTOM_ENTITIES_PREFIX = `/api/custom-entities`;
+		for (const { route, lambdaName, methods } of PUBLIC_ROUTES) {
+			this.createLambdaHttpIntegration({
+				api,
+				lambdaProps,
+				path: route,
+				lambdaName,
+				methods,
+			});
+		}
 
-		const FILES_ROUTES: {
-			route: string;
-			lambdaName: string;
-			methods?: HttpMethod[] | undefined;
-		}[] = [
-			{
-				route: `${FILES_PREFIX}/initiate-multipart-upload`,
-				lambdaName: "initiateMultipartUpload",
-			},
-			{
-				route: `${FILES_PREFIX}/complete-multipart-upload`,
-				lambdaName: "completeMultipartUpload",
-			},
-			{
-				route: `${FILES_PREFIX}/get-multipart-signed-upload-urls`,
-				lambdaName: "getMultipartSignedUploadUrls",
-			},
-			{
-				route: `${FILES_PREFIX}/delete-file`,
-				lambdaName: "deleteFile",
-			},
-		];
-
-		const USERS_ROUTES: {
-			route: string;
-			lambdaName: string;
-			methods?: HttpMethod[] | undefined;
-		}[] = [
-			// {
-			// 	route: `${USERS_PREFIX}/get`,
-			// 	lambdaName: "getUser",
-			// },
-			{
-				route: `${USERS_PREFIX}/save-data`,
-				lambdaName: "saveUserData",
-			},
-		];
-
-		const TEAMS_ROUTES: {
-			route: string;
-			lambdaName: string;
-			methods?: HttpMethod[] | undefined;
-		}[] = [
-			{
-				route: `${TEAMS_PREFIX}/create`,
-				lambdaName: "createTeam",
-			},
-		];
-
-		const DATA_ROUTES: {
-			route: string;
-			lambdaName: string;
-			methods?: HttpMethod[] | undefined;
-		}[] = [
-			{
-				route: `${DATA_PREFIX}/get-team-logos`,
-				lambdaName: "getTeamLogos",
-				methods: [HttpMethod.GET],
-			},
-			{
-				route: `${DATA_PREFIX}/get-players`,
-				lambdaName: "getPlayers",
-				methods: [HttpMethod.GET],
-			},
-			{
-				route: `${DATA_PREFIX}/get-player-stats`,
-				lambdaName: "getPlayerStats",
-				methods: [HttpMethod.GET],
-			},
-		];
-
-		const NEWS_ROUTES: {
-			route: string;
-			lambdaName: string;
-			methods?: HttpMethod[] | undefined;
-		}[] = [
-			{
-				route: `/api/news/get`,
-				lambdaName: "getNews",
-				methods: [HttpMethod.GET],
-			},
-		];
-
-		const CUSTOM_ENTITIES_ROUTES: {
-			route: string;
-			lambdaName: string;
-			methods?: HttpMethod[] | undefined;
-		}[] = [
-			// GM routes
-			{
-				route: `${CUSTOM_ENTITIES_PREFIX}/gm/create`,
-				lambdaName: "createCustomGM",
-				methods: [HttpMethod.POST],
-			},
-			{
-				route: `${CUSTOM_ENTITIES_PREFIX}/gm/list`,
-				lambdaName: "listCustomGMs",
-				methods: [HttpMethod.GET],
-			},
-			{
-				route: `${CUSTOM_ENTITIES_PREFIX}/gm/update`,
-				lambdaName: "updateCustomGM",
-				methods: [HttpMethod.PUT],
-			},
-			{
-				route: `${CUSTOM_ENTITIES_PREFIX}/gm/delete/{gmUUID}`,
-				lambdaName: "deleteCustomGM",
-				methods: [HttpMethod.DELETE],
-			},
-			// Coach routes
-			{
-				route: `${CUSTOM_ENTITIES_PREFIX}/coach/create`,
-				lambdaName: "createCustomCoach",
-				methods: [HttpMethod.POST],
-			},
-			{
-				route: `${CUSTOM_ENTITIES_PREFIX}/coach/list`,
-				lambdaName: "listCustomCoaches",
-				methods: [HttpMethod.GET],
-			},
-			{
-				route: `${CUSTOM_ENTITIES_PREFIX}/coach/update`,
-				lambdaName: "updateCustomCoach",
-				methods: [HttpMethod.PUT],
-			},
-			{
-				route: `${CUSTOM_ENTITIES_PREFIX}/coach/delete/{coachUUID}`,
-				lambdaName: "deleteCustomCoach",
-				methods: [HttpMethod.DELETE],
-			},
-			// Player routes
-			{
-				route: `${CUSTOM_ENTITIES_PREFIX}/player/create`,
-				lambdaName: "createCustomPlayer",
-				methods: [HttpMethod.POST],
-			},
-			{
-				route: `${CUSTOM_ENTITIES_PREFIX}/player/list`,
-				lambdaName: "listCustomPlayers",
-				methods: [HttpMethod.GET],
-			},
-			{
-				route: `${CUSTOM_ENTITIES_PREFIX}/player/update`,
-				lambdaName: "updateCustomPlayer",
-				methods: [HttpMethod.PUT],
-			},
-			{
-				route: `${CUSTOM_ENTITIES_PREFIX}/player/delete/{playerUUID}`,
-				lambdaName: "deleteCustomPlayer",
-				methods: [HttpMethod.DELETE],
-			},
-		];
-
-		const API_ROUTES = [
-			...FILES_ROUTES,
-			...USERS_ROUTES,
-			...TEAMS_ROUTES,
-			...DATA_ROUTES,
-			...NEWS_ROUTES,
-			...CUSTOM_ENTITIES_ROUTES,
-		];
-
-		for (const { route, lambdaName, methods } of API_ROUTES) {
+		for (const { route, lambdaName, methods } of PRIVATE_ROUTES) {
 			this.createLambdaHttpIntegration({
 				api,
 				lambdaProps,

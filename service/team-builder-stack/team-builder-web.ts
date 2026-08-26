@@ -14,6 +14,7 @@ import { AaaaRecord, ARecord, HostedZone, RecordTarget } from "aws-cdk-lib/aws-r
 import { CloudFrontTarget } from "aws-cdk-lib/aws-route53-targets";
 import { Construct } from "constructs";
 import { ExtendedStackProps } from "models/stack";
+import { WEB_DOMAIN_NAME } from "../../constants";
 
 export interface TeamBuilderWebProps extends ExtendedStackProps {
 	// Regional domain name of the production HttpApi (no scheme, no path),
@@ -36,6 +37,12 @@ export interface TeamBuilderWebProps extends ExtendedStackProps {
 // a separate deploy step (see the plan's Phase 8 runbook), not part of
 // `cdk deploy`.
 export class TeamBuilderWeb extends Construct {
+	// Exposed for TeamBuilderDeployRole (CI's push-to-deploy IAM role), which
+	// needs to scope its S3/CloudFront permissions to exactly this bucket
+	// and distribution.
+	readonly bucket: Bucket;
+	readonly distribution: Distribution;
+
 	constructor(scope: Construct, id: string, props: TeamBuilderWebProps) {
 		super(scope, id);
 
@@ -60,6 +67,7 @@ export class TeamBuilderWeb extends Construct {
 			blockPublicAccess: BlockPublicAccess.BLOCK_ALL,
 			removalPolicy: RemovalPolicy.RETAIN,
 		});
+		this.bucket = webBucket;
 
 		// Modern OAC helper (not legacy OAI) — CDK attaches the bucket policy
 		// granting CloudFront read access automatically.
@@ -88,13 +96,15 @@ export class TeamBuilderWeb extends Construct {
 					viewerProtocolPolicy: ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
 					allowedMethods: AllowedMethods.ALLOW_ALL,
 					cachePolicy: CachePolicy.CACHING_DISABLED,
-					// Forwards Authorization, cookies, and query strings —
-					// needed for today's unused bearer authorizer and any
-					// future Cognito session-cookie flow.
-					originRequestPolicy: OriginRequestPolicy.ALL_VIEWER,
+					// Forwards Authorization, cookies, and query strings, but
+					// NOT the viewer's Host header — API Gateway rejects a
+					// request whose Host isn't its own execute-api hostname,
+					// so ALL_VIEWER here would 403 every /api/* call while
+					// the site itself loaded fine.
+					originRequestPolicy: OriginRequestPolicy.ALL_VIEWER_EXCEPT_HOST_HEADER,
 				},
 			},
-			domainNames: ["nba.yusufaf.dev"],
+			domainNames: [WEB_DOMAIN_NAME],
 			certificate,
 			defaultRootObject: "index.html",
 			// A fully private OAC bucket returns 403 for missing keys too,
@@ -117,6 +127,7 @@ export class TeamBuilderWeb extends Construct {
 			// change later.
 			priceClass: PriceClass.PRICE_CLASS_100,
 		});
+		this.distribution = distribution;
 
 		const hostedZoneNameAndId = `${appName}-${deploymentType}-web-hosted-zone`;
 		const hostedZone = HostedZone.fromHostedZoneAttributes(
@@ -132,15 +143,25 @@ export class TeamBuilderWeb extends Construct {
 			new CloudFrontTarget(distribution),
 		);
 
+		// If the hosted zone IS nba.yusufaf.dev (a delegated subzone), the
+		// record is the zone apex and recordName must be left undefined —
+		// passing "nba" here would create nba.nba.yusufaf.dev. If the zone
+		// is a parent (e.g. the full yusufaf.dev zone), recordName is the
+		// "nba" label stripped off WEB_DOMAIN_NAME.
+		const recordName =
+			hostedZoneName === WEB_DOMAIN_NAME
+				? undefined
+				: WEB_DOMAIN_NAME.slice(0, -(hostedZoneName.length + 1));
+
 		new ARecord(this, `${appName}-${deploymentType}-web-a-record`, {
 			zone: hostedZone,
-			recordName: "nba",
+			recordName,
 			target: aliasTarget,
 		});
 
 		new AaaaRecord(this, `${appName}-${deploymentType}-web-aaaa-record`, {
 			zone: hostedZone,
-			recordName: "nba",
+			recordName,
 			target: aliasTarget,
 		});
 	}

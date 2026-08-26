@@ -5,6 +5,7 @@ import {
 	CertificateValidation,
 } from "aws-cdk-lib/aws-certificatemanager";
 import { HostedZone } from "aws-cdk-lib/aws-route53";
+import { WEB_DOMAIN_NAME } from "../../constants";
 
 // Cross-region ACM certificate stack. CloudFront custom domains require
 // their certificate to live in us-east-1, regardless of which region the
@@ -56,7 +57,7 @@ export class TeamBuilderCertStack extends Stack {
 
 		const webCertificateNameAndId = `${appName}-${deploymentType}-web-cert`;
 		const webCertificate = new Certificate(this, webCertificateNameAndId, {
-			domainName: "nba.yusufaf.dev",
+			domainName: WEB_DOMAIN_NAME,
 			validation: CertificateValidation.fromDns(hostedZone),
 		});
 

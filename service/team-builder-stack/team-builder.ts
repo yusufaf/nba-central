@@ -1,4 +1,4 @@
-import { Fn } from "aws-cdk-lib";
+import { CfnOutput, Fn } from "aws-cdk-lib";
 import { Construct } from "constructs";
 import { ExtendedStackProps } from "models/stack";
 import { TeamBuilderAPI } from "./team-builder-api";
@@ -6,6 +6,7 @@ import { TeamBuilderDynamoDB } from "./team-builder-dynamo";
 import { TeamBuilderS3 } from "./team-builder-s3";
 import { TeamBuilderCognito } from "./team-builder-cognito";
 import { TeamBuilderWeb } from "./team-builder-web";
+import { TeamBuilderDeployRole } from "./team-builder-deploy-role";
 
 export class TeamBuilder extends Construct {
     appName: string;
@@ -36,6 +37,10 @@ export class TeamBuilder extends Construct {
             props
         );
 
+        new CfnOutput(scope, `${appName}-${deploymentType}-api-endpoint`, {
+            value: api.api.apiEndpoint,
+        });
+
         // S3 + CloudFront for the public site is production-only — no
         // public domain exists for development.
         if (deploymentType === "production") {
@@ -44,9 +49,34 @@ export class TeamBuilder extends Construct {
             // scheme to get the regional domain name HttpOrigin expects.
             const apiDomainName = Fn.select(2, Fn.split("/", api.api.apiEndpoint));
 
-            new TeamBuilderWeb(scope, `${appName}-${deploymentType}-web`, {
+            const web = new TeamBuilderWeb(scope, `${appName}-${deploymentType}-web`, {
                 ...props,
                 apiDomainName,
+            });
+
+            const deployRole = new TeamBuilderDeployRole(
+                scope,
+                `${appName}-${deploymentType}-deploy-role-construct`,
+                {
+                    ...props,
+                    githubRepo: "yusufaf/nba-central",
+                    bucket: web.bucket,
+                    distribution: web.distribution,
+                },
+            );
+
+            // Values the deploy runbook / GitHub Actions workflow needs —
+            // read them from `cdk deploy`'s output rather than re-deriving.
+            new CfnOutput(scope, `${appName}-${deploymentType}-web-bucket-name`, {
+                value: web.bucket.bucketName,
+            });
+            new CfnOutput(
+                scope,
+                `${appName}-${deploymentType}-distribution-id`,
+                { value: web.distribution.distributionId },
+            );
+            new CfnOutput(scope, `${appName}-${deploymentType}-deploy-role-arn`, {
+                value: deployRole.roleArn,
             });
         }
     }

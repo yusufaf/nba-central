@@ -10,7 +10,7 @@ const TEST_CERT_ARN =
 	"arn:aws:acm:us-east-1:123456789012:certificate/test-web-cert";
 const TEST_API_DOMAIN = "abc123.execute-api.us-west-2.amazonaws.com";
 
-const buildTemplate = () => {
+const buildTemplate = (hostedZoneName = "yusufaf.dev") => {
 	const app = new App();
 	const stack = new Stack(app, "test-stack", {
 		env: { account: "123456789012", region: "us-west-2" },
@@ -20,7 +20,7 @@ const buildTemplate = () => {
 		appName: "team-builder",
 		deploymentType: "test",
 		hostedZoneId: "Z1234567890ABC",
-		hostedZoneName: "yusufaf.dev",
+		hostedZoneName,
 		webCertificateArn: TEST_CERT_ARN,
 		apiDomainName: TEST_API_DOMAIN,
 	});
@@ -116,6 +116,45 @@ describe("TeamBuilderWeb", () => {
 		expect(distConfig.ViewerCertificate.AcmCertificateArn).toBe(
 			TEST_CERT_ARN,
 		);
+	});
+
+	it("forwards viewer headers to the API origin except Host", () => {
+		const template = buildTemplate();
+		const distConfig = getDistributionConfig(template);
+
+		const apiBehavior = distConfig.CacheBehaviors.find(
+			(behavior: any) => behavior.PathPattern === "/api/*",
+		);
+		// ALL_VIEWER_EXCEPT_HOST_HEADER's managed policy id — API Gateway
+		// rejects a request whose Host header isn't its own execute-api
+		// hostname, so forwarding it (ALL_VIEWER) would 403 every API call.
+		expect(apiBehavior.OriginRequestPolicyId).toBe(
+			"b689b0a8-53d0-40ab-baf2-68738e2966ac",
+		);
+	});
+
+	it("records the alias at the zone apex when the hosted zone IS the web domain (delegated subzone)", () => {
+		const template = buildTemplate("nba.yusufaf.dev");
+
+		const aRecords = template.findResources("AWS::Route53::RecordSet", {
+			Properties: { Type: "A" },
+		});
+		const names = Object.values(aRecords).map(
+			(record: any) => record.Properties.Name,
+		);
+		expect(names).toEqual(["nba.yusufaf.dev."]);
+	});
+
+	it("records the alias under the 'nba' label when the hosted zone is a parent domain", () => {
+		const template = buildTemplate("yusufaf.dev");
+
+		const aRecords = template.findResources("AWS::Route53::RecordSet", {
+			Properties: { Type: "A" },
+		});
+		const names = Object.values(aRecords).map(
+			(record: any) => record.Properties.Name,
+		);
+		expect(names).toEqual(["nba.yusufaf.dev."]);
 	});
 
 	it("throws if instantiated without production wiring props", () => {

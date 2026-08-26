@@ -23,6 +23,9 @@ export const handler: Handler = async (
 	const { sub: userUUID, username } = event.requestContext.authorizer.lambda;
 
 	try {
+		const payload: { name?: string; description?: string; players?: string[] } =
+			JSON.parse(event.body || "{}");
+
 		const teamUUID = randomUUID();
 		const timestamp = new Date().getTime();
 		const initialMetadata = {
@@ -32,14 +35,15 @@ export const handler: Handler = async (
 			PK: `userUUID#${userUUID}`,
 			SK: `team#${teamUUID}`,
 			createdAt: timestamp,
-			description: "",
+			description: payload.description || "",
 			favorited: false,
 			label: "",
 			lastViewed: timestamp,
 			metadata: initialMetadata,
+			players: payload.players || [],
 			updatedAt: timestamp,
 			teamUUID,
-			title: "Untitled Team",
+			title: payload.name?.trim() || "Untitled Team",
 			username,
 			userUUID,
 		};

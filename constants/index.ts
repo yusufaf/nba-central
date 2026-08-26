@@ -1,5 +1,11 @@
 export const DEFAULT_ALLOWED_ORIGINS = ["http://localhost:3000"];
 
+// Public hostname for the production frontend (S3 + CloudFront). Stated once
+// here and reused by team-builder-cert-stack.ts (ACM cert) and
+// team-builder-web.ts (CloudFront domainNames + Route 53 record) so the two
+// can never drift out of sync.
+export const WEB_DOMAIN_NAME = "nba.yusufaf.dev";
+
 export const ESPN_API_BASE_URL = "https://site.api.espn.com/apis/site/v2/sports/basketball/nba";
 
 export const ESPN_TEAMS_URL = `${ESPN_API_BASE_URL}/teams/`;
