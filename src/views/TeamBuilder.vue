@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, watch } from "vue";
 import { toast } from 'vue-sonner';
-import axios from "axios";
 import PageTitle from "@/components/PageTitle.vue";
 import TeamBuilderHeader from "@/components/TeamBuilder/TeamBuilderHeader.vue";
 import RosterSection from "@/components/TeamBuilder/RosterSection.vue";
@@ -16,9 +15,9 @@ import {
     swapMapEntries,
     swapSetMembers,
 } from "@/composables/useRosterDragDrop";
-import { dataApi } from "@/network/api";
-import type { Team, DrawerSide, NBA2KRating } from "@/models/types";
-import type { GetPlayerStatsResponse } from "@/models/api";
+import { dataApi, teamApi } from "@/network/api";
+import type { DrawerSide, NBA2KRating } from "@/models/types";
+import type { GetPlayerStatsResponse, CreateTeamPayload } from "@/models/api";
 
 /* Team Metadata */
 const teamName = ref<string>("");
@@ -270,23 +269,20 @@ const resetTeam = () => {
 };
 
 const saveTeam = () => {
-    const uuid = crypto.randomUUID();
-
     // Sort by slot - Map iteration is insertion order, which would save a
     // reordered roster in the order the players happened to be added.
     const players = Array.from(selectedPlayersData.value.entries())
         .sort(([a], [b]) => a - b)
         .map(([, p]) => p.fullName);
 
-    const newTeam: Team = {
-        uuid,
+    const newTeam: CreateTeamPayload = {
         description: teamDescription.value || "Custom NBA Team",
         name: teamName.value,
         players,
     };
 
     toast.promise(
-        axios.post(`/api/team/`, newTeam),
+        teamApi.createTeam(newTeam),
         {
             loading: 'Saving team...',
             success: 'Team saved successfully!',
