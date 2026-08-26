@@ -11,7 +11,11 @@ permissions:
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    environment: production
+    # No `environment:` here — declaring one changes the OIDC token's `sub`
+    # claim to repo:...:environment:production instead of
+    # repo:...:ref:refs/heads/main, which the deploy role's trust policy
+    # doesn't match (and there's no environment protection rule configured
+    # to make declaring one worth it).
     steps:
       - uses: actions/checkout@v5
 
