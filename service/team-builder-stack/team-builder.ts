@@ -4,7 +4,6 @@ import { ExtendedStackProps } from "models/stack";
 import { TeamBuilderAPI } from "./team-builder-api";
 import { TeamBuilderDynamoDB } from "./team-builder-dynamo";
 import { TeamBuilderS3 } from "./team-builder-s3";
-import { TeamBuilderCognito } from "./team-builder-cognito";
 import { TeamBuilderWeb } from "./team-builder-web";
 import { TeamBuilderDeployRole } from "./team-builder-deploy-role";
 
@@ -31,11 +30,6 @@ export class TeamBuilder extends Construct {
             props
         );
         new TeamBuilderS3(scope, `${appName}-${deploymentType}-s3`, props);
-        new TeamBuilderCognito(
-            scope,
-            `${appName}-${deploymentType}-cognito`,
-            props
-        );
 
         new CfnOutput(scope, `${appName}-${deploymentType}-api-endpoint`, {
             value: api.api.apiEndpoint,
