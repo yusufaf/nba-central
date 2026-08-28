@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, watch, onMounted } from "vue";
+import { ref, computed, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { toast } from 'vue-sonner';
 import PageTitle from "@/components/PageTitle.vue";
@@ -266,7 +266,11 @@ watch(showPlayerComparison, (open) => {
     if (!open) selectedPlayersForComparison.value.clear();
 });
 
-const resetTeam = () => {
+// Shared by the user-facing "Clear Team" button and route-driven resets
+// (navigating from a loaded team to a bare /teambuilder). Resetting
+// loadedTeamUUID here matters: without it, Save after a clear would still
+// update the previously loaded team instead of creating a new one.
+const clearBuilderState = () => {
     cancelPickup();
     selectedPlayersData.value.clear();
     cardsFlipped.value.clear();
@@ -279,7 +283,11 @@ const resetTeam = () => {
     teamCity.value = "";
     teamCountry.value = "";
     teamLogo.value = "";
+    loadedTeamUUID.value = null;
+};
 
+const resetTeam = () => {
+    clearBuilderState();
     toast.success('Team cleared successfully');
 };
 
@@ -322,10 +330,7 @@ const saveTeam = () => {
 // Loading an existing team via ?team=<uuid> (e.g. from /teams). Metadata
 // restores synchronously; each roster slot then streams its career stats in
 // through loadPlayerIntoSlot, same as adding a player fresh.
-onMounted(async () => {
-    const teamUUID = route.query.team;
-    if (typeof teamUUID !== "string" || !teamUUID) return;
-
+const loadTeamFromRoute = async (teamUUID: string) => {
     try {
         const response = await teamApi.getTeam(teamUUID);
         if (!response.success) {
@@ -353,7 +358,24 @@ onMounted(async () => {
         console.error("Error loading team:", err);
         toast.error("Failed to load team");
     }
-});
+};
+
+// Watches route.query.team rather than onMounted alone: navigating between
+// /teambuilder?team=A and a bare /teambuilder (e.g. the nav bar's "Team
+// Builder" link) matches the same route record, so Vue Router reuses this
+// component instance and onMounted never fires again. Without this watcher
+// the builder kept showing team A - and Save would silently overwrite it.
+watch(
+    () => route.query.team,
+    (teamUUID) => {
+        if (typeof teamUUID === "string" && teamUUID) {
+            loadTeamFromRoute(teamUUID);
+        } else {
+            clearBuilderState();
+        }
+    },
+    { immediate: true },
+);
 </script>
 
 <template>
