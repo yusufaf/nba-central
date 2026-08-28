@@ -107,7 +107,7 @@ onMounted(() => {
                         <div class="team-meta">
                             <Badge variant="secondary" class="player-count-badge">
                                 <Users class="h-3 w-3 mr-1" />
-                                {{ team.playerCount }} {{ team.playerCount === 1 ? 'player' : 'players' }}
+                                {{ team.playerCount ?? 0 }} {{ team.playerCount === 1 ? 'player' : 'players' }}
                             </Badge>
                             <span class="updated-at">
                                 Updated {{ formatUpdatedAt(team.updatedAt) }}
