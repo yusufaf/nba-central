@@ -8,6 +8,8 @@ import { DynamoDBDocumentClient, PutCommand } from "@aws-sdk/lib-dynamodb";
 import { randomUUID } from "crypto";
 import { AuthorizerContext } from "models/auth";
 import { removeKeys } from "resources/dynamo/utilities";
+import { CreateTeamResponse, SaveTeamPayload, SavedTeam } from "models/api/teams-api";
+import { validateTeamData } from "utilities/team-validation";
 
 const { mainTable = "" } = process.env;
 
@@ -23,29 +25,43 @@ export const handler: Handler = async (
 	const { sub: userUUID, username } = event.requestContext.authorizer.lambda;
 
 	try {
-		const payload: { name?: string; description?: string; players?: string[] } =
-			JSON.parse(event.body || "{}");
+		const payload: SaveTeamPayload = JSON.parse(event.body || "{}");
+
+		const validation = validateTeamData(payload);
+		if (!validation.valid) {
+			const response: CreateTeamResponse = {
+				success: false,
+				error: validation.error!,
+			};
+			return {
+				statusCode: 400,
+				body: JSON.stringify(response),
+			};
+		}
 
 		const teamUUID = randomUUID();
 		const timestamp = new Date().getTime();
-		const initialMetadata = {
-			publiclyViewable: false,
-		};
-		const initialTeam = {
+		const initialTeam: SavedTeam & { PK: string; SK: string } = {
 			PK: `userUUID#${userUUID}`,
 			SK: `team#${teamUUID}`,
-			createdAt: timestamp,
+			teamUUID,
+			userUUID,
+			username,
+			title: payload.title.trim(),
 			description: payload.description || "",
+			city: payload.city || "",
+			country: payload.country || "",
+			logoUrl: payload.logoUrl || "",
+			playerCount: payload.roster.length,
+			roster: payload.roster,
+			coach: payload.coach ?? null,
+			gm: payload.gm ?? null,
+			arena: payload.arena ?? null,
 			favorited: false,
 			label: "",
 			lastViewed: timestamp,
-			metadata: initialMetadata,
-			players: payload.players || [],
+			createdAt: timestamp,
 			updatedAt: timestamp,
-			teamUUID,
-			title: payload.name?.trim() || "Untitled Team",
-			username,
-			userUUID,
 		};
 
 		const putCommand = new PutCommand({
@@ -57,20 +73,24 @@ export const handler: Handler = async (
 
 		removeKeys(initialTeam);
 
+		const response: CreateTeamResponse = {
+			success: true,
+			data: initialTeam,
+		};
+
 		return {
 			statusCode: 200,
-			body: JSON.stringify({
-				message: "Successfully created team",
-				team: initialTeam,
-			}),
+			body: JSON.stringify(response),
 		};
-	} catch (err) {
-		console.error(err);
+	} catch (err: any) {
+		console.error("Error creating team:", err);
+		const response: CreateTeamResponse = {
+			success: false,
+			error: err.message || "Failed to create team",
+		};
 		return {
 			statusCode: 500,
-			body: JSON.stringify({
-				message: "Error",
-			}),
+			body: JSON.stringify(response),
 		};
 	}
 };

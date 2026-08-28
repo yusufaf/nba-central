@@ -57,9 +57,10 @@ describe("team-builder-api-routes", () => {
 		for (const path of publicPaths) {
 			expect(privatePaths.has(path)).toBe(false);
 		}
-		// 22 routes total, matching the count confirmed via cdk synth when
-		// the authorizer was first wired to every route (commit c1e8738).
-		expect(publicPaths.size + privatePaths.size).toBe(22);
+		// 26 routes total: 22 confirmed via cdk synth when the authorizer was
+		// first wired to every route (commit c1e8738), plus the 4 team
+		// list/get/update/delete routes added alongside createTeam.
+		expect(publicPaths.size + privatePaths.size).toBe(26);
 	});
 
 	it("a representative write route (createTeam) is private", () => {
@@ -72,5 +73,34 @@ describe("team-builder-api-routes", () => {
 		for (const route of CUSTOM_ENTITIES_ROUTES) {
 			expect(PRIVATE_ROUTES).toContainEqual(route);
 		}
+	});
+
+	it("every team route is private", () => {
+		for (const route of TEAMS_ROUTES) {
+			expect(PRIVATE_ROUTES).toContainEqual(route);
+		}
+	});
+
+	it("TEAMS_ROUTES has the full CRUD set with the right methods", () => {
+		const byLambda = Object.fromEntries(
+			TEAMS_ROUTES.map((r) => [r.lambdaName, r]),
+		);
+		expect(byLambda.createTeam.route).toBe("/api/teams/create");
+		expect(byLambda.listTeams).toMatchObject({
+			route: "/api/teams/list",
+			methods: ["GET"],
+		});
+		expect(byLambda.getTeam).toMatchObject({
+			route: "/api/teams/get/{teamUUID}",
+			methods: ["GET"],
+		});
+		expect(byLambda.updateTeam).toMatchObject({
+			route: "/api/teams/update",
+			methods: ["PUT"],
+		});
+		expect(byLambda.deleteTeam).toMatchObject({
+			route: "/api/teams/delete/{teamUUID}",
+			methods: ["DELETE"],
+		});
 	});
 });

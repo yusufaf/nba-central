@@ -32,10 +32,6 @@ export const FILES_ROUTES: ApiRoute[] = [
 ];
 
 export const USERS_ROUTES: ApiRoute[] = [
-	// {
-	// 	route: `${USERS_PREFIX}/get`,
-	// 	lambdaName: "getUser",
-	// },
 	{
 		route: `${USERS_PREFIX}/save-data`,
 		lambdaName: "saveUserData",
@@ -46,6 +42,26 @@ export const TEAMS_ROUTES: ApiRoute[] = [
 	{
 		route: `${TEAMS_PREFIX}/create`,
 		lambdaName: "createTeam",
+	},
+	{
+		route: `${TEAMS_PREFIX}/list`,
+		lambdaName: "listTeams",
+		methods: [HttpMethod.GET],
+	},
+	{
+		route: `${TEAMS_PREFIX}/get/{teamUUID}`,
+		lambdaName: "getTeam",
+		methods: [HttpMethod.GET],
+	},
+	{
+		route: `${TEAMS_PREFIX}/update`,
+		lambdaName: "updateTeam",
+		methods: [HttpMethod.PUT],
+	},
+	{
+		route: `${TEAMS_PREFIX}/delete/{teamUUID}`,
+		lambdaName: "deleteTeam",
+		methods: [HttpMethod.DELETE],
 	},
 ];
 
