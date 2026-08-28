@@ -1,38 +1,31 @@
 <script setup lang="ts">
-import { SignIn } from '@clerk/vue';
-import type { SignInProps } from '@clerk/types';
+import { onMounted } from 'vue';
+import { useLogto } from '@logto/vue';
 import { useRouter } from 'vue-router';
 
+const { signIn, isAuthenticated } = useLogto();
 const router = useRouter();
 
-const appearance: SignInProps['appearance'] = {
-    layout: {
-        socialButtonsPlacement: 'bottom',
-        socialButtonsVariant: 'iconButton',
-    },
-    variables: {
-        colorPrimary: '#e08210',
-        colorText: '#1d1d1d',
-    },
-    elements: {
-        card: {
-            boxShadow: '0px 2px 4px rgba(0, 0, 0, 0.2)',
-            backgroundColor: '#ffffff',
-        },
-        headerTitle: {
-            fontSize: '24px',
-            textAlign: 'center',
-        },
-        socialButtons: {
-            justifyContent: 'center',
-        },
-    },
-};
+// Logto has no embeddable sign-in form (unlike Clerk's <SignIn>) — it
+// redirects to its own hosted sign-in page. This view's only job is to kick
+// off that redirect; /callback (Callback.vue) picks the user back up.
+//
+// isAuthenticated only checks that tokens are present, not that they're
+// unexpired — a stale session left here with nothing to do, stuck on
+// "Redirecting to sign in..." forever. Send them home instead; anything
+// that actually needs a fresh token refreshes it on use.
+onMounted(() => {
+    if (isAuthenticated.value) {
+        router.push('/');
+    } else {
+        signIn({ redirectUri: `${window.location.origin}/callback` });
+    }
+});
 </script>
 
 <template>
     <div class="auth-container">
-        <SignIn :appearance="appearance" sign-up-url="/sign-up" />
+        <p>Redirecting to sign in...</p>
     </div>
 </template>
 

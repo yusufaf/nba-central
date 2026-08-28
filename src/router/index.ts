@@ -7,6 +7,7 @@ import News from '@/views/News.vue';
 import Teams from '@/views/Teams.vue';
 import Login from '@/views/Login.vue';
 import SignUp from '@/views/SignUp.vue';
+import Callback from '@/views/Callback.vue';
 
 const router = createRouter({
     history: createWebHistory(import.meta.env.BASE_URL),
@@ -51,6 +52,11 @@ const router = createRouter({
             path: '/sign-up',
             name: 'sign-up',
             component: SignUp,
+        },
+        {
+            path: '/callback',
+            name: 'callback',
+            component: Callback,
         },
     ],
 });
