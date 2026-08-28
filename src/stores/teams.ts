@@ -35,8 +35,7 @@ export const useTeamsStore = defineStore("teams", {
             this.error = null;
 
             try {
-                const { teams } = await dataApi.getTeamLogos();
-                this.teams = teams;
+                this.teams = await dataApi.getTeamLogos();
             } catch (error) {
                 this.error =
                     error instanceof Error
