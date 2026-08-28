@@ -8,10 +8,13 @@ import type {
     GetMultipartSignedUrlsResponse,
     DeleteFilePayload,
     DeleteFileResponse,
-    GetUserPayload,
-    GetUserResponse,
-    CreateTeamPayload,
+    SaveTeamPayload,
+    UpdateTeamPayload,
     CreateTeamResponse,
+    ListTeamsResponse,
+    GetTeamResponse,
+    UpdateTeamResponse,
+    DeleteTeamResponse,
     GetTeamLogosResponse,
     GetNewsResponse,
     GetPlayersParams,
@@ -86,10 +89,6 @@ export const fileApi = {
 
 // Users API - matches USERS_ROUTES in CDK
 export const userApi = {
-    getUser: async (payload: GetUserPayload): Promise<GetUserResponse> => {
-        const response = await api.post('/api/users/get', payload);
-        return response.data;
-    },
     saveUserData: async (payload: {
         userId: string;
         [key: string]: any;
@@ -102,9 +101,27 @@ export const userApi = {
 // Teams API - matches TEAMS_ROUTES in CDK
 export const teamApi = {
     createTeam: async (
-        payload: CreateTeamPayload,
+        payload: SaveTeamPayload,
     ): Promise<CreateTeamResponse> => {
         const response = await api.post('/api/teams/create', payload);
+        return response.data;
+    },
+    listTeams: async (): Promise<ListTeamsResponse> => {
+        const response = await api.get('/api/teams/list');
+        return response.data;
+    },
+    getTeam: async (teamUUID: string): Promise<GetTeamResponse> => {
+        const response = await api.get(`/api/teams/get/${teamUUID}`);
+        return response.data;
+    },
+    updateTeam: async (
+        payload: UpdateTeamPayload,
+    ): Promise<UpdateTeamResponse> => {
+        const response = await api.put('/api/teams/update', payload);
+        return response.data;
+    },
+    deleteTeam: async (teamUUID: string): Promise<DeleteTeamResponse> => {
+        const response = await api.delete(`/api/teams/delete/${teamUUID}`);
         return response.data;
     },
 };

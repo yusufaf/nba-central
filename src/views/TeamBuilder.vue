@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, watch } from "vue";
+import { useRoute, useRouter } from "vue-router";
 import { toast } from 'vue-sonner';
 import PageTitle from "@/components/PageTitle.vue";
 import TeamBuilderHeader from "@/components/TeamBuilder/TeamBuilderHeader.vue";
@@ -15,9 +16,20 @@ import {
     swapMapEntries,
     swapSetMembers,
 } from "@/composables/useRosterDragDrop";
+import { serializeTeam, hydrateTeam } from "@/composables/useTeamPersistence";
 import { dataApi, teamApi } from "@/network/api";
+import { useUserTeamsStore } from "@/stores/userTeams";
 import type { DrawerSide, NBA2KRating } from "@/models/types";
-import type { GetPlayerStatsResponse, CreateTeamPayload } from "@/models/api";
+import type { GetPlayerStatsResponse } from "@/models/api";
+
+const route = useRoute();
+const router = useRouter();
+const userTeamsStore = useUserTeamsStore();
+
+// Set once a team is loaded from /teams (route query `team`) or freshly
+// saved. Present means saveTeam() updates that team in place; absent means
+// it creates a new one.
+const loadedTeamUUID = ref<string | null>(null);
 
 /* Team Metadata */
 const teamName = ref<string>("");
@@ -108,6 +120,24 @@ const addPlayer = (index: number) => {
     showPlayerDialog.value = true;
 };
 
+// Fetches a player's career stats/rating history and lands the full record
+// in the slot. Shared by adding a new player from the dialog and hydrating a
+// loaded team - both start from a full player object and only need the
+// stats round trip. Marking the slot pending first lets the card show an
+// in-place wait rather than nothing while that request is out.
+const loadPlayerIntoSlot = async (slot: number, player: any) => {
+    pendingPlayers.value.set(slot, player.fullName ?? "");
+    try {
+        const { id } = player;
+        const { data: playerStats, ratingHistory } = await getPlayerStats(id);
+        const updatedPlayerData = { ...player, playerStats, ratingHistory };
+        selectedPlayersData.value.set(slot, updatedPlayerData);
+        cardsFlipped.value.set(slot, false);
+    } finally {
+        pendingPlayers.value.delete(slot);
+    }
+};
+
 const addPlayerFromDialog = async (player: any) => {
     const playerIndex = selectedPlayerIndex.value;
     // The dialog is only opened from a slot, so this is set - but the ref is
@@ -117,28 +147,13 @@ const addPlayerFromDialog = async (player: any) => {
     const playerName = `${player.first_name} ${player.last_name}`;
 
     // The toast lives in the corner, far from the slot the player is landing
-    // in. Marking the slot pending lets the card show the same wait in place.
-    pendingPlayers.value.set(playerIndex, playerName);
-
-    toast.promise(
-        async () => {
-            try {
-                const { id } = player;
-                const { data: playerStats, ratingHistory } =
-                    await getPlayerStats(id);
-                const updatedPlayerData = { ...player, playerStats, ratingHistory };
-                selectedPlayersData.value.set(playerIndex, updatedPlayerData);
-                cardsFlipped.value.set(playerIndex, false);
-            } finally {
-                pendingPlayers.value.delete(playerIndex);
-            }
-        },
-        {
-            loading: `Adding ${playerName} to ${slotLabel(playerIndex)}...`,
-            success: `Added ${playerName} to ${slotLabel(playerIndex)}`,
-            error: `Failed to add ${playerName} to ${slotLabel(playerIndex)}`,
-        }
-    );
+    // in - loadPlayerIntoSlot marks the slot pending so the card shows the
+    // same wait in place.
+    toast.promise(loadPlayerIntoSlot(playerIndex, player), {
+        loading: `Adding ${playerName} to ${slotLabel(playerIndex)}...`,
+        success: `Added ${playerName} to ${slotLabel(playerIndex)}`,
+        error: `Failed to add ${playerName} to ${slotLabel(playerIndex)}`,
+    });
 };
 
 const deletePlayer = (index: number) => {
@@ -251,7 +266,11 @@ watch(showPlayerComparison, (open) => {
     if (!open) selectedPlayersForComparison.value.clear();
 });
 
-const resetTeam = () => {
+// Shared by the user-facing "Clear Team" button and route-driven resets
+// (navigating from a loaded team to a bare /teambuilder). Resetting
+// loadedTeamUUID here matters: without it, Save after a clear would still
+// update the previously loaded team instead of creating a new one.
+const clearBuilderState = () => {
     cancelPickup();
     selectedPlayersData.value.clear();
     cardsFlipped.value.clear();
@@ -264,32 +283,99 @@ const resetTeam = () => {
     teamCity.value = "";
     teamCountry.value = "";
     teamLogo.value = "";
+    loadedTeamUUID.value = null;
+};
 
+const resetTeam = () => {
+    clearBuilderState();
     toast.success('Team cleared successfully');
 };
 
 const saveTeam = () => {
-    // Sort by slot - Map iteration is insertion order, which would save a
-    // reordered roster in the order the players happened to be added.
-    const players = Array.from(selectedPlayersData.value.entries())
-        .sort(([a], [b]) => a - b)
-        .map(([, p]) => p.fullName);
+    const payload = serializeTeam({
+        teamName: teamName.value,
+        teamDescription: teamDescription.value || "Custom NBA Team",
+        teamCity: teamCity.value,
+        teamCountry: teamCountry.value,
+        teamLogo: teamLogo.value,
+        selectedPlayersData: selectedPlayersData.value,
+        teamCoach: teamCoach.value,
+        teamArena: teamArena.value,
+        teamGM: teamGM.value,
+    });
 
-    const newTeam: CreateTeamPayload = {
-        description: teamDescription.value || "Custom NBA Team",
-        name: teamName.value,
-        players,
-    };
+    const existingUUID = loadedTeamUUID.value;
 
     toast.promise(
-        teamApi.createTeam(newTeam),
+        async () => {
+            const saved = existingUUID
+                ? await userTeamsStore.update({ ...payload, teamUUID: existingUUID })
+                : await userTeamsStore.save(payload);
+            loadedTeamUUID.value = saved.teamUUID;
+            // Puts the team's uuid in the URL after the first save so a
+            // refresh still knows to update this team rather than create
+            // a duplicate on the next save.
+            if (!existingUUID) {
+                router.replace({ query: { ...route.query, team: saved.teamUUID } });
+            }
+        },
         {
-            loading: 'Saving team...',
-            success: 'Team saved successfully!',
-            error: 'Failed to save team',
+            loading: existingUUID ? 'Saving team...' : 'Creating team...',
+            success: existingUUID ? 'Team saved!' : 'Team created!',
+            error: existingUUID ? 'Failed to save team' : 'Failed to create team',
         }
     );
 };
+
+// Loading an existing team via ?team=<uuid> (e.g. from /teams). Metadata
+// restores synchronously; each roster slot then streams its career stats in
+// through loadPlayerIntoSlot, same as adding a player fresh.
+const loadTeamFromRoute = async (teamUUID: string) => {
+    try {
+        const response = await teamApi.getTeam(teamUUID);
+        if (!response.success) {
+            toast.error(response.error || "Failed to load team");
+            return;
+        }
+
+        const hydrated = hydrateTeam(response.data);
+        loadedTeamUUID.value = response.data.teamUUID;
+        teamName.value = hydrated.teamName;
+        teamDescription.value = hydrated.teamDescription;
+        teamCity.value = hydrated.teamCity;
+        teamCountry.value = hydrated.teamCountry;
+        teamLogo.value = hydrated.teamLogo;
+        teamCoach.value = hydrated.teamCoach;
+        teamArena.value = hydrated.teamArena;
+        teamGM.value = hydrated.teamGM;
+
+        await Promise.all(
+            Array.from(hydrated.players.entries()).map(([slot, player]) =>
+                loadPlayerIntoSlot(slot, player),
+            ),
+        );
+    } catch (err) {
+        console.error("Error loading team:", err);
+        toast.error("Failed to load team");
+    }
+};
+
+// Watches route.query.team rather than onMounted alone: navigating between
+// /teambuilder?team=A and a bare /teambuilder (e.g. the nav bar's "Team
+// Builder" link) matches the same route record, so Vue Router reuses this
+// component instance and onMounted never fires again. Without this watcher
+// the builder kept showing team A - and Save would silently overwrite it.
+watch(
+    () => route.query.team,
+    (teamUUID) => {
+        if (typeof teamUUID === "string" && teamUUID) {
+            loadTeamFromRoute(teamUUID);
+        } else {
+            clearBuilderState();
+        }
+    },
+    { immediate: true },
+);
 </script>
 
 <template>

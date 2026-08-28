@@ -1,4 +1,4 @@
-import type { NBA2KRating, RatingSource } from './types';
+import type { NBA2KRating, Player, RatingSource } from './types';
 
 // #region File API Types
 export interface InitiateMultipartUploadPayload {
@@ -51,40 +51,82 @@ export interface DeleteFileResponse {
 }
 // #endregion
 
-//#region User API Types
-export interface GetUserPayload {
-    userId: string;
-}
-
-export interface GetUserResponse {
-    id: string;
-    email: string;
-    name: string;
-    // Add other user fields
-}
-
-// #endregion
-
 //#region Team API Types
-export interface CreateTeamPayload {
-    name: string;
-    description?: string;
-    players?: string[];
+
+// A player as stored on a saved team - the same `Player` union already used
+// while building a roster (API and custom players have different field
+// sets), snapshotted so a saved team renders exactly as it did when saved
+// rather than drifting with later roster/rating changes upstream. `fullName`
+// is always set on a player before it reaches the roster, so it's the one
+// required field here.
+export type PlayerSnapshot = Player & { fullName: string };
+
+export interface TeamRosterEntry {
+    slot: number;
+    player: PlayerSnapshot;
 }
 
-export interface CreateTeamResponse {
-    message: string;
-    team: {
-        teamUUID: string;
-        title: string;
-        description: string;
-        players: string[];
-        username: string;
-        userUUID: string;
-        createdAt: number;
-        updatedAt: number;
-    };
+// Coaches/GMs from the checked-in JSON are only identified by name; custom
+// ones also carry a UUID.
+export interface EntityRef {
+    name: string;
+    isCustom: boolean;
+    uuid?: string;
 }
+
+export interface TeamArenaRef {
+    name: string;
+    imgLink?: string;
+}
+
+export interface SaveTeamPayload {
+    title: string;
+    description?: string;
+    city?: string;
+    country?: string;
+    logoUrl?: string;
+    roster: TeamRosterEntry[];
+    coach: EntityRef | null;
+    gm: EntityRef | null;
+    arena: TeamArenaRef | null;
+}
+
+export interface UpdateTeamPayload extends SaveTeamPayload {
+    teamUUID: string;
+}
+
+export interface SavedTeam {
+    teamUUID: string;
+    userUUID: string;
+    username: string;
+    title: string;
+    description: string;
+    city: string;
+    country: string;
+    logoUrl: string;
+    playerCount: number;
+    roster: TeamRosterEntry[];
+    coach: EntityRef | null;
+    gm: EntityRef | null;
+    arena: TeamArenaRef | null;
+    favorited: boolean;
+    label: string;
+    lastViewed: number;
+    createdAt: number;
+    updatedAt: number;
+}
+
+export type TeamSummary = Omit<SavedTeam, 'roster' | 'coach' | 'gm' | 'arena'>;
+
+export type ApiResult<T> =
+    | { success: true; data: T }
+    | { success: false; error: string };
+
+export type CreateTeamResponse = ApiResult<SavedTeam>;
+export type ListTeamsResponse = ApiResult<{ teams: TeamSummary[] }>;
+export type GetTeamResponse = ApiResult<SavedTeam>;
+export type UpdateTeamResponse = ApiResult<SavedTeam>;
+export type DeleteTeamResponse = ApiResult<void>;
 
 // #endregion
 
@@ -137,6 +179,7 @@ export interface PlayerRecord {
     ratingSource?: RatingSource;
     // Specific positions (PG/SG/SF/PF/C) from 2K, when the player is rated.
     positions?: string[];
+    isCustom?: boolean;
 }
 
 export interface GetPlayersResponse {

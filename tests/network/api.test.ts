@@ -43,6 +43,58 @@ describe("teamApi.createTeam", () => {
     });
 });
 
+describe("teamApi.listTeams", () => {
+    it("GETs /api/teams/list and returns response.data", async () => {
+        const body = { success: true, data: { teams: [] } };
+        mockInstance.get.mockResolvedValue({ data: body });
+
+        const result = await teamApi.listTeams();
+
+        expect(mockInstance.get).toHaveBeenCalledWith("/api/teams/list");
+        expect(result).toEqual(body);
+    });
+});
+
+describe("teamApi.getTeam", () => {
+    it("GETs the uuid-scoped path", async () => {
+        const body = { success: true, data: { teamUUID: "t1" } };
+        mockInstance.get.mockResolvedValue({ data: body });
+
+        const result = await teamApi.getTeam("t1");
+
+        expect(mockInstance.get).toHaveBeenCalledWith("/api/teams/get/t1");
+        expect(result).toEqual(body);
+    });
+});
+
+describe("teamApi.updateTeam", () => {
+    it("PUTs to /api/teams/update with the payload", async () => {
+        const payload = { teamUUID: "t1", title: "Renamed" } as any;
+        mockInstance.put.mockResolvedValue({ data: { success: true } });
+
+        const result = await teamApi.updateTeam(payload);
+
+        expect(mockInstance.put).toHaveBeenCalledWith(
+            "/api/teams/update",
+            payload,
+        );
+        expect(result).toEqual({ success: true });
+    });
+});
+
+describe("teamApi.deleteTeam", () => {
+    it("DELETEs the uuid-scoped path", async () => {
+        mockInstance.delete.mockResolvedValue({ data: { success: true } });
+
+        const result = await teamApi.deleteTeam("t1");
+
+        expect(mockInstance.delete).toHaveBeenCalledWith(
+            "/api/teams/delete/t1",
+        );
+        expect(result).toEqual({ success: true });
+    });
+});
+
 describe("dataApi.getPlayers", () => {
     it("forwards the query params and returns response.data", async () => {
         const body = { data: [{ id: "jamesle01" }], nextCursor: null };
