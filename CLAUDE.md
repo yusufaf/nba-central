@@ -26,6 +26,7 @@ pnpm build
 pnpm type-check      # vue-tsc
 pnpm test            # vitest
 pnpm check:styles    # design-system guard
+pnpm test:visual     # Playwright screenshots of every route
 ```
 
 Use **pnpm**, and run it from inside this repo — the parent folder is not a
@@ -79,6 +80,7 @@ to put classes on.
 
 ## Verifying UI work
 
-Run the app and look at it. `check:styles` catches classes that compile to
-nothing and tokens used wrongly, but it cannot tell you whether a layout reads
-correctly — only a screenshot can.
+Run `pnpm test:visual` and look at the app. `check:styles` catches classes that
+compile to nothing and tokens used wrongly, but it cannot tell you whether a
+layout reads correctly — only a screenshot can. If a visual diff is intended,
+`pnpm test:visual:update` accepts it; review the new images before committing.

@@ -134,8 +134,18 @@ with a comment saying why.
 pnpm type-check
 pnpm check:styles
 pnpm test
-pnpm start          # then look at the page
+pnpm test:visual            # screenshot every route, both viewports
+pnpm test:visual:update     # accept intended visual changes
+pnpm start                  # then look at the page
 ```
 
-Look at the result before calling a UI change done. Tokens fix colour; they
-cannot tell you whether the spacing rhythm reads correctly.
+Look at the result before calling a UI change done. Tokens fix colour and
+`check:styles` catches CSS that does not exist, but neither can tell you whether
+the spacing rhythm reads correctly. Only a screenshot can.
+
+`pnpm test:visual` starts its own dev server on a dedicated port and never
+reuses one already running. Another worktree's server was once picked up, and
+the screenshots were wrong in a way nothing flagged.
+
+Committed baselines are win32. `pnpm test:visual:ci` runs the same suite in the
+official Playwright container for Linux baselines.
