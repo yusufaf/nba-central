@@ -224,7 +224,7 @@ input[type="range"]::-webkit-slider-thumb {
     background: hsl(var(--primary));
     cursor: pointer;
     border: 2px solid hsl(var(--background));
-    box-shadow: 0 0 0.5rem hsla(var(--primary), 0.5);
+    box-shadow: 0 0 0.5rem hsl(var(--primary) / 0.5);
     margin-top: -0.375rem;
 }
 
@@ -235,7 +235,7 @@ input[type="range"]::-moz-range-thumb {
     background: hsl(var(--primary));
     cursor: pointer;
     border: 2px solid hsl(var(--background));
-    box-shadow: 0 0 0.5rem hsla(var(--primary), 0.5);
+    box-shadow: 0 0 0.5rem hsl(var(--primary) / 0.5);
     border: none;
 }
 

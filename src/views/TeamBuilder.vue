@@ -490,7 +490,7 @@ watch(
 .header-card {
     border-radius: 0.5rem;
     border: 0.125rem solid;
-    border-color: hsla(var(--primary), 0.5);
+    border-color: hsl(var(--primary) / 0.5);
     background-color: hsl(var(--card));
     transition: all 0.2s ease;
     overflow: hidden;
@@ -498,7 +498,7 @@ watch(
 
 .header-card:hover {
     border-color: hsl(var(--primary));
-    box-shadow: 0 0 0.5rem hsla(var(--primary), 0.3);
+    box-shadow: 0 0 0.5rem hsl(var(--primary) / 0.3);
 }
 
 .staff-section {

@@ -330,13 +330,13 @@ const toggleFilter = (filter: string) => {
 .card-wrapper {
     border-radius: 0.5rem;
     border: 0.125rem solid;
-    border-color: hsla(var(--primary), 0.5);
+    border-color: hsl(var(--primary) / 0.5);
     transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
 .card-wrapper:hover {
     border-color: hsl(var(--primary));
-    box-shadow: 0 0 0.5rem hsla(var(--primary), 0.3);
+    box-shadow: 0 0 0.5rem hsl(var(--primary) / 0.3);
 }
 
 .section-card {

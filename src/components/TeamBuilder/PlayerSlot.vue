@@ -285,13 +285,13 @@ const averageStats = computed(() => {
 .player-card-wrapper {
   border-radius: 0.5rem;
   border: 0.125rem solid;
-  border-color: hsla(var(--primary), 0.5);
+  border-color: hsl(var(--primary) / 0.5);
   transition: all 0.2s ease;
 }
 
 .player-card-wrapper:hover {
   border-color: hsl(var(--primary));
-  box-shadow: 0 0 0.5rem hsla(var(--primary), 0.3);
+  box-shadow: 0 0 0.5rem hsl(var(--primary) / 0.3);
 }
 
 /* Drag & Drop states */
@@ -308,21 +308,21 @@ const averageStats = computed(() => {
 .player-card-wrapper.is-drop-target {
   border-color: hsl(var(--primary));
   border-style: dashed;
-  box-shadow: 0 0 0.75rem hsla(var(--primary), 0.5);
+  box-shadow: 0 0 0.75rem hsl(var(--primary) / 0.5);
   transform: scale(1.02);
 }
 
 /* Solid rather than dashed: the slot is committed, not awaiting a drop. */
 .player-card-wrapper.is-pending {
   border-color: hsl(var(--primary) / 0.6);
-  box-shadow: 0 0 0.75rem hsla(var(--primary), 0.25);
+  box-shadow: 0 0 0.75rem hsl(var(--primary) / 0.25);
 }
 
 /* The card held by the keyboard flow, which persists between keypresses. */
 .player-card-wrapper.is-picked-up {
   border-style: dashed;
   border-color: hsl(var(--primary));
-  box-shadow: 0 0 0.75rem hsla(var(--primary), 0.5);
+  box-shadow: 0 0 0.75rem hsl(var(--primary) / 0.5);
 }
 
 .drag-handle {
