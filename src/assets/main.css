@@ -1,85 +1,164 @@
 @import 'tailwindcss';
+@import 'tw-animate-css';
 
-@theme {
-  --color-background: hsl(0 0% 10%);
-  --color-foreground: hsl(0 0% 98%);
-  --color-card: hsl(0 0% 11%);
-  --color-card-foreground: hsl(0 0% 98%);
-  --color-popover: hsl(0 0% 11%);
-  --color-popover-foreground: hsl(0 0% 98%);
-  --color-primary: hsl(35 100% 50%);
-  --color-primary-foreground: hsl(0 0% 13%);
-  --color-secondary: hsl(0 0% 20%);
-  --color-secondary-foreground: hsl(0 0% 98%);
-  --color-muted: hsl(0 0% 20%);
-  --color-muted-foreground: hsl(0 0% 63.9%);
-  --color-accent: hsl(35 100% 50%);
-  --color-accent-foreground: hsl(0 0% 13%);
-  --color-destructive: hsl(0 62.8% 50%);
-  --color-destructive-foreground: hsl(0 0% 98%);
-  --color-success: hsl(142 76% 36%);
-  --color-border: hsl(0 0% 25%);
-  --color-input: hsl(0 0% 20%);
-  --color-ring: hsl(35 100% 50%);
+/* Tailwind v4 keys `dark:` off prefers-color-scheme unless told otherwise.
+   main.ts puts .dark on <html>, so bind the variant to that class. */
+@custom-variant dark (&:is(.dark *));
+
+/* ---------------------------------------------------------------------------
+   Design tokens — the single source of truth.
+
+   Colours are stored as bare HSL channels so they can carry an alpha at the
+   point of use: hsl(var(--primary) / 0.3). Never write hsla(var(--x), 0.3) —
+   that mixes space syntax with a legacy comma alpha and the browser drops the
+   whole declaration.
+
+   The @theme inline block below derives Tailwind's utilities from these, so a
+   token is defined exactly once. Do not restate a value there.
+--------------------------------------------------------------------------- */
+:root {
+  /* Surfaces */
+  --background: 0 0% 10%;
+  --foreground: 0 0% 98%;
+  --card: 0 0% 11%;
+  --card-foreground: 0 0% 98%;
+  --popover: 0 0% 11%;
+  --popover-foreground: 0 0% 98%;
+  /* Raised surface for menus and dropdowns that must read as fully opaque
+     above a dialog. Replaces the rgb(9, 9, 11) literal that was repeated
+     across the team builder sections. */
+  --surface-raised: 240 6% 4%;
+
+  /* Brand */
+  --primary: 35 100% 50%;
+  --primary-foreground: 0 0% 13%;
+  --secondary: 0 0% 20%;
+  --secondary-foreground: 0 0% 98%;
+  --muted: 0 0% 20%;
+  --muted-foreground: 0 0% 63.9%;
+  /* Accent is a distinct role from primary: primary is the brand action
+     colour, accent is the hover/selected wash behind neutral controls. */
+  --accent: 35 100% 50%;
+  --accent-foreground: 0 0% 13%;
+
+  /* Status */
+  --destructive: 0 62.8% 50%;
+  --destructive-foreground: 0 0% 98%;
+  --success: 142 76% 36%;
+  --success-foreground: 0 0% 98%;
+  --warning: 38 92% 50%;
+  --warning-foreground: 0 0% 13%;
+
+  /* Conference accents, previously invented inline in ScoreCard.vue */
+  --conference-east: 217 91% 60%;
+  --conference-west: 0 84% 60%;
+  --conference-cross: 270 65% 60%;
+
+  /* Lines and controls */
+  --border: 0 0% 25%;
+  --input: 0 0% 20%;
+  --ring: 35 100% 50%;
+
+  /* Radius scale */
   --radius: 0.5rem;
+
+  /* Page layout. Seven views used to invent their own max-width and gutters. */
+  --container-page: 90rem;
+  --container-narrow: 75rem;
+  --gutter: 1rem;
+
+  /* Stacking order. Reka portals overlays to <body>, so these are global and
+     must stay ordered. Never reach for an arbitrary z-[100]. */
+  --z-sticky: 30;
+  --z-header: 40;
+  --z-overlay: 50;
+  --z-modal: 60;
+  --z-popover: 70;
+  --z-toast: 80;
 }
 
-@layer base {
+@media (min-width: 40rem) {
   :root {
-    --background: 0 0% 10%;
-    --foreground: 0 0% 98%;
-    --card: 0 0% 11%;
-    --card-foreground: 0 0% 98%;
-    --popover: 0 0% 11%;
-    --popover-foreground: 0 0% 98%;
-    --primary: 35 100% 50%;
-    --primary-foreground: 0 0% 13%;
-    --secondary: 0 0% 20%;
-    --secondary-foreground: 0 0% 98%;
-    --muted: 0 0% 20%;
-    --muted-foreground: 0 0% 63.9%;
-    --accent: 35 100% 50%;
-    --accent-foreground: 0 0% 13%;
-    --destructive: 0 62.8% 50%;
-    --destructive-foreground: 0 0% 98%;
-    --success: 142 76% 36%;
-    --border: 0 0% 25%;
-    --input: 0 0% 20%;
-    --ring: 35 100% 50%;
-    --radius: 0.5rem;
-  }
-
-  .dark {
-    --background: 0 0% 10%;
-    --foreground: 0 0% 98%;
-    --card: 0 0% 11%;
-    --card-foreground: 0 0% 98%;
-    --popover: 0 0% 11%;
-    --popover-foreground: 0 0% 98%;
-    --primary: 35 100% 50%;
-    --primary-foreground: 0 0% 13%;
-    --secondary: 0 0% 20%;
-    --secondary-foreground: 0 0% 98%;
-    --muted: 0 0% 20%;
-    --muted-foreground: 0 0% 63.9%;
-    --accent: 35 100% 50%;
-    --accent-foreground: 0 0% 13%;
-    --destructive: 0 62.8% 50%;
-    --destructive-foreground: 0 0% 98%;
-    --success: 142 76% 36%;
-    --border: 0 0% 25%;
-    --input: 0 0% 20%;
-    --ring: 35 100% 50%;
+    --gutter: 1.5rem;
   }
 }
 
+@media (min-width: 64rem) {
+  :root {
+    --gutter: 2rem;
+  }
+}
+
+@theme inline {
+  --color-background: hsl(var(--background));
+  --color-foreground: hsl(var(--foreground));
+  --color-card: hsl(var(--card));
+  --color-card-foreground: hsl(var(--card-foreground));
+  --color-popover: hsl(var(--popover));
+  --color-popover-foreground: hsl(var(--popover-foreground));
+  --color-surface-raised: hsl(var(--surface-raised));
+
+  --color-primary: hsl(var(--primary));
+  --color-primary-foreground: hsl(var(--primary-foreground));
+  --color-secondary: hsl(var(--secondary));
+  --color-secondary-foreground: hsl(var(--secondary-foreground));
+  --color-muted: hsl(var(--muted));
+  --color-muted-foreground: hsl(var(--muted-foreground));
+  --color-accent: hsl(var(--accent));
+  --color-accent-foreground: hsl(var(--accent-foreground));
+
+  --color-destructive: hsl(var(--destructive));
+  --color-destructive-foreground: hsl(var(--destructive-foreground));
+  --color-success: hsl(var(--success));
+  --color-success-foreground: hsl(var(--success-foreground));
+  --color-warning: hsl(var(--warning));
+  --color-warning-foreground: hsl(var(--warning-foreground));
+
+  --color-conference-east: hsl(var(--conference-east));
+  --color-conference-west: hsl(var(--conference-west));
+  --color-conference-cross: hsl(var(--conference-cross));
+
+  --color-border: hsl(var(--border));
+  --color-input: hsl(var(--input));
+  --color-ring: hsl(var(--ring));
+
+  --radius-sm: calc(var(--radius) - 0.25rem);
+  --radius-md: calc(var(--radius) - 0.125rem);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 0.25rem);
+
+  --font-sans: 'Inter Variable', Inter, -apple-system, BlinkMacSystemFont,
+    'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
+}
+
 @layer base {
+  *,
+  *::before,
+  *::after {
+    box-sizing: border-box;
+    margin: 0;
+  }
+
   * {
     border-color: hsl(var(--border));
   }
+
   body {
+    min-height: 100vh;
     background-color: hsl(var(--background));
     color: hsl(var(--foreground));
+    font-family: var(--font-sans);
+    font-size: 0.9375rem;
+    line-height: 1.6;
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  /* Stat figures must align in columns wherever they appear. */
+  table,
+  .tabular-nums {
+    font-variant-numeric: tabular-nums;
   }
 }
 
@@ -714,9 +793,6 @@
     border-color: hsl(var(--border)) !important;
   }
 }
-
-@import './base.css';
-
 
 /* @media (min-width: 1024px) {
   body {

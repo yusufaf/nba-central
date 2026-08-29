@@ -19,7 +19,8 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { Calendar as CalendarIcon, BellRing } from "lucide-vue-next";
 import { DatePicker } from "v-calendar";
-import "v-calendar/style.css";
+/* v-calendar's stylesheet is imported in main.ts so it lands at a predictable
+   point in the cascade rather than wherever this route's chunk loads. */
 
 const numGames = ref<number>(0);
 const scoreData = ref<ESPNScoreboardResponse | null>(null);

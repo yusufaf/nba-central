@@ -2,8 +2,13 @@ import { createApp } from 'vue';
 import { createPinia } from 'pinia';
 import { createLogto, type LogtoConfig } from '@logto/vue';
 
-/* Import vue-sonner styles */
+/* Self-hosted Inter. base.css asked for Inter by name but nothing ever loaded
+   it, so the app rendered in the system fallback on every machine. */
+import '@fontsource-variable/inter';
+
+/* Vendor stylesheets first, so our own rules win without needing !important. */
 import 'vue-sonner/style.css';
+import 'v-calendar/style.css';
 
 import App from './App.vue';
 import router from './router';
