@@ -14,6 +14,7 @@
         "refresh-arenas": "ts-node -r tsconfig-paths/register scripts/refresh-arenas.ts",
         "refresh-coaches": "ts-node -r tsconfig-paths/register scripts/refresh-coaches.ts",
         "refresh-execs": "ts-node -r tsconfig-paths/register scripts/refresh-execs.ts",
+        "refresh-historical-logos": "ts-node -r tsconfig-paths/register scripts/refresh-historical-logos.ts",
         "cdk": "cdk",
         "prepare": "husky"
     },

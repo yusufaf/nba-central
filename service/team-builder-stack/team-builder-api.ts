@@ -32,7 +32,6 @@ import apiAuthorizer from "../lambdas/apiAuthorizer/index";
 import setCoachesData from "../lambdas/setCoachesData";
 import setExecsData from "../lambdas/setExecsData";
 import setArenasData from "../lambdas/setArenasData";
-import setHistoricalLogosData from "../lambdas/setHistoricalLogosData";
 import setPlayersData from "../lambdas/setPlayersData";
 import setPlayerRatingsData from "../lambdas/setPlayerRatingsData";
 import fetchNewsCron from "../lambdas/fetchNewsCron";
@@ -164,7 +163,6 @@ export class TeamBuilderAPI extends Construct {
 		setCoachesData({ ...lambdaProps });
 		setExecsData({ ...lambdaProps });
 		setArenasData({ ...lambdaProps });
-		setHistoricalLogosData({ ...lambdaProps });
 		setPlayersData({ ...lambdaProps });
 		setPlayerRatingsData({ ...lambdaProps });
 		fetchNewsCron({ ...lambdaProps });
