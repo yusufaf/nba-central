@@ -143,7 +143,7 @@ onMounted(() => {
                                 Settings
                             </Button>
                         </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end" class="w-72 settings-dropdown">
+                        <DropdownMenuContent align="end" class="w-72 bg-surface-raised">
                             <div class="p-4 space-y-4">
                                 <div>
                                     <Label class="text-sm font-medium mb-2 block">Drawer Side</Label>
@@ -199,7 +199,7 @@ onMounted(() => {
                         size="sm"
                         variant="default"
                         title="Save team"
-                        class="font-extrabold shadow-md save-button"
+                        class="shadow-md"
                     >
                         <Save class="h-4 w-4 mr-2" />
                         Save
@@ -308,7 +308,7 @@ onMounted(() => {
     grid-template-columns: repeat(auto-fit, minmax(0, 1fr));
     gap: 0.25rem;
     background-color: hsl(var(--muted) / 0.3);
-    border: 1px solid hsl(var(--border));
+    border: 0.0625rem solid hsl(var(--border));
     border-radius: 0.375rem;
     padding: 0.25rem;
 }
@@ -322,31 +322,14 @@ onMounted(() => {
 :deep(.toggle-item[data-state="on"]) {
     background-color: hsl(var(--primary));
     color: hsl(var(--primary-foreground));
-    box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.3);
+    box-shadow: 0 0.0625rem 0.1875rem 0 rgb(0 0 0 / 0.3);
 }
 
 .capitalize {
     text-transform: capitalize;
 }
 
-/* Settings Dropdown - Solid Background */
-:deep(.settings-dropdown) {
-    background-color: rgb(24, 24, 27) !important;
-    border: 1.5px solid rgb(63, 63, 70) !important;
-    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.7) !important;
-    backdrop-filter: blur(12px);
-}
 
-/* Save Button - More Visible Text */
-.save-button {
-    background-color: hsl(var(--primary));
-    color: hsl(var(--primary-foreground)) !important;
-    font-weight: 800 !important;
-}
-
-.save-button:hover {
-    background-color: hsl(var(--primary) / 0.9);
-}
 
 /* Responsive */
 @media (max-width: 1200px) {

@@ -450,12 +450,9 @@ const columns = STAT_COLUMNS;
 </template>
 
 <style scoped>
-/* The preferences trigger and popover are styled in main.css, not here. The
-   popover is teleported out of this component by PopoverPortal so the scope
-   attribute never reaches it, and both have to override modal-scale
-   `[role="dialog"]` rules that are !important inside a cascade layer - which
-   unlayered scoped styles cannot beat, since layer order reverses for
-   important declarations. */
+/* The preferences trigger and popover are styled in main.css, not here: the
+   popover is teleported out of this component by PopoverPortal, so the scope
+   attribute never reaches it. */
 
 /* Dotted underline is the convention for "this abbreviation has a definition";
    the arrow carries the sortable affordance. */

@@ -120,7 +120,7 @@ const averageStats = computed(() => {
     @dragleave="emit('dragLeave', slotIndex)"
     @drop="emit('drop', slotIndex, $event)"
   >
-    <Card class="player-card">
+    <Card class="player-card border-0">
       <CardHeader class="card-header">
         <div class="flex items-center justify-between w-full">
           <div class="flex items-center gap-2 min-w-0">
@@ -346,7 +346,6 @@ const averageStats = computed(() => {
 }
 
 .player-card {
-  border: none !important;
   height: 100%;
   background-color: hsl(var(--card));
 }
@@ -493,7 +492,7 @@ const averageStats = computed(() => {
 .player-avatar {
   height: 4rem;
   width: 4rem;
-  border: 2px solid hsl(var(--border));
+  border: 0.125rem solid hsl(var(--border));
 }
 
 .avatar-fallback {
@@ -501,7 +500,7 @@ const averageStats = computed(() => {
   color: hsl(var(--primary));
   font-size: 1.25rem;
   font-weight: 700;
-  border: 2px solid hsl(var(--primary) / 0.3);
+  border: 0.125rem solid hsl(var(--primary) / 0.3);
 }
 
 .player-name {

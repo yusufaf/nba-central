@@ -152,7 +152,7 @@ const toggleFilter = (filter: string) => {
 <template>
     <div>
         <div class="card-wrapper">
-            <Card class="section-card">
+            <Card class="section-card border-0">
                 <CardContent class="pt-6">
                 <div class="card-title-section">
                     <h3 class="card-title">Arena</h3>
@@ -336,9 +336,6 @@ const toggleFilter = (filter: string) => {
     box-shadow: 0 0 0.5rem hsl(var(--primary) / 0.3);
 }
 
-.section-card {
-    border: none !important;
-}
 
 .card-title-section {
     display: flex;
@@ -414,7 +411,7 @@ const toggleFilter = (filter: string) => {
 
 .arena-item {
     background-color: hsl(var(--card));
-    border: 1px solid hsl(var(--border));
+    border: 0.0625rem solid hsl(var(--border));
     transition: all 0.2s ease;
 }
 

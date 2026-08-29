@@ -31,7 +31,7 @@ const notificationsMenuOpen = defineModel<boolean>("notificationsMenuOpen");
                 </template> -->
             </div>
             <DialogFooter>
-                <Button @click="notificationsMenuOpen = false" class="close-btn">
+                <Button @click="notificationsMenuOpen = false">
                     Close
                 </Button>
             </DialogFooter>
@@ -78,16 +78,4 @@ const notificationsMenuOpen = defineModel<boolean>("notificationsMenuOpen");
     line-height: 1.6;
 }
 
-.close-btn {
-    font-weight: 600 !important;
-    background-color: hsl(var(--primary)) !important;
-    color: rgb(20, 20, 20) !important;
-    box-shadow: 0 0.125rem 0.5rem rgba(255, 165, 0, 0.25) !important;
-}
-
-.close-btn:hover {
-    background-color: hsl(var(--primary) / 0.9) !important;
-    box-shadow: 0 0.25rem 0.75rem rgba(255, 165, 0, 0.35) !important;
-    transform: translateY(-0.0625rem);
-}
 </style>

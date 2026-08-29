@@ -100,7 +100,7 @@ const router = useRouter();
 
 .fade-enter-from,
 .fade-leave-to {
-  transform: translateX(20px);
+  transform: translateX(1.25rem);
   opacity: 0;
 }
 </style>

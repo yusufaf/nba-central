@@ -301,7 +301,7 @@ const getCleanName = (coachName: string) => coachName.replace(/\*$/, '').trim();
 <template>
     <div>
         <div class="card-wrapper">
-            <Card class="section-card">
+            <Card class="section-card border-0">
                 <CardContent class="pt-6">
                     <div class="card-title-section">
                         <h3 class="card-title">Coach</h3>
@@ -664,9 +664,6 @@ const getCleanName = (coachName: string) => coachName.replace(/\*$/, '').trim();
     box-shadow: 0 0 0.5rem hsl(var(--primary) / 0.3);
 }
 
-.section-card {
-    border: none !important;
-}
 
 .card-title-section {
     display: flex;
@@ -691,14 +688,14 @@ const getCleanName = (coachName: string) => coachName.replace(/\*$/, '').trim();
 
 .coach-item {
     background-color: hsl(var(--card));
-    border: 1px solid hsl(var(--border));
+    border: 0.0625rem solid hsl(var(--border));
     transition: all 0.2s ease;
 }
 
 .coach-item:hover {
     background-color: hsl(var(--accent) / 0.15);
     border-color: hsl(var(--primary) / 0.5);
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+    box-shadow: 0 0.125rem 0.5rem rgba(0, 0, 0, 0.15);
 }
 
 /* Coach name displayed on the main card after selection */

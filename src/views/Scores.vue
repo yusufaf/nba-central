@@ -510,8 +510,8 @@ h2 {
 
     .buttons {
         flex-direction: column;
-        align-items: stretch !important;
-        gap: 0.75rem !important;
+        align-items: stretch;
+        gap: 0.75rem;
     }
 
     .right-buttons {
@@ -590,13 +590,13 @@ h2 {
 
 .conference-toggle {
     background-color: transparent;
-    border: 1px solid hsl(var(--border));
+    border: 0.0625rem solid hsl(var(--border));
     padding: 0;
     border-radius: 0.375rem;
 }
 
 .conference-toggle-item {
-    min-width: 60px;
+    min-width: 3.75rem;
     font-weight: 600;
     font-size: 0.875rem;
 }
@@ -604,25 +604,25 @@ h2 {
 .conference-toggle-item[data-state="on"] {
     background-color: hsl(var(--accent));
     color: hsl(var(--accent-foreground));
-    box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.3);
+    box-shadow: 0 0.0625rem 0.1875rem 0 rgb(0 0 0 / 0.3);
 }
 
 .view-toggle {
     background-color: transparent;
-    border: 1px solid hsl(var(--border));
+    border: 0.0625rem solid hsl(var(--border));
     padding: 0;
     border-radius: 0.375rem;
 }
 
 .view-toggle-item {
-    min-width: 80px;
+    min-width: 5rem;
     font-weight: 600;
 }
 
 .view-toggle-item[data-state="on"] {
     background-color: hsl(var(--accent));
     color: hsl(var(--accent-foreground));
-    box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.3);
+    box-shadow: 0 0.0625rem 0.1875rem 0 rgb(0 0 0 / 0.3);
 }
 
 .replay-link-btn {

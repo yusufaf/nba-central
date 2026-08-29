@@ -30,6 +30,11 @@ jobs:
 
       - run: pnpm type-check
 
+      # Guards the design system against the defects that made the UI look
+      # broken: Tailwind classes that compile to nothing, invalid token alpha
+      # syntax, !important, and global styling by ARIA role.
+      - run: pnpm check:styles
+
       # Runs before build: a failing unit test should fail the job without
       # waiting on the slower Vite production build.
       - run: pnpm test
