@@ -22,10 +22,12 @@ import {
 	type Franchise,
 	type HashedSeason,
 } from "./lib/historicalLogos";
+import { keyOutWhiteBackground } from "./lib/pngAlpha";
 import {
 	dataPath,
 	fetchPage,
 	isCheckOnly,
+	nbaCentralPath,
 	parseOrThrow,
 	run,
 	sleep,
@@ -36,10 +38,7 @@ const BBREF_BASE_URL = "https://www.basketball-reference.com";
 const TEAMS_INDEX_URL = `${BBREF_BASE_URL}/teams/`;
 
 const OUTPUT_PATH = dataPath("historicalLogos.json");
-const IMAGE_DIR = path.resolve(
-	__dirname,
-	"../../nba-central/public/logos/historical",
-);
+const IMAGE_DIR = nbaCentralPath("public/logos/historical");
 
 // BBRef 403s a default fetch User-Agent; identify ourselves like the other
 // refresh scripts do.
@@ -214,8 +213,16 @@ const main = async () => {
 				return null;
 			}
 
+			// BBRef serves opaque white backgrounds; key them out so the logos
+			// sit on nba-central's dark theme instead of in a white square. The
+			// era hash above stays on the source bytes, so this never changes
+			// which seasons collapse together.
 			if (!checkOnly) {
-				fs.writeFileSync(path.join(IMAGE_DIR, `${imageKey}.png`), buffer);
+				const { png, skipped } = keyOutWhiteBackground(buffer);
+				if (skipped && skipped !== "no edge-connected white") {
+					console.warn(`Note: ${imageKey}.png left opaque (${skipped})`);
+				}
+				fs.writeFileSync(path.join(IMAGE_DIR, `${imageKey}.png`), png);
 			}
 
 			const { logoHash: _logoHash, ...row } = era;

@@ -15,6 +15,7 @@
         "refresh-coaches": "ts-node -r tsconfig-paths/register scripts/refresh-coaches.ts",
         "refresh-execs": "ts-node -r tsconfig-paths/register scripts/refresh-execs.ts",
         "refresh-historical-logos": "ts-node -r tsconfig-paths/register scripts/refresh-historical-logos.ts",
+        "rekey-historical-logos": "ts-node -r tsconfig-paths/register scripts/rekey-historical-logos.ts",
         "cdk": "cdk",
         "prepare": "husky"
     },
