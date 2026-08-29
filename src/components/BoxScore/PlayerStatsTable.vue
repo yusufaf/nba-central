@@ -1,7 +1,7 @@
 <template>
     <Card>
-        <CardHeader class="pb-0.5rem py-0.75rem" style="border-bottom: 2px solid hsl(var(--primary) / 0.3);">
-            <div class="flex items-center gap-0.5rem">
+        <CardHeader class="pb-2 py-3" style="border-bottom: 2px solid hsl(var(--primary) / 0.3);">
+            <div class="flex items-center gap-2">
                 <img
                     :src="team.logo"
                     :alt="team.abbreviation"
@@ -42,7 +42,7 @@
                         <TableRow>
                             <TableCell
                                 colspan="100%"
-                                class="text-primary bg-primary/6 py-0.25rem"
+                                class="text-primary bg-primary/6 py-1"
                                 style="font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em;"
                             >
                                 Starters
@@ -54,8 +54,8 @@
                             class="hover:bg-muted/50 transition-colors"
                             :class="{ 'bg-white/[0.015]': rowIndex % 2 === 1 }"
                         >
-                            <TableCell class="sticky left-0 bg-background py-0.25rem" :class="{ 'bg-white/[0.015]': rowIndex % 2 === 1 }">
-                                <div class="flex items-center gap-0.375rem">
+                            <TableCell class="sticky left-0 bg-background py-1" :class="{ 'bg-white/[0.015]': rowIndex % 2 === 1 }">
+                                <div class="flex items-center gap-1.5">
                                     <img
                                         v-if="player.athlete.headshot?.href"
                                         :src="player.athlete.headshot.href"
@@ -74,7 +74,7 @@
                             <TableCell
                                 v-for="(stat, index) in player.stats"
                                 :key="index"
-                                class="text-center py-0.25rem"
+                                class="text-center py-1"
                                 :class="getCellClass(player, index, stat)"
                                 style="font-size: 0.8rem;"
                             >
@@ -88,7 +88,7 @@
                         <TableRow>
                             <TableCell
                                 colspan="100%"
-                                class="text-primary bg-primary/6 py-0.25rem"
+                                class="text-primary bg-primary/6 py-1"
                                 style="font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em;"
                             >
                                 Bench
@@ -100,8 +100,8 @@
                             class="hover:bg-muted/50 transition-colors"
                             :class="{ 'bg-white/[0.015]': rowIndex % 2 === 1 }"
                         >
-                            <TableCell class="sticky left-0 bg-background py-0.25rem" :class="{ 'bg-white/[0.015]': rowIndex % 2 === 1 }">
-                                <div class="flex items-center gap-0.375rem">
+                            <TableCell class="sticky left-0 bg-background py-1" :class="{ 'bg-white/[0.015]': rowIndex % 2 === 1 }">
+                                <div class="flex items-center gap-1.5">
                                     <img
                                         v-if="player.athlete.headshot?.href"
                                         :src="player.athlete.headshot.href"
@@ -120,7 +120,7 @@
                             <TableCell
                                 v-for="(stat, index) in player.stats"
                                 :key="index"
-                                class="text-center py-0.25rem"
+                                class="text-center py-1"
                                 :class="getCellClass(player, index, stat)"
                                 style="font-size: 0.8rem;"
                             >
@@ -132,7 +132,7 @@
                     <!-- DNP Players — collapsed -->
                     <template v-if="dnpPlayers.length > 0">
                         <TableRow>
-                            <TableCell colspan="100%" class="py-0.25rem bg-muted/20">
+                            <TableCell colspan="100%" class="py-1 bg-muted/20">
                                 <button
                                     @click="dnpExpanded = !dnpExpanded"
                                     class="flex items-center justify-between w-full hover:text-foreground transition-colors"
@@ -149,7 +149,7 @@
                                 :key="player.athlete.id"
                                 class="opacity-50"
                             >
-                                <TableCell class="sticky left-0 bg-background py-0.125rem">
+                                <TableCell class="sticky left-0 bg-background py-0.5">
                                     <span style="font-size: 0.8rem; font-weight: 500;">
                                         {{ player.athlete.displayName }}
                                         <span style="font-size: 0.65rem; color: hsl(var(--foreground) / 0.4);">
@@ -167,11 +167,11 @@
 
                     <!-- Team Totals -->
                     <TableRow class="bg-primary/6" style="border-top: 2px solid hsl(var(--primary) / 0.2);">
-                        <TableCell class="sticky left-0 bg-primary/6 py-0.5rem text-foreground font-bold" style="font-size: 0.65rem;">Team Totals</TableCell>
+                        <TableCell class="sticky left-0 bg-primary/6 py-2 text-foreground font-bold" style="font-size: 0.65rem;">Team Totals</TableCell>
                         <TableCell
                             v-for="(total, index) in statistics.totals"
                             :key="index"
-                            class="text-center py-0.5rem text-foreground font-bold"
+                            class="text-center py-2 text-foreground font-bold"
                             style="font-size: 0.65rem;"
                         >
                             {{ total || '-' }}

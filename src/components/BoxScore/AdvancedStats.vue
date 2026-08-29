@@ -1,16 +1,16 @@
 <template>
-    <div class="space-y-0.5rem">
+    <div class="space-y-2">
         <!-- Plus/Minus Leaders -->
         <Card style="border-left: 3px solid hsl(var(--primary));">
-            <CardHeader class="pb-0.25rem py-0.5rem">
+            <CardHeader class="pb-1 py-2">
                 <h3 class="font-bold" style="font-size: 0.875rem;">Plus/Minus Leaders</h3>
             </CardHeader>
-            <CardContent class="p-0.5rem">
-                <div class="grid grid-cols-2 gap-0.5rem">
+            <CardContent class="p-2">
+                <div class="grid grid-cols-2 gap-2">
                     <!-- Positive Leaders -->
                     <div>
-                        <h4 class="font-semibold text-green-600 dark:text-green-400 mb-0.25rem" style="font-size: 0.75rem;">Top +/-</h4>
-                        <div class="space-y-0.125rem">
+                        <h4 class="font-semibold text-green-600 dark:text-green-400 mb-1" style="font-size: 0.75rem;">Top +/-</h4>
+                        <div class="space-y-0.5">
                             <div
                                 v-for="leader in topPlusMinus"
                                 :key="leader.id"
@@ -24,8 +24,8 @@
 
                     <!-- Negative Leaders -->
                     <div>
-                        <h4 class="font-semibold text-red-600 dark:text-red-400 mb-0.25rem" style="font-size: 0.75rem;">Bottom +/-</h4>
-                        <div class="space-y-0.125rem">
+                        <h4 class="font-semibold text-red-600 dark:text-red-400 mb-1" style="font-size: 0.75rem;">Bottom +/-</h4>
+                        <div class="space-y-0.5">
                             <div
                                 v-for="leader in bottomPlusMinus"
                                 :key="leader.id"
@@ -42,24 +42,24 @@
 
         <!-- Shooting Efficiency -->
         <Card style="border-left: 3px solid hsl(var(--primary));">
-            <CardHeader class="pb-0.25rem py-0.5rem">
+            <CardHeader class="pb-1 py-2">
                 <h3 class="font-bold" style="font-size: 0.875rem;">Shooting Efficiency</h3>
             </CardHeader>
-            <CardContent class="p-0.5rem">
-                <div class="grid grid-cols-2 gap-0.5rem">
+            <CardContent class="p-2">
+                <div class="grid grid-cols-2 gap-2">
                     <div v-for="team in boxscore.players" :key="team.team.id">
-                        <h4 class="font-semibold mb-0.25rem flex items-center gap-0.25rem" style="font-size: 0.75rem;">
+                        <h4 class="font-semibold mb-1 flex items-center gap-1" style="font-size: 0.75rem;">
                             <img :src="team.team.logo" :alt="team.team.abbreviation" style="width: 1rem; height: 1rem;" class="object-contain shrink-0" />
                             {{ team.team.displayName }}
                         </h4>
-                        <div class="space-y-0.125rem">
+                        <div class="space-y-0.5">
                             <div
                                 v-for="player in getTopShooters(team)"
                                 :key="player.id"
                                 class="flex items-center justify-between" style="font-size: 0.75rem;"
                             >
                                 <span class="truncate">{{ player.name }}</span>
-                                <span class="font-mono shrink-0 ml-0.25rem">
+                                <span class="font-mono shrink-0 ml-1">
                                     {{ player.fg }} FG ({{ player.fgPct }}%)
                                 </span>
                             </div>
@@ -71,14 +71,14 @@
 
         <!-- Bench Production -->
         <Card style="border-left: 3px solid hsl(var(--primary));">
-            <CardHeader class="pb-0.25rem py-0.5rem">
+            <CardHeader class="pb-1 py-2">
                 <h3 class="font-bold" style="font-size: 0.875rem;">Bench Production</h3>
             </CardHeader>
-            <CardContent class="p-0.5rem">
-                <div class="space-y-0.5rem">
+            <CardContent class="p-2">
+                <div class="space-y-2">
                     <div v-for="team in boxscore.players" :key="team.team.id">
-                        <div class="flex items-center justify-between mb-0.25rem">
-                            <div class="flex items-center gap-0.25rem">
+                        <div class="flex items-center justify-between mb-1">
+                            <div class="flex items-center gap-1">
                                 <img :src="team.team.logo" :alt="team.team.abbreviation" style="width: 1rem; height: 1rem;" class="object-contain shrink-0" />
                                 <span class="font-semibold" style="font-size: 0.75rem;">{{ team.team.displayName }}</span>
                             </div>

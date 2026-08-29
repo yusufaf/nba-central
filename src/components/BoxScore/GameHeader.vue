@@ -1,17 +1,17 @@
 <template>
     <div class="game-header">
         <!-- Back Button -->
-        <Button @click="emit('back')" variant="ghost" class="mb-0.5rem text-0.75rem px-0.5rem py-0.25rem h-auto">
-            <ChevronLeft :size="14" class="mr-0.25rem" />
+        <Button @click="emit('back')" variant="ghost" class="mb-2 text-xs px-2 py-1 h-auto">
+            <ChevronLeft :size="14" class="mr-1" />
             Back to Scores
         </Button>
 
         <!-- Main Header Card -->
         <Card>
-            <CardContent class="p-1.5rem" style="border-left: 3px solid hsl(var(--primary));">
+            <CardContent class="p-6" style="border-left: 3px solid hsl(var(--primary));">
                 <div class="flex items-center justify-center" style="padding-left: 1.25rem;">
                     <!-- Away Team -->
-                    <div class="flex items-center gap-0.75rem flex-1 justify-end">
+                    <div class="flex items-center gap-3 flex-1 justify-end">
                         <div class="flex flex-col text-right">
                             <span class="uppercase" style="font-size: 0.8rem; letter-spacing: 0.06em; color: hsl(var(--foreground) / 0.8);">{{ awayTeam.team.displayName }}</span>
                             <span v-if="awayTeamRecord" style="font-size: 0.75rem; color: hsl(var(--foreground) / 0.5);">{{ awayTeamRecord }}</span>
@@ -55,7 +55,7 @@
                     </div>
 
                     <!-- Home Team -->
-                    <div class="flex items-center gap-0.75rem flex-1">
+                    <div class="flex items-center gap-3 flex-1">
                         <div class="shrink-0" style="width: 3rem; height: 3rem;">
                             <img
                                 :src="getTeamLogo('home')"

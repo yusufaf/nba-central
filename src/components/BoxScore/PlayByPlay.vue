@@ -2,7 +2,7 @@
     <Card>
         <CardHeader>
             <div class="flex items-center justify-between">
-                <h3 class="text-1.125rem font-bold">Play-by-Play</h3>
+                <h3 class="text-lg font-bold">Play-by-Play</h3>
 
                 <!-- Filter Toggle Group -->
                 <ToggleGroup v-model="selectedFilter" type="single" class="hidden md:flex">
@@ -23,7 +23,7 @@
         </CardHeader>
         <CardContent class="p-0">
             <!-- Quarter Navigation -->
-            <div class="flex gap-0.5rem p-1rem border-b overflow-x-auto">
+            <div class="flex gap-2 p-4 border-b overflow-x-auto">
                 <Button
                     v-for="period in periods"
                     :key="period"
@@ -44,10 +44,10 @@
                         :value="`period-${period}`"
                         :ref="el => periodRefs[period] = el"
                     >
-                        <AccordionTrigger class="px-1rem py-0.75rem hover:bg-muted/50">
-                            <div class="flex items-center justify-between w-full pr-0.5rem">
+                        <AccordionTrigger class="px-4 py-3 hover:bg-muted/50">
+                            <div class="flex items-center justify-between w-full pr-2">
                                 <span class="font-semibold">{{ getPeriodLabel(period) }}</span>
-                                <span class="text-0.875rem text-muted-foreground">
+                                <span class="text-sm text-muted-foreground">
                                     {{ getFilteredPlaysForPeriod(period).length }} plays
                                 </span>
                             </div>
@@ -57,36 +57,36 @@
                                 <div
                                     v-for="play in getFilteredPlaysForPeriod(period)"
                                     :key="play.id"
-                                    class="px-1rem py-0.75rem hover:bg-muted/30 transition-colors"
+                                    class="px-4 py-3 hover:bg-muted/30 transition-colors"
                                     :class="{
                                         'bg-primary/5': play.scoringPlay,
-                                        'border-l-0.25rem border-l-primary': play.scoringPlay,
+                                        'border-l-4 border-l-primary': play.scoringPlay,
                                     }"
                                 >
-                                    <div class="flex items-start gap-1rem">
+                                    <div class="flex items-start gap-4">
                                         <!-- Time -->
-                                        <div class="text-0.75rem font-mono text-muted-foreground min-w-[3.125rem]">
+                                        <div class="text-xs font-mono text-muted-foreground min-w-[3.125rem]">
                                             {{ play.clock.displayValue }}
                                         </div>
 
                                         <!-- Play Text -->
                                         <div class="flex-1">
-                                            <p class="text-0.875rem" :class="{ 'font-semibold': play.scoringPlay }">
+                                            <p class="text-sm" :class="{ 'font-semibold': play.scoringPlay }">
                                                 {{ play.text }}
                                             </p>
-                                            <p v-if="play.scoringPlay" class="text-0.75rem text-muted-foreground mt-0.25rem">
+                                            <p v-if="play.scoringPlay" class="text-xs text-muted-foreground mt-1">
                                                 Scoring play
                                             </p>
                                         </div>
 
                                         <!-- Score -->
-                                        <div v-if="play.awayScore !== undefined && play.homeScore !== undefined" class="text-0.875rem font-semibold min-w-[3.75rem] text-right">
+                                        <div v-if="play.awayScore !== undefined && play.homeScore !== undefined" class="text-sm font-semibold min-w-[3.75rem] text-right">
                                             {{ play.awayScore }} - {{ play.homeScore }}
                                         </div>
                                     </div>
                                 </div>
 
-                                <div v-if="getFilteredPlaysForPeriod(period).length === 0" class="px-1rem py-2rem text-center text-muted-foreground">
+                                <div v-if="getFilteredPlaysForPeriod(period).length === 0" class="px-4 py-8 text-center text-muted-foreground">
                                     No {{ selectedFilter === 'all' ? '' : selectedFilter }} plays in this period
                                 </div>
                             </div>

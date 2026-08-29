@@ -1,19 +1,19 @@
 <template>
     <Card>
-        <CardHeader class="pb-0.25rem py-0.375rem">
-            <h3 class="text-0.75rem font-bold">Team Statistics</h3>
+        <CardHeader class="pb-1 py-1.5">
+            <h3 class="text-xs font-bold">Team Statistics</h3>
         </CardHeader>
-        <CardContent class="space-y-0.5rem p-0.5rem">
+        <CardContent class="space-y-2 p-2">
             <div v-for="stat in comparisonStats" :key="stat.name" class="stat-row">
-                <div class="flex items-center justify-between mb-0.125rem">
-                    <div class="text-0.625rem font-medium">{{ stat.label }}</div>
+                <div class="flex items-center justify-between mb-0.5">
+                    <div class="text-[0.625rem] font-medium">{{ stat.label }}</div>
                 </div>
 
-                <div class="grid grid-cols-[1fr_auto_1fr] gap-0.5rem items-center">
+                <div class="grid grid-cols-[1fr_auto_1fr] gap-2 items-center">
                     <!-- Away Team -->
-                    <div class="flex items-center justify-end gap-0.25rem">
-                        <span class="text-0.625rem font-semibold">{{ stat.awayValue }}</span>
-                        <div class="flex-1 h-0.75rem bg-muted rounded-full overflow-hidden flex justify-end">
+                    <div class="flex items-center justify-end gap-1">
+                        <span class="text-[0.625rem] font-semibold">{{ stat.awayValue }}</span>
+                        <div class="flex-1 h-3 bg-muted rounded-full overflow-hidden flex justify-end">
                             <div
                                 class="h-full rounded-full transition-all"
                                 :class="stat.awayWins ? 'bg-primary' : 'bg-primary/40'"
@@ -23,22 +23,22 @@
                     </div>
 
                     <!-- Team Names -->
-                    <div class="flex items-center gap-0.5rem text-0.5rem text-muted-foreground min-w-[6rem]">
+                    <div class="flex items-center gap-2 text-[0.5rem] text-muted-foreground min-w-[6rem]">
                         <span class="text-right flex-1">{{ awayTeam.team.abbreviation }}</span>
                         <span>vs</span>
                         <span class="text-left flex-1">{{ homeTeam.team.abbreviation }}</span>
                     </div>
 
                     <!-- Home Team -->
-                    <div class="flex items-center gap-0.25rem">
-                        <div class="flex-1 h-0.75rem bg-muted rounded-full overflow-hidden">
+                    <div class="flex items-center gap-1">
+                        <div class="flex-1 h-3 bg-muted rounded-full overflow-hidden">
                             <div
                                 class="h-full rounded-full transition-all"
                                 :class="stat.homeWins ? 'bg-primary' : 'bg-primary/40'"
                                 :style="{ width: `${stat.homePercent}%` }"
                             ></div>
                         </div>
-                        <span class="text-0.625rem font-semibold">{{ stat.homeValue }}</span>
+                        <span class="text-[0.625rem] font-semibold">{{ stat.homeValue }}</span>
                     </div>
                 </div>
             </div>
