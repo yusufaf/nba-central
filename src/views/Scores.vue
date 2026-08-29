@@ -634,12 +634,4 @@ h2 {
     font-weight: 600;
 }
 
-/* Override button outlines to match theme */
-:deep(button[variant="outline"]) {
-    border-color: hsl(var(--border));
-}
-
-:deep(button[variant="outline"]:hover) {
-    background-color: hsl(var(--accent) / 0.1);
-}
 </style>

@@ -702,12 +702,6 @@ const getCleanName = (coachName: string) => coachName.replace(/\*$/, '').trim();
     min-height: 10rem;
 }
 
-.coach-name {
-    font-size: 1rem;
-    font-weight: 500;
-    text-align: center;
-}
-
 .coach-item {
     background-color: hsl(var(--card));
     border: 1px solid hsl(var(--border));
@@ -752,23 +746,6 @@ const getCleanName = (coachName: string) => coachName.replace(/\*$/, '').trim();
 
 .stats-value {
     color: hsl(var(--foreground) / 0.9);
-}
-
-/* Dropdown backgrounds - fully opaque - CRITICAL FIX */
-:deep(.sort-dropdown-content),
-:deep(.sort-dropdown-content) > *,
-:deep([data-reka-select-content].sort-dropdown-content) {
-    background-color: rgb(9, 9, 11) !important;
-    background: rgb(9, 9, 11) !important;
-    opacity: 1 !important;
-}
-
-:deep(.filters-dropdown-content),
-:deep(.filters-dropdown-content) > *,
-:deep([data-reka-dropdown-menu-content].filters-dropdown-content) {
-    background-color: rgb(9, 9, 11) !important;
-    background: rgb(9, 9, 11) !important;
-    opacity: 1 !important;
 }
 
 /* Drawer controls spacing */
