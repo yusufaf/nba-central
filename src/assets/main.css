@@ -501,6 +501,37 @@
     border-radius: 0.125rem !important;
   }
 
+  /* Buttons that are a tile in a grid - the logo pickers - size themselves from
+     their column. Action-button padding is 2rem a side, which on a 9rem tile
+     leaves the artwork about 2rem wide. */
+  [role="dialog"] button[data-grid-tile] {
+    font-weight: inherit !important;
+    font-size: inherit !important;
+    padding: 0.5rem !important;
+    min-height: 0 !important;
+    border-radius: 0.75rem !important;
+  }
+
+  /* Filter-row controls - select triggers sitting beside a text input - keep
+     input metrics. Action-button padding costs 4rem of an 8.5rem trigger, which
+     is what truncates a label like "All leagues" to "All l...". */
+  [role="dialog"] button[data-compact-control] {
+    font-weight: 500 !important;
+    font-size: 0.875rem !important;
+    padding: 0 0.75rem !important;
+    min-height: 2.5rem !important;
+    border-radius: var(--radius) !important;
+  }
+
+  /* Square icon-only controls own their box; action-button padding turns a
+     2.5rem square into a 6.5rem lozenge. */
+  [role="dialog"] button[data-icon-control] {
+    font-size: inherit !important;
+    padding: 0 !important;
+    min-height: 0 !important;
+    border-radius: var(--radius) !important;
+  }
+
   /* Dropdown Menu Styling */
   [data-radix-dropdown-menu-content],
   [data-reka-menu-content] {
