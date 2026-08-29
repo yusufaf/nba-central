@@ -17,7 +17,7 @@ export { default as DialogTrigger } from "./DialogTrigger.vue"
 // Popover — it renders role="dialog" too — and then needed ~200 lines of
 // popover-specific CSS to claw the modal sizing back off.
 export const dialogVariants = cva(
-  "fixed left-1/2 top-1/2 z-50 grid w-full -translate-x-1/2 -translate-y-1/2 gap-4 rounded-xl border border-border bg-card p-8 text-card-foreground shadow-2xl duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95",
+  "fixed left-1/2 top-1/2 z-[var(--z-modal)] grid w-full -translate-x-1/2 -translate-y-1/2 gap-4 rounded-xl border border-border bg-card p-8 text-card-foreground shadow-2xl duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95",
   {
     variants: {
       size: {
