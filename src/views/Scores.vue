@@ -11,6 +11,7 @@ import type { CustomizationKey } from "@/models/types";
 import type { ESPNScoreboardResponse, ESPNEvent } from "@/models/types";
 import ScoreCard from "@/components/Scores/ScoreCard.vue";
 import PageTitle from "@/components/PageTitle.vue";
+import PageShell from "@/layouts/PageShell.vue";
 import GameReplaysWarning from "@/components/Scores/GameReplaysWarning.vue";
 import ManageNotifications from "@/components/Scores/ManageNotifications.vue";
 import OptionsMenu from "@/components/Scores/OptionsMenu.vue";
@@ -19,7 +20,8 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { Calendar as CalendarIcon, BellRing } from "lucide-vue-next";
 import { DatePicker } from "v-calendar";
-import "v-calendar/style.css";
+/* v-calendar's stylesheet is imported in main.ts so it lands at a predictable
+   point in the cascade rather than wherever this route's chunk loads. */
 
 const numGames = ref<number>(0);
 const scoreData = ref<ESPNScoreboardResponse | null>(null);
@@ -340,7 +342,7 @@ onMounted(async () => {
 </script>
 
 <template>
-    <main class="scores-page">
+    <PageShell as="main" class="scores-page" flush>
         <div class="header">
             <div class="header-center">
                 <PageTitle />
@@ -439,12 +441,13 @@ onMounted(async () => {
         <ManageNotifications
             v-model:notificationsMenuOpen="notificationsMenuOpen"
         />
-    </main>
+    </PageShell>
 </template>
 
 <style scoped>
+/* Horizontal gutters come from PageShell. */
 .scores-page {
-    padding: 0 4rem 2rem 4rem;
+    padding-bottom: 2rem;
 }
 
 .header {
@@ -493,10 +496,6 @@ h2 {
         grid-template-columns: repeat(2, minmax(0, 1fr));
         gap: 1.5rem;
     }
-
-    .scores-page {
-        padding: 0 2rem 2rem 2rem;
-    }
 }
 
 @media (max-width: 900px) {
@@ -505,18 +504,14 @@ h2 {
         gap: 1rem;
     }
 
-    .scores-page {
-        padding: 0 1rem 1rem 1rem;
-    }
-
     h2 {
         font-size: 1.5rem;
     }
 
     .buttons {
         flex-direction: column;
-        align-items: stretch !important;
-        gap: 0.75rem !important;
+        align-items: stretch;
+        gap: 0.75rem;
     }
 
     .right-buttons {
@@ -595,13 +590,13 @@ h2 {
 
 .conference-toggle {
     background-color: transparent;
-    border: 1px solid hsl(var(--border));
+    border: 0.0625rem solid hsl(var(--border));
     padding: 0;
     border-radius: 0.375rem;
 }
 
 .conference-toggle-item {
-    min-width: 60px;
+    min-width: 3.75rem;
     font-weight: 600;
     font-size: 0.875rem;
 }
@@ -609,37 +604,29 @@ h2 {
 .conference-toggle-item[data-state="on"] {
     background-color: hsl(var(--accent));
     color: hsl(var(--accent-foreground));
-    box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.3);
+    box-shadow: 0 0.0625rem 0.1875rem 0 hsl(var(--shadow-color) / 0.3);
 }
 
 .view-toggle {
     background-color: transparent;
-    border: 1px solid hsl(var(--border));
+    border: 0.0625rem solid hsl(var(--border));
     padding: 0;
     border-radius: 0.375rem;
 }
 
 .view-toggle-item {
-    min-width: 80px;
+    min-width: 5rem;
     font-weight: 600;
 }
 
 .view-toggle-item[data-state="on"] {
     background-color: hsl(var(--accent));
     color: hsl(var(--accent-foreground));
-    box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.3);
+    box-shadow: 0 0.0625rem 0.1875rem 0 hsl(var(--shadow-color) / 0.3);
 }
 
 .replay-link-btn {
     font-weight: 600;
 }
 
-/* Override button outlines to match theme */
-:deep(button[variant="outline"]) {
-    border-color: hsl(var(--border));
-}
-
-:deep(button[variant="outline"]:hover) {
-    background-color: hsl(var(--accent) / 0.1);
-}
 </style>

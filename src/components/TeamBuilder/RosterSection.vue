@@ -198,7 +198,7 @@ const onKeydown = (event: KeyboardEvent) => {
   align-items: center;
   justify-content: space-between;
   padding-bottom: 0.75rem;
-  border-bottom: 2px solid hsl(var(--border));
+  border-bottom: 0.125rem solid hsl(var(--border));
 }
 
 .section-subtitle {
@@ -280,11 +280,11 @@ const onKeydown = (event: KeyboardEvent) => {
 }
 
 .starters-grid {
-  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr));
 }
 
 .bench-grid {
-  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr));
 }
 
 /* Desktop - 5 columns for starters */

@@ -23,6 +23,6 @@ const { isLoading } = useHandleSignInCallback(() => {
     justify-content: center;
     align-items: center;
     min-height: 80vh;
-    color: var(--vt-c-text-dark-2);
+    color: hsl(var(--muted-foreground));
 }
 </style>

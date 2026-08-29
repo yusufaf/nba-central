@@ -76,7 +76,7 @@ const eraseText = () => {
 h1 {
   font-size: 6rem;
   font-weight: normal;
-  color: var(--vt-c-white-soft);
+  color: hsl(var(--foreground));
 }
 
 span.typed-text {

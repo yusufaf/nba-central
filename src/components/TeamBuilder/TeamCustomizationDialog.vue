@@ -121,7 +121,7 @@ onMounted(() => {
                     <textarea
                         id="team-description"
                         v-model="teamDescription"
-                        class="flex min-h-[120px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus:!border-primary focus-visible:!border-primary focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                        class="flex min-h-[7.5rem] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus:!border-primary focus-visible:!border-primary focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                         placeholder="Enter team description..."
                     />
                 </div>
@@ -231,9 +231,9 @@ input:focus,
 input:focus-visible,
 textarea:focus,
 textarea:focus-visible {
-    border-color: hsl(var(--primary)) !important;
-    box-shadow: none !important;
-    outline: none !important;
+    border-color: hsl(var(--primary));
+    box-shadow: none;
+    outline: none;
 }
 
 .team-logos {
@@ -258,7 +258,7 @@ textarea:focus-visible {
 
 .team-logo.selected {
     border: 0.25rem solid hsl(var(--primary));
-    box-shadow: 0 0 0 2px hsl(var(--primary) / 0.2);
+    box-shadow: 0 0 0 0.125rem hsl(var(--primary) / 0.2);
 }
 
 .canvas-container {

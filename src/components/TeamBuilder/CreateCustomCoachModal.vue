@@ -167,7 +167,7 @@ defineExpose({
                             <SelectValue placeholder="Select specialty..." />
                         </SelectTrigger>
                         <SelectContent
-                            class="!bg-[rgb(9,9,11)] border-2 shadow-xl"
+                            class="bg-surface-raised border-2 shadow-xl"
                             position="popper"
                         >
                             <SelectItem
@@ -223,8 +223,8 @@ input[type="range"]::-webkit-slider-thumb {
     border-radius: 50%;
     background: hsl(var(--primary));
     cursor: pointer;
-    border: 2px solid hsl(var(--background));
-    box-shadow: 0 0 0.5rem hsla(var(--primary), 0.5);
+    border: 0.125rem solid hsl(var(--background));
+    box-shadow: 0 0 0.5rem hsl(var(--primary) / 0.5);
     margin-top: -0.375rem;
 }
 
@@ -234,8 +234,8 @@ input[type="range"]::-moz-range-thumb {
     border-radius: 50%;
     background: hsl(var(--primary));
     cursor: pointer;
-    border: 2px solid hsl(var(--background));
-    box-shadow: 0 0 0.5rem hsla(var(--primary), 0.5);
+    border: 0.125rem solid hsl(var(--background));
+    box-shadow: 0 0 0.5rem hsl(var(--primary) / 0.5);
     border: none;
 }
 

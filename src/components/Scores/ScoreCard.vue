@@ -262,7 +262,7 @@ const askNotificationPermission = (id: string): void => {
         }"
         :key="game.uid"
     >
-        <Card class="score-card cursor-pointer hover:shadow-lg transition-all hover:scale-[1.02]" @click="() => router.push(`/game/${game.id}`)">
+        <Card class="score-card border-0 cursor-pointer hover:shadow-lg transition-all hover:scale-[1.02]" @click="() => router.push(`/game/${game.id}`)">
         <CardHeader class="card-header">
             <h6>{{ gameNameToDisplay }}</h6>
             <!-- Toggled styling here ==> notifications vs notifications active -->
@@ -420,21 +420,15 @@ const askNotificationPermission = (id: string): void => {
 }
 
 .score-card-wrapper:not(.east):not(.west):not(.cross) {
-    border-color: hsla(var(--primary), 0.5);
+    border-color: hsl(var(--primary) / 0.5);
 }
 
 .score-card-wrapper:not(.east):not(.west):not(.cross):hover {
     border-color: hsl(var(--primary));
-    box-shadow: 0 0 0.5rem hsla(var(--primary), 0.3);
-}
-
-.score-card-wrapper > .score-card {
-    border: none !important;
-    height: 100%;
+    box-shadow: 0 0 0.5rem hsl(var(--primary) / 0.3);
 }
 
 .score-card {
-    border: none !important;
     height: 100%;
 }
 </style>
@@ -450,7 +444,7 @@ const askNotificationPermission = (id: string): void => {
 .notification-bell {
     margin-left: auto;
     animation: ring 4s 0.7s ease-in-out;
-    transform-origin: 50% 1px;
+    transform-origin: 50% 0.0625rem;
 }
 
 @keyframes ring {

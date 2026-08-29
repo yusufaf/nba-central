@@ -120,7 +120,7 @@ const averageStats = computed(() => {
     @dragleave="emit('dragLeave', slotIndex)"
     @drop="emit('drop', slotIndex, $event)"
   >
-    <Card class="player-card">
+    <Card class="player-card border-0">
       <CardHeader class="card-header">
         <div class="flex items-center justify-between w-full">
           <div class="flex items-center gap-2 min-w-0">
@@ -285,13 +285,13 @@ const averageStats = computed(() => {
 .player-card-wrapper {
   border-radius: 0.5rem;
   border: 0.125rem solid;
-  border-color: hsla(var(--primary), 0.5);
+  border-color: hsl(var(--primary) / 0.5);
   transition: all 0.2s ease;
 }
 
 .player-card-wrapper:hover {
   border-color: hsl(var(--primary));
-  box-shadow: 0 0 0.5rem hsla(var(--primary), 0.3);
+  box-shadow: 0 0 0.5rem hsl(var(--primary) / 0.3);
 }
 
 /* Drag & Drop states */
@@ -308,21 +308,21 @@ const averageStats = computed(() => {
 .player-card-wrapper.is-drop-target {
   border-color: hsl(var(--primary));
   border-style: dashed;
-  box-shadow: 0 0 0.75rem hsla(var(--primary), 0.5);
+  box-shadow: 0 0 0.75rem hsl(var(--primary) / 0.5);
   transform: scale(1.02);
 }
 
 /* Solid rather than dashed: the slot is committed, not awaiting a drop. */
 .player-card-wrapper.is-pending {
   border-color: hsl(var(--primary) / 0.6);
-  box-shadow: 0 0 0.75rem hsla(var(--primary), 0.25);
+  box-shadow: 0 0 0.75rem hsl(var(--primary) / 0.25);
 }
 
 /* The card held by the keyboard flow, which persists between keypresses. */
 .player-card-wrapper.is-picked-up {
   border-style: dashed;
   border-color: hsl(var(--primary));
-  box-shadow: 0 0 0.75rem hsla(var(--primary), 0.5);
+  box-shadow: 0 0 0.75rem hsl(var(--primary) / 0.5);
 }
 
 .drag-handle {
@@ -346,7 +346,6 @@ const averageStats = computed(() => {
 }
 
 .player-card {
-  border: none !important;
   height: 100%;
   background-color: hsl(var(--card));
 }
@@ -493,7 +492,7 @@ const averageStats = computed(() => {
 .player-avatar {
   height: 4rem;
   width: 4rem;
-  border: 2px solid hsl(var(--border));
+  border: 0.125rem solid hsl(var(--border));
 }
 
 .avatar-fallback {
@@ -501,7 +500,7 @@ const averageStats = computed(() => {
   color: hsl(var(--primary));
   font-size: 1.25rem;
   font-weight: 700;
-  border: 2px solid hsl(var(--primary) / 0.3);
+  border: 0.125rem solid hsl(var(--primary) / 0.3);
 }
 
 .player-name {

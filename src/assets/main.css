@@ -1,277 +1,232 @@
 @import 'tailwindcss';
+@import 'tw-animate-css';
 
-@theme {
-  --color-background: hsl(0 0% 10%);
-  --color-foreground: hsl(0 0% 98%);
-  --color-card: hsl(0 0% 11%);
-  --color-card-foreground: hsl(0 0% 98%);
-  --color-popover: hsl(0 0% 11%);
-  --color-popover-foreground: hsl(0 0% 98%);
-  --color-primary: hsl(35 100% 50%);
-  --color-primary-foreground: hsl(0 0% 13%);
-  --color-secondary: hsl(0 0% 20%);
-  --color-secondary-foreground: hsl(0 0% 98%);
-  --color-muted: hsl(0 0% 20%);
-  --color-muted-foreground: hsl(0 0% 63.9%);
-  --color-accent: hsl(35 100% 50%);
-  --color-accent-foreground: hsl(0 0% 13%);
-  --color-destructive: hsl(0 62.8% 50%);
-  --color-destructive-foreground: hsl(0 0% 98%);
-  --color-success: hsl(142 76% 36%);
-  --color-border: hsl(0 0% 25%);
-  --color-input: hsl(0 0% 20%);
-  --color-ring: hsl(35 100% 50%);
+/* Tailwind v4 keys `dark:` off prefers-color-scheme unless told otherwise.
+   main.ts puts .dark on <html>, so bind the variant to that class. */
+@custom-variant dark (&:is(.dark *));
+
+/* ---------------------------------------------------------------------------
+   Design tokens — the single source of truth.
+
+   Colours are stored as bare HSL channels so they can carry an alpha at the
+   point of use: hsl(var(--primary) / 0.3). Never write hsla(var(--x), 0.3) —
+   that mixes space syntax with a legacy comma alpha and the browser drops the
+   whole declaration.
+
+   The @theme inline block below derives Tailwind's utilities from these, so a
+   token is defined exactly once. Do not restate a value there.
+--------------------------------------------------------------------------- */
+:root {
+  /* Surfaces */
+  --background: 0 0% 10%;
+  --foreground: 0 0% 98%;
+  --card: 0 0% 11%;
+  --card-foreground: 0 0% 98%;
+  --popover: 0 0% 11%;
+  --popover-foreground: 0 0% 98%;
+  /* Raised surface for menus and dropdowns that must read as fully opaque
+     above a dialog. Replaces the rgb(9, 9, 11) literal that was repeated
+     across the team builder sections. */
+  --surface-raised: 240 6% 4%;
+
+  /* Brand */
+  --primary: 35 100% 50%;
+  --primary-foreground: 0 0% 13%;
+  --secondary: 0 0% 20%;
+  --secondary-foreground: 0 0% 98%;
+  --muted: 0 0% 20%;
+  --muted-foreground: 0 0% 63.9%;
+  /* Accent is a distinct role from primary: primary is the brand action
+     colour, accent is the hover/selected wash behind neutral controls. */
+  --accent: 35 100% 50%;
+  --accent-foreground: 0 0% 13%;
+
+  /* Status */
+  --destructive: 0 62.8% 50%;
+  --destructive-foreground: 0 0% 98%;
+  --success: 142 76% 36%;
+  --success-foreground: 0 0% 98%;
+  --warning: 38 92% 50%;
+  --warning-foreground: 0 0% 13%;
+
+  /* Conference accents, previously invented inline in ScoreCard.vue */
+  --conference-east: 217 91% 60%;
+  --conference-west: 0 84% 60%;
+  --conference-cross: 270 65% 60%;
+
+  /* Lines and controls */
+  --border: 0 0% 25%;
+  --input: 0 0% 20%;
+  --ring: 35 100% 50%;
+
+  /* Drop shadows are theme-neutral black regardless of surface colour;
+     this is what the ~12 ad-hoc box-shadow rgba(0,0,0,a) literals collapsed to. */
+  --shadow-color: 0 0% 0%;
+
+  /* Radius scale */
   --radius: 0.5rem;
+
+  /* Page layout. Seven views used to invent their own max-width and gutters. */
+  --container-page: 90rem;
+  --container-narrow: 75rem;
+  --gutter: 1rem;
+
+  /* Stacking order. Reka portals overlays to <body>, so these are global and
+     must stay ordered. Never reach for an arbitrary z-[100]. */
+  --z-sticky: 30;
+  --z-header: 40;
+  --z-overlay: 50;
+  --z-modal: 60;
+  --z-popover: 70;
+  --z-toast: 80;
 }
 
-@layer base {
+@media (min-width: 40rem) {
   :root {
-    --background: 0 0% 10%;
-    --foreground: 0 0% 98%;
-    --card: 0 0% 11%;
-    --card-foreground: 0 0% 98%;
-    --popover: 0 0% 11%;
-    --popover-foreground: 0 0% 98%;
-    --primary: 35 100% 50%;
-    --primary-foreground: 0 0% 13%;
-    --secondary: 0 0% 20%;
-    --secondary-foreground: 0 0% 98%;
-    --muted: 0 0% 20%;
-    --muted-foreground: 0 0% 63.9%;
-    --accent: 35 100% 50%;
-    --accent-foreground: 0 0% 13%;
-    --destructive: 0 62.8% 50%;
-    --destructive-foreground: 0 0% 98%;
-    --success: 142 76% 36%;
-    --border: 0 0% 25%;
-    --input: 0 0% 20%;
-    --ring: 35 100% 50%;
-    --radius: 0.5rem;
-  }
-
-  .dark {
-    --background: 0 0% 10%;
-    --foreground: 0 0% 98%;
-    --card: 0 0% 11%;
-    --card-foreground: 0 0% 98%;
-    --popover: 0 0% 11%;
-    --popover-foreground: 0 0% 98%;
-    --primary: 35 100% 50%;
-    --primary-foreground: 0 0% 13%;
-    --secondary: 0 0% 20%;
-    --secondary-foreground: 0 0% 98%;
-    --muted: 0 0% 20%;
-    --muted-foreground: 0 0% 63.9%;
-    --accent: 35 100% 50%;
-    --accent-foreground: 0 0% 13%;
-    --destructive: 0 62.8% 50%;
-    --destructive-foreground: 0 0% 98%;
-    --success: 142 76% 36%;
-    --border: 0 0% 25%;
-    --input: 0 0% 20%;
-    --ring: 35 100% 50%;
+    --gutter: 1.5rem;
   }
 }
 
+@media (min-width: 64rem) {
+  :root {
+    --gutter: 2rem;
+  }
+}
+
+@theme inline {
+  --color-background: hsl(var(--background));
+  --color-foreground: hsl(var(--foreground));
+  --color-card: hsl(var(--card));
+  --color-card-foreground: hsl(var(--card-foreground));
+  --color-popover: hsl(var(--popover));
+  --color-popover-foreground: hsl(var(--popover-foreground));
+  --color-surface-raised: hsl(var(--surface-raised));
+
+  --color-primary: hsl(var(--primary));
+  --color-primary-foreground: hsl(var(--primary-foreground));
+  --color-secondary: hsl(var(--secondary));
+  --color-secondary-foreground: hsl(var(--secondary-foreground));
+  --color-muted: hsl(var(--muted));
+  --color-muted-foreground: hsl(var(--muted-foreground));
+  --color-accent: hsl(var(--accent));
+  --color-accent-foreground: hsl(var(--accent-foreground));
+
+  --color-destructive: hsl(var(--destructive));
+  --color-destructive-foreground: hsl(var(--destructive-foreground));
+  --color-success: hsl(var(--success));
+  --color-success-foreground: hsl(var(--success-foreground));
+  --color-warning: hsl(var(--warning));
+  --color-warning-foreground: hsl(var(--warning-foreground));
+
+  --color-conference-east: hsl(var(--conference-east));
+  --color-conference-west: hsl(var(--conference-west));
+  --color-conference-cross: hsl(var(--conference-cross));
+
+  --color-border: hsl(var(--border));
+  --color-input: hsl(var(--input));
+  --color-ring: hsl(var(--ring));
+
+  --radius-sm: calc(var(--radius) - 0.25rem);
+  --radius-md: calc(var(--radius) - 0.125rem);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 0.25rem);
+
+  --font-sans: 'Inter Variable', Inter, -apple-system, BlinkMacSystemFont,
+    'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
+}
+
 @layer base {
+  *,
+  *::before,
+  *::after {
+    box-sizing: border-box;
+    margin: 0;
+  }
+
   * {
     border-color: hsl(var(--border));
   }
+
   body {
+    min-height: 100vh;
     background-color: hsl(var(--background));
     color: hsl(var(--foreground));
+    font-family: var(--font-sans);
+    font-size: 0.9375rem;
+    line-height: 1.6;
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  /* Stat figures must align in columns wherever they appear. */
+  table,
+  .tabular-nums {
+    font-variant-numeric: tabular-nums;
   }
 }
 
 @layer components {
-  /* Force all buttons to have bold font-weight */
-  button {
-    font-weight: 700 !important;
-  }
-
-  /* Ensure solid primary background buttons use dark/black text for readability.
-     NOTE: must NOT use [class*="bg-primary"] — that matches variant/opacity
-     utilities like focus:bg-primary/20 or hover:bg-primary/15 and wrongly forces
-     dark text on dropdown items, etc. Match only the solid bg-primary class. */
-  .bg-primary,
-  button.bg-primary {
-    color: hsl(var(--primary-foreground)) !important;
-  }
-
-  /* Force orange focus borders for all inputs and textareas */
-  input:focus,
-  input:focus-visible,
-  textarea:focus,
-  textarea:focus-visible {
-    border-color: hsl(var(--primary)) !important;
-    box-shadow: none !important;
-    outline: none !important;
-  }
-
-  /* Toggle Group Styling - Selected State */
-  [data-state="on"] {
-    background-color: hsl(var(--accent)) !important;
-    color: #1a1a1a !important;
-    box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.4);
-  }
-
-  /* Hover state for unselected */
-  button[data-state="off"]:hover,
-  [role="radio"][data-state="off"]:hover {
-    background-color: hsl(var(--muted));
-  }
-
-  /* Options Menu Dropdown Styling */
-  .options-dropdown {
-    background-color: hsl(0 0% 11%) !important;
-    border: 0.0625rem solid hsl(var(--border)) !important;
-    min-width: 15rem !important;
-    box-shadow: 0 0.25rem 0.375rem -0.0625rem rgb(0 0 0 / 0.3), 0 0.125rem 0.25rem -0.125rem rgb(0 0 0 / 0.3) !important;
-  }
-
-  .options-item {
-    padding: 0.75rem 1rem !important;
-    cursor: default !important;
-    color: hsl(0 0% 98%) !important;
-  }
-
-  .options-item:hover {
-    background-color: hsl(var(--accent) / 0.15) !important;
-  }
-
-  .options-item label {
-    color: hsl(0 0% 98%) !important;
-    font-size: 0.95rem !important;
-    font-weight: 500 !important;
-  }
-
-  /* Switch Styling - Target all switches in the app */
-  button[role="switch"] {
-    background-color: hsl(0 0% 35%) !important;
-    border: none !important;
-  }
-
-  button[role="switch"][data-state="checked"] {
-    background-color: hsl(var(--primary)) !important;
-  }
-
-  button[role="switch"] span {
-    background-color: white !important;
-    box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.3) !important;
-  }
-
-  /* Global Dialog Styling - Refined & Wider */
-  [role="dialog"] {
-    background: rgb(48, 48, 50) !important;
-    border: 0.09375rem solid rgb(110, 110, 115) !important;
-    box-shadow:
-      0 0 0 0.0625rem rgba(255, 255, 255, 0.1) inset,
-      0 1.875rem 3.75rem -0.9375rem rgba(0, 0, 0, 0.9) !important;
-    padding: 2.25rem 2.5rem !important;
-    max-width: 45rem !important;
-    border-radius: 0.875rem !important;
-  }
-
-  /* Popover Dialog Override */
-  [role="dialog"].stats-preferences-popover {
-    background: hsl(0 0% 12%) !important;
-    border: 1px solid hsl(0 0% 25%) !important;
-    padding: 1.25rem !important;
-    max-width: 24rem !important;
-    border-radius: 0.75rem !important;
-    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5), 0 8px 10px -6px rgba(0, 0, 0, 0.5) !important;
-  }
-
-  /* Checkbox Sizing & Styling */
-  button[role="checkbox"] {
-    width: 1.125rem !important;
-    height: 1.125rem !important;
-    min-width: 1.125rem !important;
-    min-height: 1.125rem !important;
-    border-radius: 0.25rem !important;
-    border: 1.5px solid hsl(0 0% 45%) !important;
-    background-color: hsl(0 0% 8%) !important;
-    display: inline-flex !important;
-    align-items: center !important;
-    justify-content: center !important;
-    cursor: pointer !important;
-    flex-shrink: 0 !important;
-  }
-
-  button[role="checkbox"][data-state="checked"] {
-    background-color: hsl(var(--primary)) !important;
-    border-color: hsl(var(--primary)) !important;
-    color: hsl(var(--primary-foreground)) !important;
-  }
-
   /* The popover's trigger. Sized against the table it configures, not as a
      dialog action button. */
-  [role="dialog"] .prefs-trigger {
+  .prefs-trigger {
     display: inline-flex;
     align-items: center;
     gap: 0.5rem;
     height: 2rem;
-    min-height: 2rem !important;
-    padding: 0 0.75rem !important;
-    font-size: 0.75rem !important;
-    font-weight: 600 !important;
-    border-radius: 0.5rem !important;
+    min-height: 2rem;
+    padding: 0 0.75rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+    border-radius: 0.5rem;
     color: hsl(var(--muted-foreground));
     border: 0.0625rem solid hsl(var(--border));
     background-color: hsl(0 0% 16%);
   }
 
-  [role="dialog"] .prefs-trigger:hover {
+  .prefs-trigger:hover {
     color: hsl(var(--foreground));
     background-color: hsl(0 0% 20%);
   }
 
   /* Stats preferences popover.
      These rules live here rather than in PlayerStatsDialog.vue's scoped block
-     because the popover is teleported out of the component by PopoverPortal and
-     does not receive the component's scope attribute. They also have to be in
-     this layer, not unlayered: for !important declarations the cascade reverses
-     layer order, so unlayered rules lose to the layered ones above no matter
-     how specific they are.
-
-     A popover carries role="dialog" too, so the modal-scale rules above land on
-     it: 1.0625rem body copy with a 2rem bottom margin, and 2.75rem-tall buttons
-     padded to 2rem a side. Right for a modal, far too big for a settings panel,
-     hence the !important on every metric that has to be taken back. */
-  [role="dialog"].stats-preferences-popover {
+     because the popover is teleported out of the component by PopoverPortal
+     and so never receives the component's scope attribute. */
+  .stats-preferences-popover {
     display: flex;
     flex-direction: column;
     gap: 1.125rem;
-    width: 20rem !important;
-    padding: 1.125rem !important;
+    width: 20rem;
+    padding: 1.125rem;
   }
 
-  [role="dialog"].stats-preferences-popover h4 {
-    font-size: 0.8125rem !important;
-    font-weight: 700 !important;
-    line-height: 1.3 !important;
-    letter-spacing: -0.01em !important;
-    margin-bottom: 0 !important;
-    color: hsl(var(--foreground)) !important;
+  .stats-preferences-popover h4 {
+    font-size: 0.8125rem;
+    font-weight: 700;
+    line-height: 1.3;
+    letter-spacing: -0.01em;
+    margin-bottom: 0;
+    color: hsl(var(--foreground));
   }
 
-  [role="dialog"].stats-preferences-popover p {
-    font-size: 0.6875rem !important;
-    font-weight: 400 !important;
-    line-height: 1.45 !important;
-    margin-bottom: 0 !important;
-    color: hsl(var(--muted-foreground)) !important;
+  .stats-preferences-popover p {
+    font-size: 0.6875rem;
+    font-weight: 400;
+    line-height: 1.45;
+    margin-bottom: 0;
+    color: hsl(var(--muted-foreground));
   }
 
-  [role="dialog"].stats-preferences-popover button {
-    font-size: 0.75rem !important;
-    font-weight: 600 !important;
-    padding: 0 0.625rem !important;
-    min-height: 2rem !important;
-    border-radius: 0.375rem !important;
+  .stats-preferences-popover button {
+    font-size: 0.75rem;
+    font-weight: 600;
+    padding: 0 0.625rem;
+    min-height: 2rem;
+    border-radius: 0.375rem;
   }
 
-  [role="dialog"].stats-preferences-popover .prefs-head {
+  .stats-preferences-popover .prefs-head {
     display: flex;
     align-items: flex-start;
     gap: 0.625rem;
@@ -279,7 +234,7 @@
     border-bottom: 0.0625rem solid hsl(var(--border));
   }
 
-  [role="dialog"].stats-preferences-popover .prefs-head-icon {
+  .stats-preferences-popover .prefs-head-icon {
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -291,7 +246,7 @@
     background-color: hsl(var(--primary) / 0.15);
   }
 
-  [role="dialog"].stats-preferences-popover .prefs-head-text {
+  .stats-preferences-popover .prefs-head-text {
     display: flex;
     flex-direction: column;
     gap: 0.1875rem;
@@ -300,13 +255,13 @@
     padding-top: 0.0625rem;
   }
 
-  [role="dialog"].stats-preferences-popover .prefs-section {
+  .stats-preferences-popover .prefs-section {
     display: flex;
     flex-direction: column;
     gap: 0.5rem;
   }
 
-  [role="dialog"].stats-preferences-popover .prefs-label {
+  .stats-preferences-popover .prefs-label {
     font-size: 0.625rem;
     font-weight: 700;
     text-transform: uppercase;
@@ -317,11 +272,11 @@
 
   /* ToggleGroup hard-codes `flex items-center justify-center gap-1` on its
      root. Those are utilities, and the utilities layer outranks this one for
-     normal declarations, so the grid has to be declared !important to land. */
-  [role="dialog"].stats-preferences-popover .prefs-toggle-grid {
-    display: grid !important;
-    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
-    gap: 0.3125rem !important;
+     normal declarations, so the grid has to be declared to land. */
+  .stats-preferences-popover .prefs-toggle-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.3125rem;
     padding: 0.3125rem;
     border: 0.0625rem solid hsl(var(--border));
     border-radius: 0.5rem;
@@ -330,20 +285,20 @@
 
   /* Same story as the grid above: `gap-2` is a utility and wins unless this is
      marked important. flex-direction has no competing utility. */
-  [role="dialog"].stats-preferences-popover .prefs-toggle {
-    display: flex !important;
+  .stats-preferences-popover .prefs-toggle {
+    display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: 0.0625rem !important;
+    gap: 0.0625rem;
     width: 100%;
-    min-height: 2.5rem !important;
-    padding: 0.375rem 0.5rem !important;
-    border-radius: 0.375rem !important;
+    min-height: 2.5rem;
+    padding: 0.375rem 0.5rem;
+    border-radius: 0.375rem;
     color: hsl(var(--muted-foreground));
   }
 
-  [role="dialog"].stats-preferences-popover .prefs-toggle-value {
+  .stats-preferences-popover .prefs-toggle-value {
     font-size: 0.75rem;
     font-weight: 700;
     font-variant-numeric: tabular-nums;
@@ -352,14 +307,14 @@
 
   /* The sample answers the question; the hint only names it. Keeping the hint
      dim and on its own line stops four options reading as eight labels. */
-  [role="dialog"].stats-preferences-popover .prefs-toggle-hint {
+  .stats-preferences-popover .prefs-toggle-hint {
     font-size: 0.625rem;
     font-weight: 500;
     line-height: 1.1;
     opacity: 0.6;
   }
 
-  [role="dialog"].stats-preferences-popover .prefs-check-row {
+  .stats-preferences-popover .prefs-check-row {
     display: flex;
     align-items: flex-start;
     gap: 0.625rem;
@@ -370,7 +325,7 @@
     user-select: none;
   }
 
-  [role="dialog"].stats-preferences-popover .prefs-check-text {
+  .stats-preferences-popover .prefs-check-text {
     display: flex;
     flex-direction: column;
     gap: 0.1875rem;
@@ -378,346 +333,36 @@
   }
 
   /* Matches the 1.25rem checkbox so the two sit on a shared baseline. */
-  [role="dialog"].stats-preferences-popover .prefs-check-title {
+  .stats-preferences-popover .prefs-check-title {
     font-size: 0.75rem;
     font-weight: 700;
     line-height: 1.25rem;
     color: hsl(var(--foreground));
   }
 
-  [role="dialog"].stats-preferences-popover .prefs-foot {
+  .stats-preferences-popover .prefs-foot {
     display: flex;
     justify-content: flex-end;
     padding-top: 0.875rem;
     border-top: 0.0625rem solid hsl(var(--border));
   }
 
-  [role="dialog"].stats-preferences-popover .prefs-reset {
+  .stats-preferences-popover .prefs-reset {
     display: inline-flex;
     align-items: center;
     gap: 0.375rem;
-    min-height: 1.75rem !important;
-    padding: 0 0.5rem !important;
-    font-size: 0.6875rem !important;
+    min-height: 1.75rem;
+    padding: 0 0.5rem;
+    font-size: 0.6875rem;
     color: hsl(var(--muted-foreground));
   }
 
-  [role="dialog"].stats-preferences-popover .prefs-reset:hover {
+  .stats-preferences-popover .prefs-reset:hover {
     color: hsl(var(--foreground));
     background-color: hsl(0 0% 18%);
   }
 
-  [role="dialog"].stats-preferences-popover button[role="checkbox"] {
-    min-height: 1.25rem !important;
-    padding: 0 !important;
-  }
-
-  /* Opt-out for dialogs holding wide tabular data. The player stats table is
-     21 columns; at 45rem only about a third of it is reachable. Needs to beat
-     the !important above, hence the class + attribute selector. */
-  [role="dialog"].wide-dialog {
-    max-width: min(95vw, 110rem) !important;
-    padding: 2rem !important;
-  }
-
-  [role="dialog"] h2 {
-    font-size: 2rem !important;
-    font-weight: 700 !important;
-    color: rgb(255, 255, 255) !important;
-    letter-spacing: -0.03em !important;
-    margin-bottom: 1.25rem !important;
-    line-height: 1.2 !important;
-  }
-
-  [role="dialog"] p {
-    font-size: 1.0625rem !important;
-    font-weight: 400 !important;
-    color: rgb(235, 235, 235) !important;
-    line-height: 1.6 !important;
-    margin-bottom: 2rem !important;
-  }
-
-  /* Close Button - Clear X Icon */
-  [role="dialog"] > button[type="button"]:last-of-type {
-    position: absolute !important;
-    top: 1.5rem !important;
-    right: 1.5rem !important;
-    width: 2.25rem !important;
-    height: 2.25rem !important;
-    border-radius: 0.5rem !important;
-    display: flex !important;
-    align-items: center !important;
-    justify-content: center !important;
-    cursor: pointer !important;
-    background-color: rgba(255, 255, 255, 0.08) !important;
-    border: 0.09375rem solid rgba(255, 255, 255, 0.25) !important;
-    transition: all 0.2s ease !important;
-  }
-
-  [role="dialog"] > button[type="button"]:last-of-type:hover {
-    background-color: rgba(255, 255, 255, 0.15) !important;
-    border-color: rgba(255, 255, 255, 0.4) !important;
-    transform: scale(1.08) !important;
-  }
-
-  [role="dialog"] > button[type="button"]:last-of-type svg {
-    display: block !important;
-    width: 1.25rem !important;
-    height: 1.25rem !important;
-    min-width: 1.25rem !important;
-    min-height: 1.25rem !important;
-    color: rgb(255, 255, 255) !important;
-    stroke: rgb(255, 255, 255) !important;
-    stroke-width: 0.125rem !important;
-    fill: none !important;
-  }
-
-  /* Ensure X icon paths are visible */
-  [role="dialog"] > button[type="button"]:last-of-type svg path,
-  [role="dialog"] > button[type="button"]:last-of-type svg line {
-    stroke: rgb(255, 255, 255) !important;
-    stroke-width: 0.125rem !important;
-    stroke-linecap: round !important;
-  }
-
-  /* Dialog Action Buttons - Refined */
-  [role="dialog"] button {
-    font-weight: 600 !important;
-    font-size: 1rem !important;
-    padding: 0.75rem 2rem !important;
-    min-height: 2.75rem !important;
-    border-radius: 0.625rem !important;
-    transition: all 0.2s ease !important;
-  }
-
-  /* Not every button in a dialog is an action button. Controls that sit inline
-     with text - sortable table headers, for one - must keep the surrounding
-     text's metrics; action-button padding adds 4rem per table column. */
-  [role="dialog"] button[data-inline-control] {
-    font-weight: inherit !important;
-    font-size: inherit !important;
-    padding: 0 !important;
-    min-height: 0 !important;
-    border-radius: 0.125rem !important;
-  }
-
-  /* Buttons that are a tile in a grid - the logo pickers - size themselves from
-     their column. Action-button padding is 2rem a side, which on a 9rem tile
-     leaves the artwork about 2rem wide. */
-  [role="dialog"] button[data-grid-tile] {
-    font-weight: inherit !important;
-    font-size: inherit !important;
-    padding: 0.5rem !important;
-    min-height: 0 !important;
-    border-radius: 0.75rem !important;
-  }
-
-  /* Filter-row controls - select triggers sitting beside a text input - keep
-     input metrics. Action-button padding costs 4rem of an 8.5rem trigger, which
-     is what truncates a label like "All leagues" to "All l...". */
-  [role="dialog"] button[data-compact-control] {
-    font-weight: 500 !important;
-    font-size: 0.875rem !important;
-    padding: 0 0.75rem !important;
-    min-height: 2.5rem !important;
-    border-radius: var(--radius) !important;
-  }
-
-  /* Square icon-only controls own their box; action-button padding turns a
-     2.5rem square into a 6.5rem lozenge. */
-  [role="dialog"] button[data-icon-control] {
-    font-size: inherit !important;
-    padding: 0 !important;
-    min-height: 0 !important;
-    border-radius: var(--radius) !important;
-  }
-
-  /* Dropdown Menu Styling */
-  [data-radix-dropdown-menu-content],
-  [data-reka-menu-content] {
-    background-color: rgb(24, 24, 27) !important;
-    backdrop-filter: blur(0.75rem) !important;
-    border: 0.125rem solid rgb(80, 80, 90) !important;
-    box-shadow: 0 0.625rem 1.5625rem rgba(0, 0, 0, 0.8) !important;
-  }
-
-  /* Toast/Sonner Styling - Dark theme with app colors */
-  .toaster {
-    position: fixed !important;
-    z-index: 9999 !important;
-    pointer-events: none;
-  }
-
-  .toaster > * {
-    pointer-events: auto;
-  }
-
-  /* Force dark theme styling for toasts */
-  [data-sonner-toast] {
-    background-color: hsl(var(--card)) !important;
-    border-color: hsl(var(--border)) !important;
-    color: hsl(var(--foreground)) !important;
-  }
-
-  [data-sonner-toast][data-type="success"] {
-    background-color: hsl(var(--card)) !important;
-    border-color: hsl(var(--success)) !important;
-  }
-
-  [data-sonner-toast][data-type="error"] {
-    background-color: hsl(var(--card)) !important;
-    border-color: hsl(var(--destructive)) !important;
-  }
-
-  [data-sonner-toast][data-type="error"] [data-icon] {
-    color: hsl(var(--destructive)) !important;
-  }
-
-  [data-sonner-toast][data-type="warning"] {
-    background-color: hsl(var(--card)) !important;
-    border-color: hsl(var(--primary)) !important;
-  }
-
-  [data-sonner-toast][data-description] {
-    color: hsl(var(--muted-foreground)) !important;
-  }
-
-  /* Date Picker (v-calendar) - dark theme with orange accents
-     Higher-specificity overrides for the global [role="dialog"] rules above */
-  [role="dialog"].date-picker-popover {
-    background: hsl(var(--popover)) !important;
-    border: 0.0625rem solid hsl(var(--border)) !important;
-    border-radius: 0.5rem !important;
-    padding: 0 !important;
-    max-width: none !important;
-    overflow: hidden !important;
-    box-shadow: 0 0.625rem 1.5625rem rgba(0, 0, 0, 0.5) !important;
-  }
-
-  [role="dialog"].date-picker-popover .vc-container {
-    background-color: hsl(var(--popover)) !important;
-    border: none !important;
-    border-radius: 0 !important;
-    color: hsl(var(--foreground)) !important;
-    font-family: inherit !important;
-  }
-
-  [role="dialog"].date-picker-popover .vc-header,
-  [role="dialog"].date-picker-popover .vc-weeks,
-  [role="dialog"].date-picker-popover .vc-weekday,
-  [role="dialog"].date-picker-popover .vc-title,
-  [role="dialog"].date-picker-popover .vc-arrow {
-    background-color: transparent !important;
-    color: hsl(var(--foreground)) !important;
-  }
-
-  [role="dialog"].date-picker-popover .vc-weekday {
-    color: hsl(var(--primary)) !important;
-    font-weight: 600 !important;
-  }
-
-  /* Override global dialog button bloat */
-  [role="dialog"].date-picker-popover button {
-    padding: 0.25rem !important;
-    min-height: 0 !important;
-    font-size: inherit !important;
-    border-radius: 0.375rem !important;
-  }
-
-  [role="dialog"].date-picker-popover .vc-title {
-    padding: 0.25rem 0.5rem !important;
-    font-weight: 700 !important;
-  }
-
-  [role="dialog"].date-picker-popover .vc-arrow,
-  [role="dialog"].date-picker-popover .vc-title {
-    /* v-calendar's .vc-header paints over its children;
-       elevate clickable controls so the user actually hits them */
-    position: relative !important;
-    z-index: 1 !important;
-    cursor: pointer !important;
-  }
-
-  [role="dialog"].date-picker-popover .vc-arrow {
-    width: 1.875rem !important;
-    height: 1.875rem !important;
-    color: hsl(var(--foreground)) !important;
-    box-shadow: none !important;
-  }
-
-  /* Arrow icons - v-calendar's polyline doesn't always inherit stroke reliably */
-  [role="dialog"].date-picker-popover .vc-arrow svg {
-    width: 1.125rem !important;
-    height: 1.125rem !important;
-    min-width: 0 !important;
-    min-height: 0 !important;
-    color: hsl(var(--foreground)) !important;
-    stroke: hsl(var(--foreground)) !important;
-    fill: none !important;
-  }
-
-  [role="dialog"].date-picker-popover .vc-arrow svg polyline,
-  [role="dialog"].date-picker-popover .vc-arrow svg path,
-  [role="dialog"].date-picker-popover .vc-arrow svg line {
-    stroke: hsl(var(--foreground)) !important;
-    fill: none !important;
-    stroke-width: 0.125rem !important;
-  }
-
-  [role="dialog"].date-picker-popover .vc-arrow:hover {
-    background-color: hsl(var(--accent) / 0.2) !important;
-  }
-
-  [role="dialog"].date-picker-popover .vc-title:hover {
-    background-color: hsl(var(--accent) / 0.2) !important;
-  }
-
-  [role="dialog"].date-picker-popover .vc-arrow:focus,
-  [role="dialog"].date-picker-popover .vc-focus:focus-within {
-    box-shadow: none !important;
-    outline: none !important;
-  }
-
-  [role="dialog"].date-picker-popover .vc-day-content:hover {
-    background-color: hsl(var(--accent) / 0.2) !important;
-  }
-
-  [role="dialog"].date-picker-popover .vc-day-content.vc-highlight-content-light,
-  [role="dialog"].date-picker-popover .vc-day-content.vc-highlight-content-solid {
-    color: hsl(var(--primary-foreground)) !important;
-    background-color: hsl(var(--primary)) !important;
-  }
-
-  [role="dialog"].date-picker-popover .vc-day.is-not-in-month .vc-day-content {
-    color: hsl(var(--muted-foreground)) !important;
-    opacity: 0.4 !important;
-  }
-
-  [role="dialog"].date-picker-popover .vc-day-content.vc-disabled {
-    color: hsl(var(--muted-foreground)) !important;
-    opacity: 0.3 !important;
-    cursor: not-allowed !important;
-  }
-
-  /* Tooltip Popover (for v-calendar Attributes) */
-  .vc-popover-content,
-  .vc-popover-content.vc-is-dark {
-    background-color: hsl(var(--popover)) !important;
-    color: hsl(var(--popover-foreground)) !important;
-    border: 0.0625rem solid hsl(var(--border)) !important;
-    box-shadow: 0 0.25rem 0.375rem -0.0625rem rgb(0 0 0 / 0.3), 0 0.125rem 0.25rem -0.125rem rgb(0 0 0 / 0.3) !important;
-  }
-
-  .vc-popover-caret,
-  .vc-popover-caret.vc-is-dark {
-    background-color: hsl(var(--popover)) !important;
-    border-color: hsl(var(--border)) !important;
-  }
 }
-
-@import './base.css';
-
-
 /* @media (min-width: 1024px) {
   body {
     display: flex;
@@ -730,31 +375,3 @@
     padding: 0 2rem;
   }
 } */
-
-/* Direct, un-layered overrides for Checkbox and Popover */
-button[role="checkbox"],
-button.peer[role="checkbox"] {
-  width: 1.25rem !important;
-  height: 1.25rem !important;
-  min-width: 1.25rem !important;
-  min-height: 1.25rem !important;
-  max-width: 1.25rem !important;
-  max-height: 1.25rem !important;
-  border-radius: 0.25rem !important;
-  border: 1.5px solid #71717a !important;
-  background-color: #09090b !important;
-  display: inline-flex !important;
-  align-items: center !important;
-  justify-content: center !important;
-  cursor: pointer !important;
-  flex-shrink: 0 !important;
-  padding: 0 !important;
-  margin: 0 !important;
-}
-
-button[role="checkbox"][data-state="checked"],
-button.peer[role="checkbox"][data-state="checked"] {
-  background-color: hsl(var(--primary)) !important;
-  border-color: hsl(var(--primary)) !important;
-  color: #18181b !important;
-}

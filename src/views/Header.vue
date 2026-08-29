@@ -62,7 +62,7 @@ nav {
 }
 
 nav a.router-link-exact-active {
-    border-bottom: 0.2rem solid var(--vt-c-black-soft);
+    border-bottom: 0.2rem solid hsl(var(--primary-foreground));
 }
 
 nav a.router-link-exact-active:hover {
@@ -79,7 +79,7 @@ nav a {
     font-weight: 600;
     text-decoration: none;
     font-size: 1.15rem;
-    color: var(--vt-c-black-soft);
+    color: hsl(var(--primary-foreground));
     padding: 0.5rem 0;
 }
 

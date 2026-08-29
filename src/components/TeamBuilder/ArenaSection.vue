@@ -152,7 +152,7 @@ const toggleFilter = (filter: string) => {
 <template>
     <div>
         <div class="card-wrapper">
-            <Card class="section-card">
+            <Card class="section-card border-0">
                 <CardContent class="pt-6">
                 <div class="card-title-section">
                     <h3 class="card-title">Arena</h3>
@@ -210,8 +210,7 @@ const toggleFilter = (filter: string) => {
                             v-model="search"
                             placeholder="Search for an arena"
                             type="search"
-                            class="pr-10 h-11 focus-visible:ring-offset-0"
-                            style="outline-offset: -0.125rem;"
+                            class="pr-10 h-11 focus-visible:ring-offset-0 outline-offset-[-0.125rem]"
                         />
                         <Search class="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
                     </div>
@@ -234,10 +233,9 @@ const toggleFilter = (filter: string) => {
                                     <SelectValue placeholder="Sort by..." />
                                 </SelectTrigger>
                                 <SelectContent
-                                    class="!bg-[rgb(9,9,11)] border-2 shadow-xl z-[100]"
+                                    class="bg-surface-raised border-2 shadow-xl"
                                     position="popper"
                                     :side-offset="8"
-                                    style="background-color: rgb(9, 9, 11) !important; opacity: 1 !important;"
                                 >
                                     <SelectItem
                                         v-for="option in sortOptions"
@@ -264,9 +262,8 @@ const toggleFilter = (filter: string) => {
                                 </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent
-                                class="!bg-[rgb(9,9,11)] border-2 shadow-xl z-[100]"
+                                class="bg-surface-raised border-2 shadow-xl"
                                 :side-offset="8"
-                                style="background-color: rgb(9, 9, 11) !important; opacity: 1 !important;"
                             >
                                 <DropdownMenuCheckboxItem
                                     v-for="filter in ARENA_FILTERS"
@@ -330,18 +327,15 @@ const toggleFilter = (filter: string) => {
 .card-wrapper {
     border-radius: 0.5rem;
     border: 0.125rem solid;
-    border-color: hsla(var(--primary), 0.5);
+    border-color: hsl(var(--primary) / 0.5);
     transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
 .card-wrapper:hover {
     border-color: hsl(var(--primary));
-    box-shadow: 0 0 0.5rem hsla(var(--primary), 0.3);
+    box-shadow: 0 0 0.5rem hsl(var(--primary) / 0.3);
 }
 
-.section-card {
-    border: none !important;
-}
 
 .card-title-section {
     display: flex;
@@ -417,14 +411,14 @@ const toggleFilter = (filter: string) => {
 
 .arena-item {
     background-color: hsl(var(--card));
-    border: 1px solid hsl(var(--border));
+    border: 0.0625rem solid hsl(var(--border));
     transition: all 0.2s ease;
 }
 
 .arena-item:hover {
     background-color: hsl(var(--accent) / 0.15);
     border-color: hsl(var(--primary) / 0.5);
-    box-shadow: 0 0.125rem 0.5rem rgba(0, 0, 0, 0.15);
+    box-shadow: 0 0.125rem 0.5rem hsl(var(--shadow-color) / 0.15);
 }
 
 .arena-name-improved {

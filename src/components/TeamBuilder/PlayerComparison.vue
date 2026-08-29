@@ -222,7 +222,7 @@ const headerFor = (player: any, career: ReturnType<typeof careerOf>) => ({
   border-bottom-color: hsl(var(--border));
   padding-bottom: 1rem;
   grid-template-columns: 1fr 1fr;
-  background-color: transparent !important;
+  background-color: transparent;
 }
 
 .comparison-player {
@@ -307,7 +307,7 @@ const headerFor = (player: any, career: ReturnType<typeof careerOf>) => ({
   margin-top: 0.5rem;
   padding-top: 0.75rem;
   font-size: 1.125rem;
-  background-color: transparent !important;
+  background-color: transparent;
 }
 
 .comparison-total .comparison-label {

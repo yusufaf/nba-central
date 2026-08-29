@@ -482,7 +482,7 @@ const handleDeletePlayer = async () => {
 }
 
 .player-item {
-  border: 2px solid hsl(var(--border) / 0.4);
+  border: 0.125rem solid hsl(var(--border) / 0.4);
   background: linear-gradient(to right, hsl(var(--background) / 0.6), hsl(var(--background) / 0.3));
 }
 

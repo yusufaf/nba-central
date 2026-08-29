@@ -3,26 +3,26 @@
         <!-- Loading State -->
         <div v-if="loading" class="flex items-center justify-center min-h-[50vh]">
             <div class="text-center">
-                <div class="animate-spin rounded-full h-2rem w-2rem border-b-0.125rem border-primary mx-auto mb-1rem"></div>
+                <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
                 <p class="text-muted-foreground">Loading game data...</p>
             </div>
         </div>
 
         <!-- Error State -->
         <div v-else-if="error" class="flex items-center justify-center min-h-[50vh]">
-            <div class="text-center max-w-[31.25rem] mx-auto p-1.5rem">
-                <p class="text-destructive text-1.125rem font-semibold mb-0.5rem">{{ error }}</p>
-                <Button @click="() => fetchGameSummary()" variant="outline" class="mt-1rem">
+            <div class="text-center max-w-[31.25rem] mx-auto p-6">
+                <p class="text-destructive text-lg font-semibold mb-2">{{ error }}</p>
+                <Button @click="() => fetchGameSummary()" variant="outline" class="mt-4">
                     Try Again
                 </Button>
-                <Button @click="() => router.push('/scores')" variant="ghost" class="mt-0.5rem ml-0.5rem">
+                <Button @click="() => router.push('/scores')" variant="ghost" class="mt-2 ml-2">
                     Back to Scores
                 </Button>
             </div>
         </div>
 
         <!-- Game Content -->
-        <div v-else-if="gameSummary" class="container mx-auto px-1rem py-1rem max-w-[75rem]">
+        <PageShell v-else-if="gameSummary" width="narrow">
             <!-- Game Header -->
             <GameHeader
                 :game-summary="gameSummary"
@@ -34,30 +34,30 @@
             <QuarterScores
                 v-if="gameSummary.header?.competitions?.[0]?.competitors"
                 :competitors="gameSummary.header.competitions[0].competitors"
-                class="mt-0.5rem"
+                class="mt-2"
             />
 
             <!-- Tabs Navigation -->
-            <Tabs default-value="box-score" class="mt-0.5rem">
-                <TabsList class="grid w-full grid-cols-4 h-auto bg-muted/30 p-0.25rem gap-0.125rem" style="border-bottom: 1px solid hsl(var(--primary) / 0.1);">
-                    <TabsTrigger value="box-score" class="font-medium hover:text-foreground data-[state=active]:bg-primary/15 data-[state=active]:text-primary data-[state=active]:font-semibold" style="font-size: 0.85rem; padding-top: 0.5rem; padding-bottom: 0.5rem; color: hsl(var(--foreground) / 0.6);">Box Score</TabsTrigger>
-                    <TabsTrigger value="play-by-play" class="font-medium hover:text-foreground data-[state=active]:bg-primary/15 data-[state=active]:text-primary data-[state=active]:font-semibold" style="font-size: 0.85rem; padding-top: 0.5rem; padding-bottom: 0.5rem; color: hsl(var(--foreground) / 0.6);">Play-by-Play</TabsTrigger>
-                    <TabsTrigger value="team-stats" class="font-medium hover:text-foreground data-[state=active]:bg-primary/15 data-[state=active]:text-primary data-[state=active]:font-semibold" style="font-size: 0.85rem; padding-top: 0.5rem; padding-bottom: 0.5rem; color: hsl(var(--foreground) / 0.6);">Team Stats</TabsTrigger>
-                    <TabsTrigger value="advanced" class="font-medium hover:text-foreground data-[state=active]:bg-primary/15 data-[state=active]:text-primary data-[state=active]:font-semibold" style="font-size: 0.85rem; padding-top: 0.5rem; padding-bottom: 0.5rem; color: hsl(var(--foreground) / 0.6);">Advanced</TabsTrigger>
+            <Tabs default-value="box-score" class="mt-2">
+                <TabsList class="grid w-full grid-cols-4 h-auto bg-muted/30 p-1 gap-0.5 border-b border-b-primary/10">
+                    <TabsTrigger value="box-score" class="font-medium hover:text-foreground data-[state=active]:bg-primary/15 data-[state=active]:text-primary data-[state=active]:font-semibold text-[0.85rem] pt-2 pb-2 text-foreground/60">Box Score</TabsTrigger>
+                    <TabsTrigger value="play-by-play" class="font-medium hover:text-foreground data-[state=active]:bg-primary/15 data-[state=active]:text-primary data-[state=active]:font-semibold text-[0.85rem] pt-2 pb-2 text-foreground/60">Play-by-Play</TabsTrigger>
+                    <TabsTrigger value="team-stats" class="font-medium hover:text-foreground data-[state=active]:bg-primary/15 data-[state=active]:text-primary data-[state=active]:font-semibold text-[0.85rem] pt-2 pb-2 text-foreground/60">Team Stats</TabsTrigger>
+                    <TabsTrigger value="advanced" class="font-medium hover:text-foreground data-[state=active]:bg-primary/15 data-[state=active]:text-primary data-[state=active]:font-semibold text-[0.85rem] pt-2 pb-2 text-foreground/60">Advanced</TabsTrigger>
                 </TabsList>
 
                 <!-- Box Score Tab -->
-                <TabsContent value="box-score" class="mt-0.5rem">
+                <TabsContent value="box-score" class="mt-2">
                     <!-- Game Leaders -->
                     <GameLeaders
                         v-if="gameSummary.boxscore?.players"
                         :players="gameSummary.boxscore.players"
                         :leaders="gameSummary.leaders"
-                        class="mb-0.5rem"
+                        class="mb-2"
                     />
 
                     <!-- Player Stats Tables -->
-                    <div v-if="gameSummary.boxscore?.players" class="space-y-0.5rem">
+                    <div v-if="gameSummary.boxscore?.players" class="space-y-2">
                         <div
                             v-for="(teamPlayers, index) in gameSummary.boxscore.players"
                             :key="teamPlayers.team.id"
@@ -69,59 +69,60 @@
                                 :statistics="teamPlayers.statistics[0]"
                                 :is-away-team="index === 0"
                             />
-                            <div v-else class="text-center py-2rem text-muted-foreground">
+                            <div v-else class="text-center py-8 text-muted-foreground">
                                 <p>Statistics not available for {{ teamPlayers.team.displayName }}</p>
                             </div>
                         </div>
                     </div>
 
-                    <div v-else class="text-center py-3rem text-muted-foreground">
+                    <div v-else class="text-center py-12 text-muted-foreground">
                         <p>Player statistics not yet available</p>
                     </div>
                 </TabsContent>
 
                 <!-- Play-by-Play Tab -->
-                <TabsContent value="play-by-play" class="mt-1rem">
+                <TabsContent value="play-by-play" class="mt-4">
                     <PlayByPlay
                         v-if="gameSummary.plays && gameSummary.plays.length > 0"
                         :plays="gameSummary.plays"
                         :competitors="gameSummary.header?.competitions?.[0]?.competitors || []"
                     />
-                    <div v-else class="text-center py-3rem text-muted-foreground">
+                    <div v-else class="text-center py-12 text-muted-foreground">
                         <p>Play-by-play not available for this game</p>
                     </div>
                 </TabsContent>
 
                 <!-- Team Stats Tab -->
-                <TabsContent value="team-stats" class="mt-1rem">
+                <TabsContent value="team-stats" class="mt-4">
                     <TeamStatsComparison
                         v-if="gameSummary.boxscore?.teams"
                         :teams="gameSummary.boxscore.teams"
                     />
-                    <div v-else class="text-center py-3rem text-muted-foreground">
+                    <div v-else class="text-center py-12 text-muted-foreground">
                         <p>Team statistics not yet available</p>
                     </div>
                 </TabsContent>
 
                 <!-- Advanced Stats Tab -->
-                <TabsContent value="advanced" class="mt-1rem">
+                <TabsContent value="advanced" class="mt-4">
                     <AdvancedStats
                         v-if="gameSummary.boxscore"
                         :boxscore="gameSummary.boxscore"
                         :win-probability="gameSummary.winprobability"
                     />
-                    <div v-else class="text-center py-3rem text-muted-foreground">
+                    <div v-else class="text-center py-12 text-muted-foreground">
                         <p>Advanced statistics not yet available</p>
                     </div>
                 </TabsContent>
             </Tabs>
-        </div>
+        </PageShell>
     </div>
 </template>
 
 <script setup lang="ts">
 import { useRoute, useRouter } from 'vue-router';
 import { useGameSummary } from '@/composables/useGameSummary';
+import PageShell from '@/layouts/PageShell.vue';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import GameHeader from '@/components/BoxScore/GameHeader.vue';

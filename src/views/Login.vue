@@ -39,6 +39,6 @@ onMounted(startSignIn);
     gap: 1rem;
     min-height: 80vh;
     padding: 2rem;
-    background-color: var(--vt-c-black-soft);
+    background-color: hsl(var(--background));
 }
 </style>

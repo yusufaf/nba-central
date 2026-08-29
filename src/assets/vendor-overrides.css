@@ -1,0 +1,189 @@
+/* Third-party component theming.
+ *
+ * These reach into markup we do not own — vue-sonner, v-calendar and reka
+ * menu content that portals to <body> — so they cannot live in a scoped
+ * block. main.ts imports the vendor stylesheets before this file, so plain
+ * specificity is enough and none of this needs !important.
+ */
+
+/* Dropdown Menu Styling */
+[data-radix-dropdown-menu-content],
+[data-reka-menu-content] {
+  background-color: rgb(24, 24, 27);
+  backdrop-filter: blur(0.75rem);
+  border: 0.125rem solid rgb(80, 80, 90);
+  box-shadow: 0 0.625rem 1.5625rem rgba(0, 0, 0, 0.8);
+}
+
+/* Toast/Sonner Styling - Dark theme with app colors */
+.toaster {
+  position: fixed;
+  z-index: 9999;
+  pointer-events: none;
+}
+
+.toaster > * {
+  pointer-events: auto;
+}
+
+/* Force dark theme styling for toasts */
+[data-sonner-toast] {
+  background-color: hsl(var(--card));
+  border-color: hsl(var(--border));
+  color: hsl(var(--foreground));
+}
+
+[data-sonner-toast][data-type="success"] {
+  background-color: hsl(var(--card));
+  border-color: hsl(var(--success));
+}
+
+[data-sonner-toast][data-type="error"] {
+  background-color: hsl(var(--card));
+  border-color: hsl(var(--destructive));
+}
+
+[data-sonner-toast][data-type="error"] [data-icon] {
+  color: hsl(var(--destructive));
+}
+
+[data-sonner-toast][data-type="warning"] {
+  background-color: hsl(var(--card));
+  border-color: hsl(var(--primary));
+}
+
+[data-sonner-toast][data-description] {
+  color: hsl(var(--muted-foreground));
+}
+
+/* Date Picker (v-calendar) - dark theme with orange accents
+   Higher-specificity overrides for the global [role="dialog"] rules above */
+.date-picker-popover {
+  background: hsl(var(--popover));
+  border: 0.0625rem solid hsl(var(--border));
+  border-radius: 0.5rem;
+  padding: 0;
+  max-width: none;
+  overflow: hidden;
+  box-shadow: 0 0.625rem 1.5625rem rgba(0, 0, 0, 0.5);
+}
+
+.date-picker-popover .vc-container {
+  background-color: hsl(var(--popover));
+  border: none;
+  border-radius: 0;
+  color: hsl(var(--foreground));
+  font-family: inherit;
+}
+
+.date-picker-popover .vc-header,
+.date-picker-popover .vc-weeks,
+.date-picker-popover .vc-weekday,
+.date-picker-popover .vc-title,
+.date-picker-popover .vc-arrow {
+  background-color: transparent;
+  color: hsl(var(--foreground));
+}
+
+.date-picker-popover .vc-weekday {
+  color: hsl(var(--primary));
+  font-weight: 600;
+}
+
+/* Override global dialog button bloat */
+.date-picker-popover button {
+  padding: 0.25rem;
+  min-height: 0;
+  font-size: inherit;
+  border-radius: 0.375rem;
+}
+
+.date-picker-popover .vc-title {
+  padding: 0.25rem 0.5rem;
+  font-weight: 700;
+}
+
+.date-picker-popover .vc-arrow,
+.date-picker-popover .vc-title {
+  /* v-calendar's .vc-header paints over its children;
+     elevate clickable controls so the user actually hits them */
+  position: relative;
+  z-index: 1;
+  cursor: pointer;
+}
+
+.date-picker-popover .vc-arrow {
+  width: 1.875rem;
+  height: 1.875rem;
+  color: hsl(var(--foreground));
+  box-shadow: none;
+}
+
+/* Arrow icons - v-calendar's polyline doesn't always inherit stroke reliably */
+.date-picker-popover .vc-arrow svg {
+  width: 1.125rem;
+  height: 1.125rem;
+  min-width: 0;
+  min-height: 0;
+  color: hsl(var(--foreground));
+  stroke: hsl(var(--foreground));
+  fill: none;
+}
+
+.date-picker-popover .vc-arrow svg polyline,
+.date-picker-popover .vc-arrow svg path,
+.date-picker-popover .vc-arrow svg line {
+  stroke: hsl(var(--foreground));
+  fill: none;
+  stroke-width: 0.125rem;
+}
+
+.date-picker-popover .vc-arrow:hover {
+  background-color: hsl(var(--accent) / 0.2);
+}
+
+.date-picker-popover .vc-title:hover {
+  background-color: hsl(var(--accent) / 0.2);
+}
+
+.date-picker-popover .vc-arrow:focus,
+.date-picker-popover .vc-focus:focus-within {
+  box-shadow: none;
+  outline: none;
+}
+
+.date-picker-popover .vc-day-content:hover {
+  background-color: hsl(var(--accent) / 0.2);
+}
+
+.date-picker-popover .vc-day-content.vc-highlight-content-light,
+.date-picker-popover .vc-day-content.vc-highlight-content-solid {
+  color: hsl(var(--primary-foreground));
+  background-color: hsl(var(--primary));
+}
+
+.date-picker-popover .vc-day.is-not-in-month .vc-day-content {
+  color: hsl(var(--muted-foreground));
+  opacity: 0.4;
+}
+
+.date-picker-popover .vc-day-content.vc-disabled {
+  color: hsl(var(--muted-foreground));
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+/* Tooltip Popover (for v-calendar Attributes) */
+.vc-popover-content,
+.vc-popover-content.vc-is-dark {
+  background-color: hsl(var(--popover));
+  color: hsl(var(--popover-foreground));
+  border: 0.0625rem solid hsl(var(--border));
+  box-shadow: 0 0.25rem 0.375rem -0.0625rem rgb(0 0 0 / 0.3), 0 0.125rem 0.25rem -0.125rem rgb(0 0 0 / 0.3);
+}
+
+.vc-popover-caret,
+.vc-popover-caret.vc-is-dark {
+  background-color: hsl(var(--popover));
+  border-color: hsl(var(--border));
+}

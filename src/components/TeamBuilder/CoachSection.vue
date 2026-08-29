@@ -301,7 +301,7 @@ const getCleanName = (coachName: string) => coachName.replace(/\*$/, '').trim();
 <template>
     <div>
         <div class="card-wrapper">
-            <Card class="section-card">
+            <Card class="section-card border-0">
                 <CardContent class="pt-6">
                     <div class="card-title-section">
                         <h3 class="card-title">Coach</h3>
@@ -383,8 +383,7 @@ const getCleanName = (coachName: string) => coachName.replace(/\*$/, '').trim();
                             v-model="search"
                             placeholder="Search for a coach"
                             type="search"
-                            class="pr-10 h-11 focus-visible:ring-offset-0"
-                            style="outline-offset: -2px"
+                            class="pr-10 h-11 focus-visible:ring-offset-0 outline-offset-[-0.125rem]"
                         />
                         <Search
                             class="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none"
@@ -416,17 +415,9 @@ const getCleanName = (coachName: string) => coachName.replace(/\*$/, '').trim();
                                     <SelectValue placeholder="Sort by..." />
                                 </SelectTrigger>
                                 <SelectContent
-                                    class="!bg-[rgb(9,9,11)] border-2 shadow-xl z-[100]"
+                                    class="bg-surface-raised border-2 shadow-xl"
                                     position="popper"
                                     :side-offset="8"
-                                    style="
-                                        background-color: rgb(
-                                            9,
-                                            9,
-                                            11
-                                        ) !important;
-                                        opacity: 1 !important;
-                                    "
                                 >
                                     <SelectItem
                                         v-for="option in sortOptions"
@@ -456,12 +447,8 @@ const getCleanName = (coachName: string) => coachName.replace(/\*$/, '').trim();
                                 </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent
-                                class="!bg-[rgb(9,9,11)] border-2 shadow-xl z-[100]"
+                                class="bg-surface-raised border-2 shadow-xl"
                                 :side-offset="8"
-                                style="
-                                    background-color: rgb(9, 9, 11) !important;
-                                    opacity: 1 !important;
-                                "
                             >
                                 <DropdownMenuCheckboxItem
                                     v-for="filter in COACH_FILTERS"
@@ -666,7 +653,7 @@ const getCleanName = (coachName: string) => coachName.replace(/\*$/, '').trim();
 .card-wrapper {
     border-radius: 0.5rem;
     border: 0.125rem solid;
-    border-color: hsla(var(--primary), 0.5);
+    border-color: hsl(var(--primary) / 0.5);
     transition:
         border-color 0.2s ease,
         box-shadow 0.2s ease;
@@ -674,12 +661,9 @@ const getCleanName = (coachName: string) => coachName.replace(/\*$/, '').trim();
 
 .card-wrapper:hover {
     border-color: hsl(var(--primary));
-    box-shadow: 0 0 0.5rem hsla(var(--primary), 0.3);
+    box-shadow: 0 0 0.5rem hsl(var(--primary) / 0.3);
 }
 
-.section-card {
-    border: none !important;
-}
 
 .card-title-section {
     display: flex;
@@ -702,22 +686,16 @@ const getCleanName = (coachName: string) => coachName.replace(/\*$/, '').trim();
     min-height: 10rem;
 }
 
-.coach-name {
-    font-size: 1rem;
-    font-weight: 500;
-    text-align: center;
-}
-
 .coach-item {
     background-color: hsl(var(--card));
-    border: 1px solid hsl(var(--border));
+    border: 0.0625rem solid hsl(var(--border));
     transition: all 0.2s ease;
 }
 
 .coach-item:hover {
     background-color: hsl(var(--accent) / 0.15);
     border-color: hsl(var(--primary) / 0.5);
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+    box-shadow: 0 0.125rem 0.5rem hsl(var(--shadow-color) / 0.15);
 }
 
 /* Coach name displayed on the main card after selection */
@@ -752,23 +730,6 @@ const getCleanName = (coachName: string) => coachName.replace(/\*$/, '').trim();
 
 .stats-value {
     color: hsl(var(--foreground) / 0.9);
-}
-
-/* Dropdown backgrounds - fully opaque - CRITICAL FIX */
-:deep(.sort-dropdown-content),
-:deep(.sort-dropdown-content) > *,
-:deep([data-reka-select-content].sort-dropdown-content) {
-    background-color: rgb(9, 9, 11) !important;
-    background: rgb(9, 9, 11) !important;
-    opacity: 1 !important;
-}
-
-:deep(.filters-dropdown-content),
-:deep(.filters-dropdown-content) > *,
-:deep([data-reka-dropdown-menu-content].filters-dropdown-content) {
-    background-color: rgb(9, 9, 11) !important;
-    background: rgb(9, 9, 11) !important;
-    opacity: 1 !important;
 }
 
 /* Drawer controls spacing */

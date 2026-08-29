@@ -1,20 +1,20 @@
 <template>
-    <div class="space-y-0.5rem">
+    <div class="space-y-2">
         <!-- Plus/Minus Leaders -->
-        <Card style="border-left: 3px solid hsl(var(--primary));">
-            <CardHeader class="pb-0.25rem py-0.5rem">
-                <h3 class="font-bold" style="font-size: 0.875rem;">Plus/Minus Leaders</h3>
+        <Card class="border-l-[0.1875rem] border-l-primary">
+            <CardHeader class="pb-1 py-2">
+                <h3 class="font-bold text-sm">Plus/Minus Leaders</h3>
             </CardHeader>
-            <CardContent class="p-0.5rem">
-                <div class="grid grid-cols-2 gap-0.5rem">
+            <CardContent class="p-2">
+                <div class="grid grid-cols-2 gap-2">
                     <!-- Positive Leaders -->
                     <div>
-                        <h4 class="font-semibold text-green-600 dark:text-green-400 mb-0.25rem" style="font-size: 0.75rem;">Top +/-</h4>
-                        <div class="space-y-0.125rem">
+                        <h4 class="font-semibold text-green-600 dark:text-green-400 mb-1 text-xs">Top +/-</h4>
+                        <div class="space-y-0.5">
                             <div
                                 v-for="leader in topPlusMinus"
                                 :key="leader.id"
-                                class="flex items-center justify-between rounded hover:bg-muted/50" style="padding: 0.25rem; font-size: 0.75rem;"
+                                class="flex items-center justify-between rounded hover:bg-muted/50 p-1 text-xs"
                             >
                                 <span class="font-medium truncate">{{ leader.name }}</span>
                                 <span class="text-green-600 dark:text-green-400 font-bold shrink-0">+{{ leader.value }}</span>
@@ -24,12 +24,12 @@
 
                     <!-- Negative Leaders -->
                     <div>
-                        <h4 class="font-semibold text-red-600 dark:text-red-400 mb-0.25rem" style="font-size: 0.75rem;">Bottom +/-</h4>
-                        <div class="space-y-0.125rem">
+                        <h4 class="font-semibold text-red-600 dark:text-red-400 mb-1 text-xs">Bottom +/-</h4>
+                        <div class="space-y-0.5">
                             <div
                                 v-for="leader in bottomPlusMinus"
                                 :key="leader.id"
-                                class="flex items-center justify-between rounded hover:bg-muted/50" style="padding: 0.25rem; font-size: 0.75rem;"
+                                class="flex items-center justify-between rounded hover:bg-muted/50 p-1 text-xs"
                             >
                                 <span class="font-medium truncate">{{ leader.name }}</span>
                                 <span class="text-red-600 dark:text-red-400 font-bold shrink-0">{{ leader.value }}</span>
@@ -41,25 +41,25 @@
         </Card>
 
         <!-- Shooting Efficiency -->
-        <Card style="border-left: 3px solid hsl(var(--primary));">
-            <CardHeader class="pb-0.25rem py-0.5rem">
-                <h3 class="font-bold" style="font-size: 0.875rem;">Shooting Efficiency</h3>
+        <Card class="border-l-[0.1875rem] border-l-primary">
+            <CardHeader class="pb-1 py-2">
+                <h3 class="font-bold text-sm">Shooting Efficiency</h3>
             </CardHeader>
-            <CardContent class="p-0.5rem">
-                <div class="grid grid-cols-2 gap-0.5rem">
+            <CardContent class="p-2">
+                <div class="grid grid-cols-2 gap-2">
                     <div v-for="team in boxscore.players" :key="team.team.id">
-                        <h4 class="font-semibold mb-0.25rem flex items-center gap-0.25rem" style="font-size: 0.75rem;">
-                            <img :src="team.team.logo" :alt="team.team.abbreviation" style="width: 1rem; height: 1rem;" class="object-contain shrink-0" />
+                        <h4 class="font-semibold mb-1 flex items-center gap-1 text-xs">
+                            <img :src="team.team.logo" :alt="team.team.abbreviation" class="object-contain shrink-0 w-4 h-4" />
                             {{ team.team.displayName }}
                         </h4>
-                        <div class="space-y-0.125rem">
+                        <div class="space-y-0.5">
                             <div
                                 v-for="player in getTopShooters(team)"
                                 :key="player.id"
-                                class="flex items-center justify-between" style="font-size: 0.75rem;"
+                                class="flex items-center justify-between text-xs"
                             >
                                 <span class="truncate">{{ player.name }}</span>
-                                <span class="font-mono shrink-0 ml-0.25rem">
+                                <span class="font-mono shrink-0 ml-1">
                                     {{ player.fg }} FG ({{ player.fgPct }}%)
                                 </span>
                             </div>
@@ -70,33 +70,33 @@
         </Card>
 
         <!-- Bench Production -->
-        <Card style="border-left: 3px solid hsl(var(--primary));">
-            <CardHeader class="pb-0.25rem py-0.5rem">
-                <h3 class="font-bold" style="font-size: 0.875rem;">Bench Production</h3>
+        <Card class="border-l-[0.1875rem] border-l-primary">
+            <CardHeader class="pb-1 py-2">
+                <h3 class="font-bold text-sm">Bench Production</h3>
             </CardHeader>
-            <CardContent class="p-0.5rem">
-                <div class="space-y-0.5rem">
+            <CardContent class="p-2">
+                <div class="space-y-2">
                     <div v-for="team in boxscore.players" :key="team.team.id">
-                        <div class="flex items-center justify-between mb-0.25rem">
-                            <div class="flex items-center gap-0.25rem">
-                                <img :src="team.team.logo" :alt="team.team.abbreviation" style="width: 1rem; height: 1rem;" class="object-contain shrink-0" />
-                                <span class="font-semibold" style="font-size: 0.75rem;">{{ team.team.displayName }}</span>
+                        <div class="flex items-center justify-between mb-1">
+                            <div class="flex items-center gap-1">
+                                <img :src="team.team.logo" :alt="team.team.abbreviation" class="object-contain shrink-0 w-4 h-4" />
+                                <span class="font-semibold text-xs">{{ team.team.displayName }}</span>
                             </div>
-                            <span class="font-bold text-primary" style="font-size: 0.875rem;">
+                            <span class="font-bold text-primary text-sm">
                                 {{ getBenchPoints(team) }} pts
                             </span>
                         </div>
-                        <div class="grid grid-cols-3 text-center" style="gap: 0.5rem; font-size: 0.75rem;">
+                        <div class="grid grid-cols-3 text-center gap-2 text-xs">
                             <div>
-                                <p style="color: hsl(var(--foreground) / 0.5);">Rebounds</p>
+                                <p class="text-foreground/50">Rebounds</p>
                                 <p class="font-semibold">{{ getBenchStat(team, 5) }}</p>
                             </div>
                             <div>
-                                <p style="color: hsl(var(--foreground) / 0.5);">Assists</p>
+                                <p class="text-foreground/50">Assists</p>
                                 <p class="font-semibold">{{ getBenchStat(team, 6) }}</p>
                             </div>
                             <div>
-                                <p style="color: hsl(var(--foreground) / 0.5);">FG%</p>
+                                <p class="text-foreground/50">FG%</p>
                                 <p class="font-semibold">{{ getBenchFgPct(team) }}%</p>
                             </div>
                         </div>

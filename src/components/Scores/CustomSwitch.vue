@@ -65,7 +65,7 @@ const handleChange = (event: Event) => {
     background-color: white;
     border-radius: 50%;
     transition: transform 0.2s ease;
-    box-shadow: 0 0.0625rem 0.1875rem 0 rgb(0 0 0 / 0.3);
+    box-shadow: 0 0.0625rem 0.1875rem 0 hsl(var(--shadow-color) / 0.3);
 }
 
 .switch-input:checked + .switch-slider {

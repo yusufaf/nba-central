@@ -66,7 +66,7 @@ onMounted(async () => {
     align-items: center;
     padding: 0.75rem 1rem;
     background-color: hsl(var(--primary));
-    color: #000;
+    color: hsl(var(--primary-foreground));
 }
 
 .github-logo {
