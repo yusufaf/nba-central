@@ -13,6 +13,9 @@
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
     "check:styles": "node scripts/check-styles.mjs",
+    "test:visual": "playwright test",
+    "test:visual:update": "playwright test --update-snapshots",
+    "test:visual:ci": "podman run --rm -it -v .:/w -w /w --network host mcr.microsoft.com/playwright:v1.62.1-noble sh -c \"corepack enable && pnpm install --frozen-lockfile && pnpm test:visual\"",
     "lint": "eslint . --ext .vue,.js,.jsx,.cjs,.mjs,.ts,.tsx,.cts,.mts --fix --ignore-path .gitignore",
     "prepare": "husky"
   },
@@ -38,6 +41,7 @@
   "devDependencies": {
     "@commitlint/cli": "^21.2.1",
     "@commitlint/config-conventional": "^21.2.0",
+    "@playwright/test": "^1.62.1",
     "@rushstack/eslint-patch": "^1.16.1",
     "@types/node": "^26.1.1",
     "@vitejs/plugin-vue": "^6.0.8",
