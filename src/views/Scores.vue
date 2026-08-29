@@ -604,7 +604,7 @@ h2 {
 .conference-toggle-item[data-state="on"] {
     background-color: hsl(var(--accent));
     color: hsl(var(--accent-foreground));
-    box-shadow: 0 0.0625rem 0.1875rem 0 rgb(0 0 0 / 0.3);
+    box-shadow: 0 0.0625rem 0.1875rem 0 hsl(var(--shadow-color) / 0.3);
 }
 
 .view-toggle {
@@ -622,7 +622,7 @@ h2 {
 .view-toggle-item[data-state="on"] {
     background-color: hsl(var(--accent));
     color: hsl(var(--accent-foreground));
-    box-shadow: 0 0.0625rem 0.1875rem 0 rgb(0 0 0 / 0.3);
+    box-shadow: 0 0.0625rem 0.1875rem 0 hsl(var(--shadow-color) / 0.3);
 }
 
 .replay-link-btn {

@@ -418,7 +418,7 @@ const toggleFilter = (filter: string) => {
 .arena-item:hover {
     background-color: hsl(var(--accent) / 0.15);
     border-color: hsl(var(--primary) / 0.5);
-    box-shadow: 0 0.125rem 0.5rem rgba(0, 0, 0, 0.15);
+    box-shadow: 0 0.125rem 0.5rem hsl(var(--shadow-color) / 0.15);
 }
 
 .arena-name-improved {

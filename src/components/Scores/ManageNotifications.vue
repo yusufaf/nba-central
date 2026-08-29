@@ -47,25 +47,25 @@ const notificationsMenuOpen = defineModel<boolean>("notificationsMenuOpen");
 .description-text {
     font-size: 1.0625rem;
     font-weight: 400;
-    color: rgb(230, 230, 230);
+    color: hsl(var(--foreground) / 0.8);
     line-height: 1.65;
     margin-bottom: 1.5rem;
 }
 
 .coming-soon-badge {
-    background-color: rgb(45, 35, 20);
-    background-image: linear-gradient(to bottom right, rgb(50, 38, 22), rgb(40, 32, 18));
-    border: 0.125rem solid rgb(100, 75, 35);
+    background-color: hsl(var(--warning) / 0.1);
+    background-image: linear-gradient(to bottom right, hsl(var(--warning) / 0.14), hsl(var(--warning) / 0.08));
+    border: 0.125rem solid hsl(var(--warning) / 0.35);
     border-radius: 0.875rem;
     padding: 1.5rem 1.75rem;
-    box-shadow: 0 0.25rem 0.75rem rgba(0, 0, 0, 0.3);
+    box-shadow: 0 0.25rem 0.75rem hsl(var(--shadow-color) / 0.3);
 }
 
 .badge-text {
     display: inline-block;
     font-size: 0.875rem;
     font-weight: 800;
-    color: rgb(255, 180, 50);
+    color: hsl(var(--warning));
     text-transform: uppercase;
     letter-spacing: 0.08em;
     margin-bottom: 0.625rem;
@@ -73,7 +73,7 @@ const notificationsMenuOpen = defineModel<boolean>("notificationsMenuOpen");
 
 .badge-description {
     font-size: 0.9375rem;
-    color: rgb(220, 220, 220);
+    color: hsl(var(--foreground) / 0.75);
     margin: 0;
     line-height: 1.6;
 }

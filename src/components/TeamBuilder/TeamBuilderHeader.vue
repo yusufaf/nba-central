@@ -322,7 +322,7 @@ onMounted(() => {
 :deep(.toggle-item[data-state="on"]) {
     background-color: hsl(var(--primary));
     color: hsl(var(--primary-foreground));
-    box-shadow: 0 0.0625rem 0.1875rem 0 rgb(0 0 0 / 0.3);
+    box-shadow: 0 0.0625rem 0.1875rem 0 hsl(var(--shadow-color) / 0.3);
 }
 
 .capitalize {

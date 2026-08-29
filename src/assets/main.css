@@ -59,6 +59,10 @@
   --input: 0 0% 20%;
   --ring: 35 100% 50%;
 
+  /* Drop shadows are theme-neutral black regardless of surface colour;
+     this is what the ~12 ad-hoc box-shadow rgba(0,0,0,a) literals collapsed to. */
+  --shadow-color: 0 0% 0%;
+
   /* Radius scale */
   --radius: 0.5rem;
 

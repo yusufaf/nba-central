@@ -46,7 +46,7 @@ const RULES = [
     {
         id: 'dead-tailwind-class',
         // A utility ending in a bare rem value. Bracketed values are fine.
-        test: /(?<=class="[^"]*?[\s"])(?:[a-z]+-)+[0-9]*\.?[0-9]+rem(?=[\s"])/,
+        test: /(?<=class="(?:[^"]*[\s"])?)(?:[a-z]+-)+[0-9]*\.?[0-9]+rem(?=[\s"])/,
         message:
             'Tailwind cannot generate this class, so it emits no CSS. Use a scale step (px-4) or bracket the value (px-[1.5rem]).',
         appliesTo: (f) => f.endsWith('.vue'),
@@ -67,16 +67,18 @@ const RULES = [
     },
     {
         id: 'global-role-selector',
-        test: /^[^/*]*\[(?:role|data-state|data-reka|data-radix)[^\]]*\]\s*[,{]/,
+        // Not preceded by a class/id/tag: `.foo[data-state="on"]` is scoped by
+        // .foo and fine, bare `[role="dialog"]` hits every element with it.
+        test: /(?<![\w.#-])\[(?:role|data-state|data-reka|data-radix)[^\]]*\]\s*[,{]/,
         message:
             'Styling by ARIA role or library attribute hits every primitive that emits it. Put the style on the component.',
-        appliesTo: (f) => f.endsWith('.css') && f !== VENDOR_FILE,
+        appliesTo: (f) => f !== VENDOR_FILE,
     },
     {
         id: 'raw-colour',
         test: /(?::|\s)(?:#[0-9a-fA-F]{3,8}\b|rgba?\([^)]*\))/,
         message: 'Use a design token rather than a literal colour.',
-        appliesTo: (f) => f.endsWith('.css') && f !== TOKEN_FILE && f !== VENDOR_FILE,
+        appliesTo: (f) => f !== TOKEN_FILE && f !== VENDOR_FILE,
     },
     {
         id: 'px-unit',
