@@ -210,15 +210,12 @@ const columns = STAT_COLUMNS;
 
 <template>
   <Dialog v-model:open="localVisible">
-    <!-- wide-dialog opts out of the global 45rem cap in main.css, which is
-         !important and beats any max-w-* utility. -->
-    <DialogContent class="wide-dialog w-[95vw] max-h-[90vh] overflow-y-auto">
+    <!-- size="wide" because this table is 21 columns. -->
+    <DialogContent size="wide" class="w-[95vw] max-h-[90vh] overflow-y-auto">
       <!-- pr-14 keeps the title clear of the close button, which DialogContent
            positions absolutely in this same corner. -->
-      <!-- No bottom padding: the global `[role="dialog"] h2` rule already puts
-           1.25rem under the title, and doubling it strands the rule. -->
-      <DialogHeader class="border-b border-zinc-800/60 pr-14">
-        <DialogTitle class="text-xl font-bold text-white tracking-tight">
+      <DialogHeader class="border-b border-border pb-4 pr-14">
+        <DialogTitle class="text-xl">
           {{ playerName ? `${playerName} — Stats` : 'Player Stats' }}
         </DialogTitle>
       </DialogHeader>
@@ -259,14 +256,14 @@ const columns = STAT_COLUMNS;
               <ToggleGroup
                 v-model="preferences.seasonFormat"
                 type="single"
-                class="prefs-toggle-grid"
+                class="prefs-toggle-grid grid w-full grid-cols-2 gap-[0.3125rem]"
                 @update:model-value="(val) => { if (!val) preferences.seasonFormat = 'YYYY-YY'; }"
               >
                 <ToggleGroupItem
                   v-for="option in seasonFormatOptions"
                   :key="option.value"
                   :value="option.value"
-                  class="prefs-toggle"
+                  class="prefs-toggle flex h-auto min-h-10 w-full flex-col gap-px px-2 py-1.5"
                 >
                   <span class="prefs-toggle-value">{{ option.sample }}</span>
                   <span class="prefs-toggle-hint">{{ option.hint }}</span>
@@ -279,14 +276,14 @@ const columns = STAT_COLUMNS;
               <ToggleGroup
                 v-model="preferences.statMode"
                 type="single"
-                class="prefs-toggle-grid"
+                class="prefs-toggle-grid grid w-full grid-cols-2 gap-[0.3125rem]"
                 @update:model-value="(val) => { if (!val) preferences.statMode = 'per_game'; }"
               >
-                <ToggleGroupItem value="per_game" class="prefs-toggle">
+                <ToggleGroupItem value="per_game" class="prefs-toggle flex h-auto min-h-10 w-full flex-col gap-px px-2 py-1.5">
                   <span class="prefs-toggle-value">Per game</span>
                   <span class="prefs-toggle-hint">Averages</span>
                 </ToggleGroupItem>
-                <ToggleGroupItem value="totals" class="prefs-toggle">
+                <ToggleGroupItem value="totals" class="prefs-toggle flex h-auto min-h-10 w-full flex-col gap-px px-2 py-1.5">
                   <span class="prefs-toggle-value">Totals</span>
                   <span class="prefs-toggle-hint">Season sums</span>
                 </ToggleGroupItem>
@@ -378,7 +375,6 @@ const columns = STAT_COLUMNS;
                     <TooltipTrigger
                       as="button"
                       type="button"
-                      data-inline-control
                       class="stat-header"
                       :class="{ 'stat-header-active': sortField === column.field }"
                       @click="toggleSort(column.field)"

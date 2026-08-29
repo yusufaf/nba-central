@@ -39,10 +39,10 @@ const handleHideFinishedGamesChange = (value: boolean) => {
                 <MoreVertical class="h-5 w-5" />
             </Button>
         </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" class="options-dropdown">
-            <div class="options-item">
+        <DropdownMenuContent align="end" class="min-w-60">
+            <div class="cursor-default px-4 py-3 text-foreground hover:bg-accent/15">
                 <div class="flex items-center justify-between w-full gap-4">
-                    <Label for="hide-scores" class="cursor-pointer option-label">Hide Scores</Label>
+                    <Label for="hide-scores" class="cursor-pointer text-[0.95rem] font-medium">Hide Scores</Label>
                     <CustomSwitch
                         id="hide-scores"
                         :checked="props.hideScores"
@@ -50,9 +50,9 @@ const handleHideFinishedGamesChange = (value: boolean) => {
                     />
                 </div>
             </div>
-            <div class="options-item">
+            <div class="cursor-default px-4 py-3 text-foreground hover:bg-accent/15">
                 <div class="flex items-center justify-between w-full gap-4">
-                    <Label for="hide-finished" class="cursor-pointer option-label">Hide Finished Games</Label>
+                    <Label for="hide-finished" class="cursor-pointer text-[0.95rem] font-medium">Hide Finished Games</Label>
                     <CustomSwitch
                         id="hide-finished"
                         :checked="props.hideFinishedGames"
@@ -60,9 +60,9 @@ const handleHideFinishedGamesChange = (value: boolean) => {
                     />
                 </div>
             </div>
-            <div class="options-item">
+            <div class="cursor-default px-4 py-3 text-foreground hover:bg-accent/15">
                 <div class="flex items-center justify-between w-full gap-4">
-                    <Label for="short-names" class="cursor-pointer option-label">Use Short Names</Label>
+                    <Label for="short-names" class="cursor-pointer text-[0.95rem] font-medium">Use Short Names</Label>
                     <CustomSwitch
                         id="short-names"
                         :checked="props.useShortNames"

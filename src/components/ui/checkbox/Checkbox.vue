@@ -1,49 +1,56 @@
 <script setup lang="ts">
 import { computed } from "vue";
 import { Check } from "lucide-vue-next";
+import { CheckboxIndicator, CheckboxRoot } from "reka-ui";
+import type { HTMLAttributes } from "vue";
+import { cn } from "@/lib/utils";
 
+/*
+ * Wraps reka's CheckboxRoot, which is where the keyboard handling, the
+ * aria-checked bookkeeping and the hidden form input live.
+ *
+ * This was previously a hand-rolled <button role="checkbox"> carrying eight
+ * inline !important declarations, written that way only to escape the
+ * app-wide button[role="checkbox"] rules in main.css. Those rules are gone,
+ * so the primitive can do its job again.
+ *
+ * reka 2.x names the prop modelValue; the app uses v-model:checked, so the
+ * two are mapped here rather than churning every call site.
+ */
 const props = withDefaults(
-  defineProps<{
-    checked?: boolean;
-    id?: string;
-  }>(),
-  {
-    checked: false,
-    id: undefined,
-  }
+    defineProps<{
+        checked?: boolean;
+        id?: string;
+        disabled?: boolean;
+        class?: HTMLAttributes["class"];
+    }>(),
+    { checked: false, id: undefined, disabled: false },
 );
 
 const emit = defineEmits<{
-  'update:checked': [value: boolean];
+    "update:checked": [value: boolean];
 }>();
 
-// The app-wide checkbox styling in main.css is written with !important against
-// [data-state="checked"], matching what Reka's primitives emit. The Tailwind
-// classes below lose to it, so without this attribute a checked box paints as
-// if it were empty.
-const dataState = computed(() => (props.checked ? 'checked' : 'unchecked'));
-
-const toggle = () => {
-  emit('update:checked', !props.checked);
-};
+const model = computed({
+    get: () => props.checked,
+    set: (value) => emit("update:checked", value === true),
+});
 </script>
 
 <template>
-  <button
-    type="button"
-    role="checkbox"
-    :aria-checked="props.checked"
-    :data-state="dataState"
-    :id="props.id"
-    @click.stop="toggle"
-    class="relative inline-flex items-center justify-center shrink-0 rounded-md border-2 transition-colors cursor-pointer select-none"
-    :class="[
-      props.checked
-        ? 'bg-amber-500 border-amber-500 text-zinc-950 shadow-sm'
-        : 'bg-zinc-950 border-zinc-500 hover:border-zinc-400 text-transparent'
-    ]"
-    style="width: 1.25rem !important; height: 1.25rem !important; min-width: 1.25rem !important; min-height: 1.25rem !important; flex-shrink: 0 !important; padding: 0 !important; margin: 0 !important; line-height: 1 !important;"
-  >
-    <Check v-if="props.checked" class="w-3.5 h-3.5 stroke-[3.5]" />
-  </button>
+    <CheckboxRoot
+        :id="props.id"
+        v-model="model"
+        :disabled="props.disabled"
+        :class="
+            cn(
+                'peer inline-flex size-5 shrink-0 items-center justify-center rounded border-2 border-muted-foreground bg-background text-primary-foreground transition-colors hover:border-foreground/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:cursor-not-allowed disabled:opacity-50 data-[state=checked]:border-primary data-[state=checked]:bg-primary',
+                props.class,
+            )
+        "
+    >
+        <CheckboxIndicator class="flex items-center justify-center">
+            <Check class="size-3.5 stroke-[3]" />
+        </CheckboxIndicator>
+    </CheckboxRoot>
 </template>

@@ -7,10 +7,14 @@ export const toggleVariants = cva(
   "inline-flex items-center justify-center gap-2 rounded-md text-sm font-semibold cursor-pointer disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg:not([class*='size-'])]:size-4 [&_svg]:shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 outline-none transition-all duration-200 aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive whitespace-nowrap",
   {
     variants: {
+      // The selected state used to be a global [data-state="on"] rule with
+      // !important, which caught every reka primitive that emits that
+      // attribute, not just toggles.
       variant: {
-        default: "bg-transparent text-muted-foreground hover:bg-muted hover:text-foreground",
+        default:
+          "bg-transparent text-muted-foreground hover:bg-muted hover:text-foreground data-[state=on]:bg-accent data-[state=on]:text-accent-foreground data-[state=on]:shadow-sm",
         outline:
-          "border border-input bg-transparent text-muted-foreground hover:bg-muted hover:text-foreground",
+          "border border-input bg-transparent text-muted-foreground hover:bg-muted hover:text-foreground data-[state=on]:bg-accent data-[state=on]:text-accent-foreground data-[state=on]:shadow-sm",
       },
       size: {
         default: "h-9 px-4 min-w-9",

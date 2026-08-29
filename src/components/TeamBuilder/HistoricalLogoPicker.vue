@@ -101,15 +101,14 @@ onBeforeUnmount(() => {
 <template>
     <!-- Teleport rather than a second markup block: the same nodes move, so the
          234 tiles are never duplicated and the search and filters keep their
-         values across expand/collapse. Moving to body also lifts the tiles out
-         of the dialog's global button styling. -->
+         values across expand/collapse. Only while expanded, so the picker can
+         overlay the page rather than being clipped by the dialog. -->
     <Teleport to="body" :disabled="!expanded">
         <div class="historical-logo-picker" :class="{ expanded }">
             <div v-if="expanded" class="picker-header">
                 <span class="picker-title">All-time team logos</span>
                 <button
                     type="button"
-                    data-icon-control
                     class="picker-icon-button"
                     aria-label="Collapse logo browser"
                     @click="collapse"
@@ -131,7 +130,7 @@ onBeforeUnmount(() => {
                     />
                 </div>
                 <Select v-model="selectedLeague">
-                    <SelectTrigger data-compact-control class="league-select">
+                    <SelectTrigger class="league-select">
                         <SelectValue placeholder="League" />
                     </SelectTrigger>
                     <SelectContent>
@@ -141,7 +140,7 @@ onBeforeUnmount(() => {
                     </SelectContent>
                 </Select>
                 <Select v-model="selectedDecade">
-                    <SelectTrigger data-compact-control class="decade-select">
+                    <SelectTrigger class="decade-select">
                         <SelectValue placeholder="Decade" />
                     </SelectTrigger>
                     <SelectContent>
@@ -153,7 +152,6 @@ onBeforeUnmount(() => {
                 <button
                     v-if="!expanded"
                     type="button"
-                    data-icon-control
                     class="picker-icon-button"
                     aria-label="Expand logo browser"
                     title="Expand"
@@ -180,7 +178,6 @@ onBeforeUnmount(() => {
                         v-for="logo in filteredLogos"
                         :key="`${logo.team}-${logo.startYear}`"
                         type="button"
-                        data-grid-tile
                         class="team-logo-tile"
                         :class="{ selected: logo.logo === teamLogo }"
                         :aria-pressed="logo.logo === teamLogo"
