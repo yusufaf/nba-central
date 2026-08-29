@@ -11,14 +11,26 @@ const router = useRouter();
 <template>
   <main class="home-page">
     <div class="relative w-full h-full overflow-hidden">
-      <!-- Video Background -->
+      <!-- Video Background. Served from /public rather than imported so the
+           clip stays out of the Vite graph. The poster paints immediately and
+           covers the gap before the loop starts, or stands in entirely where
+           autoplay is refused. playsinline is required for iOS to autoplay. -->
       <video
-        src="@/assets/NBA_Highlights_First6min.mp4"
         class="video"
+        poster="/hero/hero-poster.jpg"
         autoplay
         loop
         muted
-      />
+        playsinline
+        preload="metadata"
+        aria-hidden="true"
+      >
+        <source src="/hero/hero-loop.mp4" type="video/mp4" />
+      </video>
+
+      <!-- Scrim: the hero copy is white over live footage, which has no
+           contrast guarantee on its own. -->
+      <div class="scrim"></div>
 
       <!-- Content Overlay -->
       <div class="absolute inset-0 flex flex-col items-center justify-center">
@@ -53,6 +65,29 @@ const router = useRouter();
   height: 100%;
   object-fit: cover;
   z-index: 0;
+}
+
+.scrim {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  background: linear-gradient(
+    to bottom,
+    hsl(var(--background) / 0.45) 0%,
+    hsl(var(--background) / 0.65) 100%
+  );
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .video {
+    display: none;
+  }
+
+  .scrim {
+    background-image: url('/hero/hero-poster.jpg');
+    background-size: cover;
+    background-position: center;
+  }
 }
 
 .fade-enter-active {
