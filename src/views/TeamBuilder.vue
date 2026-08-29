@@ -3,6 +3,7 @@ import { ref, computed, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { toast } from 'vue-sonner';
 import PageTitle from "@/components/PageTitle.vue";
+import PageShell from "@/layouts/PageShell.vue";
 import TeamBuilderHeader from "@/components/TeamBuilder/TeamBuilderHeader.vue";
 import RosterSection from "@/components/TeamBuilder/RosterSection.vue";
 import AddPlayerDialog from "@/components/TeamBuilder/AddPlayerDialog.vue";
@@ -382,7 +383,7 @@ watch(
     <main class="team-builder-page">
         <PageTitle />
 
-        <div class="page-container">
+        <PageShell class="page-container">
             <!-- Team Builder Header -->
             <div class="header-card">
                 <TeamBuilderHeader
@@ -443,7 +444,7 @@ watch(
                     />
                 </div>
             </div>
-        </div>
+        </PageShell>
 
         <!-- Add Player Dialog -->
         <AddPlayerDialog
@@ -475,13 +476,11 @@ watch(
 .team-builder-page {
     min-height: 100vh;
     background-color: hsl(var(--background));
-    padding: 2rem 0;
 }
 
+/* Width, gutters and vertical padding come from PageShell; this only adds the
+   stacking rhythm between the header, roster and staff sections. */
 .page-container {
-    max-width: 90rem;
-    margin: 0 auto;
-    padding: 0 1rem;
     display: flex;
     flex-direction: column;
     gap: 2rem;
@@ -527,15 +526,4 @@ watch(
     }
 }
 
-@media (min-width: 640px) {
-    .page-container {
-        padding: 0 1.5rem;
-    }
-}
-
-@media (min-width: 1024px) {
-    .page-container {
-        padding: 0 2rem;
-    }
-}
 </style>

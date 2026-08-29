@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, onMounted, computed } from "vue";
 import PageTitle from "@/components/PageTitle.vue";
+import PageShell from "@/layouts/PageShell.vue";
 import { newsApi } from "@/network/api";
 import NewsCard from "@/components/NewsCard.vue";
 import { Input } from "@/components/ui/input";
@@ -68,7 +69,7 @@ onMounted(() => {
     <main class="news-page pb-12">
         <PageTitle />
 
-        <div class="news-container">
+        <PageShell width="narrow" flush>
             <!-- Controls row: search + refresh -->
             <div class="controls-row">
                 <div class="search-wrap">
@@ -143,26 +144,13 @@ onMounted(() => {
                     :article="article"
                 />
             </div>
-        </div>
+        </PageShell>
     </main>
 </template>
 
 <style scoped>
 .news-page {
     width: 100%;
-}
-
-.news-container {
-    width: 100%;
-    max-width: 80rem;
-    margin: 0 auto;
-    padding: 0 2rem;
-}
-
-@media (min-width: 768px) {
-    .news-container {
-        padding: 0 4rem;
-    }
 }
 
 /* Controls */

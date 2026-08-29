@@ -22,7 +22,7 @@
         </div>
 
         <!-- Game Content -->
-        <div v-else-if="gameSummary" class="container mx-auto px-4 py-4 max-w-[75rem]">
+        <PageShell v-else-if="gameSummary" width="narrow">
             <!-- Game Header -->
             <GameHeader
                 :game-summary="gameSummary"
@@ -115,13 +115,14 @@
                     </div>
                 </TabsContent>
             </Tabs>
-        </div>
+        </PageShell>
     </div>
 </template>
 
 <script setup lang="ts">
 import { useRoute, useRouter } from 'vue-router';
 import { useGameSummary } from '@/composables/useGameSummary';
+import PageShell from '@/layouts/PageShell.vue';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import GameHeader from '@/components/BoxScore/GameHeader.vue';

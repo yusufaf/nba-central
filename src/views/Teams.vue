@@ -3,6 +3,7 @@ import { ref, onMounted } from "vue";
 import { useRouter } from "vue-router";
 import { toast } from "vue-sonner";
 import PageTitle from "@/components/PageTitle.vue";
+import PageShell from "@/layouts/PageShell.vue";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -63,9 +64,9 @@ onMounted(() => {
 </script>
 
 <template>
-    <main class="teams-page">
+    <main>
         <PageTitle />
-        <div class="teams-container">
+        <PageShell width="narrow">
             <div v-if="userTeamsStore.loading" class="status-state">
                 <p class="status-copy">Loading your teams...</p>
             </div>
@@ -132,7 +133,7 @@ onMounted(() => {
                     </CardContent>
                 </Card>
             </div>
-        </div>
+        </PageShell>
 
         <ConfirmDialog
             v-model:open="showDeleteDialog"
@@ -147,17 +148,6 @@ onMounted(() => {
 </template>
 
 <style scoped>
-.teams-page {
-    display: grid;
-    justify-items: center;
-    padding: 0 4rem;
-}
-
-.teams-container {
-    width: 100%;
-    max-width: 75rem;
-}
-
 .status-state {
     display: flex;
     flex-direction: column;

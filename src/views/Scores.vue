@@ -11,6 +11,7 @@ import type { CustomizationKey } from "@/models/types";
 import type { ESPNScoreboardResponse, ESPNEvent } from "@/models/types";
 import ScoreCard from "@/components/Scores/ScoreCard.vue";
 import PageTitle from "@/components/PageTitle.vue";
+import PageShell from "@/layouts/PageShell.vue";
 import GameReplaysWarning from "@/components/Scores/GameReplaysWarning.vue";
 import ManageNotifications from "@/components/Scores/ManageNotifications.vue";
 import OptionsMenu from "@/components/Scores/OptionsMenu.vue";
@@ -341,7 +342,7 @@ onMounted(async () => {
 </script>
 
 <template>
-    <main class="scores-page">
+    <PageShell as="main" class="scores-page" flush>
         <div class="header">
             <div class="header-center">
                 <PageTitle />
@@ -440,12 +441,13 @@ onMounted(async () => {
         <ManageNotifications
             v-model:notificationsMenuOpen="notificationsMenuOpen"
         />
-    </main>
+    </PageShell>
 </template>
 
 <style scoped>
+/* Horizontal gutters come from PageShell. */
 .scores-page {
-    padding: 0 4rem 2rem 4rem;
+    padding-bottom: 2rem;
 }
 
 .header {
@@ -494,20 +496,12 @@ h2 {
         grid-template-columns: repeat(2, minmax(0, 1fr));
         gap: 1.5rem;
     }
-
-    .scores-page {
-        padding: 0 2rem 2rem 2rem;
-    }
 }
 
 @media (max-width: 900px) {
     .scores-container {
         grid-template-columns: 1fr;
         gap: 1rem;
-    }
-
-    .scores-page {
-        padding: 0 1rem 1rem 1rem;
     }
 
     h2 {
