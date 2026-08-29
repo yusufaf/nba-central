@@ -3,16 +3,16 @@
         <CardContent class="p-3 overflow-x-auto">
             <Table>
                 <TableHeader>
-                    <TableRow style="font-size: 0.75rem; text-transform: uppercase; color: hsl(var(--foreground) / 0.6);">
-                        <TableHead class="w-[10rem]" style="padding-top: 0.35rem; padding-bottom: 0.35rem;">Team</TableHead>
+                    <TableRow class="text-xs uppercase text-foreground/60">
+                        <TableHead class="w-[10rem] pt-[0.35rem] pb-[0.35rem]">Team</TableHead>
                         <TableHead
                             v-for="period in periods"
                             :key="period.period"
-                            class="text-center" style="padding-top: 0.35rem; padding-bottom: 0.35rem;"
+                            class="text-center pt-[0.35rem] pb-[0.35rem]"
                         >
                             {{ period.label }}
                         </TableHead>
-                        <TableHead class="text-center font-bold" style="padding-top: 0.35rem; padding-bottom: 0.35rem;">Total</TableHead>
+                        <TableHead class="text-center font-bold pt-[0.35rem] pb-[0.35rem]">Total</TableHead>
                     </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -24,8 +24,7 @@
                                     v-if="awayTeam.team.logo"
                                     :src="awayTeam.team.logo"
                                     :alt="awayTeam.team.abbreviation"
-                                    style="width: 1.5rem; height: 1.5rem;"
-                                    class="object-contain shrink-0"
+                                    class="object-contain shrink-0 w-6 h-6"
                                 />
                                 <span>{{ awayTeam.team.abbreviation }}</span>
                             </div>
@@ -54,8 +53,7 @@
                                     v-if="homeTeam.team.logo"
                                     :src="homeTeam.team.logo"
                                     :alt="homeTeam.team.abbreviation"
-                                    style="width: 1.5rem; height: 1.5rem;"
-                                    class="object-contain shrink-0"
+                                    class="object-contain shrink-0 w-6 h-6"
                                 />
                                 <span>{{ homeTeam.team.abbreviation }}</span>
                             </div>

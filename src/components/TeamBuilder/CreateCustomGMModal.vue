@@ -180,7 +180,7 @@ defineExpose({
                                 <SelectValue placeholder="Add a team..." />
                             </SelectTrigger>
                             <SelectContent
-                                class="!bg-[rgb(9,9,11)] border-2 shadow-xl max-h-[15rem]"
+                                class="bg-surface-raised border-2 shadow-xl max-h-[15rem]"
                                 position="popper"
                             >
                                 <SelectItem

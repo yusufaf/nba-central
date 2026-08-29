@@ -8,47 +8,43 @@
 
         <!-- Main Header Card -->
         <Card>
-            <CardContent class="p-6" style="border-left: 3px solid hsl(var(--primary));">
-                <div class="flex items-center justify-center" style="padding-left: 1.25rem;">
+            <CardContent class="p-6 border-l-[0.1875rem] border-l-primary">
+                <div class="flex items-center justify-center pl-5">
                     <!-- Away Team -->
                     <div class="flex items-center gap-3 flex-1 justify-end">
                         <div class="flex flex-col text-right">
-                            <span class="uppercase" style="font-size: 0.8rem; letter-spacing: 0.06em; color: hsl(var(--foreground) / 0.8);">{{ awayTeam.team.displayName }}</span>
-                            <span v-if="awayTeamRecord" style="font-size: 0.75rem; color: hsl(var(--foreground) / 0.5);">{{ awayTeamRecord }}</span>
+                            <span class="uppercase text-[0.8rem] tracking-[0.06em] text-foreground/80">{{ awayTeam.team.displayName }}</span>
+                            <span class="text-xs text-foreground/50" v-if="awayTeamRecord">{{ awayTeamRecord }}</span>
                         </div>
-                        <div class="shrink-0" style="width: 3rem; height: 3rem;">
+                        <div class="shrink-0 w-12 h-12">
                             <img
                                 :src="getTeamLogo('away')"
                                 :alt="awayTeam.team.displayName"
-                                class="w-full h-full object-contain"
-                                style="border-radius: 8px;"
+                                class="w-full h-full object-contain rounded-lg"
                             />
                         </div>
                     </div>
 
                     <!-- Score -->
-                    <div class="flex flex-col items-center shrink-0" style="padding: 0 2rem;">
-                        <div class="flex items-baseline" style="gap: 0.75rem;">
+                    <div class="flex flex-col items-center shrink-0 px-8 py-0">
+                        <div class="flex items-baseline gap-3">
                             <span
-                                class="font-extrabold tabular-nums"
+                                class="font-extrabold tabular-nums text-[2.5rem] leading-none"
                                 :class="awayTeam.winner ? 'text-primary' : 'text-muted-foreground'"
-                                style="font-size: 2.5rem; line-height: 1;"
                             >
                                 {{ awayTeam.score || '0' }}
                             </span>
-                            <span style="font-size: 1rem; color: #999; font-weight: 300; line-height: 1;">—</span>
+                            <span class="text-base text-muted-foreground font-light leading-none">—</span>
                             <span
-                                class="font-extrabold tabular-nums"
+                                class="font-extrabold tabular-nums text-[2.5rem] leading-none"
                                 :class="homeTeam.winner ? 'text-primary' : 'text-muted-foreground'"
-                                style="font-size: 2.5rem; line-height: 1;"
                             >
                                 {{ homeTeam.score || '0' }}
                             </span>
                         </div>
-                        <Badge
+                        <Badge class="mt-2 text-[0.7rem] px-[0.65rem] py-[0.2rem] font-semibold"
                             :variant="statusVariant"
                             :class="isLive ? 'bg-primary/15 text-primary border-transparent' : ''"
-                            style="margin-top: 0.5rem; font-size: 0.7rem; padding: 0.2rem 0.65rem; font-weight: 600;"
                         >
                             {{ statusText }}
                         </Badge>
@@ -56,37 +52,35 @@
 
                     <!-- Home Team -->
                     <div class="flex items-center gap-3 flex-1">
-                        <div class="shrink-0" style="width: 3rem; height: 3rem;">
+                        <div class="shrink-0 w-12 h-12">
                             <img
                                 :src="getTeamLogo('home')"
                                 :alt="homeTeam.team.displayName"
-                                class="w-full h-full object-contain"
-                                style="border-radius: 8px;"
+                                class="w-full h-full object-contain rounded-lg"
                             />
                         </div>
                         <div class="flex flex-col">
-                            <span class="uppercase" style="font-size: 0.8rem; letter-spacing: 0.06em; color: hsl(var(--foreground) / 0.8);">{{ homeTeam.team.displayName }}</span>
-                            <span v-if="homeTeamRecord" style="font-size: 0.75rem; color: hsl(var(--foreground) / 0.5);">{{ homeTeamRecord }}</span>
+                            <span class="uppercase text-[0.8rem] tracking-[0.06em] text-foreground/80">{{ homeTeam.team.displayName }}</span>
+                            <span class="text-xs text-foreground/50" v-if="homeTeamRecord">{{ homeTeamRecord }}</span>
                         </div>
                     </div>
                 </div>
 
                 <!-- Game Info Footer -->
                 <div
-                    class="flex items-center justify-center flex-wrap"
-                    style="margin-top: 0.75rem; padding-top: 0.6rem; border-top: 1px solid hsl(var(--primary) / 0.12); font-size: 0.75rem; gap: 0.5rem;"
+                    class="flex items-center justify-center flex-wrap mt-3 pt-[0.6rem] border-t border-t-primary/[0.12] text-xs gap-2"
                 >
-                    <span v-if="gameDate" class="flex items-center" style="color: hsl(var(--foreground) / 0.6); gap: 0.25rem;">
+                    <span v-if="gameDate" class="flex items-center text-foreground/60 gap-1">
                         <Calendar :size="12" class="shrink-0" />
                         {{ gameDate }}
                     </span>
                     <span v-if="gameDate && venue" class="text-primary/30">·</span>
-                    <span v-if="venue" class="flex items-center" style="color: hsl(var(--foreground) / 0.6); gap: 0.25rem;">
+                    <span v-if="venue" class="flex items-center text-foreground/60 gap-1">
                         <MapPin :size="12" class="shrink-0" />
                         {{ venue }}
                     </span>
                     <span v-if="venue && broadcasts" class="text-primary/30">·</span>
-                    <span v-if="broadcasts" class="flex items-center" style="color: hsl(var(--foreground) / 0.6); gap: 0.25rem;">
+                    <span v-if="broadcasts" class="flex items-center text-foreground/60 gap-1">
                         <Tv :size="12" class="shrink-0" />
                         {{ broadcasts }}
                     </span>

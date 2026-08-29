@@ -287,8 +287,7 @@ const handleDeleteGM = async () => {
                             v-model="search"
                             placeholder="Search for a GM"
                             type="search"
-                            class="pr-10 h-11 focus-visible:ring-offset-0"
-                            style="outline-offset: -0.125rem;"
+                            class="pr-10 h-11 focus-visible:ring-offset-0 outline-offset-[-0.125rem]"
                         />
                         <Search class="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
                     </div>
@@ -311,10 +310,9 @@ const handleDeleteGM = async () => {
                                     <SelectValue placeholder="Sort by..." />
                                 </SelectTrigger>
                                 <SelectContent
-                                    class="!bg-[rgb(9,9,11)] border-2 shadow-xl z-[100]"
+                                    class="bg-surface-raised border-2 shadow-xl"
                                     position="popper"
                                     :side-offset="8"
-                                    style="background-color: rgb(9, 9, 11) !important; opacity: 1 !important;"
                                 >
                                     <SelectItem
                                         v-for="option in sortOptions"
@@ -341,9 +339,8 @@ const handleDeleteGM = async () => {
                                 </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent
-                                class="!bg-[rgb(9,9,11)] border-2 shadow-xl z-[100]"
+                                class="bg-surface-raised border-2 shadow-xl"
                                 :side-offset="8"
-                                style="background-color: rgb(9, 9, 11) !important; opacity: 1 !important;"
                             >
                                 <DropdownMenuCheckboxItem
                                     v-for="filter in GM_FILTERS"

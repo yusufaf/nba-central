@@ -1,22 +1,21 @@
 <template>
     <Card>
-        <CardHeader class="pb-2 py-3" style="border-bottom: 2px solid hsl(var(--primary) / 0.3);">
+        <CardHeader class="pb-2 py-3 border-b-2 border-b-primary/30">
             <div class="flex items-center gap-2">
                 <img
                     :src="team.logo"
                     :alt="team.abbreviation"
-                    style="width: 2rem; height: 2rem;"
-                    class="object-contain shrink-0"
+                    class="object-contain shrink-0 w-8 h-8"
                 />
-                <h3 class="font-bold" style="font-size: 1rem;">{{ team.displayName }}</h3>
+                <h3 class="font-bold text-base">{{ team.displayName }}</h3>
             </div>
         </CardHeader>
         <CardContent class="p-0 overflow-x-auto">
             <Table>
                 <TableHeader class="sticky top-0 bg-background z-10">
-                    <TableRow class="bg-primary/5" style="font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.04em; color: hsl(var(--foreground) / 0.6);">
-                        <TableHead class="w-[10rem] sticky left-0 bg-primary/5 font-semibold" style="padding-top: 0.35rem; padding-bottom: 0.35rem;">
-                            <button @click="sortBy('name')" class="flex items-center font-semibold" style="gap: 0.25rem; color: hsl(var(--foreground) / 0.6);">
+                    <TableRow class="bg-primary/5 text-xs uppercase tracking-[0.04em] text-foreground/60">
+                        <TableHead class="w-[10rem] sticky left-0 bg-primary/5 font-semibold pt-[0.35rem] pb-[0.35rem]">
+                            <button @click="sortBy('name')" class="flex items-center font-semibold gap-1 text-foreground/60">
                                 Player
                                 <SortIcon :active="sortColumn === 'name'" :direction="sortDirection" />
                             </button>
@@ -24,11 +23,11 @@
                         <TableHead
                             v-for="(statName, index) in statistics.names"
                             :key="statName"
-                            class="text-center min-w-[2.5rem] font-semibold" style="padding-top: 0.35rem; padding-bottom: 0.35rem;"
+                            class="text-center min-w-[2.5rem] font-semibold pt-[0.35rem] pb-[0.35rem]"
                         >
                             <button
                                 @click="sortBy(index)"
-                                class="flex items-center justify-center w-full font-semibold" style="gap: 0.25rem; color: hsl(var(--foreground) / 0.6);"
+                                class="flex items-center justify-center w-full font-semibold gap-1 text-foreground/60"
                             >
                                 {{ statName }}
                                 <SortIcon :active="sortColumn === index" :direction="sortDirection" />
@@ -42,8 +41,7 @@
                         <TableRow>
                             <TableCell
                                 colspan="100%"
-                                class="text-primary bg-primary/6 py-1"
-                                style="font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em;"
+                                class="text-primary bg-primary/6 py-1 text-[0.7rem] font-bold uppercase tracking-[0.08em]"
                             >
                                 Starters
                             </TableCell>
@@ -60,12 +58,11 @@
                                         v-if="player.athlete.headshot?.href"
                                         :src="player.athlete.headshot.href"
                                         :alt="player.athlete.displayName"
-                                        style="width: 1.5rem; height: 1.5rem;"
-                                        class="rounded-full object-cover shrink-0"
+                                        class="rounded-full object-cover shrink-0 w-6 h-6"
                                     />
                                     <div class="flex flex-col">
-                                        <span class="leading-tight" style="font-size: 0.8rem; font-weight: 600;">{{ player.athlete.displayName }}</span>
-                                        <span class="leading-tight" style="font-size: 0.65rem; color: hsl(var(--foreground) / 0.4);">
+                                        <span class="leading-tight text-[0.8rem] font-semibold">{{ player.athlete.displayName }}</span>
+                                        <span class="leading-tight text-[0.65rem] text-foreground/40">
                                             {{ player.athlete.position?.abbreviation }} · #{{ player.athlete.jersey }}
                                         </span>
                                     </div>
@@ -74,9 +71,8 @@
                             <TableCell
                                 v-for="(stat, index) in player.stats"
                                 :key="index"
-                                class="text-center py-1"
+                                class="text-center py-1 text-[0.8rem]"
                                 :class="getCellClass(player, index, stat)"
-                                style="font-size: 0.8rem;"
                             >
                                 {{ stat }}
                             </TableCell>
@@ -88,8 +84,7 @@
                         <TableRow>
                             <TableCell
                                 colspan="100%"
-                                class="text-primary bg-primary/6 py-1"
-                                style="font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em;"
+                                class="text-primary bg-primary/6 py-1 text-[0.7rem] font-bold uppercase tracking-[0.08em]"
                             >
                                 Bench
                             </TableCell>
@@ -106,12 +101,11 @@
                                         v-if="player.athlete.headshot?.href"
                                         :src="player.athlete.headshot.href"
                                         :alt="player.athlete.displayName"
-                                        style="width: 1.5rem; height: 1.5rem;"
-                                        class="rounded-full object-cover shrink-0"
+                                        class="rounded-full object-cover shrink-0 w-6 h-6"
                                     />
                                     <div class="flex flex-col">
-                                        <span class="leading-tight" style="font-size: 0.8rem; font-weight: 600;">{{ player.athlete.displayName }}</span>
-                                        <span class="leading-tight" style="font-size: 0.65rem; color: hsl(var(--foreground) / 0.4);">
+                                        <span class="leading-tight text-[0.8rem] font-semibold">{{ player.athlete.displayName }}</span>
+                                        <span class="leading-tight text-[0.65rem] text-foreground/40">
                                             {{ player.athlete.position?.abbreviation }} · #{{ player.athlete.jersey }}
                                         </span>
                                     </div>
@@ -120,9 +114,8 @@
                             <TableCell
                                 v-for="(stat, index) in player.stats"
                                 :key="index"
-                                class="text-center py-1"
+                                class="text-center py-1 text-[0.8rem]"
                                 :class="getCellClass(player, index, stat)"
-                                style="font-size: 0.8rem;"
                             >
                                 {{ stat }}
                             </TableCell>
@@ -135,8 +128,7 @@
                             <TableCell colspan="100%" class="py-1 bg-muted/20">
                                 <button
                                     @click="dnpExpanded = !dnpExpanded"
-                                    class="flex items-center justify-between w-full hover:text-foreground transition-colors"
-                                    style="font-size: 0.7rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: hsl(var(--foreground) / 0.6);"
+                                    class="flex items-center justify-between w-full hover:text-foreground transition-colors text-[0.7rem] font-semibold uppercase tracking-[0.08em] text-foreground/60"
                                 >
                                     <span>Did Not Play ({{ dnpPlayers.length }})</span>
                                     <span>{{ dnpExpanded ? '▾' : '▸' }}</span>
@@ -150,15 +142,15 @@
                                 class="opacity-50"
                             >
                                 <TableCell class="sticky left-0 bg-background py-0.5">
-                                    <span style="font-size: 0.8rem; font-weight: 500;">
+                                    <span class="text-[0.8rem] font-medium">
                                         {{ player.athlete.displayName }}
-                                        <span style="font-size: 0.65rem; color: hsl(var(--foreground) / 0.4);">
+                                        <span class="text-[0.65rem] text-foreground/40">
                                             · {{ player.athlete.position?.abbreviation }}
                                             <span v-if="player.reason"> — {{ player.reason }}</span>
                                         </span>
                                     </span>
                                 </TableCell>
-                                <TableCell colspan="100%" class="text-center italic" style="font-size: 0.75rem; color: hsl(var(--foreground) / 0.4);">
+                                <TableCell colspan="100%" class="text-center italic text-xs text-foreground/40">
                                     DNP
                                 </TableCell>
                             </TableRow>
@@ -166,13 +158,12 @@
                     </template>
 
                     <!-- Team Totals -->
-                    <TableRow class="bg-primary/6" style="border-top: 2px solid hsl(var(--primary) / 0.2);">
-                        <TableCell class="sticky left-0 bg-primary/6 py-2 text-foreground font-bold" style="font-size: 0.65rem;">Team Totals</TableCell>
+                    <TableRow class="bg-primary/6 border-t-2 border-t-primary/20">
+                        <TableCell class="sticky left-0 bg-primary/6 py-2 text-foreground font-bold text-[0.65rem]">Team Totals</TableCell>
                         <TableCell
                             v-for="(total, index) in statistics.totals"
                             :key="index"
-                            class="text-center py-2 text-foreground font-bold"
-                            style="font-size: 0.65rem;"
+                            class="text-center py-2 text-foreground font-bold text-[0.65rem]"
                         >
                             {{ total || '-' }}
                         </TableCell>

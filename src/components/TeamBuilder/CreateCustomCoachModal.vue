@@ -167,7 +167,7 @@ defineExpose({
                             <SelectValue placeholder="Select specialty..." />
                         </SelectTrigger>
                         <SelectContent
-                            class="!bg-[rgb(9,9,11)] border-2 shadow-xl"
+                            class="bg-surface-raised border-2 shadow-xl"
                             position="popper"
                         >
                             <SelectItem
