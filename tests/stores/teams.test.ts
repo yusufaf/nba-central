@@ -22,9 +22,7 @@ beforeEach(() => {
 
 describe("useTeamsStore.fetchTeamLogos", () => {
     it("populates teams and clears loading on success", async () => {
-        vi.mocked(dataApi.getTeamLogos).mockResolvedValue({
-            teams: sampleTeams,
-        } as any);
+        vi.mocked(dataApi.getTeamLogos).mockResolvedValue(sampleTeams as any);
 
         const store = useTeamsStore();
         await store.fetchTeamLogos();

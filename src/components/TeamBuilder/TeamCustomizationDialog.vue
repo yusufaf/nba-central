@@ -9,8 +9,10 @@ import {
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { MapPin, Flag, Paperclip } from 'lucide-vue-next';
 import HistoricalTeamCombobox from './HistoricalTeamCombobox.vue';
+import HistoricalLogoPicker from './HistoricalLogoPicker.vue';
 
 interface HistoricalTeam {
     name: string;
@@ -179,17 +181,28 @@ onMounted(() => {
                 <!-- Existing Team Logos -->
                 <div class="space-y-2 pb-4">
                     <Label class="text-base font-semibold text-foreground">Or select an existing team's logo:</Label>
-                    <div class="team-logos">
-                        <template v-for="logo in props.nbaTeamLogos" :key="logo.href">
-                            <img
-                                :src="logo.href"
-                                :alt="logo.alt || 'Team logo'"
-                                class="team-logo"
-                                :class="{ selected: logo.href === teamLogo }"
-                                @click="() => handleLogoClick(logo.href)"
-                            />
-                        </template>
-                    </div>
+                    <Tabs default-value="current">
+                        <TabsList class="grid w-full grid-cols-2">
+                            <TabsTrigger value="current">Current</TabsTrigger>
+                            <TabsTrigger value="all-time">All-time</TabsTrigger>
+                        </TabsList>
+                        <TabsContent value="current" class="mt-4">
+                            <div class="team-logos">
+                                <template v-for="logo in props.nbaTeamLogos" :key="logo.href">
+                                    <img
+                                        :src="logo.href"
+                                        :alt="logo.alt || 'Team logo'"
+                                        class="team-logo"
+                                        :class="{ selected: logo.href === teamLogo }"
+                                        @click="() => handleLogoClick(logo.href)"
+                                    />
+                                </template>
+                            </div>
+                        </TabsContent>
+                        <TabsContent value="all-time" class="mt-4">
+                            <HistoricalLogoPicker v-model:teamLogo="teamLogo" />
+                        </TabsContent>
+                    </Tabs>
                 </div>
 
                 <!-- Team Jersey Canvas -->

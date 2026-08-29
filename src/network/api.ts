@@ -129,7 +129,7 @@ export const teamApi = {
 // Data API - matches DATA_ROUTES in CDK
 export const dataApi = {
     getTeamLogos: async (): Promise<GetTeamLogosResponse> => {
-        const response = await api.post('/api/data/get-team-logos');
+        const response = await api.get('/api/data/get-team-logos');
         return response.data;
     },
     getPlayers: async (

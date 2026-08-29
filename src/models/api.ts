@@ -146,9 +146,8 @@ export interface TeamData {
     logos: TeamLogo[];
 }
 
-export interface GetTeamLogosResponse {
-    teams: TeamData[];
-}
+// The Lambda returns a bare array, not { teams: [...] }.
+export type GetTeamLogosResponse = TeamData[];
 
 export interface GetPlayersParams {
     search?: string;
