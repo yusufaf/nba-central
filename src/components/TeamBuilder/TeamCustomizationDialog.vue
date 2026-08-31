@@ -33,6 +33,21 @@ const teamCountry = defineModel<string>('teamCountry');
 const teamLogo = defineModel<string>('teamLogo');
 const selectedFile = ref<File | null>(null);
 
+/**
+ * The all-time logo picker's fullscreen overlay teleports to <body>, outside
+ * this DialogContent's own DOM subtree, so reka-ui's dismissable-layer logic
+ * sees every click inside it as a click "outside" the dialog and closes it
+ * instantly. Track the picker's expanded state and swallow those outside
+ * interactions while it's up.
+ */
+const historicalLogoPickerExpanded = ref(false);
+
+const onDialogInteractOutside = (event: Event) => {
+    if (historicalLogoPickerExpanded.value) {
+        event.preventDefault();
+    }
+};
+
 /* Canvas Props */
 const drawingCanvas = ref<HTMLCanvasElement | null>(null);
 const isDrawing = ref<boolean>(false);
@@ -109,7 +124,10 @@ onMounted(() => {
 
 <template>
     <Dialog v-model:open="showTeamCustomizationDialog">
-        <DialogContent class="max-w-2xl max-h-[90vh] overflow-y-auto">
+        <DialogContent
+            class="max-w-2xl max-h-[90vh] overflow-y-auto"
+            @interact-outside="onDialogInteractOutside"
+        >
             <DialogHeader>
                 <DialogTitle>Team Customization</DialogTitle>
             </DialogHeader>
@@ -200,7 +218,10 @@ onMounted(() => {
                             </div>
                         </TabsContent>
                         <TabsContent value="all-time" class="mt-4">
-                            <HistoricalLogoPicker v-model:teamLogo="teamLogo" />
+                            <HistoricalLogoPicker
+                                v-model:teamLogo="teamLogo"
+                                v-model:expanded="historicalLogoPickerExpanded"
+                            />
                         </TabsContent>
                     </Tabs>
                 </div>
