@@ -3,6 +3,9 @@ name: deploy
 on:
   push:
     branches: [main]
+    paths:
+      - "apps/web/**"
+      - ".github/workflows/deploy.yml"
 
 permissions:
   id-token: write # required for aws-actions/configure-aws-credentials OIDC
@@ -34,7 +37,7 @@ jobs:
       # VITE_API_BASE_URL is deliberately NOT set here — leaving it unset
       # makes axios calls relative, and CloudFront's /api/* behavior routes
       # them same-origin. Setting it would break that.
-      - run: pnpm build
+      - run: pnpm --filter web build
         env:
           VITE_LOGTO_ENDPOINT: ${{ vars.VITE_LOGTO_ENDPOINT }}
           VITE_LOGTO_APP_ID: ${{ vars.VITE_LOGTO_APP_ID }}
@@ -45,7 +48,7 @@ jobs:
           role-to-assume: ${{ vars.AWS_DEPLOY_ROLE_ARN }}
           aws-region: us-west-2
 
-      - run: aws s3 sync dist/ s3://${{ vars.AWS_WEB_BUCKET_NAME }} --delete
+      - run: aws s3 sync apps/web/dist/ s3://${{ vars.AWS_WEB_BUCKET_NAME }} --delete
 
       - run: |
           aws cloudfront create-invalidation \

@@ -7,7 +7,31 @@ on:
     branches: [main]
 
 jobs:
-  verify:
+  changes:
+    runs-on: ubuntu-latest
+    outputs:
+      web: ${{ steps.filter.outputs.web }}
+      cdk: ${{ steps.filter.outputs.cdk }}
+    steps:
+      - uses: actions/checkout@v5
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            web:
+              - 'apps/web/**'
+              - 'pnpm-lock.yaml'
+              - 'pnpm-workspace.yaml'
+              - '.github/workflows/ci.yml'
+            cdk:
+              - 'apps/cdk/**'
+              - 'pnpm-lock.yaml'
+              - 'pnpm-workspace.yaml'
+              - '.github/workflows/ci.yml'
+
+  web:
+    needs: changes
+    if: needs.changes.outputs.web == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
@@ -28,15 +52,47 @@ jobs:
       # lockfile silently reintroduced a bad `typescript` pin before.
       - run: pnpm install --frozen-lockfile
 
-      - run: pnpm type-check
+      - run: pnpm --filter web type-check
 
       # Guards the design system against the defects that made the UI look
       # broken: Tailwind classes that compile to nothing, invalid token alpha
       # syntax, !important, and global styling by ARIA role.
-      - run: pnpm check:styles
+      - run: pnpm --filter web check:styles
 
       # Runs before build: a failing unit test should fail the job without
       # waiting on the slower Vite production build.
-      - run: pnpm test
+      - run: pnpm --filter web test
 
-      - run: pnpm build
+      - run: pnpm --filter web build
+
+  cdk:
+    needs: changes
+    if: needs.changes.outputs.cdk == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: pnpm/action-setup@v6
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - run: pnpm --filter cdk build
+
+      - run: pnpm --filter cdk test
+
+      # Synth is the real integration check: it type-checks the stack and runs
+      # esbuild over every Lambda, which is where pnpm's strict node_modules has
+      # broken bundling before (see .npmrc). No AWS credentials are needed —
+      # nothing in the stack does a context lookup — so dummy env values are
+      # enough to construct it.
+      - run: pnpm --filter cdk exec cdk synth --quiet
+        env:
+          account: "000000000000"
+          region: us-east-1
+          appName: team-builder
+          deploymentType: development
