@@ -22,7 +22,7 @@ const selectedDecade = ref<string>('All');
 const selectedLeague = ref<string>('All');
 // Modeled so the Team Customization dialog can tell the fullscreen overlay
 // apart from its own click-outside handling - see the dialog's
-// `onInteractOutside` for why that matters.
+// `onDialogInteractOutside` for why that matters.
 const expanded = defineModel<boolean>('expanded', { default: false });
 const searchField = ref<HTMLElement | null>(null);
 
