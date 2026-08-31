@@ -226,7 +226,7 @@ own manifest entry and its own PR. Tags: `web-vX.Y.Z`, `cdk-vX.Y.Z`.
 
 ### Milestones
 
-- One GitHub milestone per package release, named to match the tag: `web v0.2.0`, `cdk v0.2.0`.
+- One GitHub milestone per package release, named to match the tag: `web v0.1.1`, `cdk v0.1.1`.
 - Milestones = "which release". Labels (`bug`, `enhancement`, `area:web`, `area:cdk`, ...) = "what kind" and "which package". A Projects board, if one is ever added, is "workflow status" — don't use milestones as a kanban board.
 - Only put an issue in a milestone once it's actually committed to that release — an untargeted issue (like a large audit-sized item) stays milestone-less until it's scoped down into something a release can carry.
 - Close a milestone once its release is tagged.
