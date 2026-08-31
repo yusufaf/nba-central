@@ -1,12 +1,36 @@
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
 node_modules
 dist
 dist-ssr
 cdk.out
+.cdk.staging
 *.local
+
+# Use pnpm; do not track npm/yarn lockfiles
+package-lock.json
+yarn.lock
+vite.config.ts.timestamp-*.mjs
+
+# Environment and config
 .env
 .env.*
 !.env.example
+
+# Claude Code / agent tooling
 .claude/
 .agents/
 .worktrees/
 scratch/
+
+# Editor directories and files
+.vscode/*
+!.vscode/extensions.json
+.DS_Store

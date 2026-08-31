@@ -1,0 +1,57 @@
+{
+  "name": "team-builder",
+  "version": "0.0.0",
+  "private": true,
+  "packageManager": "pnpm@10.24.0",
+  "scripts": {
+    "build": "pnpm -r build",
+    "test": "pnpm -r test",
+    "type-check": "pnpm --filter web type-check",
+    "check:styles": "pnpm --filter web check:styles",
+    "lint": "pnpm --filter web lint",
+    "synth": "pnpm --filter cdk exec cdk synth --quiet",
+    "prepare": "husky"
+  },
+  "devDependencies": {
+    "@commitlint/cli": "^21.2.1",
+    "@commitlint/config-conventional": "^21.2.0",
+    "husky": "^9.1.7"
+  },
+  "pnpm": {
+    "overrides": {
+      "vue": "3.5.24",
+      "shell-quote": "^1.8.4",
+      "lodash": "^4.18.0",
+      "ws": "^8.21.0",
+      "js-cookie": "^3.0.7",
+      "defu": "6.1.7",
+      "flatted": "3.4.2",
+      "js-yaml": "4.3.1",
+      "postcss": "8.5.23",
+      "picomatch": "4.0.5",
+      "yaml": "^2.9.0",
+      "form-data": "^4.0.6",
+      "preact": "^10.27.3",
+      "minimatch": "10.2.5",
+      "uuid": "^11.1.1",
+      "micromatch": "^4.0.8",
+      "vue-metamorph": "3.3.7",
+      "undici": "7.29.0",
+      "diff": "8.0.4",
+      "@isaacs/brace-expansion": "5.0.1",
+      "qs": "6.15.3",
+      "brace-expansion": "1.1.16",
+      "path-to-regexp": "8.4.2",
+      "lodash-es": "4.18.1",
+      "fast-uri": "3.1.5",
+      "nanoid": "3.3.18",
+      "hono": "4.12.31",
+      "express-rate-limit": "8.6.0",
+      "@babel/core": "7.29.7",
+      "body-parser": "2.3.0",
+      "glob": "^11.1.0",
+      "ip-address": "^10.1.1",
+      "@hono/node-server": "^2.0.5"
+    }
+  }
+}

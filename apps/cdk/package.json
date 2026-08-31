@@ -1,5 +1,5 @@
 {
-    "name": "team-builder-cdk",
+    "name": "@team-builder/cdk",
     "version": "0.1.0",
     "packageManager": "pnpm@10.24.0",
     "bin": {
@@ -16,8 +16,7 @@
         "refresh-execs": "ts-node -r tsconfig-paths/register scripts/refresh-execs.ts",
         "refresh-historical-logos": "ts-node -r tsconfig-paths/register scripts/refresh-historical-logos.ts",
         "rekey-historical-logos": "ts-node -r tsconfig-paths/register scripts/rekey-historical-logos.ts",
-        "cdk": "cdk",
-        "prepare": "husky"
+        "cdk": "cdk"
     },
     "dependencies": {
         "@aws-sdk/client-dynamodb": "^3.540.0",
@@ -37,8 +36,6 @@
         "source-map-support": "^0.5.21"
     },
     "devDependencies": {
-        "@commitlint/cli": "^20.5.3",
-        "@commitlint/config-conventional": "^20.5.3",
         "@eslint/js": "^9.33.0",
         "@types/aws-lambda": "^8.10.136",
         "@types/jsdom": "^21.1.6",
@@ -48,21 +45,11 @@
         "esbuild": "^0.20.2",
         "eslint": "^9.33.0",
         "globals": "^16.3.0",
-        "husky": "^9.1.7",
         "prettier": "3.6.2",
         "ts-node": "^10.9.2",
         "tsconfig-paths": "^4.2.0",
         "typescript": "^5.9.2",
         "typescript-eslint": "^8.39.1",
         "vitest": "2.1.9"
-    },
-    "pnpm": {
-        "overrides": {
-            "ws": "^8.21.0",
-            "js-yaml": "4.3.0",
-            "flatted": "3.4.2",
-            "form-data": "^4.0.6",
-            "fast-uri": "3.1.4"
-        }
     }
 }

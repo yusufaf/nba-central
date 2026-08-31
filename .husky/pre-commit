@@ -1,2 +1,3 @@
-pnpm type-check
-pnpm check:styles
+pnpm --filter web type-check
+pnpm --filter web check:styles
+pnpm -r test

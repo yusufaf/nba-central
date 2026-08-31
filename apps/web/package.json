@@ -1,5 +1,5 @@
 {
-  "name": "nba-team-builder",
+  "name": "@team-builder/web",
   "version": "0.1.0",
   "private": true,
   "type": "module",
@@ -16,8 +16,7 @@
     "test:visual": "playwright test",
     "test:visual:update": "playwright test --update-snapshots",
     "test:visual:ci": "podman run --rm -it -v .:/w -w /w --network host mcr.microsoft.com/playwright:v1.62.1-noble sh -c \"corepack enable && pnpm install --frozen-lockfile && pnpm test:visual\"",
-    "lint": "eslint . --ext .vue,.js,.jsx,.cjs,.mjs,.ts,.tsx,.cts,.mts --fix --ignore-path .gitignore",
-    "prepare": "husky"
+    "lint": "eslint . --ext .vue,.js,.jsx,.cjs,.mjs,.ts,.tsx,.cts,.mts --fix --ignore-path .gitignore"
   },
   "dependencies": {
     "@fontsource-variable/inter": "^5.3.0",
@@ -39,8 +38,6 @@
     "vuedraggable": "^4.1.0"
   },
   "devDependencies": {
-    "@commitlint/cli": "^21.2.1",
-    "@commitlint/config-conventional": "^21.2.0",
     "@playwright/test": "^1.62.1",
     "@rushstack/eslint-patch": "^1.16.1",
     "@types/node": "^26.1.1",
@@ -52,7 +49,6 @@
     "@vue/tsconfig": "^0.9.1",
     "eslint": "^10.7.0",
     "eslint-plugin-vue": "^10.10.0",
-    "husky": "^9.1.7",
     "jsdom": "^29.1.1",
     "npm-run-all": "^4.1.5",
     "prettier": "^3.9.6",
@@ -61,43 +57,5 @@
     "vite": "^8.1.5",
     "vitest": "^4.1.10",
     "vue-tsc": "^3.3.7"
-  },
-  "pnpm": {
-    "overrides": {
-      "vue": "3.5.24",
-      "shell-quote": "^1.8.4",
-      "lodash": "^4.18.0",
-      "ws": "^8.21.0",
-      "js-cookie": "^3.0.7",
-      "defu": "6.1.7",
-      "flatted": "3.4.2",
-      "js-yaml": "4.3.1",
-      "postcss": "8.5.23",
-      "picomatch": "4.0.5",
-      "yaml": "^2.9.0",
-      "form-data": "^4.0.6",
-      "preact": "^10.27.3",
-      "minimatch": "10.2.5",
-      "uuid": "^11.1.1",
-      "micromatch": "^4.0.8",
-      "vue-metamorph": "3.3.7",
-      "undici": "7.29.0",
-      "diff": "8.0.4",
-      "@isaacs/brace-expansion": "5.0.1",
-      "qs": "6.15.3",
-      "ajv": "8.20.0",
-      "brace-expansion": "1.1.16",
-      "path-to-regexp": "8.4.2",
-      "lodash-es": "4.18.1",
-      "fast-uri": "3.1.5",
-      "nanoid": "3.3.18",
-      "hono": "4.12.31",
-      "express-rate-limit": "8.6.0",
-      "@babel/core": "7.29.7",
-      "body-parser": "2.3.0",
-      "glob": "^11.1.0",
-      "ip-address": "^10.1.1",
-      "@hono/node-server": "^2.0.5"
-    }
   }
 }
