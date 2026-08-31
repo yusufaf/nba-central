@@ -66,21 +66,25 @@ Access Patterns:
         ```
 
 - News Aggregator
-    - PK: `NEWS`
+    - PK: `NEWS#${source}` (one of `NEWS#ESPN`, `NEWS#CBS`, `NEWS#RealGM`, `NEWS#Bluesky`)
     - SK: `PUBLISHED_AT#${publishedAt}#ID#${id}`
-    - Use: Store aggregated news articles from various sources (ESPN, Reddit, Bluesky).
+    - Use: Store aggregated news articles from various sources (ESPN, CBS Sports,
+      RealGM, Bluesky).
+      Partitioned per source so a high-volume source cannot consume the entire read
+      window and leave the other source filters empty in the UI.
     - Data: `{ id, source, headline, url, author, publishedAt, thumbnailUrl, summary, ttl }`
     - Common Queries:
         ```typescript
-        // Get newest articles first
+        // Get newest articles first, for a single source. getNews issues one of
+        // these per source in parallel, then merges and sorts by publishedAt.
         QueryInput = {
         	TableName: "team-builder-development-main",
         	KeyConditionExpression: "PK = :pk",
         	ExpressionAttributeValues: {
-        		":pk": "NEWS",
+        		":pk": "NEWS#ESPN",
         	},
             ScanIndexForward: false, // newest first based on SK
-            Limit: 100,
+            Limit: 40,
         };
         ```
 
