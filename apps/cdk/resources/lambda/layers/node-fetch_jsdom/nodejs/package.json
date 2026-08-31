@@ -1,0 +1,10 @@
+{
+    "name": "node-fetch_jsdom",
+    "version": "1.0.0",
+    "description": "Provides node-fetch and jsdom to Node lambdas",
+    "license": "ISC",
+    "dependencies": {
+        "jsdom": "^24.0.0",
+        "node-fetch": "^3.3.2"
+    }
+}

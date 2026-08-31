@@ -1,0 +1,22 @@
+*.js
+*.d.ts
+node_modules
+
+# CDK asset staging directory
+.cdk.staging
+cdk.out
+
+# misc
+.env
+.env.production
+.DS_Store
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+.parcel-cache
+*.cache
+*.iso
+/dist
+dist-ssr
+*.local

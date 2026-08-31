@@ -1,0 +1,38 @@
+{
+    "compilerOptions": {
+        "target": "ES2020",
+        "module": "commonjs",
+        "moduleResolution": "node",
+        "lib": ["es2020", "dom"],
+        "strict": true,
+        "noEmit": true,
+        // @types/node 20 predates the TS 5.7 Buffer/Uint8Array generic change,
+        // so checking its .d.ts files fails on Buffer vs Uint8Array<ArrayBuffer>
+        // (and cascades into aws-jwt-verify). We don't type-check deps anyway.
+        "skipLibCheck": true,
+        "esModuleInterop": true,
+        "declaration": true,
+        "noImplicitAny": false,
+        "strictNullChecks": true,
+        "noImplicitThis": true,
+        "alwaysStrict": true,
+        "noUnusedLocals": false,
+        "noUnusedParameters": false,
+        "noImplicitReturns": true,
+        "noFallthroughCasesInSwitch": false,
+        "inlineSourceMap": true,
+        "inlineSources": true,
+        "isolatedModules": true,
+        "experimentalDecorators": true,
+        "strictPropertyInitialization": false,
+        "forceConsistentCasingInFileNames": true,
+        "typeRoots": ["./node_modules/@types"],
+        "paths": {
+            "lambdas/*": ["./service/lambdas/*"],
+            "utilities/*": ["./utilities/*"],
+            "resources/*": ["./resources/*"],
+            "models/*": ["./models/*"]
+        }
+    },
+    "exclude": ["node_modules", "cdk.out", "vitest.config.ts", "test"]
+}
