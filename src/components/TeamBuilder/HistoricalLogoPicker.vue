@@ -20,7 +20,10 @@ const teamLogo = defineModel<string>('teamLogo');
 const search = ref<string>('');
 const selectedDecade = ref<string>('All');
 const selectedLeague = ref<string>('All');
-const expanded = ref<boolean>(false);
+// Modeled so the Team Customization dialog can tell the fullscreen overlay
+// apart from its own click-outside handling - see the dialog's
+// `onDialogInteractOutside` for why that matters.
+const expanded = defineModel<boolean>('expanded', { default: false });
 const searchField = ref<HTMLElement | null>(null);
 
 const DECADES = [
@@ -228,6 +231,12 @@ onBeforeUnmount(() => {
     gap: 0.875rem;
     background: hsl(0 0% 7% / 0.98);
     backdrop-filter: blur(0.75rem);
+    /* This overlay teleports past the dialog's own DOM subtree, so it isn't one
+       of reka-ui's registered dismissable layers. A modal Dialog sets
+       body { pointer-events: none } and only re-enables pointer-events on
+       layers it knows about - without this override every click and scroll
+       here is inert, since it inherits "none" from the body. */
+    pointer-events: auto;
 }
 
 .picker-header {
