@@ -22,45 +22,22 @@ export const sleep = (ms: number) =>
 	new Promise((resolve) => setTimeout(resolve, ms));
 
 /**
- * Locates the nba-central checkout these scripts write into.
+ * Locates the apps/web checkout these scripts write into.
  *
- * Normally it is the sibling directory `../nba-central`. Under worktrees it is
- * not: a `team-builder-cdk-<suffix>` worktree pairs with `nba-central-<suffix>`,
- * and several such pairs can sit side by side. These scripts overwrite the
- * frontend's checked-in data, so guessing wrong is worse than not running -
- * an ambiguous parent directory throws rather than picking one.
+ * Since the monorepo consolidation, apps/cdk and apps/web are always siblings
+ * under the same repo (a git worktree checks out the whole tree, so this
+ * holds there too) — no more searching for a differently-named, possibly
+ * ambiguous sibling checkout.
  */
 const findNbaCentralRoot = () => {
 	const root = path.resolve(__dirname, "../..");
-	const parent = path.dirname(root);
-	const looksRight = (dir: string) =>
-		fs.existsSync(path.join(dir, "src/assets/data"));
+	const webRoot = path.resolve(path.dirname(root), "web");
 
-	const sibling = path.join(parent, "nba-central");
-	if (looksRight(sibling)) return sibling;
-
-	const candidates = fs
-		.readdirSync(parent, { withFileTypes: true })
-		.filter((entry) => entry.isDirectory() && entry.name.startsWith("nba-central"))
-		.map((entry) => path.join(parent, entry.name))
-		.filter(looksRight);
-
-	// Prefer the frontend worktree cut from the same branch as this one.
-	const suffix = path.basename(root).replace(/^team-builder-cdk/, "");
-	const paired = candidates.find(
-		(dir) => path.basename(dir) === `nba-central${suffix}`,
-	);
-	if (paired) return paired;
-
-	if (candidates.length === 1) return candidates[0];
-	if (candidates.length > 1) {
-		throw new Error(
-			`Several nba-central checkouts sit beside ${root} and none matches this ` +
-				`worktree's suffix "${suffix}": ${candidates.map((c) => path.basename(c)).join(", ")}`,
-		);
+	if (!fs.existsSync(path.join(webRoot, "src/assets/data"))) {
+		throw new Error(`Could not find apps/web beside ${root} (looked for ${webRoot})`);
 	}
 
-	throw new Error(`Could not find an nba-central checkout beside ${root}`);
+	return webRoot;
 };
 
 /** Resolves a path inside the nba-central checkout. */
