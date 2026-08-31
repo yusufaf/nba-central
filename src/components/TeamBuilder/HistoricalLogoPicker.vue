@@ -25,6 +25,7 @@ const selectedLeague = ref<string>('All');
 // `onDialogInteractOutside` for why that matters.
 const expanded = defineModel<boolean>('expanded', { default: false });
 const searchField = ref<HTMLElement | null>(null);
+const pickerRoot = ref<HTMLElement | null>(null);
 
 const DECADES = [
     'All',
@@ -87,17 +88,47 @@ const handleEscape = (event: KeyboardEvent) => {
     collapse();
 };
 
+/**
+ * The Team Customization dialog is modal, so reka-ui's FocusScope traps focus
+ * inside its own DialogContent subtree: a focusin landing outside it is
+ * yanked straight back, and - separately - a focusout whose relatedTarget is
+ * outside it does the same (see reka's FocusScope.handleFocusIn/handleFocusOut,
+ * both document-level listeners). The picker's fields live outside that
+ * subtree once teleported, so both fire for every click into it and the
+ * search input could never hold focus - clicks and scrolling don't need
+ * sustained focus so they kept working, but typing did nothing. Capture-phase
+ * on both, same trick as `handleEscape`, to stop each before reka's
+ * document-level (bubble phase) listener sees it.
+ */
+const handleFocusIn = (event: FocusEvent) => {
+    if (pickerRoot.value?.contains(event.target as Node)) {
+        event.stopImmediatePropagation();
+    }
+};
+
+const handleFocusOut = (event: FocusEvent) => {
+    if (pickerRoot.value?.contains(event.relatedTarget as Node)) {
+        event.stopImmediatePropagation();
+    }
+};
+
 watch(expanded, (isExpanded) => {
     if (isExpanded) {
         window.addEventListener('keydown', handleEscape, true);
+        document.addEventListener('focusin', handleFocusIn, true);
+        document.addEventListener('focusout', handleFocusOut, true);
         nextTick(() => searchField.value?.querySelector('input')?.focus());
     } else {
         window.removeEventListener('keydown', handleEscape, true);
+        document.removeEventListener('focusin', handleFocusIn, true);
+        document.removeEventListener('focusout', handleFocusOut, true);
     }
 });
 
 onBeforeUnmount(() => {
     window.removeEventListener('keydown', handleEscape, true);
+    document.removeEventListener('focusin', handleFocusIn, true);
+    document.removeEventListener('focusout', handleFocusOut, true);
 });
 </script>
 
@@ -107,7 +138,7 @@ onBeforeUnmount(() => {
          values across expand/collapse. Only while expanded, so the picker can
          overlay the page rather than being clipped by the dialog. -->
     <Teleport to="body" :disabled="!expanded">
-        <div class="historical-logo-picker" :class="{ expanded }">
+        <div ref="pickerRoot" class="historical-logo-picker" :class="{ expanded }">
             <div v-if="expanded" class="picker-header">
                 <span class="picker-title">All-time team logos</span>
                 <button
