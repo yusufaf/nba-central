@@ -1,15 +1,13 @@
 <script setup lang="ts">
-import { ref, computed, watch } from "vue";
+import { computed } from "vue";
 import { useRouter } from "vue-router";
-import { toast } from "vue-sonner";
 import {
     HOME,
     AWAY,
     GAME_STATUS,
     ZERO_CLOCK,
-    NOTIFICATION_GRANTED,
-    NOTIFICATION_DENIED,
 } from "@/constants/constants";
+import { useGameNotifications } from "@/composables/useGameNotifications";
 import LineScore from "./LineScore.vue";
 import TeamDetailsTooltip from "./TeamDetailsTooltip.vue";
 import type { CustomizationState } from "@/models/types";
@@ -31,18 +29,8 @@ const props = defineProps<{
 }>();
 
 
-/* Refs */
-const notificationPermission = ref<string>("");
-const gameNotificationsMap = ref<any>(new Map());
-
-/* Watchers */
-watch(notificationPermission, (newPermission) => {
-    if (newPermission === NOTIFICATION_GRANTED) {
-        return;
-    } else if (newPermission === NOTIFICATION_DENIED) {
-        return;
-    }
-});
+const { isFollowed, toggleFollow } = useGameNotifications();
+const isGameFollowed = computed(() => isFollowed(props.game.uid));
 
 /* Computed Refs */
 const fullGameName = computed(() => props.game.name);
@@ -204,51 +192,9 @@ const leaderData = computed(() => {
     return teamLeadersData.reverse();
 });
 
-const toggleGameNotification = (id: string): void => {
-    askNotificationPermission(id);
+const toggleGameNotification = (): void => {
+    toggleFollow(props.game);
 };
-
-const checkNotificationPromise = (): boolean => {
-    try {
-        Notification.requestPermission().then();
-    } catch (e) {
-        return false;
-    }
-    return true;
-};
-
-const askNotificationPermission = (id: string): void => {
-    /* Early return if browser permission has already been granted */
-    if (notificationPermission.value === NOTIFICATION_GRANTED) {
-        // const notification = new Notification("Hi there!");
-        return;
-    } else if (notificationPermission.value === NOTIFICATION_DENIED) {
-        /* Send toast instructing what user needs to change, return early because browser won't ask again */
-        toast.error(
-            "Please update your browser permissions to allow us to send you notifications"
-        );
-        return;
-    }
-
-    const handlePermission = (permission: string) => {
-        notificationPermission.value = permission;
-    };
-
-    // Let's check if the browser supports notifications
-    if (!("Notification" in window)) {
-        console.error("This browser does not support notifications.");
-    } else if (checkNotificationPromise()) {
-        Notification.requestPermission().then((permission) => {
-            handlePermission(permission);
-        });
-    } else {
-        Notification.requestPermission((permission) => {
-            handlePermission(permission);
-        });
-    }
-};
-
-/* TODO: Browser notifications link: https://developer.mozilla.org/en-US/docs/Web/API/Notifications_API/Using_the_Notifications_API */
 </script>
 
 <template>
@@ -265,16 +211,15 @@ const askNotificationPermission = (id: string): void => {
         <Card class="score-card border-0 cursor-pointer hover:shadow-lg transition-all hover:scale-[1.02]" @click="() => router.push(`/game/${game.id}`)">
         <CardHeader class="card-header">
             <h6>{{ gameNameToDisplay }}</h6>
-            <!-- Toggled styling here ==> notifications vs notifications active -->
-            <!-- v-if="!isGameDone" -->
             <Button
-                @click.stop="toggleGameNotification(game.uid)"
+                @click.stop="toggleGameNotification"
                 class="notification-bell"
+                :class="{ following: isGameFollowed }"
                 variant="ghost"
                 size="icon"
-                title="Notify me about the game"
+                :title="isGameFollowed ? 'Stop notifying me about this game' : 'Notify me about this game'"
             >
-                <Bell class="h-5 w-5" />
+                <Bell class="h-5 w-5" :fill="isGameFollowed ? 'currentColor' : 'none'" />
             </Button>
         </CardHeader>
         <Separator />
@@ -445,6 +390,10 @@ const askNotificationPermission = (id: string): void => {
     margin-left: auto;
     animation: ring 4s 0.7s ease-in-out;
     transform-origin: 50% 0.0625rem;
+}
+
+.notification-bell.following {
+    color: hsl(var(--primary));
 }
 
 @keyframes ring {

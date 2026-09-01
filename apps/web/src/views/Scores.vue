@@ -14,6 +14,7 @@ import PageTitle from "@/components/PageTitle.vue";
 import PageShell from "@/layouts/PageShell.vue";
 import GameReplaysWarning from "@/components/Scores/GameReplaysWarning.vue";
 import ManageNotifications from "@/components/Scores/ManageNotifications.vue";
+import { useGameNotifications } from "@/composables/useGameNotifications";
 import OptionsMenu from "@/components/Scores/OptionsMenu.vue";
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -109,14 +110,7 @@ const handleConferenceFilterChange = (value: string | undefined) => {
 const useShortNames = ref<boolean>(true);
 const notificationsMenuOpen = ref<boolean>(false);
 
-/* TODO: Set in localStorage?  */
-const gamesWithNotifications = ref<Map<any, any>>(new Map());
-
-/* TODO/IDEA:
-- Notifications for score updates like Google?
-- Discord through javascript somehow?
-
-*/
+const { notifyScoreChanges } = useGameNotifications();
 
 const fetchCurrentScores = async (forDate?: Date) => {
     try {
@@ -131,6 +125,8 @@ const fetchCurrentScores = async (forDate?: Date) => {
 
         const data: ESPNScoreboardResponse = await response.json();
         const { events } = data;
+
+        notifyScoreChanges(events ?? []);
 
         scoreData.value = data;
         numGames.value = events?.length || 0;
