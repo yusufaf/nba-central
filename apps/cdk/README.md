@@ -1,14 +1,20 @@
-# Welcome to your CDK TypeScript project
+# @team-builder/cdk
 
-This is a blank project for CDK development with TypeScript.
+AWS CDK (TypeScript) infrastructure: API Gateway, Lambda, DynamoDB, S3,
+CloudFront. See [`CLAUDE.md`](./CLAUDE.md) for the esbuild/pnpm gotcha and
+required `.env` vars before running anything here.
 
-The `cdk.json` file tells the CDK Toolkit how to execute your app.
+Part of the [TeamBuilder](../../README.md) monorepo — run commands from the
+repo root with `pnpm --filter cdk <script>`, or `cd` here and drop the filter.
 
-## Useful commands
+```bash
+pnpm build
+pnpm test
+pnpm exec cdk synth   # generate CloudFormation
+pnpm exec cdk diff    # compare with deployed
+pnpm exec cdk deploy  # deploy to AWS
 
-* `npm run build`   compile typescript to js
-* `npm run watch`   watch for changes and compile
-* `npm run test`    perform the jest unit tests
-* `npx cdk deploy`  deploy this stack to your default AWS account/region
-* `npx cdk diff`    compare deployed stack with current state
-* `npx cdk synth`   emits the synthesized CloudFormation template
+pnpm refresh-arenas   # rewrite apps/web's static data from source
+pnpm refresh-coaches
+pnpm refresh-execs
+```
