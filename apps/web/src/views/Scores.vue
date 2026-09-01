@@ -15,6 +15,7 @@ import PageShell from "@/layouts/PageShell.vue";
 import GameReplaysWarning from "@/components/Scores/GameReplaysWarning.vue";
 import ManageNotifications from "@/components/Scores/ManageNotifications.vue";
 import { useGameNotifications } from "@/composables/useGameNotifications";
+import { useScoresPreferences } from "@/composables/useScoresPreferences";
 import OptionsMenu from "@/components/Scores/OptionsMenu.vue";
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -93,11 +94,24 @@ const games = ref<any[]>([]);
 const gameTeams = ref<any[]>([]);
 
 const showReplayConfirm = ref<boolean>(false);
-const hideScores = ref<boolean>(false);
-const hideFinishedGames = ref<boolean>(false);
 
-const selectedView = ref<string>("Default");
-const conferenceFilter = ref<string>("ALL");
+const { preferences: scoresPreferences } = useScoresPreferences();
+const hideScores = computed({
+    get: () => scoresPreferences.value.hideScores,
+    set: (value) => { scoresPreferences.value.hideScores = value; },
+});
+const hideFinishedGames = computed({
+    get: () => scoresPreferences.value.hideFinishedGames,
+    set: (value) => { scoresPreferences.value.hideFinishedGames = value; },
+});
+const selectedView = computed({
+    get: () => scoresPreferences.value.selectedView,
+    set: (value) => { scoresPreferences.value.selectedView = value; },
+});
+const conferenceFilter = computed({
+    get: () => scoresPreferences.value.conferenceFilter,
+    set: (value) => { scoresPreferences.value.conferenceFilter = value; },
+});
 
 const handleConferenceFilterChange = (value: string | undefined) => {
     // Prevent deselection - keep current value if user clicks the selected item
@@ -107,7 +121,10 @@ const handleConferenceFilterChange = (value: string | undefined) => {
     conferenceFilter.value = value;
 };
 
-const useShortNames = ref<boolean>(true);
+const useShortNames = computed({
+    get: () => scoresPreferences.value.useShortNames,
+    set: (value) => { scoresPreferences.value.useShortNames = value; },
+});
 const notificationsMenuOpen = ref<boolean>(false);
 
 const { notifyScoreChanges } = useGameNotifications();
