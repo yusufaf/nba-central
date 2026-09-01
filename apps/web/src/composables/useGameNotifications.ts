@@ -1,5 +1,6 @@
 import { ref, type Ref } from "vue";
 import { useStorage } from "@vueuse/core";
+import { toast } from "vue-sonner";
 import type { ESPNEvent } from "@/models/types";
 
 export interface FollowedGame {
@@ -25,12 +26,15 @@ const extractScores = (event: ESPNEvent): Omit<FollowedGame, "uid"> => {
   };
 };
 
+// Module-level so every component sharing this composable sees the same
+// permission state — unlike followedGames, a plain ref() has no cross-instance
+// sync of its own (useStorage gets that for free via a same-page storage event).
+const notificationPermission: Ref<NotificationPermission> = ref(
+  isNotificationsSupported() ? Notification.permission : "denied",
+);
+
 export const useGameNotifications = () => {
   const followedGames = useStorage<Record<string, FollowedGame>>(STORAGE_KEY, {});
-
-  const notificationPermission: Ref<NotificationPermission> = ref(
-    isNotificationsSupported() ? Notification.permission : "denied",
-  );
 
   const requestPermission = async (): Promise<NotificationPermission> => {
     if (!isNotificationsSupported()) {
@@ -53,11 +57,19 @@ export const useGameNotifications = () => {
   };
 
   const followGame = async (event: ESPNEvent): Promise<void> => {
-    await requestPermission();
+    const permission = await requestPermission();
     followedGames.value = {
       ...followedGames.value,
       [event.uid]: { uid: event.uid, ...extractScores(event) },
     };
+
+    if (permission !== "granted") {
+      toast.error(
+        isNotificationsSupported()
+          ? "Please update your browser permissions to allow us to send you notifications"
+          : "This browser doesn't support notifications",
+      );
+    }
   };
 
   const toggleFollow = async (event: ESPNEvent): Promise<void> => {
@@ -72,6 +84,8 @@ export const useGameNotifications = () => {
     if (notificationPermission.value !== "granted") {
       return;
     }
+
+    let updatedGames: Record<string, FollowedGame> | null = null;
 
     for (const event of events) {
       const followed = followedGames.value[event.uid];
@@ -89,10 +103,12 @@ export const useGameNotifications = () => {
         tag: event.uid,
       });
 
-      followedGames.value = {
-        ...followedGames.value,
-        [event.uid]: { uid: event.uid, ...scores },
-      };
+      updatedGames ??= { ...followedGames.value };
+      updatedGames[event.uid] = { uid: event.uid, ...scores };
+    }
+
+    if (updatedGames) {
+      followedGames.value = updatedGames;
     }
   };
 

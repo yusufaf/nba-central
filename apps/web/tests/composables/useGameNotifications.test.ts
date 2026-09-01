@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
-import { useGameNotifications } from "@/composables/useGameNotifications";
 import type { ESPNEvent } from "@/models/types";
+
+vi.mock("vue-sonner", () => ({ toast: { error: vi.fn() } }));
 
 const makeEvent = (overrides: {
     uid: string;
@@ -29,9 +30,11 @@ const makeEvent = (overrides: {
 
 describe("useGameNotifications", () => {
     let notificationCtor: ReturnType<typeof vi.fn>;
+    let useGameNotifications: typeof import("@/composables/useGameNotifications").useGameNotifications;
 
-    beforeEach(() => {
+    beforeEach(async () => {
         localStorage.clear();
+        vi.resetModules();
         notificationCtor = vi.fn();
         vi.stubGlobal(
             "Notification",
@@ -40,6 +43,7 @@ describe("useGameNotifications", () => {
                 requestPermission: vi.fn().mockResolvedValue("granted"),
             }),
         );
+        ({ useGameNotifications } = await import("@/composables/useGameNotifications"));
     });
 
     it("is not followed before toggling", () => {
@@ -99,6 +103,46 @@ describe("useGameNotifications", () => {
         notifyScoreChanges([event]);
 
         expect(notificationCtor).not.toHaveBeenCalled();
+    });
+
+    it("shares granted permission across separate composable instances", async () => {
+        const componentA = useGameNotifications();
+        const componentB = useGameNotifications();
+        const event = makeEvent({ uid: "game-1", awayScore: "10", homeScore: "12" });
+
+        await componentA.toggleFollow(event);
+
+        expect(componentB.notificationPermission.value).toBe("granted");
+
+        const updated = makeEvent({ uid: "game-1", awayScore: "13", homeScore: "12" });
+        componentB.notifyScoreChanges([updated]);
+
+        expect(notificationCtor).toHaveBeenCalledTimes(1);
+    });
+
+    it("warns the user when they follow a game but permission is denied", async () => {
+        const { toast } = await import("vue-sonner");
+        (Notification.requestPermission as ReturnType<typeof vi.fn>).mockResolvedValue("denied");
+
+        const { toggleFollow } = useGameNotifications();
+        await toggleFollow(makeEvent({ uid: "game-1", awayScore: "10", homeScore: "12" }));
+
+        expect(toast.error).toHaveBeenCalledWith(
+            expect.stringContaining("browser permissions"),
+        );
+    });
+
+    it("warns the user when they follow a game on an unsupported browser", async () => {
+        vi.unstubAllGlobals();
+        const { toast } = await import("vue-sonner");
+
+        const { toggleFollow, isFollowed } = useGameNotifications();
+        await toggleFollow(makeEvent({ uid: "game-1", awayScore: "10", homeScore: "12" }));
+
+        expect(isFollowed("game-1")).toBe(true);
+        expect(toast.error).toHaveBeenCalledWith(
+            expect.stringContaining("doesn't support notifications"),
+        );
     });
 
     it("does not fire a notification without granted permission", async () => {
