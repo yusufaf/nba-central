@@ -1,9 +1,34 @@
 <script setup lang="ts">
+import { computed } from "vue";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { useGameNotifications } from "@/composables/useGameNotifications";
+import { X } from "lucide-vue-next";
 
 /* 2-Way Bound Props */
 const notificationsMenuOpen = defineModel<boolean>("notificationsMenuOpen");
+
+const {
+    followedGames,
+    notificationPermission,
+    notificationsSupported,
+    requestPermission,
+    unfollowGame,
+} = useGameNotifications();
+
+const followedGamesList = computed(() => Object.values(followedGames.value));
+
+const permissionBadge = computed(() => {
+    switch (notificationPermission.value) {
+        case "granted":
+            return { label: "Enabled", variant: "default" as const };
+        case "denied":
+            return { label: "Blocked", variant: "destructive" as const };
+        default:
+            return { label: "Not enabled", variant: "secondary" as const };
+    }
+});
 </script>
 
 <template>
@@ -14,21 +39,54 @@ const notificationsMenuOpen = defineModel<boolean>("notificationsMenuOpen");
             </DialogHeader>
             <div class="content-area">
                 <p class="description-text">
-                    Configure your notification preferences for game alerts and team updates.
+                    Get a browser notification when the score changes for games
+                    you're following. Click the bell on a game's scorecard to
+                    follow it.
                 </p>
-                <div class="coming-soon-badge">
-                    <span class="badge-text">Coming Soon</span>
-                    <p class="badge-description">
-                        Team-specific notifications and real-time game alerts
+
+                <div class="permission-row">
+                    <div class="permission-status">
+                        <span>Browser notifications:</span>
+                        <Badge :variant="permissionBadge.variant">{{ permissionBadge.label }}</Badge>
+                    </div>
+                    <Button
+                        v-if="notificationPermission === 'default'"
+                        size="sm"
+                        @click="requestPermission"
+                    >
+                        Enable Notifications
+                    </Button>
+                </div>
+                <p v-if="!notificationsSupported" class="unsupported-text">
+                    This browser doesn't support notifications.
+                </p>
+                <p v-else-if="notificationPermission === 'denied'" class="unsupported-text">
+                    Notifications are blocked. Update your browser's site
+                    permissions to allow them.
+                </p>
+
+                <div class="followed-games">
+                    <template v-if="followedGamesList.length">
+                        <div
+                            v-for="game in followedGamesList"
+                            :key="game.uid"
+                            class="followed-game-row"
+                        >
+                            <span>{{ game.label }}</span>
+                            <Button
+                                variant="ghost"
+                                size="icon"
+                                title="Stop notifying me about this game"
+                                @click="unfollowGame(game.uid)"
+                            >
+                                <X class="h-4 w-4" />
+                            </Button>
+                        </div>
+                    </template>
+                    <p v-else class="empty-text">
+                        You're not following any games yet.
                     </p>
                 </div>
-                <!-- Favorited Teams: -->
-                <!-- <template v-for="n in Array(5)" :key="n">
-                    <div class="flex items-center justify-between">
-                        <Label>Team notification</Label>
-                        <Switch />
-                    </div>
-                </template> -->
             </div>
             <DialogFooter>
                 <Button @click="notificationsMenuOpen = false">
@@ -52,30 +110,44 @@ const notificationsMenuOpen = defineModel<boolean>("notificationsMenuOpen");
     margin-bottom: 1.5rem;
 }
 
-.coming-soon-badge {
-    background-color: hsl(var(--warning) / 0.1);
-    background-image: linear-gradient(to bottom right, hsl(var(--warning) / 0.14), hsl(var(--warning) / 0.08));
-    border: 0.125rem solid hsl(var(--warning) / 0.35);
-    border-radius: 0.875rem;
-    padding: 1.5rem 1.75rem;
-    box-shadow: 0 0.25rem 0.75rem hsl(var(--shadow-color) / 0.3);
+.permission-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    margin-bottom: 1rem;
 }
 
-.badge-text {
-    display: inline-block;
+.permission-status {
+    display: flex;
+    align-items: center;
+    gap: 0.625rem;
+    font-weight: 500;
+}
+
+.unsupported-text {
     font-size: 0.875rem;
-    font-weight: 800;
-    color: hsl(var(--warning));
-    text-transform: uppercase;
-    letter-spacing: 0.08em;
-    margin-bottom: 0.625rem;
+    color: hsl(var(--foreground) / 0.65);
+    margin-bottom: 1rem;
 }
 
-.badge-description {
-    font-size: 0.9375rem;
-    color: hsl(var(--foreground) / 0.75);
-    margin: 0;
-    line-height: 1.6;
+.followed-games {
+    border-top: 0.0625rem solid hsl(var(--border));
+    padding-top: 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
 }
 
+.followed-game-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+}
+
+.empty-text {
+    font-size: 0.875rem;
+    color: hsl(var(--foreground) / 0.65);
+}
 </style>
