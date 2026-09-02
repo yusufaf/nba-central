@@ -22,11 +22,20 @@ jobs:
               - 'apps/web/**'
               - 'pnpm-lock.yaml'
               - 'pnpm-workspace.yaml'
+              - 'package.json'
+              - '.npmrc'
               - '.github/workflows/ci.yml'
             cdk:
               - 'apps/cdk/**'
               - 'pnpm-lock.yaml'
               - 'pnpm-workspace.yaml'
+              # Both of these decide which esbuild gets hoisted, and dropping
+              # either changes no lockfile. Without them here a PR that
+              # deletes the hoist line or the override skips the cdk job
+              # entirely and merges green, never running the synth that
+              # catches the Docker-bundling fallback.
+              - 'package.json'
+              - '.npmrc'
               - '.github/workflows/ci.yml'
 
   web:

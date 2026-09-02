@@ -8,7 +8,7 @@
     "test": "pnpm -r test",
     "type-check": "pnpm --filter web type-check",
     "check:styles": "pnpm --filter web check:styles",
-    "lint": "pnpm --filter web lint",
+    "lint": "pnpm -r lint",
     "synth": "pnpm --filter cdk exec cdk synth --quiet",
     "prepare": "husky"
   },
