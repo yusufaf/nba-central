@@ -49,6 +49,13 @@ line survived whatever change you're reviewing. `pnpm-workspace.yaml`'s
 ignores dependency postinstall scripts by default, so without it `esbuild`
 never fetches its platform binary in the first place.
 
+The third half is the root `pnpm.overrides` entry for `esbuild`. Hoisting only
+picks one version, so it is only well-defined while the tree holds one; the
+override is what enforces that. This tree previously carried both 0.20.2 (this
+package's pin) and 0.21.5 (via the old `vitest@2` → `vite@5` chain), and synth
+kept working only because pnpm happened to hoist the right one. Bump the
+override and this package's `esbuild` together, never one alone.
+
 ## Architecture
 
 See the root `CLAUDE.md` for the full stack list (constructs, Lambda
