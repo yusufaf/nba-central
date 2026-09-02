@@ -5,6 +5,7 @@ import {
 } from "aws-lambda";
 import { S3Client, DeleteObjectCommand } from "@aws-sdk/client-s3";
 import { AuthorizerContext } from "models/auth";
+import { parseRequestBody } from "utilities/request-body";
 
 const { mainBucket = "" } = process.env;
 
@@ -20,10 +21,20 @@ export const handler: Handler = async (
 ): Promise<APIGatewayProxyResultV2> => {
     console.log(JSON.stringify({ event, context }, null, 4));
 
-    const body: RequestBody = JSON.parse(event.body ?? "");
-    const { key } = body;
-
     try {
+        const parsed = parseRequestBody<RequestBody>(event.body, {
+            key: "string",
+        });
+        if (!parsed.valid) {
+            return {
+                statusCode: 400,
+                body: JSON.stringify({
+                    message: parsed.error,
+                }),
+            };
+        }
+        const { key } = parsed.body;
+
         const deleteCommand = new DeleteObjectCommand({
             Bucket: mainBucket,
             Key: key,
