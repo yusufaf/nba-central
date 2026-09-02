@@ -55,6 +55,16 @@ describe("deleteFile", () => {
 		expect(send).not.toHaveBeenCalled();
 	});
 
+	it("400s when the key is missing", async () => {
+		const result = await invokeWithBody(JSON.stringify({}));
+
+		expect(result.statusCode).toBe(400);
+		expect(JSON.parse(result.body).message).toBe(
+			"Missing or invalid field(s): key",
+		);
+		expect(send).not.toHaveBeenCalled();
+	});
+
 	it("500s when the delete fails", async () => {
 		send.mockRejectedValueOnce(new Error("AccessDenied"));
 

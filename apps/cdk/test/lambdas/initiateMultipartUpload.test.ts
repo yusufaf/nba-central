@@ -62,6 +62,30 @@ describe("initiateMultipartUpload", () => {
 		expect(send).not.toHaveBeenCalled();
 	});
 
+	it("400s rather than building an 'undefined/undefined/undefined' key", async () => {
+		const result = await invokeWithBody(JSON.stringify({}));
+
+		expect(result.statusCode).toBe(400);
+		expect(JSON.parse(result.body).message).toBe(
+			"Missing or invalid field(s): studysetUUID, userUUID, fileName",
+		);
+		expect(send).not.toHaveBeenCalled();
+	});
+
+	it("does not require a content type", async () => {
+		send.mockResolvedValueOnce({ UploadId: "upload-1" });
+
+		const result = await invokeWithBody(
+			JSON.stringify({
+				studysetUUID: "studyset-1",
+				userUUID: "user-1",
+				fileName: "photo.png",
+			}),
+		);
+
+		expect(result.statusCode).toBe(200);
+	});
+
 	it("500s when creating the multipart upload fails", async () => {
 		send.mockRejectedValueOnce(new Error("AccessDenied"));
 

@@ -12,6 +12,7 @@ import {
 } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { AuthorizerContext } from "models/auth";
+import { parseRequestBody } from "utilities/request-body";
 
 const { mainBucket = "" } = process.env;
 
@@ -30,18 +31,20 @@ export const handler: Handler = async (
     console.log(JSON.stringify({ event, context }, null, 4));
 
     try {
-        let body: RequestBody;
-        try {
-            body = JSON.parse(event.body ?? "");
-        } catch {
+        const parsed = parseRequestBody<RequestBody>(event.body, {
+            key: "string",
+            uploadId: "string",
+            parts: "array",
+        });
+        if (!parsed.valid) {
             return {
                 statusCode: 400,
                 body: JSON.stringify({
-                    message: "Invalid request body",
+                    message: parsed.error,
                 }),
             };
         }
-        const { key, uploadId, parts } = body;
+        const { key, uploadId, parts } = parsed.body;
 
         const completeMultipartUploadCommand =
             new CompleteMultipartUploadCommand({

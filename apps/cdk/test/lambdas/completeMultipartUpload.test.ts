@@ -100,6 +100,28 @@ describe("completeMultipartUpload", () => {
 		expect(send).not.toHaveBeenCalled();
 	});
 
+	it("400s when the request body parses to null", async () => {
+		const result = await invokeWithBody("null");
+
+		expect(result.statusCode).toBe(400);
+		expect(JSON.parse(result.body)).toEqual({
+			message: "Invalid request body",
+		});
+		expect(send).not.toHaveBeenCalled();
+	});
+
+	it("400s when a required field is missing", async () => {
+		const result = await invokeWithBody(
+			JSON.stringify({ uploadId: "upload-1" }),
+		);
+
+		expect(result.statusCode).toBe(400);
+		expect(JSON.parse(result.body).message).toBe(
+			"Missing or invalid field(s): key, parts",
+		);
+		expect(send).not.toHaveBeenCalled();
+	});
+
 	it("500s when completing the upload fails", async () => {
 		send.mockRejectedValueOnce(new Error("NoSuchUpload"));
 

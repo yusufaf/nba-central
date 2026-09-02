@@ -9,6 +9,12 @@ import {
 } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { AuthorizerContext } from "models/auth";
+import { parseRequestBody } from "utilities/request-body";
+
+// S3's hard limit on parts in a single multipart upload. Signing beyond it
+// can only produce URLs the upload will reject, and a large numParts would
+// otherwise sign that many URLs before failing.
+const MAX_PARTS = 10000;
 
 const { mainBucket = "" } = process.env;
 
@@ -27,18 +33,33 @@ export const handler: Handler = async (
     console.log(JSON.stringify({ event, context }, null, 4));
 
     try {
-        let body: RequestBody;
-        try {
-            body = JSON.parse(event.body ?? "");
-        } catch {
+        const parsed = parseRequestBody<RequestBody>(event.body, {
+            key: "string",
+            uploadId: "string",
+            numParts: "number",
+        });
+        if (!parsed.valid) {
             return {
                 statusCode: 400,
                 body: JSON.stringify({
-                    message: "Invalid request body",
+                    message: parsed.error,
                 }),
             };
         }
-        const { key, uploadId, numParts } = body;
+        const { key, uploadId, numParts } = parsed.body;
+
+        if (
+            !Number.isInteger(numParts) ||
+            numParts < 1 ||
+            numParts > MAX_PARTS
+        ) {
+            return {
+                statusCode: 400,
+                body: JSON.stringify({
+                    message: `numParts must be an integer between 1 and ${MAX_PARTS}`,
+                }),
+            };
+        }
 
         const promises: Promise<string>[] = [];
         for (let index = 0; index < numParts; index++) {

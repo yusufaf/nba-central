@@ -71,6 +71,38 @@ describe("getMultipartSignedUploadUrls", () => {
 		expect(getSignedUrl).not.toHaveBeenCalled();
 	});
 
+	it("400s when numParts is not a number", async () => {
+		const result = await invokeWithBody(
+			JSON.stringify({
+				key: "uploads/user-1/photo.png",
+				uploadId: "upload-1",
+				numParts: "2",
+			}),
+		);
+
+		expect(result.statusCode).toBe(400);
+		expect(JSON.parse(result.body).message).toBe(
+			"Missing or invalid field(s): numParts",
+		);
+		expect(getSignedUrl).not.toHaveBeenCalled();
+	});
+
+	it("400s when numParts is outside S3's part limit", async () => {
+		const result = await invokeWithBody(
+			JSON.stringify({
+				key: "uploads/user-1/photo.png",
+				uploadId: "upload-1",
+				numParts: 10001,
+			}),
+		);
+
+		expect(result.statusCode).toBe(400);
+		expect(JSON.parse(result.body).message).toBe(
+			"numParts must be an integer between 1 and 10000",
+		);
+		expect(getSignedUrl).not.toHaveBeenCalled();
+	});
+
 	it("500s when signing a part fails", async () => {
 		getSignedUrl.mockRejectedValueOnce(new Error("AccessDenied"));
 

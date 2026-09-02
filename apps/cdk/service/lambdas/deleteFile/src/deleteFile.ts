@@ -5,6 +5,7 @@ import {
 } from "aws-lambda";
 import { S3Client, DeleteObjectCommand } from "@aws-sdk/client-s3";
 import { AuthorizerContext } from "models/auth";
+import { parseRequestBody } from "utilities/request-body";
 
 const { mainBucket = "" } = process.env;
 
@@ -21,18 +22,18 @@ export const handler: Handler = async (
     console.log(JSON.stringify({ event, context }, null, 4));
 
     try {
-        let body: RequestBody;
-        try {
-            body = JSON.parse(event.body ?? "");
-        } catch {
+        const parsed = parseRequestBody<RequestBody>(event.body, {
+            key: "string",
+        });
+        if (!parsed.valid) {
             return {
                 statusCode: 400,
                 body: JSON.stringify({
-                    message: "Invalid request body",
+                    message: parsed.error,
                 }),
             };
         }
-        const { key } = body;
+        const { key } = parsed.body;
 
         const deleteCommand = new DeleteObjectCommand({
             Bucket: mainBucket,
