@@ -29,7 +29,7 @@ export default defineConfigWithVueTs(
   {
     name: "app/rule-tuning",
     rules: {
-      // 152 pre-existing occurrences here, 116 more in apps/cdk. Each needs a
+      // 150 occurrences here, 116 more in apps/cdk. Each needs a
       // real type chosen by hand, so they are tracked in #43 rather than
       // blocking the lint gate this config finally makes runnable.
       "@typescript-eslint/no-explicit-any": "warn",

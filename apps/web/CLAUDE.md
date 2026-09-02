@@ -37,7 +37,7 @@ pnpm test:visual     # Playwright screenshots of every route
 
 Two things it deliberately does not fail on:
 
-- `@typescript-eslint/no-explicit-any` is a warning, not an error. 152
+- `@typescript-eslint/no-explicit-any` is a warning, not an error. 150
   occurrences predate the gate and each needs a type chosen by hand — see #43.
   Flip it to `error` once they are gone.
 - `vue/multi-word-component-names` is off for `src/components/ui/**` (vendored
