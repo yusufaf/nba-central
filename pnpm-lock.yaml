@@ -37,6 +37,7 @@ overrides:
   glob: ^11.1.0
   ip-address: ^10.1.1
   '@hono/node-server': ^2.0.5
+  esbuild: ^0.28.2
 
 importers:
 
@@ -119,7 +120,7 @@ importers:
         specifier: ^2.1122.0
         version: 2.1139.0
       esbuild:
-        specifier: ^0.28.1
+        specifier: ^0.28.2
         version: 0.28.2
       eslint:
         specifier: ^10.9.1
@@ -3544,7 +3545,7 @@ packages:
       '@farmfe/core': '*'
       '@rspack/core': '*'
       bun-types-no-globals: '*'
-      esbuild: '*'
+      esbuild: ^0.28.2
       rolldown: '*'
       rollup: '*'
       unloader: '*'
@@ -3598,7 +3599,7 @@ packages:
     peerDependencies:
       '@types/node': ^20.19.0 || >=22.12.0
       '@vitejs/devtools': ^0.4.0 || ^0.5.0
-      esbuild: ^0.27.0 || ^0.28.0
+      esbuild: ^0.28.2
       jiti: '>=1.21.0'
       less: ^4.0.0
       sass: ^1.70.0
