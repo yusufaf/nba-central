@@ -24,12 +24,22 @@ export const handler: Handler = async (
 ): Promise<APIGatewayProxyResultV2> => {
     console.log(JSON.stringify({ event, context }, null, 4));
 
-    const body: RequestBody = JSON.parse(event.body ?? "");
-    const { contentType, fileName, studysetUUID, userUUID } = body;
-
-    const key = `${studysetUUID}/${userUUID}/${fileName}`;
-
     try {
+        let body: RequestBody;
+        try {
+            body = JSON.parse(event.body ?? "");
+        } catch {
+            return {
+                statusCode: 400,
+                body: JSON.stringify({
+                    message: "Invalid request body",
+                }),
+            };
+        }
+        const { contentType, fileName, studysetUUID, userUUID } = body;
+
+        const key = `${studysetUUID}/${userUUID}/${fileName}`;
+
         const multipartCommand = new CreateMultipartUploadCommand({
             Bucket: mainBucket,
             Key: key,

@@ -26,10 +26,20 @@ export const handler: Handler = async (
 ): Promise<APIGatewayProxyResultV2> => {
     console.log(JSON.stringify({ event, context }, null, 4));
 
-    const body: RequestBody = JSON.parse(event.body ?? "");
-    const { key, uploadId, numParts } = body;
-
     try {
+        let body: RequestBody;
+        try {
+            body = JSON.parse(event.body ?? "");
+        } catch {
+            return {
+                statusCode: 400,
+                body: JSON.stringify({
+                    message: "Invalid request body",
+                }),
+            };
+        }
+        const { key, uploadId, numParts } = body;
+
         const promises: Promise<string>[] = [];
         for (let index = 0; index < numParts; index++) {
             const uploadPartCommand = new UploadPartCommand({

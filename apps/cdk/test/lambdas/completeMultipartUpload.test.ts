@@ -34,6 +34,9 @@ const uploadEvent = (key: string) => ({
 const invoke = (key: string) =>
 	handler(uploadEvent(key) as any, {} as any, {} as any) as Promise<any>;
 
+const invokeWithBody = (body?: string) =>
+	handler({ body } as any, {} as any, {} as any) as Promise<any>;
+
 beforeEach(() => {
 	send.mockReset();
 	getSignedUrl.mockReset();
@@ -78,6 +81,23 @@ describe("completeMultipartUpload", () => {
 		const result = await invoke("photo.png");
 
 		expect(JSON.parse(result.body).size).toBe(0);
+	});
+
+	it("400s when the request body is missing", async () => {
+		const result = await invokeWithBody(undefined);
+
+		expect(result.statusCode).toBe(400);
+		expect(JSON.parse(result.body)).toEqual({
+			message: "Invalid request body",
+		});
+		expect(send).not.toHaveBeenCalled();
+	});
+
+	it("400s when the request body is not valid JSON", async () => {
+		const result = await invokeWithBody("{oops");
+
+		expect(result.statusCode).toBe(400);
+		expect(send).not.toHaveBeenCalled();
 	});
 
 	it("500s when completing the upload fails", async () => {
