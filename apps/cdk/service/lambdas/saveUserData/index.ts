@@ -1,8 +1,5 @@
-import { LayerVersion, Runtime } from "aws-cdk-lib/aws-lambda";
-import { getRole } from "../../../resources/roles";
 import { LambdaProps } from "../../../models/stack";
 import { Duration } from "aws-cdk-lib";
-import path from "path";
 import { TeamBuilderLambda } from "../../constructs/TeamBuilderLambda";
 
 export default ({ props, construct }: LambdaProps) => {

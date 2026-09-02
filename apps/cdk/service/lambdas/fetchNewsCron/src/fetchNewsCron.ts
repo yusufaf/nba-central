@@ -216,7 +216,7 @@ const fetchRss = async (feed: RssFeedConfig): Promise<NormalizedArticle[]> => {
 
 const SEVEN_DAYS_SECONDS = 7 * 24 * 60 * 60;
 
-export const handler: Handler = async (event, context): Promise<any> => {
+export const handler: Handler = async (): Promise<any> => {
 	console.log("Fetching news from all sources...");
 
 	const allNews = await Promise.all([

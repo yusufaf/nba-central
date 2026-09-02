@@ -75,14 +75,22 @@ export const handler: Handler = async (
 
 		const dbResponse = await docClient.send(updateCommand);
 
+		// ReturnValues: ALL_NEW means a successful update always echoes the
+		// item back. Treat a missing Attributes as a failure rather than
+		// reporting success with undefined fields.
+		const attributes = dbResponse.Attributes;
+		if (!attributes) {
+			throw new Error("Update returned no attributes");
+		}
+
 		const response: UpdateCustomCoachResponse = {
 			success: true,
 			data: {
-				coachUUID: dbResponse.Attributes?.coachUUID!,
-				name: dbResponse.Attributes?.name!,
-				overallRating: dbResponse.Attributes?.overallRating!,
-				specialty: dbResponse.Attributes?.specialty!,
-				updated: dbResponse.Attributes?.updated!,
+				coachUUID: attributes.coachUUID,
+				name: attributes.name,
+				overallRating: attributes.overallRating,
+				specialty: attributes.specialty,
+				updated: attributes.updated,
 			},
 		};
 		return {

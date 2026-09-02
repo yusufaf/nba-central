@@ -19,7 +19,6 @@ import {
 	parseFranchises,
 	parseLogoBase,
 	type Era,
-	type Franchise,
 	type HashedSeason,
 } from "./lib/historicalLogos";
 import { keyOutWhiteBackground } from "./lib/pngAlpha";

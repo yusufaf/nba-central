@@ -28,6 +28,7 @@ pnpm --filter web lint          # ESLint
 
 pnpm --filter cdk build         # tsc
 pnpm --filter cdk test          # vitest
+pnpm --filter cdk lint          # ESLint
 pnpm --filter cdk exec cdk synth   # generate CloudFormation
 pnpm --filter cdk exec cdk diff    # compare with deployed
 pnpm --filter cdk exec cdk deploy  # deploy to AWS
