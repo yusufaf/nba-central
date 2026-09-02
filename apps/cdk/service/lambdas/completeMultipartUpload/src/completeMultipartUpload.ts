@@ -46,7 +46,7 @@ export const handler: Handler = async (
 
         // Getting file metadata
         const splitKey = key.split("/");
-        const [fileName] = splitKey[splitKey.length - 1];
+        const fileName = splitKey[splitKey.length - 1];
         const headObjectCommand = new HeadObjectCommand({
             Bucket: mainBucket,
             Key: key,
@@ -57,7 +57,7 @@ export const handler: Handler = async (
             Bucket: mainBucket,
             Key: key,
         });
-        const signedURL = getSignedUrl(s3Client, getObjectCommand, {
+        const signedURL = await getSignedUrl(s3Client, getObjectCommand, {
             expiresIn: 86400, // One day in seconds
         });
 
