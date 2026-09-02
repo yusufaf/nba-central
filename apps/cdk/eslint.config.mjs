@@ -22,7 +22,7 @@ export default defineConfig([
   {
     name: "cdk/rule-tuning",
     rules: {
-      // 116 pre-existing occurrences, several of them in scraper code where
+      // 116 occurrences, several of them in scraper code where
       // the upstream payload genuinely is unknown. Tracked in #43.
       "@typescript-eslint/no-explicit-any": "warn",
 
