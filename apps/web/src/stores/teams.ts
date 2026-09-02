@@ -1,5 +1,5 @@
 import { defineStore } from "pinia";
-import { dataApi, teamApi } from "@/network/api";
+import { dataApi } from "@/network/api";
 
 interface TeamLogo {
     alt: string;

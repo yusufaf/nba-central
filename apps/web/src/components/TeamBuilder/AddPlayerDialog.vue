@@ -12,7 +12,6 @@ import {
   SheetContent,
   SheetHeader,
   SheetTitle,
-  SheetClose,
 } from '@/components/ui/sheet';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -25,7 +24,6 @@ import {
   Search,
   ArrowUp,
   ArrowDown,
-  X,
   Plus,
   Edit2,
   Trash,
@@ -100,7 +98,7 @@ const searchListResults = computed(() => {
   });
 
   // Map API players
-  let apiResults = searchList.value.map((player: any) => {
+  const apiResults = searchList.value.map((player: any) => {
     const {
       first_name,
       last_name,

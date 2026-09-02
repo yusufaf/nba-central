@@ -145,10 +145,7 @@ export const ESPN_TEAM_URL =
 - NBA.com Standings: http://data.nba.net/prod/v1/current/standings_conference.json
 */
 
-const BBALL_REF_PREFIX = "https://www.basketball-reference.com";
 export const WIKIPEDIA_PREFIX = "https://en.wikipedia.org/wiki/";
-
-const COACH_COLUMNS = ["Coach", "From", "To", "Birth Date", "College"];
 
 /* Coaches Data Function:
 const coachesData = [];

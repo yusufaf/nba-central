@@ -14,15 +14,11 @@ import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import {
     DropdownMenu,
     DropdownMenuContent,
-    DropdownMenuItem,
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import {
-    ChevronDown,
-    ChevronUp,
     MoreVertical,
-    Share2,
     RotateCcw,
     Save,
     Pencil,
@@ -31,7 +27,9 @@ import {
 const emit = defineEmits(['reset', 'saveTeam']);
 
 /* 2-Way Bound Props */
-const headerExpanded = defineModel<boolean>('headerExpanded');
+// Declared without binding the ref: TeamBuilder.vue binds
+// v-model:headerExpanded, but nothing in this component reads it.
+defineModel<boolean>('headerExpanded');
 const teamName = defineModel<string>('teamName');
 const teamDescription = defineModel<string>('teamDescription');
 const teamCity = defineModel<string>('teamCity');
@@ -56,10 +54,6 @@ const resetConfirm = () => {
 
 const saveClick = () => {
     emit('saveTeam');
-};
-
-const expandClick = () => {
-    headerExpanded.value = !headerExpanded.value;
 };
 
 const toggleCustomizationDialog = () => {

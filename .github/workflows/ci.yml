@@ -52,6 +52,10 @@ jobs:
       # lockfile silently reintroduced a bad `typescript` pin before.
       - run: pnpm install --frozen-lockfile
 
+      # Cheapest gate, so it runs first. Warnings do not fail the job — the
+      # remaining no-explicit-any backlog is tracked in #43.
+      - run: pnpm --filter web lint
+
       - run: pnpm --filter web type-check
 
       # Guards the design system against the defects that made the UI look

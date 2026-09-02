@@ -46,7 +46,6 @@ const gameNameToDisplay = computed(() => {
 - Bkref doesn't do current scores, so might have to actually differentiate data betwene previous days and current day
     - ESPN/NBA.com - current day | bkref - previous days
 */
-const gameDate = computed(() => props.game.date);
 const gameTimeStart = computed(() => {
     const timeString = new Date(props.game.date).toLocaleTimeString(undefined, {
         hour: "2-digit",

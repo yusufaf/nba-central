@@ -32,12 +32,23 @@ pnpm check:styles    # design-system guard
 pnpm test:visual     # Playwright screenshots of every route
 ```
 
-`pnpm lint` runs (the `ajv` pnpm override that used to crash it before ESLint
-even parsed a file is gone), but still fails: the config is `.eslintrc.cjs`,
-which ESLint 10 does not read, and the `lint` script still passes ESLint-8-era
-flags (`--ext`, `--ignore-path`). Needs a flat-config (`eslint.config.mjs`)
-migration — tracked as a `web` milestone issue. Verify with `type-check`,
-`test` and `check:styles` in the meantime.
+`pnpm lint` works and is gated in CI. The config is flat
+(`eslint.config.mjs`); `pnpm lint` checks and `pnpm lint:fix` writes.
+
+Two things it deliberately does not fail on:
+
+- `@typescript-eslint/no-explicit-any` is a warning, not an error. 152
+  occurrences predate the gate and each needs a type chosen by hand — see #43.
+  Flip it to `error` once they are gone.
+- `vue/multi-word-component-names` is off for `src/components/ui/**` (vendored
+  shadcn-vue) and `src/views/**` (route components), where single-word names
+  are the convention.
+
+Two earlier breakages are both fixed and worth not reintroducing: the `ajv`
+pnpm override that crashed ESLint before it parsed a file, and the
+`brace-expansion` override that did the same through `minimatch` (#42). A
+blanket entry in root `pnpm.overrides` is applied to every transitive
+dependency — check the declared range before adding one.
 
 The pre-commit hook runs `type-check` and `check:styles`. Commits use
 conventional-commit messages (`commitlint`).

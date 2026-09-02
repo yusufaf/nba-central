@@ -4,7 +4,6 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import {
     HOME,
     HOME_C,
-    AWAY,
     AWAY_C
 } from "@/constants/constants";
 

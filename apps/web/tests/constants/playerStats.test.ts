@@ -2,7 +2,6 @@ import { describe, it, expect } from 'vitest';
 import {
   formatSeason,
   formatCellValue,
-  careerAverages,
   careerTotals,
 } from '@/constants/playerStats';
 

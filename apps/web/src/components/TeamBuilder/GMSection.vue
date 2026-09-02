@@ -15,7 +15,6 @@ import {
     SheetContent,
     SheetHeader,
     SheetTitle,
-    SheetClose,
 } from "@/components/ui/sheet";
 import {
     Select,
@@ -39,7 +38,6 @@ import {
     ArrowUp,
     ArrowDown,
     Shuffle,
-    X,
     Edit2,
     Trash,
 } from "lucide-vue-next";
@@ -56,7 +54,6 @@ const showGMDrawer = defineModel<boolean>("showGMDrawer");
 const typedGMData = gmData as GM[];
 
 const search = ref<string>("");
-const searchLoading = ref<boolean>(false);
 
 // Custom GMs
 const { customGMs, createGM, updateGM, deleteGM: deleteCustomGM } = useCustomGMs();
