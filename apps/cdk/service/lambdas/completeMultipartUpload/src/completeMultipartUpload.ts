@@ -42,9 +42,7 @@ export const handler: Handler = async (
                     Parts: parts,
                 },
             });
-        const completeMultipartUploadResponse = await s3Client.send(
-            completeMultipartUploadCommand
-        );
+        await s3Client.send(completeMultipartUploadCommand);
 
         // Getting file metadata
         const splitKey = key.split("/");

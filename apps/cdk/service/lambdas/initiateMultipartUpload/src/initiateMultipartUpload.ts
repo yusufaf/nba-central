@@ -25,7 +25,7 @@ export const handler: Handler = async (
     console.log(JSON.stringify({ event, context }, null, 4));
 
     const body: RequestBody = JSON.parse(event.body ?? "");
-    const { contentType, fileName, studysetUUID, uploadType, userUUID } = body;
+    const { contentType, fileName, studysetUUID, userUUID } = body;
 
     const key = `${studysetUUID}/${userUUID}/${fileName}`;
 

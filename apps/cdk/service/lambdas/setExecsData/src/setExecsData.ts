@@ -111,7 +111,7 @@ export const handler: Handler = async (
 			Key: "execs.json",
 			Body: JSON.stringify(data, null, 4),
 		});
-		const putObjectResponse = await s3Client.send(putObjectCommand);
+		await s3Client.send(putObjectCommand);
 	} catch (err) {
 		console.error(err);
 	}

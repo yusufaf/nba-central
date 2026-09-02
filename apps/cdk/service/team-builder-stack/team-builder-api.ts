@@ -35,7 +35,6 @@ import setArenasData from "../lambdas/setArenasData";
 import setPlayersData from "../lambdas/setPlayersData";
 import setPlayerRatingsData from "../lambdas/setPlayerRatingsData";
 import fetchNewsCron from "../lambdas/fetchNewsCron";
-import getNews from "../lambdas/getNews";
 import { PUBLIC_ROUTES, PRIVATE_ROUTES } from "./team-builder-api-routes";
 
 type CreateLambdaProxyIntegrationProps = {
@@ -61,7 +60,7 @@ export class TeamBuilderAPI extends Construct {
 			deploymentType = "development",
 			env,
 		} = props;
-		// @ts-expect-error
+		// @ts-expect-error env is optional on StackProps but always supplied here
 		const { account = "", region = "" } = env;
 
 		this.account = account;

@@ -27,7 +27,7 @@ export const handler: Handler = async (
             Bucket: mainBucket,
             Key: key,
         });
-        const deleteResponse = await s3Client.send(deleteCommand);
+        await s3Client.send(deleteCommand);
 
         return {
             statusCode: 200,

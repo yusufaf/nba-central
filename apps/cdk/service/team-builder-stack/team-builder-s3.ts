@@ -15,9 +15,7 @@ export class TeamBuilderS3 extends Construct {
         const {
             appName = "team-builder",
             deploymentType = "development",
-            env,
         } = props;
-        const { account = "", region = "" } = env!;
 
         const mainTableNameAndID = `${appName}-${deploymentType}-main`;
         this.createS3Bucket({

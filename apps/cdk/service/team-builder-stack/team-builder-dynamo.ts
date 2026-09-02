@@ -8,9 +8,7 @@ export class TeamBuilderDynamoDB extends Construct {
 		const {
 			appName = "team-builder",
 			deploymentType = "development",
-			env,
 		} = props;
-		const { account = "", region = "" } = env!;
 
 		const mainTableName = `${appName}-${deploymentType}-main`;
 		this.createDynamoDBTable({
