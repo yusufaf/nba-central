@@ -38,7 +38,6 @@ const teamDescription = ref<string>("");
 const teamCity = ref<string>("");
 const teamCountry = ref<string>("");
 const teamLogo = ref<string>("");
-const teamScore = ref<number>(0);
 
 const teamCoach = ref<any>(null);
 const teamArena = ref<any>(null);
@@ -82,14 +81,6 @@ const comparisonPlayers = computed(() =>
     ),
 );
 
-const playerCount = computed(() => selectedPlayersData.value.size);
-const starterCount = computed(() => {
-    let count = 0;
-    for (let i = 1; i <= 5; i++) {
-        if (selectedPlayersData.value.has(i)) count++;
-    }
-    return count;
-});
 
 const playerStatsData = computed(() => {
     return selectedPlayerStats.value.map((item: any, index: number) => {

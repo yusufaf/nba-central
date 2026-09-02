@@ -31,7 +31,7 @@
  */
 import { readFileSync } from 'node:fs';
 import { globSync } from 'node:fs';
-import { join, relative } from 'node:path';
+import { join } from 'node:path';
 
 const ROOT = process.cwd();
 const TOKEN_FILE = 'src/assets/main.css';

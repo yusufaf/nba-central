@@ -9,7 +9,7 @@
         <!-- Main Header Card -->
         <Card>
             <CardContent class="p-6 border-l-[0.1875rem] border-l-primary">
-                <div class="flex items-center justify-center pl-5">
+                <div class="flex items-center justify-center pl-5" v-if="awayTeam && homeTeam">
                     <!-- Away Team -->
                     <div class="flex items-center gap-3 flex-1 justify-end">
                         <div class="flex flex-col text-right">
@@ -109,8 +109,8 @@ const emit = defineEmits<{
 }>();
 
 const competition = computed(() => props.gameSummary.header?.competitions?.[0]);
-const awayTeam = computed(() => competition.value?.competitors.find(c => c.homeAway === 'away')!);
-const homeTeam = computed(() => competition.value?.competitors.find(c => c.homeAway === 'home')!);
+const awayTeam = computed(() => competition.value?.competitors.find(c => c.homeAway === 'away'));
+const homeTeam = computed(() => competition.value?.competitors.find(c => c.homeAway === 'home'));
 
 const getTeamLogo = (homeAway: 'home' | 'away'): string => {
     const competitor = homeAway === 'home' ? homeTeam.value : awayTeam.value;

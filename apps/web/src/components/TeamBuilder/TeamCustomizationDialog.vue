@@ -74,11 +74,11 @@ const handleFileChange = (event: Event) => {
     }
 };
 
-const startDrawing = (e: any) => {
+const startDrawing = () => {
     isDrawing.value = true;
 };
 
-const stopDrawing = (e: any) => {
+const stopDrawing = () => {
     isDrawing.value = false;
 };
 

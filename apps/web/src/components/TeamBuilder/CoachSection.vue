@@ -57,7 +57,6 @@ const showCoachDrawer = defineModel<boolean>('showCoachDrawer');
 const typedCoachesData = coachesData as Coach[];
 
 const search = ref<string>('');
-const searchLoading = ref<boolean>(false);
 
 // Custom Coaches
 const { customCoaches, createCoach, updateCoach, deleteCoach: deleteCustomCoach } = useCustomCoaches();

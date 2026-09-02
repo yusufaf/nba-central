@@ -14,7 +14,6 @@ import {
     SheetContent,
     SheetHeader,
     SheetTitle,
-    SheetClose,
 } from "@/components/ui/sheet";
 import {
     Select,
@@ -37,7 +36,6 @@ import {
     ArrowUp,
     ArrowDown,
     Shuffle,
-    X,
 } from "lucide-vue-next";
 
 const props = defineProps<{
@@ -50,7 +48,6 @@ const showArenaDrawer = defineModel<boolean>("showArenaDrawer");
 const typedArenaData = arenaData as Arena[];
 
 const search = ref<string>("");
-const searchLoading = ref<boolean>(false);
 
 const sortOptions = ["Alphabetic", "Capacity"];
 

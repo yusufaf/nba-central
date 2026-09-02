@@ -110,7 +110,7 @@ const periods = computed(() => {
 
     return Array.from({ length: maxPeriods }, (_, i) => {
         const period = i + 1;
-        let label = '';
+        let label: string;
 
         if (period <= 4) {
             label = `Q${period}`;

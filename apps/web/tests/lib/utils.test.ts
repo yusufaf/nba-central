@@ -11,6 +11,7 @@ describe("cn", () => {
     });
 
     it("drops falsy/conditional values", () => {
+        // eslint-disable-next-line no-constant-binary-expression -- the literal falsy operand is the input under test
         expect(cn("base", false && "hidden", null, undefined, "active")).toBe(
             "base active",
         );
