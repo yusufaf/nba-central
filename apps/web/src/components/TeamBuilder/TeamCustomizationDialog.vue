@@ -74,8 +74,10 @@ const handleFileChange = (event: Event) => {
     }
 };
 
-const startDrawing = () => {
+const startDrawing = (e: MouseEvent) => {
     isDrawing.value = true;
+    currentX.value = e.offsetX;
+    currentY.value = e.offsetY;
 };
 
 const stopDrawing = () => {
