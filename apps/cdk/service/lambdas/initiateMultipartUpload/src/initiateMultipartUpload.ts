@@ -14,7 +14,6 @@ const s3Client = new S3Client();
 type RequestBody = {
     studysetUUID: string;
     uploadType: string;
-    userUUID: string;
     fileName: string;
     contentType: string;
 };
@@ -27,11 +26,10 @@ export const handler: Handler = async (
 
     try {
         // contentType is not required: S3 falls back to a default and the
-        // object is still usable, unlike the three fields the key is built
-        // from, which would otherwise produce "undefined/undefined/undefined".
+        // object is still usable, unlike the two fields the key is built
+        // from, which would otherwise produce "undefined/undefined".
         const parsed = parseRequestBody<RequestBody>(event.body, {
             studysetUUID: "string",
-            userUUID: "string",
             fileName: "string",
         });
         if (!parsed.valid) {
@@ -42,9 +40,34 @@ export const handler: Handler = async (
                 }),
             };
         }
-        const { contentType, fileName, studysetUUID, userUUID } = parsed.body;
+        const { contentType, fileName, studysetUUID } = parsed.body;
 
-        const key = `${studysetUUID}/${userUUID}/${fileName}`;
+        // A "/" in either field would shift the owner segment the key-taking
+        // handlers expect at index 1, locking the caller out of their own
+        // upload (isOwnedKey in utilities/request-body.ts).
+        if (studysetUUID.includes("/") || fileName.includes("/")) {
+            return {
+                statusCode: 400,
+                body: JSON.stringify({
+                    message: "studysetUUID and fileName must not contain '/'",
+                }),
+            };
+        }
+
+        // The owner segment comes from the caller's verified sub, not the
+        // request body, so a caller can't create an upload under someone
+        // else's prefix by naming a different userUUID.
+        const sub = event.requestContext?.authorizer?.lambda?.sub;
+        if (!sub) {
+            return {
+                statusCode: 403,
+                body: JSON.stringify({
+                    message: "Forbidden",
+                }),
+            };
+        }
+
+        const key = `${studysetUUID}/${sub}/${fileName}`;
 
         const multipartCommand = new CreateMultipartUploadCommand({
             Bucket: mainBucket,

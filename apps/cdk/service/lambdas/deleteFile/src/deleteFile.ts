@@ -5,7 +5,7 @@ import {
 } from "aws-lambda";
 import { S3Client, DeleteObjectCommand } from "@aws-sdk/client-s3";
 import { AuthorizerContext } from "models/auth";
-import { parseRequestBody } from "utilities/request-body";
+import { isOwnedKey, parseRequestBody } from "utilities/request-body";
 
 const { mainBucket = "" } = process.env;
 
@@ -34,6 +34,16 @@ export const handler: Handler = async (
             };
         }
         const { key } = parsed.body;
+
+        const sub = event.requestContext?.authorizer?.lambda?.sub;
+        if (!isOwnedKey(key, sub)) {
+            return {
+                statusCode: 403,
+                body: JSON.stringify({
+                    message: "Forbidden",
+                }),
+            };
+        }
 
         const deleteCommand = new DeleteObjectCommand({
             Bucket: mainBucket,

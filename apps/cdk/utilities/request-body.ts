@@ -48,3 +48,10 @@ export const parseRequestBody = <T>(
 
 	return { valid: true, body: parsed as T };
 };
+
+// The S3 key-taking handlers build keys as {prefix}/{ownerSub}/{fileName}.
+// The owner segment must match the caller's sub (from the Lambda authorizer
+// context) or a caller could act on another user's objects by naming their
+// key, since the key itself carries no secret.
+export const isOwnedKey = (key: string, sub: string | undefined): boolean =>
+	sub !== undefined && key.split("/")[1] === sub;
