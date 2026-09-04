@@ -1,5 +1,5 @@
 <template>
-    <Card v-if="hasLineScores">
+    <Card v-if="awayTeam && homeTeam && hasLineScores">
         <CardContent class="p-3 overflow-x-auto">
             <Table>
                 <TableHeader>
@@ -91,11 +91,12 @@ interface Props {
 
 const props = defineProps<Props>();
 
-const awayTeam = computed(() => props.competitors.find(c => c.homeAway === 'away')!);
-const homeTeam = computed(() => props.competitors.find(c => c.homeAway === 'home')!);
+const awayTeam = computed(() => props.competitors.find(c => c.homeAway === 'away'));
+const homeTeam = computed(() => props.competitors.find(c => c.homeAway === 'home'));
 
 // Check if we have any line scores to display
 const hasLineScores = computed(() => {
+    if (!awayTeam.value || !homeTeam.value) return false;
     const awayScores = awayTeam.value.linescores?.length || 0;
     const homeScores = homeTeam.value.linescores?.length || 0;
     return awayScores > 0 || homeScores > 0;
@@ -104,8 +105,8 @@ const hasLineScores = computed(() => {
 // Build period labels (Q1, Q2, Q3, Q4, OT, OT2, etc.)
 const periods = computed(() => {
     const maxPeriods = Math.max(
-        awayTeam.value.linescores?.length || 0,
-        homeTeam.value.linescores?.length || 0
+        awayTeam.value?.linescores?.length || 0,
+        homeTeam.value?.linescores?.length || 0
     );
 
     return Array.from({ length: maxPeriods }, (_, i) => {
@@ -127,7 +128,7 @@ const periods = computed(() => {
 // Build score maps for easy lookup
 const awayPeriodScores = computed(() => {
     const scores: Record<number, number> = {};
-    awayTeam.value.linescores?.forEach((ls, index) => {
+    awayTeam.value?.linescores?.forEach((ls, index) => {
         scores[index + 1] = ls.value;
     });
     return scores;
@@ -135,7 +136,7 @@ const awayPeriodScores = computed(() => {
 
 const homePeriodScores = computed(() => {
     const scores: Record<number, number> = {};
-    homeTeam.value.linescores?.forEach((ls, index) => {
+    homeTeam.value?.linescores?.forEach((ls, index) => {
         scores[index + 1] = ls.value;
     });
     return scores;
