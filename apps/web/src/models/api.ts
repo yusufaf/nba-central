@@ -37,8 +37,10 @@ export interface CompleteMultipartUploadPayload {
 }
 
 export interface CompleteMultipartUploadResponse {
-    location: string;
+    name: string;
     key: string;
+    size: number;
+    signedURL: string;
 }
 
 export interface DeleteFilePayload {
