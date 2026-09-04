@@ -91,6 +91,30 @@ describe("initiateMultipartUpload", () => {
 		expect(JSON.parse(result.body).key).toBe("studyset-1/user-1/photo.png");
 	});
 
+	it("400s when studysetUUID contains a slash, which would shift the owner segment", async () => {
+		const result = await invokeWithBody(
+			JSON.stringify({
+				studysetUUID: "a/b",
+				fileName: "photo.png",
+			}),
+		);
+
+		expect(result.statusCode).toBe(400);
+		expect(send).not.toHaveBeenCalled();
+	});
+
+	it("400s when fileName contains a slash, which would shift the owner segment", async () => {
+		const result = await invokeWithBody(
+			JSON.stringify({
+				studysetUUID: "studyset-1",
+				fileName: "a/b.png",
+			}),
+		);
+
+		expect(result.statusCode).toBe(400);
+		expect(send).not.toHaveBeenCalled();
+	});
+
 	it("403s when the caller has no sub", async () => {
 		const result = await handler(
 			{

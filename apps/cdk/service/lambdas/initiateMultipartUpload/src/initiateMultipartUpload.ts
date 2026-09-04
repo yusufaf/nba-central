@@ -42,6 +42,18 @@ export const handler: Handler = async (
         }
         const { contentType, fileName, studysetUUID } = parsed.body;
 
+        // A "/" in either field would shift the owner segment the key-taking
+        // handlers expect at index 1, locking the caller out of their own
+        // upload (isOwnedKey in utilities/request-body.ts).
+        if (studysetUUID.includes("/") || fileName.includes("/")) {
+            return {
+                statusCode: 400,
+                body: JSON.stringify({
+                    message: "studysetUUID and fileName must not contain '/'",
+                }),
+            };
+        }
+
         // The owner segment comes from the caller's verified sub, not the
         // request body, so a caller can't create an upload under someone
         // else's prefix by naming a different userUUID.
