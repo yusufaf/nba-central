@@ -23,8 +23,12 @@ const { handler } = await import(
 	"lambdas/getMultipartSignedUploadUrls/src/getMultipartSignedUploadUrls"
 );
 
-const invokeWithBody = (body?: string) =>
-	handler({ body } as any, {} as any, {} as any) as Promise<any>;
+const invokeWithBody = (body?: string, sub: string | undefined = "user-1") =>
+	handler(
+		{ body, requestContext: { authorizer: { lambda: { sub } } } } as any,
+		{} as any,
+		{} as any,
+	) as Promise<any>;
 
 beforeEach(() => {
 	send.mockReset();
@@ -100,6 +104,20 @@ describe("getMultipartSignedUploadUrls", () => {
 		expect(JSON.parse(result.body).message).toBe(
 			"numParts must be an integer between 1 and 10000",
 		);
+		expect(getSignedUrl).not.toHaveBeenCalled();
+	});
+
+	it("403s when the key belongs to a different user", async () => {
+		const result = await invokeWithBody(
+			JSON.stringify({
+				key: "uploads/user-2/photo.png",
+				uploadId: "upload-1",
+				numParts: 1,
+			}),
+		);
+
+		expect(result.statusCode).toBe(403);
+		expect(JSON.parse(result.body)).toEqual({ message: "Forbidden" });
 		expect(getSignedUrl).not.toHaveBeenCalled();
 	});
 

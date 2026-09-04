@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { parseRequestBody } from "utilities/request-body";
+import { isOwnedKey, parseRequestBody } from "utilities/request-body";
 
 type Body = {
 	key: string;
@@ -87,5 +87,23 @@ describe("parseRequestBody", () => {
 			valid: false,
 			error: "Missing or invalid field(s): numParts",
 		});
+	});
+});
+
+describe("isOwnedKey", () => {
+	it("is true when the key's owner segment matches the caller's sub", () => {
+		expect(isOwnedKey("studyset-1/user-1/photo.png", "user-1")).toBe(true);
+	});
+
+	it("is false when the key's owner segment belongs to someone else", () => {
+		expect(isOwnedKey("studyset-1/user-1/photo.png", "user-2")).toBe(false);
+	});
+
+	it("is false when the key has no owner segment", () => {
+		expect(isOwnedKey("photo.png", "user-1")).toBe(false);
+	});
+
+	it("is false when there is no caller sub", () => {
+		expect(isOwnedKey("studyset-1/user-1/photo.png", undefined)).toBe(false);
 	});
 });

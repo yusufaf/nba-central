@@ -16,8 +16,12 @@ process.env.mainBucket = "test-bucket";
 
 const { handler } = await import("lambdas/deleteFile/src/deleteFile");
 
-const invokeWithBody = (body?: string) =>
-	handler({ body } as any, {} as any, {} as any) as Promise<any>;
+const invokeWithBody = (body?: string, sub: string | undefined = "user-1") =>
+	handler(
+		{ body, requestContext: { authorizer: { lambda: { sub } } } } as any,
+		{} as any,
+		{} as any,
+	) as Promise<any>;
 
 beforeEach(() => {
 	send.mockReset();
@@ -62,6 +66,30 @@ describe("deleteFile", () => {
 		expect(JSON.parse(result.body).message).toBe(
 			"Missing or invalid field(s): key",
 		);
+		expect(send).not.toHaveBeenCalled();
+	});
+
+	it("403s when the key belongs to a different user", async () => {
+		const result = await invokeWithBody(
+			JSON.stringify({ key: "uploads/user-2/photo.png" }),
+		);
+
+		expect(result.statusCode).toBe(403);
+		expect(JSON.parse(result.body)).toEqual({ message: "Forbidden" });
+		expect(send).not.toHaveBeenCalled();
+	});
+
+	it("403s when the caller has no sub", async () => {
+		const result = await handler(
+			{
+				body: JSON.stringify({ key: "uploads/user-1/photo.png" }),
+				requestContext: { authorizer: { lambda: {} } },
+			} as any,
+			{} as any,
+			{} as any,
+		) as any;
+
+		expect(result.statusCode).toBe(403);
 		expect(send).not.toHaveBeenCalled();
 	});
 

@@ -23,19 +23,24 @@ const { handler } = await import(
 	"lambdas/completeMultipartUpload/src/completeMultipartUpload"
 );
 
-const uploadEvent = (key: string) => ({
+const uploadEvent = (key: string, sub: string | undefined = "user-1") => ({
 	body: JSON.stringify({
 		key,
 		uploadId: "upload-1",
 		parts: [{ ETag: "etag-1", PartNumber: 1 }],
 	}),
+	requestContext: { authorizer: { lambda: { sub } } },
 });
 
-const invoke = (key: string) =>
-	handler(uploadEvent(key) as any, {} as any, {} as any) as Promise<any>;
+const invoke = (key: string, sub?: string) =>
+	handler(uploadEvent(key, sub) as any, {} as any, {} as any) as Promise<any>;
 
-const invokeWithBody = (body?: string) =>
-	handler({ body } as any, {} as any, {} as any) as Promise<any>;
+const invokeWithBody = (body?: string, sub: string | undefined = "user-1") =>
+	handler(
+		{ body, requestContext: { authorizer: { lambda: { sub } } } } as any,
+		{} as any,
+		{} as any,
+	) as Promise<any>;
 
 beforeEach(() => {
 	send.mockReset();
@@ -78,7 +83,7 @@ describe("completeMultipartUpload", () => {
 		send.mockResolvedValueOnce({});
 		send.mockResolvedValueOnce({});
 
-		const result = await invoke("photo.png");
+		const result = await invoke("uploads/user-1/photo.png");
 
 		expect(JSON.parse(result.body).size).toBe(0);
 	});
@@ -119,6 +124,14 @@ describe("completeMultipartUpload", () => {
 		expect(JSON.parse(result.body).message).toBe(
 			"Missing or invalid field(s): key, parts",
 		);
+		expect(send).not.toHaveBeenCalled();
+	});
+
+	it("403s when the key belongs to a different user", async () => {
+		const result = await invoke("uploads/user-2/photo.png");
+
+		expect(result.statusCode).toBe(403);
+		expect(JSON.parse(result.body)).toEqual({ message: "Forbidden" });
 		expect(send).not.toHaveBeenCalled();
 	});
 

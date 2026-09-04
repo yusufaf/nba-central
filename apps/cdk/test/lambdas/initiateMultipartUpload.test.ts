@@ -18,8 +18,12 @@ const { handler } = await import(
 	"lambdas/initiateMultipartUpload/src/initiateMultipartUpload"
 );
 
-const invokeWithBody = (body?: string) =>
-	handler({ body } as any, {} as any, {} as any) as Promise<any>;
+const invokeWithBody = (body?: string, sub: string | undefined = "user-1") =>
+	handler(
+		{ body, requestContext: { authorizer: { lambda: { sub } } } } as any,
+		{} as any,
+		{} as any,
+	) as Promise<any>;
 
 beforeEach(() => {
 	send.mockReset();
@@ -67,8 +71,40 @@ describe("initiateMultipartUpload", () => {
 
 		expect(result.statusCode).toBe(400);
 		expect(JSON.parse(result.body).message).toBe(
-			"Missing or invalid field(s): studysetUUID, userUUID, fileName",
+			"Missing or invalid field(s): studysetUUID, fileName",
 		);
+		expect(send).not.toHaveBeenCalled();
+	});
+
+	it("builds the key from the caller's sub, not a client-supplied userUUID", async () => {
+		send.mockResolvedValueOnce({ UploadId: "upload-1" });
+
+		const result = await invokeWithBody(
+			JSON.stringify({
+				studysetUUID: "studyset-1",
+				userUUID: "someone-elses-uuid",
+				fileName: "photo.png",
+			}),
+			"user-1",
+		);
+
+		expect(JSON.parse(result.body).key).toBe("studyset-1/user-1/photo.png");
+	});
+
+	it("403s when the caller has no sub", async () => {
+		const result = await handler(
+			{
+				body: JSON.stringify({
+					studysetUUID: "studyset-1",
+					fileName: "photo.png",
+				}),
+				requestContext: { authorizer: { lambda: {} } },
+			} as any,
+			{} as any,
+			{} as any,
+		) as any;
+
+		expect(result.statusCode).toBe(403);
 		expect(send).not.toHaveBeenCalled();
 	});
 
