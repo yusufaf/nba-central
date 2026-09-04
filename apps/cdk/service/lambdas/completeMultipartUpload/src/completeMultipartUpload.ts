@@ -81,7 +81,7 @@ export const handler: Handler = async (
             Key: key,
         });
         const signedURL = await getSignedUrl(s3Client, getObjectCommand, {
-            expiresIn: 86400, // One day in seconds
+            expiresIn: 3600, // One hour in seconds
         });
 
         return {
