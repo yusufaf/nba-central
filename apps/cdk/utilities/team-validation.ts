@@ -41,6 +41,10 @@ export const validateTeamData = (data: any): { valid: boolean; error?: string } 
 		return { valid: false, error: "logoUrl must be a string" };
 	}
 
+	if (data.jerseyUrl !== undefined && typeof data.jerseyUrl !== "string") {
+		return { valid: false, error: "jerseyUrl must be a string" };
+	}
+
 	if (!Array.isArray(data.roster)) {
 		return { valid: false, error: "Roster must be an array" };
 	}

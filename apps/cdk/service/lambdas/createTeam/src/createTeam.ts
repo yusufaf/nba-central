@@ -52,6 +52,7 @@ export const handler: Handler = async (
 			city: payload.city || "",
 			country: payload.country || "",
 			logoUrl: payload.logoUrl || "",
+			jerseyUrl: payload.jerseyUrl || "",
 			playerCount: payload.roster.length,
 			roster: payload.roster,
 			coach: payload.coach ?? null,

@@ -22,8 +22,14 @@ pnpm refresh-coaches           # rewrite coaches.json from Basketball-Reference
 pnpm refresh-execs             # rewrite execs.json from Basketball-Reference
 pnpm refresh-historical-logos  # rewrite historicalLogos.json + public/logos/historical/
 pnpm rekey-historical-logos    # re-key the transparent background on already-checked-in PNGs
+pnpm refresh-historical-jerseys  # rewrite historicalJerseys.json, upload images to S3/CloudFront
 pnpm run refresh-<name> -- --check  # validate against the live source, write nothing
 ```
+
+`refresh-historical-jerseys --check` needs no AWS access - it only scrapes and
+parses. A real (non-`--check`) run uploads to the `assets` S3 bucket and needs
+`TeamBuilderAssetsCdn` already deployed (`cdk deploy`) plus AWS credentials
+able to write to that bucket.
 
 Requires a `.env` file with: `account`, `region`, `appName`, `deploymentType`.
 `deploymentType` (`"development"` or `"production"`) is not optional for a

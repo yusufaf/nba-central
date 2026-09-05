@@ -18,9 +18,11 @@
         "refresh-execs": "ts-node -r tsconfig-paths/register scripts/refresh-execs.ts",
         "refresh-historical-logos": "ts-node -r tsconfig-paths/register scripts/refresh-historical-logos.ts",
         "rekey-historical-logos": "ts-node -r tsconfig-paths/register scripts/rekey-historical-logos.ts",
+        "refresh-historical-jerseys": "ts-node -r tsconfig-paths/register scripts/refresh-historical-jerseys.ts",
         "cdk": "cdk"
     },
     "dependencies": {
+        "@aws-sdk/client-cloudfront": "^3.540.0",
         "@aws-sdk/client-dynamodb": "^3.540.0",
         "@aws-sdk/client-lambda": "^3.540.0",
         "@aws-sdk/client-s3": "^3.540.0",

@@ -39,7 +39,7 @@ export const handler: Handler = async (
 				":sk": "team#",
 			},
 			ProjectionExpression:
-				"teamUUID, userUUID, username, title, description, city, country, logoUrl, playerCount, favorited, #lbl, lastViewed, createdAt, updatedAt",
+				"teamUUID, userUUID, username, title, description, city, country, logoUrl, jerseyUrl, playerCount, favorited, #lbl, lastViewed, createdAt, updatedAt",
 			ExpressionAttributeNames: {
 				"#lbl": "label",
 			},

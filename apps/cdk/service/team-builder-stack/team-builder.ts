@@ -4,6 +4,7 @@ import { ExtendedStackProps } from "models/stack";
 import { TeamBuilderAPI } from "./team-builder-api";
 import { TeamBuilderDynamoDB } from "./team-builder-dynamo";
 import { TeamBuilderS3 } from "./team-builder-s3";
+import { TeamBuilderAssetsCdn } from "./team-builder-assets-cdn";
 import { TeamBuilderWeb } from "./team-builder-web";
 import { TeamBuilderDeployRole } from "./team-builder-deploy-role";
 
@@ -29,11 +30,22 @@ export class TeamBuilder extends Construct {
             `${appName}-${deploymentType}-dynamoDB`,
             props
         );
-        new TeamBuilderS3(scope, `${appName}-${deploymentType}-s3`, props);
+        const s3 = new TeamBuilderS3(scope, `${appName}-${deploymentType}-s3`, props);
+
+        const assetsCdn = new TeamBuilderAssetsCdn(
+            scope,
+            `${appName}-${deploymentType}-assets-cdn`,
+            { appName, deploymentType, assetsBucket: s3.assetsBucket },
+        );
 
         new CfnOutput(scope, `${appName}-${deploymentType}-api-endpoint`, {
             value: api.api.apiEndpoint,
         });
+        new CfnOutput(
+            scope,
+            `${appName}-${deploymentType}-assets-distribution-domain`,
+            { value: assetsCdn.distribution.distributionDomainName },
+        );
 
         // S3 + CloudFront for the public site is production-only — no
         // public domain exists for development.

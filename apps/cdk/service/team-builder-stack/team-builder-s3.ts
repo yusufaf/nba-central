@@ -10,6 +10,10 @@ import { ExtendedStackProps } from "models/stack";
 import { DEFAULT_ALLOWED_ORIGINS } from "./../../constants/index";
 
 export class TeamBuilderS3 extends Construct {
+    // Exposed for TeamBuilderAssetsCdn, which fronts this one bucket with a
+    // public read-only CloudFront distribution.
+    readonly assetsBucket: Bucket;
+
     constructor(scope: Construct, id: string, props: ExtendedStackProps) {
         super(scope, id);
         const {
@@ -36,7 +40,7 @@ export class TeamBuilderS3 extends Construct {
         });
 
         const assetsBucketNameAndID = `${appName}-${deploymentType}-assets`;
-        this.createS3Bucket({
+        this.assetsBucket = this.createS3Bucket({
             bucketName: assetsBucketNameAndID,
             cors: [
                 {
