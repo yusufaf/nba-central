@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.2.1](https://github.com/yusufaf/nba-central/compare/web-v0.2.0...web-v0.2.1) (2026-09-05)
+
+
+### Bug Fixes
+
+* **cdk:** three real-run bugs in refresh-historical-jerseys, upload real images ([#68](https://github.com/yusufaf/nba-central/issues/68)) ([c03e6f1](https://github.com/yusufaf/nba-central/commit/c03e6f1b9c5550171dc489cc1acac207b67bc3b8))
+* guard QuarterScores against a missing competitor ([#62](https://github.com/yusufaf/nba-central/issues/62)) ([f11de09](https://github.com/yusufaf/nba-central/commit/f11de0934194a3f4c708a0d2b305d36c69e95363)), closes [#46](https://github.com/yusufaf/nba-central/issues/46)
+
 ## [0.2.0](https://github.com/yusufaf/nba-central/compare/web-v0.1.0...web-v0.2.0) (2026-09-04)
 
 
