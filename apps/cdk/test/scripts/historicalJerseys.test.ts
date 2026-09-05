@@ -294,4 +294,14 @@ describe("buildParsedJersey", () => {
 		expect(buildParsedJersey(item, "knicks", franchiseNames, problems)).toBeNull();
 		expect(problems).toEqual(['knicks: "New York Knicks Jersey" has no parseable season span']);
 	});
+
+	it("silently skips a blank-titled item instead of recording a problem", () => {
+		// bballjerseys.com's aba-sounds gallery carries exactly one of these -
+		// a permanent data-quality quirk in the source, not a layout change.
+		const item: RawGalleryItem = { mediaUrl: "x", title: "", description: "" };
+		const problems: string[] = [];
+
+		expect(buildParsedJersey(item, "aba-sounds", franchiseNames, problems)).toBeNull();
+		expect(problems).toEqual([]);
+	});
 });

@@ -332,9 +332,15 @@ export const formatJerseyYears = (startYear: number, endYear: number) => {
 
 /**
  * Assembles one gallery item plus its page context into a dataset row, or
- * null (with a problem recorded) when no season span could be parsed from
- * either its description or its title - the one case that should never
- * happen on a real page and signals the upstream layout changed.
+ * null when it can't be. A blank title (bballjerseys.com's aba-sounds
+ * gallery carries exactly one such item, seemingly a stray deleted-but-not-
+ * really entry rather than anything reflecting a real jersey) has no season
+ * span by construction and is silently skipped - it's a permanent data-
+ * quality quirk in the source, not a signal anything upstream changed. Any
+ * *titled* item with no parseable span, by contrast, means the site's season
+ * label or year-range format changed underneath us, and records a problem
+ * so the caller's all-or-nothing write refuses instead of shipping a
+ * silently-wrong dataset.
  */
 export const buildParsedJersey = (
 	item: RawGalleryItem,
@@ -345,7 +351,9 @@ export const buildParsedJersey = (
 ): ParsedJersey | null => {
 	const span = parseSeasonSpan(item, seasonEndYearNow);
 	if (!span) {
-		problems.push(`${slug}: "${item.title}" has no parseable season span`);
+		if (item.title.trim()) {
+			problems.push(`${slug}: "${item.title}" has no parseable season span`);
+		}
 		return null;
 	}
 
