@@ -36,6 +36,7 @@ const teamCity = defineModel<string>('teamCity');
 const teamCountry = defineModel<string>('teamCountry');
 const selectedView = defineModel<string>('selectedView');
 const teamLogo = defineModel<string>('teamLogo');
+const teamJersey = defineModel<string>('teamJersey');
 const drawerSide = defineModel<string>('drawerSide');
 
 const showConfirm = ref<boolean>(false);
@@ -220,6 +221,7 @@ onMounted(() => {
         v-model:teamCity="teamCity"
         v-model:teamCountry="teamCountry"
         v-model:teamLogo="teamLogo"
+        v-model:teamJersey="teamJersey"
     />
 </template>
 

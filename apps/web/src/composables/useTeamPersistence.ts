@@ -14,6 +14,7 @@ interface BuilderState {
     teamCity: string;
     teamCountry: string;
     teamLogo: string;
+    teamJersey: string;
     selectedPlayersData: Map<number, any>;
     teamCoach: any;
     teamArena: any;
@@ -66,6 +67,7 @@ export const serializeTeam = (state: BuilderState): SaveTeamPayload => {
         city: state.teamCity,
         country: state.teamCountry,
         logoUrl: state.teamLogo,
+        jerseyUrl: state.teamJersey,
         roster,
         coach: toEntityRef(state.teamCoach),
         gm: toEntityRef(state.teamGM),
@@ -79,6 +81,7 @@ export interface HydratedTeam {
     teamCity: string;
     teamCountry: string;
     teamLogo: string;
+    teamJersey: string;
     players: Map<number, Player>;
     teamCoach: EntityRef | null;
     teamArena: TeamArenaRef | null;
@@ -98,6 +101,7 @@ export const hydrateTeam = (saved: SavedTeam): HydratedTeam => {
         teamCity: saved.city ?? "",
         teamCountry: saved.country ?? "",
         teamLogo: saved.logoUrl ?? "",
+        teamJersey: saved.jerseyUrl ?? "",
         players,
         teamCoach: saved.coach ?? null,
         teamArena: saved.arena ?? null,

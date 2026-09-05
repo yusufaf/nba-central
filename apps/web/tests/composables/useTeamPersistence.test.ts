@@ -49,6 +49,7 @@ describe("serializeTeam", () => {
             teamCity: "",
             teamCountry: "",
             teamLogo: "",
+            teamJersey: "",
             selectedPlayersData,
             teamCoach: null,
             teamArena: null,
@@ -71,6 +72,7 @@ describe("serializeTeam", () => {
             teamCity: "",
             teamCountry: "",
             teamLogo: "",
+            teamJersey: "",
             selectedPlayersData,
             teamCoach: null,
             teamArena: null,
@@ -93,6 +95,7 @@ describe("serializeTeam", () => {
             teamCity: "",
             teamCountry: "",
             teamLogo: "",
+            teamJersey: "",
             selectedPlayersData,
             teamCoach: null,
             teamArena: null,
@@ -110,6 +113,7 @@ describe("serializeTeam", () => {
             teamCity: "",
             teamCountry: "",
             teamLogo: "",
+            teamJersey: "",
             selectedPlayersData: new Map(),
             teamCoach: { name: "Steve Kerr", isCustom: false },
             teamArena: { name: "Chase Center", imgLink: "https://example.com/chase.jpg" },
@@ -131,6 +135,7 @@ describe("serializeTeam", () => {
             teamCity: "",
             teamCountry: "",
             teamLogo: "",
+            teamJersey: "",
             selectedPlayersData: new Map(),
             teamCoach: null,
             teamArena: null,
@@ -167,6 +172,7 @@ describe("hydrateTeam", () => {
         city: "Miami",
         country: "USA",
         logoUrl: "https://example.com/logo.png",
+        jerseyUrl: "https://example.com/jersey.avif",
         playerCount: 1,
         roster: [{ slot: 1, player: snapshotPlayer() as any }],
         coach: { name: "Steve Kerr", isCustom: false },
@@ -187,6 +193,7 @@ describe("hydrateTeam", () => {
         expect(hydrated.teamCity).toBe("Miami");
         expect(hydrated.teamCountry).toBe("USA");
         expect(hydrated.teamLogo).toBe("https://example.com/logo.png");
+        expect(hydrated.teamJersey).toBe("https://example.com/jersey.avif");
         expect(hydrated.players.get(1)?.fullName).toBe("LeBron James");
         expect(hydrated.teamCoach).toEqual({ name: "Steve Kerr", isCustom: false });
         expect(hydrated.teamGM).toEqual({ name: "My GM", isCustom: true, uuid: "gm-1" });
@@ -202,6 +209,7 @@ describe("hydrateTeam", () => {
             teamCity: hydrated.teamCity,
             teamCountry: hydrated.teamCountry,
             teamLogo: hydrated.teamLogo,
+            teamJersey: hydrated.teamJersey,
             selectedPlayersData: hydrated.players,
             teamCoach: hydrated.teamCoach,
             teamArena: hydrated.teamArena,

@@ -10,83 +10,79 @@ import {
     SelectValue,
 } from '@/components/ui/select';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import type { HistoricalLogo } from '@/models/types';
-import historicalLogosData from '@/assets/data/historicalLogos.json';
+import type { HistoricalJersey } from '@/models/types';
+import historicalJerseysData from '@/assets/data/historicalJerseys.json';
 import { useExpandablePicker } from '@/composables/useExpandablePicker';
 
-const logos = historicalLogosData as HistoricalLogo[];
+const jerseys = historicalJerseysData as HistoricalJersey[];
 
-const teamLogo = defineModel<string>('teamLogo');
+const teamJersey = defineModel<string>('teamJersey');
+// Modeled so the Team Customization dialog can tell the fullscreen overlay
+// apart from its own click-outside handling - see HistoricalLogoPicker for
+// why that matters.
+const expanded = defineModel<boolean>('expanded', { default: false });
 
 const search = ref<string>('');
 const selectedDecade = ref<string>('All');
 const selectedLeague = ref<string>('All');
-// Modeled so the Team Customization dialog can tell the fullscreen overlay
-// apart from its own click-outside handling - see the dialog's
-// `onDialogInteractOutside` for why that matters.
-const expanded = defineModel<boolean>('expanded', { default: false });
 const searchField = ref<HTMLElement | null>(null);
 const pickerRoot = ref<HTMLElement | null>(null);
+
+const { collapse } = useExpandablePicker(expanded, pickerRoot, searchField);
 
 const DECADES = [
     'All',
     ...Array.from(
-        new Set(logos.map((logo) => `${Math.floor(logo.startYear / 10) * 10}s`)),
+        new Set(jerseys.map((jersey) => `${Math.floor(jersey.startYear / 10) * 10}s`)),
     ).sort(),
 ];
 
-// BAA and ABA logos sit alongside the NBA's in the same list, and picking one
-// era of, say, the Nets means knowing which league it was played in.
-const LEAGUES = ['All', ...Array.from(new Set(logos.map((logo) => logo.league))).sort()];
+const LEAGUES = ['All', ...Array.from(new Set(jerseys.map((jersey) => jersey.league))).sort()];
 
-const filteredLogos = computed(() => {
-    let result = logos;
+const filteredJerseys = computed(() => {
+    let result = jerseys;
 
     if (selectedDecade.value !== 'All') {
         const decadeStart = parseInt(selectedDecade.value, 10);
         result = result.filter(
-            (logo) =>
-                logo.startYear >= decadeStart && logo.startYear < decadeStart + 10,
+            (jersey) =>
+                jersey.startYear >= decadeStart && jersey.startYear < decadeStart + 10,
         );
     }
 
     if (selectedLeague.value !== 'All') {
-        result = result.filter((logo) => logo.league === selectedLeague.value);
+        result = result.filter((jersey) => jersey.league === selectedLeague.value);
     }
 
     if (search.value.trim()) {
         const searchLower = search.value.toLowerCase().trim();
         result = result.filter(
-            (logo) =>
-                logo.name.toLowerCase().includes(searchLower) ||
-                logo.franchiseName.toLowerCase().includes(searchLower) ||
-                logo.years.includes(searchLower),
+            (jersey) =>
+                jersey.name.toLowerCase().includes(searchLower) ||
+                jersey.franchiseName.toLowerCase().includes(searchLower) ||
+                jersey.years.includes(searchLower),
         );
     }
 
     return result;
 });
 
-const handleLogoClick = (logo: HistoricalLogo) => {
-    teamLogo.value = logo.logo;
+const handleJerseyClick = (jersey: HistoricalJersey) => {
+    teamJersey.value = jersey.jersey;
 };
-
-const { collapse } = useExpandablePicker(expanded, pickerRoot, searchField);
 </script>
 
 <template>
-    <!-- Teleport rather than a second markup block: the same nodes move, so the
-         234 tiles are never duplicated and the search and filters keep their
-         values across expand/collapse. Only while expanded, so the picker can
-         overlay the page rather than being clipped by the dialog. -->
+    <!-- Teleport rather than a second markup block - see HistoricalLogoPicker
+         for why. -->
     <Teleport to="body" :disabled="!expanded">
-        <div ref="pickerRoot" class="historical-logo-picker" :class="{ expanded }">
+        <div ref="pickerRoot" class="historical-jersey-picker" :class="{ expanded }">
             <div v-if="expanded" class="picker-header">
-                <span class="picker-title">All-time team logos</span>
+                <span class="picker-title">All-time team jerseys</span>
                 <button
                     type="button"
                     class="picker-icon-button"
-                    aria-label="Collapse logo browser"
+                    aria-label="Collapse jersey browser"
                     @click="collapse"
                 >
                     <X class="h-4 w-4" />
@@ -129,7 +125,7 @@ const { collapse } = useExpandablePicker(expanded, pickerRoot, searchField);
                     v-if="!expanded"
                     type="button"
                     class="picker-icon-button"
-                    aria-label="Expand logo browser"
+                    aria-label="Expand jersey browser"
                     title="Expand"
                     @click="expanded = true"
                 >
@@ -138,53 +134,63 @@ const { collapse } = useExpandablePicker(expanded, pickerRoot, searchField);
             </div>
 
             <p class="picker-count">
-                {{ filteredLogos.length }}
-                {{ filteredLogos.length === 1 ? 'logo' : 'logos' }}
-                <template v-if="filteredLogos.length !== logos.length">
-                    of {{ logos.length }}
+                {{ filteredJerseys.length }}
+                {{ filteredJerseys.length === 1 ? 'jersey' : 'jerseys' }}
+                <template v-if="filteredJerseys.length !== jerseys.length">
+                    of {{ jerseys.length }}
                 </template>
             </p>
 
             <ScrollArea class="picker-results">
-                <div v-if="filteredLogos.length === 0" class="empty-state">
-                    No logos match that search.
+                <div v-if="filteredJerseys.length === 0" class="empty-state">
+                    No jerseys match that search.
                 </div>
-                <div v-else class="team-logos">
+                <div v-else class="team-jerseys">
                     <button
-                        v-for="logo in filteredLogos"
-                        :key="`${logo.team}-${logo.startYear}`"
+                        v-for="jersey in filteredJerseys"
+                        :key="jersey.jersey"
                         type="button"
-                        class="team-logo-tile"
-                        :class="{ selected: logo.logo === teamLogo }"
-                        :aria-pressed="logo.logo === teamLogo"
-                        @click="handleLogoClick(logo)"
+                        class="team-jersey-tile"
+                        :class="{ selected: jersey.jersey === teamJersey }"
+                        :aria-pressed="jersey.jersey === teamJersey"
+                        @click="handleJerseyClick(jersey)"
                     >
-                        <span class="team-logo-plate">
+                        <span class="team-jersey-plate">
                             <img
-                                :src="logo.logo"
-                                :alt="`${logo.name} logo`"
-                                class="team-logo"
-                                width="125"
-                                height="125"
+                                :src="jersey.jersey"
+                                :alt="jersey.name"
+                                class="team-jersey-image"
+                                width="400"
+                                height="400"
                                 loading="lazy"
                             />
-                            <span v-if="logo.logo === teamLogo" class="team-logo-check">
+                            <span v-if="jersey.jersey === teamJersey" class="team-jersey-check">
                                 <Check class="h-3 w-3" />
                             </span>
+                            <span v-if="jersey.slot === 'alternate'" class="team-jersey-badge">
+                                Alternate
+                            </span>
                         </span>
-                        <span class="team-logo-caption">
-                            <span class="team-logo-name">{{ logo.name }}</span>
-                            <span class="team-logo-years">{{ logo.years }}</span>
+                        <span class="team-jersey-caption">
+                            <span class="team-jersey-name">{{ jersey.franchiseName }}</span>
+                            <span class="team-jersey-years">{{ jersey.years }}</span>
                         </span>
                     </button>
                 </div>
             </ScrollArea>
+
+            <p class="picker-attribution">
+                Jersey artwork from the
+                <a href="https://www.bballjerseys.com" target="_blank" rel="noopener noreferrer">
+                    Basketball Jersey Database
+                </a>.
+            </p>
         </div>
     </Teleport>
 </template>
 
 <style scoped>
-.historical-logo-picker {
+.historical-jersey-picker {
     --tile-min: 8.5rem;
     --results-height: 26rem;
 
@@ -193,9 +199,9 @@ const { collapse } = useExpandablePicker(expanded, pickerRoot, searchField);
     gap: 0.625rem;
 }
 
-.historical-logo-picker.expanded {
+.historical-jersey-picker.expanded {
     --tile-min: 9.5rem;
-    --results-height: calc(100vh - 12.5rem);
+    --results-height: calc(100vh - 14.5rem);
 
     position: fixed;
     inset: 0;
@@ -204,11 +210,9 @@ const { collapse } = useExpandablePicker(expanded, pickerRoot, searchField);
     gap: 0.875rem;
     background: hsl(0 0% 7% / 0.98);
     backdrop-filter: blur(0.75rem);
-    /* This overlay teleports past the dialog's own DOM subtree, so it isn't one
-       of reka-ui's registered dismissable layers. A modal Dialog sets
-       body { pointer-events: none } and only re-enables pointer-events on
-       layers it knows about - without this override every click and scroll
-       here is inert, since it inherits "none" from the body. */
+    /* See HistoricalLogoPicker: a modal Dialog sets body { pointer-events:
+       none } and only re-enables it on layers it knows about - this overlay
+       isn't one, since it teleported past the dialog's own DOM subtree. */
     pointer-events: auto;
 }
 
@@ -266,10 +270,8 @@ const { collapse } = useExpandablePicker(expanded, pickerRoot, searchField);
 }
 
 .picker-results {
-    /* A definite height, not max-height: ScrollArea's viewport is h-full, and a
-       percentage height against an indefinite parent resolves to auto - the
-       viewport then grows past the pane and the overflow is clipped away
-       instead of scrolled. */
+    /* See HistoricalLogoPicker for why this is a definite height rather than
+       a max-height. */
     height: var(--results-height);
     border: 0.0625rem solid hsl(var(--border));
     border-radius: var(--radius);
@@ -282,6 +284,18 @@ const { collapse } = useExpandablePicker(expanded, pickerRoot, searchField);
     min-height: 0;
 }
 
+.picker-attribution {
+    margin: 0;
+    font-size: 0.6875rem;
+    color: hsl(var(--muted-foreground));
+}
+
+.picker-attribution a {
+    color: hsl(var(--primary));
+    text-decoration: underline;
+    text-underline-offset: 0.125rem;
+}
+
 .empty-state {
     padding: 3rem 0;
     text-align: center;
@@ -289,13 +303,13 @@ const { collapse } = useExpandablePicker(expanded, pickerRoot, searchField);
     font-size: 0.875rem;
 }
 
-.team-logos {
+.team-jerseys {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(var(--tile-min), 1fr));
     gap: 0.75rem;
 }
 
-.team-logo-tile {
+.team-jersey-tile {
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -310,42 +324,44 @@ const { collapse } = useExpandablePicker(expanded, pickerRoot, searchField);
     transition: border-color 0.15s, background-color 0.15s, box-shadow 0.15s;
 }
 
-.team-logo-tile:hover {
+.team-jersey-tile:hover {
     border-color: hsl(var(--primary) / 0.6);
     background: hsl(var(--primary) / 0.06);
 }
 
-.team-logo-tile:focus-visible {
+.team-jersey-tile:focus-visible {
     outline: none;
     border-color: hsl(var(--primary));
     box-shadow: 0 0 0 0.1875rem hsl(var(--primary) / 0.35);
 }
 
-.team-logo-tile.selected {
+.team-jersey-tile.selected {
     border-color: hsl(var(--primary));
     background: hsl(var(--primary) / 0.12);
     box-shadow: 0 0 0 0.125rem hsl(var(--primary) / 0.3);
 }
 
-.team-logo-plate {
+.team-jersey-plate {
     position: relative;
     display: grid;
     place-items: center;
     width: 100%;
     aspect-ratio: 1;
     border-radius: 0.625rem;
-    /* The artwork is transparent now, but a lot of these logos are mostly white
-       or silver; a faint plate keeps them legible on the dark theme. */
-    background: hsl(0 0% 100% / 0.08);
+    overflow: hidden;
+    /* Unlike the logos, this artwork is opaque - a full square illustration
+       with its own coloured background - so no backing plate colour is
+       needed underneath it. */
+    background: hsl(0 0% 100% / 0.04);
 }
 
-.team-logo {
-    width: 82%;
-    height: 82%;
-    object-fit: contain;
+.team-jersey-image {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
 }
 
-.team-logo-check {
+.team-jersey-check {
     position: absolute;
     top: -0.375rem;
     right: -0.375rem;
@@ -359,7 +375,19 @@ const { collapse } = useExpandablePicker(expanded, pickerRoot, searchField);
     color: hsl(var(--primary-foreground));
 }
 
-.team-logo-caption {
+.team-jersey-badge {
+    position: absolute;
+    bottom: 0.375rem;
+    left: 0.375rem;
+    padding: 0.0625rem 0.375rem;
+    border-radius: 9999px;
+    font-size: 0.625rem;
+    font-weight: 600;
+    color: hsl(var(--primary-foreground));
+    background: hsl(var(--primary) / 0.85);
+}
+
+.team-jersey-caption {
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -368,13 +396,13 @@ const { collapse } = useExpandablePicker(expanded, pickerRoot, searchField);
     line-height: 1.25;
 }
 
-.team-logo-name {
+.team-jersey-name {
     font-size: 0.8125rem;
     font-weight: 600;
     color: hsl(var(--foreground));
 }
 
-.team-logo-years {
+.team-jersey-years {
     font-size: 0.75rem;
     font-weight: 500;
     color: hsl(var(--muted-foreground));

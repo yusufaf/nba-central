@@ -38,6 +38,7 @@ const teamDescription = ref<string>("");
 const teamCity = ref<string>("");
 const teamCountry = ref<string>("");
 const teamLogo = ref<string>("");
+const teamJersey = ref<string>("");
 
 const teamCoach = ref<any>(null);
 const teamArena = ref<any>(null);
@@ -275,6 +276,7 @@ const clearBuilderState = () => {
     teamCity.value = "";
     teamCountry.value = "";
     teamLogo.value = "";
+    teamJersey.value = "";
     loadedTeamUUID.value = null;
 };
 
@@ -290,6 +292,7 @@ const saveTeam = () => {
         teamCity: teamCity.value,
         teamCountry: teamCountry.value,
         teamLogo: teamLogo.value,
+        teamJersey: teamJersey.value,
         selectedPlayersData: selectedPlayersData.value,
         teamCoach: teamCoach.value,
         teamArena: teamArena.value,
@@ -337,6 +340,7 @@ const loadTeamFromRoute = async (teamUUID: string) => {
         teamCity.value = hydrated.teamCity;
         teamCountry.value = hydrated.teamCountry;
         teamLogo.value = hydrated.teamLogo;
+        teamJersey.value = hydrated.teamJersey;
         teamCoach.value = hydrated.teamCoach;
         teamArena.value = hydrated.teamArena;
         teamGM.value = hydrated.teamGM;
@@ -384,6 +388,7 @@ watch(
                     v-model:teamCity="teamCity"
                     v-model:teamCountry="teamCountry"
                     v-model:teamLogo="teamLogo"
+                    v-model:teamJersey="teamJersey"
                     v-model:drawerSide="selectedDrawerSide"
                     v-model:selectedView="selectedView"
                     @saveTeam="saveTeam"
