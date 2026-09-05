@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.1.2](https://github.com/yusufaf/nba-central/compare/cdk-v0.1.1...cdk-v0.1.2) (2026-09-05)
+
+
+### Bug Fixes
+
+* **cdk:** three real-run bugs in refresh-historical-jerseys, upload real images ([#68](https://github.com/yusufaf/nba-central/issues/68)) ([c03e6f1](https://github.com/yusufaf/nba-central/commit/c03e6f1b9c5550171dc489cc1acac207b67bc3b8))
+* derive S3 file-lambda owner from authorizer sub, not the request body ([#61](https://github.com/yusufaf/nba-central/issues/61)) ([c64be7c](https://github.com/yusufaf/nba-central/commit/c64be7ce40cde4bc640d869d7919c608eee29694))
+
 ## [0.1.1](https://github.com/yusufaf/nba-central/compare/cdk-v0.1.0...cdk-v0.1.1) (2026-09-04)
 
 
