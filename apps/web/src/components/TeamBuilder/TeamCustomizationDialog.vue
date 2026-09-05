@@ -1,6 +1,5 @@
 <script setup lang="ts">
-import { nextTick, onMounted, ref, watchEffect } from 'vue';
-import jerseyImg from '@/assets/basketball_jersey.png';
+import { ref } from 'vue';
 import {
     Dialog,
     DialogContent,
@@ -13,6 +12,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { MapPin, Flag, Paperclip } from 'lucide-vue-next';
 import HistoricalTeamCombobox from './HistoricalTeamCombobox.vue';
 import HistoricalLogoPicker from './HistoricalLogoPicker.vue';
+import HistoricalJerseyPicker from './HistoricalJerseyPicker.vue';
 
 interface HistoricalTeam {
     name: string;
@@ -31,32 +31,24 @@ const teamDescription = defineModel<string>('teamDescription');
 const teamCity = defineModel<string>('teamCity');
 const teamCountry = defineModel<string>('teamCountry');
 const teamLogo = defineModel<string>('teamLogo');
+const teamJersey = defineModel<string>('teamJersey');
 const selectedFile = ref<File | null>(null);
 
 /**
- * The all-time logo picker's fullscreen overlay teleports to <body>, outside
- * this DialogContent's own DOM subtree, so reka-ui's dismissable-layer logic
- * sees every click inside it as a click "outside" the dialog and closes it
- * instantly. Track the picker's expanded state and swallow those outside
- * interactions while it's up.
+ * The all-time logo/jersey pickers' fullscreen overlays teleport to <body>,
+ * outside this DialogContent's own DOM subtree, so reka-ui's
+ * dismissable-layer logic sees every click inside either as a click
+ * "outside" the dialog and closes it instantly. Track each picker's expanded
+ * state and swallow those outside interactions while either is up.
  */
 const historicalLogoPickerExpanded = ref(false);
+const historicalJerseyPickerExpanded = ref(false);
 
 const onDialogInteractOutside = (event: Event) => {
-    if (historicalLogoPickerExpanded.value) {
+    if (historicalLogoPickerExpanded.value || historicalJerseyPickerExpanded.value) {
         event.preventDefault();
     }
 };
-
-/* Canvas Props */
-const drawingCanvas = ref<HTMLCanvasElement | null>(null);
-const isDrawing = ref<boolean>(false);
-const context = ref<any>(null);
-const currentX = ref<number>(0);
-const currentY = ref<number>(0);
-
-const canvasWidth = 500;
-const canvasHeight = 500;
 
 const handleLogoClick = (value: any) => {
     teamLogo.value = value;
@@ -73,55 +65,6 @@ const handleFileChange = (event: Event) => {
         selectedFile.value = target.files[0];
     }
 };
-
-const startDrawing = (e: MouseEvent) => {
-    isDrawing.value = true;
-    currentX.value = e.offsetX;
-    currentY.value = e.offsetY;
-};
-
-const stopDrawing = () => {
-    isDrawing.value = false;
-};
-
-const draw = (e: any) => {
-    if (!isDrawing.value) {
-        return;
-    }
-    context.value.beginPath();
-    context.value.moveTo(currentX.value, currentY.value);
-    context.value.lineTo(e.offsetX, e.offsetY);
-    context.value.stroke();
-
-    currentX.value = e.offsetX;
-    currentY.value = e.offsetY;
-};
-
-const setupCanvas = () => {
-    if (!drawingCanvas.value) return;
-    const localContext = drawingCanvas.value.getContext(
-        '2d',
-    ) as CanvasRenderingContext2D;
-
-    localContext.fillStyle = 'white';
-    localContext.fillRect(0, 0, canvasWidth, canvasHeight);
-
-    const img = new Image();
-    img.onload = () => {
-        localContext.drawImage(img, 0, 0);
-    };
-    img.src = jerseyImg;
-
-    context.value = localContext;
-};
-
-onMounted(() => {
-    nextTick(() => {
-        watchEffect(() => {
-            setupCanvas();
-        });
-    });
-});
 </script>
 
 <template>
@@ -228,20 +171,13 @@ onMounted(() => {
                     </Tabs>
                 </div>
 
-                <!-- Team Jersey Canvas -->
+                <!-- Team Jersey -->
                 <div class="space-y-2">
-                    <Label class="text-base font-semibold text-foreground">Team Jersey</Label>
-                    <div class="canvas-container">
-                        <canvas
-                            ref="drawingCanvas"
-                            :width="canvasWidth"
-                            :height="canvasHeight"
-                            @mousedown="startDrawing"
-                            @mousemove="draw"
-                            @mouseup="stopDrawing"
-                            class="border border-border rounded-md"
-                        />
-                    </div>
+                    <Label class="text-base font-semibold text-foreground">Select an existing team's jersey:</Label>
+                    <HistoricalJerseyPicker
+                        v-model:teamJersey="teamJersey"
+                        v-model:expanded="historicalJerseyPickerExpanded"
+                    />
                 </div>
             </div>
         </DialogContent>
@@ -284,16 +220,4 @@ textarea:focus-visible {
     box-shadow: 0 0 0 0.125rem hsl(var(--primary) / 0.2);
 }
 
-.canvas-container {
-    width: 100%;
-    max-width: 31.25rem;
-    aspect-ratio: 1 / 1;
-    overflow: hidden;
-}
-
-.canvas-container canvas {
-    width: 100%;
-    height: 100%;
-    display: block;
-}
 </style>

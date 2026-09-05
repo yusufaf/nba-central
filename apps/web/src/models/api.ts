@@ -87,6 +87,7 @@ export interface SaveTeamPayload {
     city?: string;
     country?: string;
     logoUrl?: string;
+    jerseyUrl?: string;
     roster: TeamRosterEntry[];
     coach: EntityRef | null;
     gm: EntityRef | null;
@@ -106,6 +107,7 @@ export interface SavedTeam {
     city: string;
     country: string;
     logoUrl: string;
+    jerseyUrl: string;
     playerCount: number;
     roster: TeamRosterEntry[];
     coach: EntityRef | null;

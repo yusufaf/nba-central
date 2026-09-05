@@ -59,7 +59,8 @@ export const handler: Handler = async (
 			},
 			UpdateExpression:
 				"SET updatedAt = :updatedAt, title = :title, description = :description, " +
-				"city = :city, country = :country, logoUrl = :logoUrl, playerCount = :playerCount, " +
+				"city = :city, country = :country, logoUrl = :logoUrl, jerseyUrl = :jerseyUrl, " +
+				"playerCount = :playerCount, " +
 				"roster = :roster, coach = :coach, gm = :gm, arena = :arena",
 			ExpressionAttributeValues: {
 				":updatedAt": timestamp,
@@ -68,6 +69,7 @@ export const handler: Handler = async (
 				":city": payload.city || "",
 				":country": payload.country || "",
 				":logoUrl": payload.logoUrl || "",
+				":jerseyUrl": payload.jerseyUrl || "",
 				":playerCount": payload.roster.length,
 				":roster": payload.roster,
 				":coach": payload.coach ?? null,
