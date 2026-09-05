@@ -187,10 +187,17 @@ const setupUpload = async () => {
 	// CloudFront is a global service fronted by a single us-east-1 API
 	// endpoint, regardless of where the origin bucket lives.
 	const cloudFrontClient = new CloudFrontClient({ region: "us-east-1" });
-	const { DistributionList } = await cloudFrontClient.send(new ListDistributionsCommand({}));
-	const distribution = DistributionList?.Items?.find((item) =>
-		item.Origins?.Items?.some((origin) => origin.DomainName?.startsWith(`${bucketName}.s3.`)),
-	);
+	let marker: string | undefined;
+	let distribution;
+	do {
+		const { DistributionList } = await cloudFrontClient.send(
+			new ListDistributionsCommand({ Marker: marker }),
+		);
+		distribution = DistributionList?.Items?.find((item) =>
+			item.Origins?.Items?.some((origin) => origin.DomainName?.startsWith(`${bucketName}.s3.`)),
+		);
+		marker = DistributionList?.IsTruncated ? DistributionList?.NextMarker : undefined;
+	} while (!distribution && marker);
 	if (!distribution?.DomainName) {
 		throw new Error(
 			`No CloudFront distribution found fronting ${bucketName} - deploy TeamBuilderAssetsCdn first (cdk deploy)`,

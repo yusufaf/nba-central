@@ -2,6 +2,7 @@ import { describe, it, expect } from "vitest";
 import {
 	buildParsedJersey,
 	classifySlot,
+	currentSeasonEndYear,
 	extractGalleryIds,
 	formatJerseyYears,
 	parseGalleryItems,
@@ -136,6 +137,16 @@ describe("parseSeasonSpanFromDescription", () => {
 	});
 });
 
+describe("currentSeasonEndYear", () => {
+	it("stays in the current calendar year before the season tips off in October", () => {
+		expect(currentSeasonEndYear(new Date(2026, 8, 5))).toBe(2026); // Sept 5, 2026
+	});
+
+	it("rolls over to next calendar year once the new season has started", () => {
+		expect(currentSeasonEndYear(new Date(2026, 9, 15))).toBe(2027); // Oct 15, 2026
+	});
+});
+
 describe("parseSeasonSpanFromTitle", () => {
 	it("reads a start-to-end year range", () => {
 		expect(parseSeasonSpanFromTitle("New York Knicks 1946-1953 Home and Road Jersey")).toEqual({
@@ -146,8 +157,10 @@ describe("parseSeasonSpanFromTitle", () => {
 	});
 
 	it("treats a '-present' range as ending at the season now in progress", () => {
+		// The second parameter is the *season's* end year, not a calendar
+		// year - 2026 here means "the 2025-26 season is the one in progress".
 		expect(
-			parseSeasonSpanFromTitle("Boston Celtics 2017-present Association Jersey", 2025),
+			parseSeasonSpanFromTitle("Boston Celtics 2017-present Association Jersey", 2026),
 		).toEqual({ seasons: [], startYear: 2018, endYear: 2026 });
 	});
 

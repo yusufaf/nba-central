@@ -173,6 +173,16 @@ export const parseSeasonSpanFromDescription = (description: string): SeasonSpan 
 };
 
 /**
+ * The end year of whatever NBA season is current right now. The season
+ * starts in October, so a calendar year only IS a season's end year once
+ * that season has actually tipped off - from January through September, the
+ * season in progress (or most recently finished) still ends in the current
+ * calendar year, not next year's.
+ */
+export const currentSeasonEndYear = (now: Date = new Date()): number =>
+	now.getMonth() >= 9 ? now.getFullYear() + 1 : now.getFullYear();
+
+/**
  * Falls back to the year range embedded in a title/de-slugged title itself,
  * e.g. "New York Knicks 1946-1953 Home and Road Jersey" or "Boston Celtics
  * 2017 Present Association Jersey" (present tense from a "-present" slug).
@@ -188,12 +198,12 @@ export const parseSeasonSpanFromDescription = (description: string): SeasonSpan 
  */
 export const parseSeasonSpanFromTitle = (
 	title: string,
-	nowYear: number = new Date().getFullYear(),
+	seasonEndYearNow: number = currentSeasonEndYear(),
 ): SeasonSpan | null => {
 	const range = title.match(/(\d{4})[\s-]+(\d{4}|Present)(?!\d)/i);
 	if (range) {
 		const startYear = parseInt(range[1], 10) + 1;
-		const endYear = /present/i.test(range[2]) ? nowYear + 1 : parseInt(range[2], 10);
+		const endYear = /present/i.test(range[2]) ? seasonEndYearNow : parseInt(range[2], 10);
 		return { seasons: [], startYear, endYear };
 	}
 
@@ -205,9 +215,10 @@ export const parseSeasonSpanFromTitle = (
 
 export const parseSeasonSpan = (
 	item: RawGalleryItem,
-	nowYear?: number,
+	seasonEndYearNow?: number,
 ): SeasonSpan | null =>
-	parseSeasonSpanFromDescription(item.description) ?? parseSeasonSpanFromTitle(item.title, nowYear);
+	parseSeasonSpanFromDescription(item.description) ??
+	parseSeasonSpanFromTitle(item.title, seasonEndYearNow);
 
 /**
  * Best-effort slot bucket from a title's wording. The site's own taxonomy is
@@ -330,9 +341,9 @@ export const buildParsedJersey = (
 	slug: string,
 	franchiseNames: Record<string, string>,
 	problems: string[],
-	nowYear?: number,
+	seasonEndYearNow?: number,
 ): ParsedJersey | null => {
-	const span = parseSeasonSpan(item, nowYear);
+	const span = parseSeasonSpan(item, seasonEndYearNow);
 	if (!span) {
 		problems.push(`${slug}: "${item.title}" has no parseable season span`);
 		return null;
