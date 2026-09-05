@@ -72,9 +72,12 @@ const MAX_YEAR = new Date().getFullYear() + 2;
 
 // "jersey" (the CDN URL) is deliberately excluded - it only exists after a
 // real upload, not under --check - mirroring how refresh-historical-logos.ts
-// excludes "logo" from its own required-fields list.
+// excludes "logo" from its own required-fields list. "franchiseName" is also
+// excluded: buildParsedJersey leaves it "" by design for a handful of
+// defunct-page teams with no historicalLogos.json entry of their own (see
+// resolveFranchise's doc comment) - requiring it here would contradict that
+// and refuse to write every real run.
 const REQUIRED_FIELDS: (keyof ParsedJersey)[] = [
-	"franchiseName",
 	"name",
 	"league",
 	"slot",
@@ -83,15 +86,21 @@ const REQUIRED_FIELDS: (keyof ParsedJersey)[] = [
 	"years",
 ];
 
-const fetchWithRetry = async (url: string, headers: Record<string, string>) => {
+const fetchWithRetry = async (
+	url: string,
+	headers: Record<string, string>,
+	retryStatuses: number[] = [429],
+) => {
 	for (let attempt = 0; attempt < RETRY_LIMIT; attempt++) {
 		const response = await fetch(url, { headers });
-		if (response.status !== 429) {
+		if (!retryStatuses.includes(response.status)) {
 			return response;
 		}
 		await sleep(IMAGE_SPACING_MS * 5 * (attempt + 1));
 	}
-	throw new Error(`${url} kept returning 429 after ${RETRY_LIMIT} retries`);
+	throw new Error(
+		`${url} kept returning ${retryStatuses.join("/")} after ${RETRY_LIMIT} retries`,
+	);
 };
 
 const fetchInstanceToken = async (): Promise<string> => {
@@ -140,33 +149,59 @@ const loadFranchiseNames = (): Record<string, string> => {
 const isAvif = (bytes: Uint8Array) =>
 	bytes.length > 12 && String.fromCharCode(bytes[4], bytes[5], bytes[6], bytes[7]) === "ftyp";
 
+const PNG_MAGIC = [0x89, 0x50, 0x4e, 0x47];
+const isPng = (bytes: Uint8Array) =>
+	bytes.length > PNG_MAGIC.length && PNG_MAGIC.every((byte, i) => bytes[i] === byte);
+
+export interface FetchedImage {
+	bytes: Uint8Array;
+	format: "avif" | "png";
+}
+
 /**
  * Downloads one jersey at a fixed 400px width, forcing Wix's AVIF encoder via
  * the Accept header - without it the same URL serves a ~3-8x heavier PNG.
+ * Wix occasionally 400s this endpoint transiently (confirmed by hand: the
+ * exact same URL succeeds seconds later) and, less often, honors the
+ * `enc_avif` request but serves plain PNG bytes anyway while still claiming
+ * `Content-Type: image/avif` - both are retried/detected rather than treated
+ * as failures, but a persistently-failing or unrecognized response still
+ * records a problem and returns null rather than aborting the whole run.
  */
 const fetchJerseyImage = async (
 	mediaUrl: string,
 	label: string,
 	problems: string[],
-): Promise<Uint8Array | null> => {
+): Promise<FetchedImage | null> => {
 	const basename = mediaUrl.split("/").pop();
 	const transformUrl = `${mediaUrl}/v1/fit/w_400,h_400,q_85,enc_avif,quality_auto/${basename}`;
 
-	const response = await fetchWithRetry(transformUrl, {
-		"User-Agent": USER_AGENT,
-		Accept: "image/avif",
-	});
+	let response: Response;
+	try {
+		response = await fetchWithRetry(
+			transformUrl,
+			{ "User-Agent": USER_AGENT, Accept: "image/avif" },
+			[429, 400],
+		);
+	} catch (err) {
+		problems.push(`${label}: ${err instanceof Error ? err.message : err}`);
+		return null;
+	}
 	if (!response.ok) {
 		problems.push(`${label}: image request returned ${response.status}`);
 		return null;
 	}
 
 	const bytes = new Uint8Array(await response.arrayBuffer());
-	if (bytes.length < 200 || !isAvif(bytes)) {
-		problems.push(`${label}: response did not look like an AVIF image`);
+	if (bytes.length < 200) {
+		problems.push(`${label}: image response was too small to be real`);
 		return null;
 	}
-	return bytes;
+	if (isAvif(bytes)) return { bytes, format: "avif" };
+	if (isPng(bytes)) return { bytes, format: "png" };
+
+	problems.push(`${label}: response did not look like an AVIF or PNG image`);
+	return null;
 };
 
 /** Wix media ids are globally unique per asset - reused as the S3 key. */
@@ -290,21 +325,22 @@ const main = async () => {
 		// Fetched (and validated) in both modes - this is --check's actual
 		// value, confirming Wix's image pipeline still behaves as expected -
 		// but only uploaded and kept when actually writing output.
-		const bytes = await fetchJerseyImage(row.mediaUrl, row.name, problems);
+		const image = await fetchJerseyImage(row.mediaUrl, row.name, problems);
 		await sleep(IMAGE_SPACING_MS);
-		if (!bytes) continue;
+		if (!image) continue;
 
 		let jerseyUrl = "";
 		if (upload) {
+			const objectKey = `jerseys/historical/${key}.${image.format}`;
 			await upload.s3Client.send(
 				new PutObjectCommand({
 					Bucket: upload.bucketName,
-					Key: `jerseys/historical/${key}.avif`,
-					Body: bytes,
-					ContentType: "image/avif",
+					Key: objectKey,
+					Body: image.bytes,
+					ContentType: `image/${image.format}`,
 				}),
 			);
-			jerseyUrl = `https://${upload.distributionDomain}/jerseys/historical/${key}.avif`;
+			jerseyUrl = `https://${upload.distributionDomain}/${objectKey}`;
 		}
 
 		const { mediaUrl: _mediaUrl, ...cleanRow } = row;
