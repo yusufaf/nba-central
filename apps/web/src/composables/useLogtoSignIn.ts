@@ -14,18 +14,31 @@ interface SignInOptions {
 // otherwise show up here as a false "sign-in failed". We only treat it as
 // our own failure if this call is the one that just set it.
 export function useLogtoSignIn(buildOptions: () => SignInOptions) {
-    const { signIn, isAuthenticated, error: logtoError } = useLogto();
+    const { signIn, isAuthenticated, getAccessToken, error: logtoError } = useLogto();
     const router = useRouter();
     const error = ref<string>();
     const isSigningIn = ref(false);
 
     async function startSignIn() {
-        if (isAuthenticated.value) {
-            router.push('/');
-            return;
-        }
         if (isSigningIn.value) {
             return;
+        }
+
+        if (isAuthenticated.value) {
+            // isAuthenticated only reflects token presence, not expiry — a
+            // stale session with a dead refresh token would otherwise land
+            // here and bounce home instead of ever reaching a real sign-in.
+            // getAccessToken() refreshes on demand and resolves undefined
+            // (rather than throwing) if that refresh fails. Probe the same
+            // API-resource token App.vue actually needs — the default-resource
+            // token has its own refresh entry and can be valid independently.
+            isSigningIn.value = true;
+            const accessToken = await getAccessToken(import.meta.env.VITE_LOGTO_API_RESOURCE);
+            isSigningIn.value = false;
+            if (accessToken) {
+                router.push('/');
+                return;
+            }
         }
 
         isSigningIn.value = true;
