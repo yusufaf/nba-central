@@ -1,10 +1,22 @@
 <script setup lang="ts">
+import { computed } from 'vue';
 import { RouterLink } from 'vue-router';
+import { useLogto } from '@logto/vue';
 import { ROUTES } from '@/constants/constants';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { Separator } from '@/components/ui/separator';
 import { Menu } from 'lucide-vue-next';
+
+const { isAuthenticated, signOut } = useLogto();
+
+// Login is rendered separately below so it can swap for Logout once
+// isAuthenticated flips — the plain route loop has no notion of auth state.
+const navRoutes = computed(() => ROUTES.filter((route) => route.path !== '/login'));
+
+function handleSignOut() {
+    signOut(window.location.origin);
+}
 </script>
 
 <template>
@@ -23,11 +35,15 @@ import { Menu } from 'lucide-vue-next';
             <!-- Desktop Nav -->
             <nav class="md:flex flex-1 ml-8">
                 <ul>
-                    <template v-for="route in ROUTES" :key="route.id">
+                    <template v-for="route in navRoutes" :key="route.id">
                         <RouterLink :class="route?.class" :to="route.path">
                             {{ route.name }}
                         </RouterLink>
                     </template>
+                    <RouterLink v-if="!isAuthenticated" class="login" to="/login">
+                        Login
+                    </RouterLink>
+                    <button v-else class="login" @click="handleSignOut">Logout</button>
                 </ul>
             </nav>
 
@@ -40,7 +56,7 @@ import { Menu } from 'lucide-vue-next';
                 </SheetTrigger>
                 <SheetContent>
                     <nav class="flex flex-col gap-4 mt-8">
-                        <template v-for="route in ROUTES" :key="route.id">
+                        <template v-for="route in navRoutes" :key="route.id">
                             <RouterLink
                                 :class="['text-lg font-semibold', route?.class]"
                                 :to="route.path"
@@ -49,6 +65,16 @@ import { Menu } from 'lucide-vue-next';
                             </RouterLink>
                             <Separator />
                         </template>
+                        <RouterLink
+                            v-if="!isAuthenticated"
+                            class="text-lg font-semibold login"
+                            to="/login"
+                        >
+                            Login
+                        </RouterLink>
+                        <button v-else class="text-lg font-semibold login text-left" @click="handleSignOut">
+                            Logout
+                        </button>
                     </nav>
                 </SheetContent>
             </Sheet>
@@ -75,15 +101,20 @@ ul {
     gap: 2rem;
 }
 
-nav a {
+nav a,
+nav button {
     font-weight: 600;
     text-decoration: none;
     font-size: 1.15rem;
     color: hsl(var(--primary-foreground));
     padding: 0.5rem 0;
+    background: none;
+    border: none;
+    cursor: pointer;
 }
 
-nav a:hover {
+nav a:hover,
+nav button:hover {
     opacity: 0.8;
 }
 
