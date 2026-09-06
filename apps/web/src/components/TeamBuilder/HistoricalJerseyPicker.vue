@@ -164,12 +164,12 @@ const handleJerseyClick = (jersey: HistoricalJersey) => {
                                 height="400"
                                 loading="lazy"
                             />
-                            <span v-if="jersey.jersey === teamJersey" class="team-jersey-check">
-                                <Check class="h-3 w-3" />
-                            </span>
                             <span v-if="jersey.slot === 'alternate'" class="team-jersey-badge">
                                 Alternate
                             </span>
+                        </span>
+                        <span v-if="jersey.jersey === teamJersey" class="team-jersey-check">
+                            <Check class="h-3 w-3" />
                         </span>
                         <span class="team-jersey-caption">
                             <span class="team-jersey-name">{{ jersey.franchiseName }}</span>
@@ -310,6 +310,7 @@ const handleJerseyClick = (jersey: HistoricalJersey) => {
 }
 
 .team-jersey-tile {
+    position: relative;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -362,9 +363,12 @@ const handleJerseyClick = (jersey: HistoricalJersey) => {
 }
 
 .team-jersey-check {
+    /* Positioned relative to the tile, not the plate - the plate clips
+       overflow for its artwork, which cut this badge off at the corner
+       when it lived inside it. */
     position: absolute;
-    top: -0.375rem;
-    right: -0.375rem;
+    top: 0.125rem;
+    right: 0.125rem;
     display: flex;
     align-items: center;
     justify-content: center;
