@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, computed } from "vue";
-import { WESTERN_TEAMS, EASTERN_TEAMS } from "@/constants/constants";
+import { CONFERENCE_FILTER_TEAMS } from "@/constants/constants";
 import type { Arena, SortDirection, DrawerSide } from "@/models/types";
 import arenaData from "@/assets/data/arenas.json";
 import { getRandomIndex, getWikipediaUrl } from "@/constants/utilities";
@@ -70,12 +70,12 @@ const sortedArenaData = computed(() => {
             });
         case "Capacity":
             return copyArenaData.sort((a: Arena, b: Arena) => {
-                const capacityA = parseInt(a.capacity.replace(",", ""));
-                const capacityB = parseInt(b.capacity.replace(",", ""));
+                const capacityA = parseInt(a.capacity.replaceAll(",", ""));
+                const capacityB = parseInt(b.capacity.replaceAll(",", ""));
                 return sortModifier * (capacityA - capacityB);
             });
         default:
-            return typedArenaData;
+            return copyArenaData;
     }
 });
 
@@ -90,27 +90,14 @@ const filteredArenaData = computed(() => {
         );
     }
 
-    /* Apply checkbox filters */
+    /* Apply checkbox filters - a team only needs to match one selected
+       conference, not all of them. */
     if (selectedFilters.value.length > 0) {
-        copyArenaData = copyArenaData.filter((arena: Arena) => {
-            const { team } = arena;
-
-            if (selectedFilters.value.includes("Western Conference")) {
-                const isWesternTeam = WESTERN_TEAMS.includes(team);
-                if (!isWesternTeam) {
-                    return false;
-                }
-            }
-
-            if (selectedFilters.value.includes("Eastern Conference")) {
-                const isEasternTeam = EASTERN_TEAMS.includes(team);
-                if (!isEasternTeam) {
-                    return false;
-                }
-            }
-
-            return true;
-        });
+        copyArenaData = copyArenaData.filter((arena: Arena) =>
+            selectedFilters.value.some((filter) =>
+                CONFERENCE_FILTER_TEAMS[filter]?.includes(arena.team)
+            )
+        );
     }
 
     return copyArenaData;
@@ -265,8 +252,8 @@ const toggleFilter = (filter: string) => {
                                 <DropdownMenuCheckboxItem
                                     v-for="filter in ARENA_FILTERS"
                                     :key="filter"
-                                    :checked="selectedFilters.includes(filter)"
-                                    @update:checked="() => toggleFilter(filter)"
+                                    :model-value="selectedFilters.includes(filter)"
+                                    @update:model-value="() => toggleFilter(filter)"
                                     class="cursor-pointer focus:!bg-accent"
                                 >
                                     {{ filter }}
@@ -288,7 +275,11 @@ const toggleFilter = (filter: string) => {
 
                 <Separator class="my-4 flex-shrink-0" />
 
-                <ScrollArea class="flex-1 overflow-auto">
+                <!-- -mr-6 cancels the Sheet's own right padding (p-6) so the
+                     scrollbar rides the panel's true edge instead of sitting
+                     1.5rem in from it; arena-list's pr-6 puts that space back
+                     as room for the cards, clear of the scrollbar itself. -->
+                <ScrollArea class="flex-1 -mr-6">
                     <!-- Empty State -->
                     <div v-if="filteredArenaData.length === 0" class="flex flex-col items-center justify-center py-12 px-4 text-center">
                         <div class="h-16 w-16 text-muted-foreground/50 mb-4 flex items-center justify-center text-4xl">🏟️</div>
@@ -299,7 +290,7 @@ const toggleFilter = (filter: string) => {
                     </div>
 
                     <!-- Arena List -->
-                    <div v-else class="arena-list pr-2">
+                    <div v-else class="arena-list pr-6">
                         <div
                             v-for="(arena, index) in filteredArenaData"
                             :key="index"

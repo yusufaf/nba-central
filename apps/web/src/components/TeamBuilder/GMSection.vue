@@ -1,7 +1,9 @@
 <script setup lang="ts">
 import { ref, computed } from "vue";
-import type { GM, SortDirection, DrawerSide } from "@/models/types";
+import type { GM, NBATeam, SortDirection, DrawerSide } from "@/models/types";
+import { CONFERENCE_FILTER_TEAMS } from "@/constants/constants";
 import gmData from "@/assets/data/execs.json";
+import nbaTeamsData from "@/assets/data/nbaTeams.json";
 import { getRandomIndex, getWikipediaUrl } from "@/constants/utilities";
 import ExternalLinksMenu from "@/components/ExternalLinksMenu.vue";
 import { useCustomGMs } from "@/composables/useCustomGMs";
@@ -69,6 +71,20 @@ const sortOptions = ["Alphabetic"];
 const selectedSort = ref<string | null>(null);
 const selectedFilters = ref<string[]>([]);
 const GM_FILTERS = ["Western Conference", "Eastern Conference"];
+// A GM matches a selected conference if any team on their resume is in it;
+// multiple selected filters are OR-ed, same reasoning as ArenaSection.
+
+// GM.teams entries aren't full team names like Arena's - execs.json gives
+// "BOS (2003-21)" (Basketball-Reference abbreviation + year range) and
+// CreateCustomGMModal stores a bare abbreviation ("BOS"). Both need
+// resolving to a full name before they mean anything against
+// WESTERN_TEAMS/EASTERN_TEAMS.
+const ABBR_TO_FULL_NAME: Record<string, string> = Object.fromEntries(
+    (nbaTeamsData as NBATeam[]).map((team) => [team.abbr, team.name])
+);
+const teamAbbrToFullName = (entry: string): string | undefined =>
+    ABBR_TO_FULL_NAME[entry.match(/^[A-Z]+/)?.[0] ?? ""];
+
 const sortDirection = ref<SortDirection>("asc");
 
 /* Computed Props */
@@ -104,10 +120,17 @@ const filteredGMData = computed(() => {
         );
     }
 
-    /* Apply checkbox filters - Note: GM filters not implemented yet */
+    /* Apply checkbox filters - a GM matches if any of their teams is in a
+       selected conference. */
     if (selectedFilters.value.length > 0) {
-        // Filter logic would go here when implemented
-        return copyGMData;
+        copyGMData = copyGMData.filter((gm: GM) =>
+            selectedFilters.value.some((filter) =>
+                gm.teams?.some((entry) => {
+                    const fullName = teamAbbrToFullName(entry);
+                    return !!fullName && CONFERENCE_FILTER_TEAMS[filter]?.includes(fullName);
+                })
+            )
+        );
     }
 
     return copyGMData;
@@ -342,8 +365,8 @@ const handleDeleteGM = async () => {
                                 <DropdownMenuCheckboxItem
                                     v-for="filter in GM_FILTERS"
                                     :key="filter"
-                                    :checked="selectedFilters.includes(filter)"
-                                    @update:checked="() => toggleFilter(filter)"
+                                    :model-value="selectedFilters.includes(filter)"
+                                    @update:model-value="() => toggleFilter(filter)"
                                     class="cursor-pointer focus:!bg-accent"
                                 >
                                     {{ filter }}

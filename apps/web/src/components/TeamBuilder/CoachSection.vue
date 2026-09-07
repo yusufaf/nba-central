@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue';
 import type { Coach, SortDirection, DrawerSide } from '@/models/types';
+import { CURRENT_SEASON_START_YEAR } from '@/constants/constants';
 import coachesData from '@/assets/data/coaches.json';
 import { getRandomIndex, roundValueToNPlaces, getWikipediaUrl } from '@/constants/utilities';
 import ExternalLinksMenu from '@/components/ExternalLinksMenu.vue';
@@ -168,14 +169,27 @@ const filteredCoachesData = computed(() => {
         );
     }
 
-    /* Apply checkbox filters */
+    /* Apply checkbox filters - both are AND-ed: they're independent facets
+       (still coaching vs. career honor), not mutually-exclusive categories
+       like ArenaSection/GMSection's conference filters, so a coach ticking
+       both wants the intersection, not the union. */
     if (selectedFilters.value.length > 0) {
         copyCoachData = copyCoachData.filter((coach: Coach) => {
-            const { name } = coach;
+            const { name, to } = coach;
             const isHallOfFamer = name.endsWith('*');
+            // coaches.json's `to` is a season-end year (the 2025-26 season
+            // is `to: 2026`) - CURRENT_SEASON_START_YEAR is that season's
+            // start year, so +1 gets back to the same end-year convention.
+            const isCurrentSeason = to === CURRENT_SEASON_START_YEAR + 1;
 
             if (selectedFilters.value.includes('Hall of Famer')) {
                 if (!isHallOfFamer) {
+                    return false;
+                }
+            }
+
+            if (selectedFilters.value.includes('Current Season Only')) {
+                if (!isCurrentSeason) {
                     return false;
                 }
             }
@@ -452,8 +466,8 @@ const getCleanName = (coachName: string) => coachName.replace(/\*$/, '').trim();
                                 <DropdownMenuCheckboxItem
                                     v-for="filter in COACH_FILTERS"
                                     :key="filter"
-                                    :checked="selectedFilters.includes(filter)"
-                                    @update:checked="() => toggleFilter(filter)"
+                                    :model-value="selectedFilters.includes(filter)"
+                                    @update:model-value="() => toggleFilter(filter)"
                                     class="cursor-pointer focus:!bg-accent"
                                 >
                                     {{ filter }}
