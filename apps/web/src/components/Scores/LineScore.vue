@@ -37,7 +37,7 @@ const lineScore = computed(() => {
     </div>
 </template>
 
-<style>
+<style scoped>
 .score-value {
     font-size: 1.5rem;
 }

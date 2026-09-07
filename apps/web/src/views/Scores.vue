@@ -16,6 +16,8 @@ import GameReplaysWarning from "@/components/Scores/GameReplaysWarning.vue";
 import ManageNotifications from "@/components/Scores/ManageNotifications.vue";
 import { useGameNotifications } from "@/composables/useGameNotifications";
 import { useScoresPreferences } from "@/composables/useScoresPreferences";
+import { useScoresRouteState } from "@/composables/useScoresRouteState";
+import { formatDateForEspn, isSameDay } from "@/utils/date";
 import OptionsMenu from "@/components/Scores/OptionsMenu.vue";
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -32,7 +34,10 @@ const scoreData = ref<ESPNScoreboardResponse | null>(null);
 const today = new Date();
 const minDate = new Date("2000/01/01");
 
-const selectedDate = ref<Date>(today);
+const { selectedDate, conferenceFilter, selectedView } = useScoresRouteState({
+    minDate,
+    maxDate: today,
+});
 
 const gameCounts = ref<Map<string, number>>(new Map());
 const fetchedMonths = ref<Set<string>>(new Set());
@@ -81,13 +86,6 @@ const primaryDateString = computed(() =>
     })
 );
 
-const formatDateForEspn = (d: Date): string => {
-    const year = d.getFullYear();
-    const month = String(d.getMonth() + 1).padStart(2, "0");
-    const day = String(d.getDate()).padStart(2, "0");
-    return `${year}${month}${day}`;
-};
-
 // const gameStatus = ref([] as any[]);
 const gameData = ref<ESPNEvent[]>([]);
 const games = ref<any[]>([]);
@@ -103,14 +101,6 @@ const hideScores = computed({
 const hideFinishedGames = computed({
     get: () => scoresPreferences.value.hideFinishedGames,
     set: (value) => { scoresPreferences.value.hideFinishedGames = value; },
-});
-const selectedView = computed({
-    get: () => scoresPreferences.value.selectedView,
-    set: (value) => { scoresPreferences.value.selectedView = value; },
-});
-const conferenceFilter = computed({
-    get: () => scoresPreferences.value.conferenceFilter,
-    set: (value) => { scoresPreferences.value.conferenceFilter = value; },
 });
 
 const handleConferenceFilterChange = (value: string | undefined) => {
@@ -319,11 +309,6 @@ const sortedGameData = computed(() => {
 
 const displayedGamesCount = computed(() => filteredGameData.value.length);
 
-const isSameDay = (a: Date, b: Date) =>
-    a.getFullYear() === b.getFullYear() &&
-    a.getMonth() === b.getMonth() &&
-    a.getDate() === b.getDate();
-
 let pollIntervalId: ReturnType<typeof setInterval> | null = null;
 
 const startScorePolling = (events: ESPNEvent[], forDate: Date) => {
@@ -343,7 +328,11 @@ const startScorePolling = (events: ESPNEvent[], forDate: Date) => {
     }, SCOREBOARD_INTERVAL);
 };
 
-watch(selectedDate, async (newDate) => {
+watch(selectedDate, async (newDate, oldDate) => {
+    // useScoresRouteState writes a default ?date= into the URL on mount,
+    // which re-derives selectedDate as a new Date instance for the same
+    // calendar day - skip the refetch when nothing actually changed.
+    if (oldDate && isSameDay(newDate, oldDate)) return;
     const scoresData = await fetchCurrentScores(newDate);
     startScorePolling(scoresData.events ?? [], newDate);
 });
