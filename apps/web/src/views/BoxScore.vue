@@ -15,7 +15,7 @@
                 <Button @click="() => fetchGameSummary()" variant="outline" class="mt-4">
                     Try Again
                 </Button>
-                <Button @click="() => router.push('/scores')" variant="ghost" class="mt-2 ml-2">
+                <Button @click="() => backToScores()" variant="ghost" class="mt-2 ml-2">
                     Back to Scores
                 </Button>
             </div>
@@ -27,7 +27,7 @@
             <GameHeader
                 :game-summary="gameSummary"
                 :is-live="isLive"
-                @back="() => router.push('/scores')"
+                @back="() => backToScores()"
             />
 
             <!-- Quarter Scores -->
@@ -122,6 +122,7 @@
 <script setup lang="ts">
 import { useRoute, useRouter } from 'vue-router';
 import { useGameSummary } from '@/composables/useGameSummary';
+import { toIsoDate } from '@/utils/date';
 import PageShell from '@/layouts/PageShell.vue';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
@@ -138,6 +139,19 @@ const router = useRouter();
 const gameId = route.params.gameId as string;
 
 const { gameSummary, loading, error, isLive, fetchGameSummary } = useGameSummary(gameId);
+
+// Carries the game's date back to /scores so the scoreboard reopens on the
+// same day rather than resetting to today - falls back to a bare navigation
+// if the game's date isn't loaded yet (e.g. the error state before any
+// fetch has succeeded).
+const backToScores = () => {
+    const gameDate = gameSummary.value?.header?.competitions?.[0]?.date;
+    if (!gameDate) {
+        router.push('/scores');
+        return;
+    }
+    router.push({ name: 'scores', query: { date: toIsoDate(new Date(gameDate)) } });
+};
 </script>
 
 <style scoped>

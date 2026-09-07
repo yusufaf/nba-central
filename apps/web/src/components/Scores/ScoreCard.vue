@@ -256,7 +256,11 @@ const toggleGameNotification = (): void => {
                     </div>
                 </div>
             </div>
-            <div class="scores-section" v-if="showScoresSection">
+            <div
+                class="scores-section"
+                v-if="showScoresSection"
+                :style="{ '--period-count': timePeriodLabels.length - 1 }"
+            >
                 <div class="time-periods">
                     <template
                         v-for="(
@@ -521,13 +525,17 @@ const toggleGameNotification = (): void => {
     flex-direction: column;
     gap: 0.5rem;
     flex-shrink: 0;
-    min-width: 12rem;
+    /* An explicit width, not just min-width: flex-shrink: 0 keeps a flex
+       item at its max-content size regardless of min-width, so a long
+       "(62-20, 29-12 Away)" record forced this section - and the score
+       grid it was squeezing - wider than intended unless the box is
+       actually constrained enough to wrap. */
+    width: 10rem;
 }
 
 .team-info {
     display: flex;
     flex-direction: column;
-    white-space: nowrap;
 }
 
 .game-status {
@@ -547,18 +555,35 @@ const toggleGameNotification = (): void => {
     display: flex;
     flex-direction: column;
     gap: 1rem;
-    margin-left: 1rem;
+    margin-left: 0.75rem;
+    /* Lets the grid below shrink past its own min-content instead of
+       forcing the card wider than its 1fr grid column - the scroll
+       fallback below is what actually catches an OT-heavy game. */
+    min-width: 0;
+    overflow-x: auto;
 }
 
 .scores-container,
 .time-periods {
     display: grid;
-    grid-auto-flow: column;
-    grid-auto-columns: 2rem;
+    /* Explicit tracks, not grid-auto-columns: a fixed 2rem column was
+       narrower than a 3-digit total ever needed to be, so the score just
+       rendered outside the card border. --period-count comes from the
+       template (timePeriodLabels.length - 1); the trailing 2.75rem track
+       is sized for the total, which runs larger (1.5rem/600) than a
+       per-quarter score. */
+    grid-template-columns: repeat(var(--period-count, 4), 1.75rem) 2.75rem;
     align-items: center;
     text-align: center;
-    justify-content: right;
-    gap: 1rem;
+    /* "safe" - plain `right` pins the grid's right edge to the container
+       even when the grid is wider than it, which pushes the overflow off
+       the *left* (start) edge. In a scrollable LTR container that's
+       negative scroll space - unreachable, so Q1 silently disappeared
+       instead of the total spilling out. `safe` falls back to start
+       alignment exactly when it would otherwise clip like that, so the
+       overflow lands on the right and overflow-x: auto above can reach it. */
+    justify-content: safe right;
+    gap: 0.75rem;
 }
 
 .score {
@@ -687,12 +712,18 @@ const toggleGameNotification = (): void => {
 
     .scores-container,
     .time-periods {
-        grid-auto-columns: 1.5rem;
-        gap: 0.25rem;
+        /* Below the 900px breakpoint .main-section is already a column, so
+           the score grid has the card's full width to itself - no need to
+           squeeze tracks the way the desktop 3-up grid does. Kept wide
+           enough for LineScore's own 1.1rem override below (it doesn't
+           inherit this font-size - see the :deep() rule). */
+        grid-template-columns: repeat(var(--period-count, 4), 1.75rem) 2.5rem;
+        gap: 0.5rem;
         font-size: 0.85rem;
     }
 
-    .score {
+    .score,
+    .scores-container :deep(.score-value) {
         font-size: 1.1rem;
     }
 
