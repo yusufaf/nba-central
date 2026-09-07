@@ -157,7 +157,7 @@ first (see apps/cdk/CLAUDE.md).
 
 ### Authentication Flow
 
-Auth is [Logto](https://logto.io) (self-hosted OIDC, `logto-af.fly.dev`) — a
+Auth is [Logto](https://logto.io) (self-hosted OIDC, `auth.yusufaf.dev`) — a
 shared identity provider also used by Quizaroni. No Cognito, no Clerk.
 
 1. Frontend redirects to Logto's hosted sign-in page (`@logto/vue`'s `signIn()`)
