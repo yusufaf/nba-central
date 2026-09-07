@@ -1,38 +1,38 @@
 <template>
     <div class="space-y-2">
         <!-- Plus/Minus Leaders -->
-        <Card class="border-l-[0.1875rem] border-l-primary">
+        <Card>
             <CardHeader class="pb-1 py-2">
-                <h3 class="font-bold text-sm">Plus/Minus Leaders</h3>
+                <SectionHeading>Plus/Minus Leaders</SectionHeading>
             </CardHeader>
-            <CardContent class="p-2">
-                <div class="grid grid-cols-2 gap-2">
+            <CardContent class="p-3">
+                <div class="grid grid-cols-2 gap-3">
                     <!-- Positive Leaders -->
                     <div>
-                        <h4 class="font-semibold text-green-600 dark:text-green-400 mb-1 text-xs">Top +/-</h4>
+                        <h4 class="font-bold text-success mb-1 text-[0.6875rem] uppercase tracking-[0.06em]">Top +/-</h4>
                         <div class="space-y-0.5">
                             <div
                                 v-for="leader in topPlusMinus"
                                 :key="leader.id"
-                                class="flex items-center justify-between rounded hover:bg-muted/50 p-1 text-xs"
+                                class="flex items-center justify-between rounded hover:bg-muted/50 p-1 text-[0.9375rem]"
                             >
                                 <span class="font-medium truncate">{{ leader.name }}</span>
-                                <span class="text-green-600 dark:text-green-400 font-bold shrink-0">+{{ leader.value }}</span>
+                                <span class="text-success font-bold shrink-0 tabular-nums">+{{ leader.value }}</span>
                             </div>
                         </div>
                     </div>
 
                     <!-- Negative Leaders -->
                     <div>
-                        <h4 class="font-semibold text-red-600 dark:text-red-400 mb-1 text-xs">Bottom +/-</h4>
+                        <h4 class="font-bold text-destructive mb-1 text-[0.6875rem] uppercase tracking-[0.06em]">Bottom +/-</h4>
                         <div class="space-y-0.5">
                             <div
                                 v-for="leader in bottomPlusMinus"
                                 :key="leader.id"
-                                class="flex items-center justify-between rounded hover:bg-muted/50 p-1 text-xs"
+                                class="flex items-center justify-between rounded hover:bg-muted/50 p-1 text-[0.9375rem]"
                             >
                                 <span class="font-medium truncate">{{ leader.name }}</span>
-                                <span class="text-red-600 dark:text-red-400 font-bold shrink-0">{{ leader.value }}</span>
+                                <span class="text-destructive font-bold shrink-0 tabular-nums">{{ leader.value }}</span>
                             </div>
                         </div>
                     </div>
@@ -41,14 +41,14 @@
         </Card>
 
         <!-- Shooting Efficiency -->
-        <Card class="border-l-[0.1875rem] border-l-primary">
+        <Card>
             <CardHeader class="pb-1 py-2">
-                <h3 class="font-bold text-sm">Shooting Efficiency</h3>
+                <SectionHeading>Shooting Efficiency</SectionHeading>
             </CardHeader>
-            <CardContent class="p-2">
-                <div class="grid grid-cols-2 gap-2">
+            <CardContent class="p-3">
+                <div class="grid grid-cols-2 gap-3">
                     <div v-for="team in boxscore.players" :key="team.team.id">
-                        <h4 class="font-semibold mb-1 flex items-center gap-1 text-xs">
+                        <h4 class="font-semibold mb-1 flex items-center gap-1.5 text-[0.8125rem]">
                             <img :src="team.team.logo" :alt="team.team.abbreviation" class="object-contain shrink-0 w-4 h-4" />
                             {{ team.team.displayName }}
                         </h4>
@@ -56,10 +56,10 @@
                             <div
                                 v-for="player in getTopShooters(team)"
                                 :key="player.id"
-                                class="flex items-center justify-between text-xs"
+                                class="flex items-center justify-between text-[0.8125rem]"
                             >
                                 <span class="truncate">{{ player.name }}</span>
-                                <span class="font-mono shrink-0 ml-1">
+                                <span class="font-mono shrink-0 ml-1 tabular-nums">
                                     {{ player.fg }} FG ({{ player.fgPct }}%)
                                 </span>
                             </div>
@@ -70,34 +70,34 @@
         </Card>
 
         <!-- Bench Production -->
-        <Card class="border-l-[0.1875rem] border-l-primary">
+        <Card>
             <CardHeader class="pb-1 py-2">
-                <h3 class="font-bold text-sm">Bench Production</h3>
+                <SectionHeading>Bench Production</SectionHeading>
             </CardHeader>
-            <CardContent class="p-2">
-                <div class="space-y-2">
+            <CardContent class="p-3">
+                <div class="space-y-3">
                     <div v-for="team in boxscore.players" :key="team.team.id">
                         <div class="flex items-center justify-between mb-1">
-                            <div class="flex items-center gap-1">
+                            <div class="flex items-center gap-1.5">
                                 <img :src="team.team.logo" :alt="team.team.abbreviation" class="object-contain shrink-0 w-4 h-4" />
-                                <span class="font-semibold text-xs">{{ team.team.displayName }}</span>
+                                <span class="font-semibold text-[0.8125rem]">{{ team.team.displayName }}</span>
                             </div>
-                            <span class="font-bold text-primary text-sm">
+                            <span class="font-bold text-primary text-[0.9375rem] tabular-nums">
                                 {{ getBenchPoints(team) }} pts
                             </span>
                         </div>
-                        <div class="grid grid-cols-3 text-center gap-2 text-xs">
+                        <div class="grid grid-cols-3 text-center gap-2 text-[0.8125rem]">
                             <div>
                                 <p class="text-foreground/50">Rebounds</p>
-                                <p class="font-semibold">{{ getBenchStat(team, 5) }}</p>
+                                <p class="font-semibold tabular-nums">{{ getBenchStat(team, 'REB') }}</p>
                             </div>
                             <div>
                                 <p class="text-foreground/50">Assists</p>
-                                <p class="font-semibold">{{ getBenchStat(team, 6) }}</p>
+                                <p class="font-semibold tabular-nums">{{ getBenchStat(team, 'AST') }}</p>
                             </div>
                             <div>
                                 <p class="text-foreground/50">FG%</p>
-                                <p class="font-semibold">{{ getBenchFgPct(team) }}%</p>
+                                <p class="font-semibold tabular-nums">{{ getBenchFgPct(team) }}%</p>
                             </div>
                         </div>
                     </div>
@@ -110,6 +110,7 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
+import SectionHeading from '@/components/layout/SectionHeading.vue';
 import type { ESPNGameSummary } from '@/models/types';
 
 interface Props {
@@ -210,9 +211,12 @@ const getBenchPoints = (team: any) => {
         .reduce((sum: number, p: any) => sum + (parseInt(p.stats[ptsIndex]) || 0), 0) || 0;
 };
 
-const getBenchStat = (team: any, statIndex: number) => {
+const getBenchStat = (team: any, statName: string) => {
     const stats = team.statistics?.[0];
-    if (!stats?.athletes) return 0;
+    if (!stats?.names || !stats?.athletes) return 0;
+
+    const statIndex = stats.names.indexOf(statName);
+    if (statIndex === -1) return 0;
 
     return stats.athletes
         .filter((p: any) => !p.starter && !p.didNotPlay)

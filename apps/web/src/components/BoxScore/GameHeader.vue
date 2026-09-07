@@ -30,14 +30,14 @@
                         <div class="flex items-baseline gap-3">
                             <span
                                 class="font-extrabold tabular-nums text-[2.5rem] leading-none"
-                                :class="awayTeam.winner ? 'text-primary' : 'text-muted-foreground'"
+                                :class="awayIsWinner ? 'text-primary' : 'text-muted-foreground'"
                             >
                                 {{ awayTeam.score || '0' }}
                             </span>
                             <span class="text-base text-muted-foreground font-light leading-none">—</span>
                             <span
                                 class="font-extrabold tabular-nums text-[2.5rem] leading-none"
-                                :class="homeTeam.winner ? 'text-primary' : 'text-muted-foreground'"
+                                :class="homeIsWinner ? 'text-primary' : 'text-muted-foreground'"
                             >
                                 {{ homeTeam.score || '0' }}
                             </span>
@@ -97,6 +97,8 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { ChevronLeft, MapPin, Calendar, Tv } from 'lucide-vue-next';
 import type { ESPNGameSummary } from '@/models/types';
+import { isWinningTeam } from '@/utils/lineScore';
+import { getTeamLogo as resolveTeamLogo } from '@/utils/teamLogo';
 
 interface Props {
     gameSummary: ESPNGameSummary;
@@ -114,15 +116,15 @@ const homeTeam = computed(() => competition.value?.competitors.find(c => c.homeA
 
 const getTeamLogo = (homeAway: 'home' | 'away'): string => {
     const competitor = homeAway === 'home' ? homeTeam.value : awayTeam.value;
-    if (competitor?.team?.logo) return competitor.team.logo;
-    const boxscorePlayers = props.gameSummary.boxscore?.players;
-    if (boxscorePlayers) {
-        const idx = homeAway === 'away' ? 0 : 1;
-        const fallback = boxscorePlayers[idx]?.team?.logo;
-        if (fallback) return fallback;
-    }
-    return '';
+    if (!competitor) return '';
+    return resolveTeamLogo(competitor, homeAway, props.gameSummary.boxscore?.players);
 };
+
+// summary competitors don't carry `winner` (see utils/lineScore.ts) - the
+// big score numbers rendered text-muted-foreground for both teams even in
+// a completed game until this derived it from the score comparison instead.
+const awayIsWinner = computed(() => awayTeam.value ? isWinningTeam(awayTeam.value, homeTeam.value) : false);
+const homeIsWinner = computed(() => homeTeam.value ? isWinningTeam(homeTeam.value, awayTeam.value) : false);
 
 const awayTeamRecord = computed(() => {
     const overall = awayTeam.value?.records?.find(r => r.type === 'total');

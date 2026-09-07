@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed } from "vue";
+import { periodScore } from "@/utils/lineScore";
 
 const props = defineProps<{
     team: any;
@@ -15,7 +16,7 @@ const lineScore = computed(() => {
         return [];
     }
 
-    const scores = lineScores.map((score: any) => score.value);
+    const scores = lineScores.map(periodScore);
 
     /* 
         If the length of scores is less than numberOfTimePeriods, pad the array with empty strings
