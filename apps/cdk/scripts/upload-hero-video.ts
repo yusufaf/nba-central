@@ -18,6 +18,16 @@
  * re-run that changes the video gets a new URL under CACHING_OPTIMIZED
  * without needing a CloudFront invalidation - same reasoning as any
  * content-hashed build asset.
+ *
+ * apps/web/public/hero/hero-loop.mp4 (this script's source file) was
+ * deleted from the working tree along with its Git LFS tracking - it is
+ * NOT checked in anywhere going forward. To re-run this script (e.g. to
+ * swap in a new clip), either supply a new file at that path, or recover
+ * the original from history: `git log -- apps/web/public/hero/hero-loop.mp4`
+ * finds the last commit that had it, then `git checkout <that commit> --
+ * apps/web/public/hero/hero-loop.mp4` restores it there (the LFS object
+ * itself is untouched, so this needs a working `git lfs` install to smudge
+ * it back into a real file rather than another pointer).
  */
 import * as fs from "fs";
 import * as crypto from "crypto";
@@ -44,16 +54,20 @@ const main = async () => {
 	const checkOnly = isCheckOnly();
 
 	if (!fs.existsSync(SOURCE_PATH)) {
-		throw new Error(`No hero video at ${SOURCE_PATH}`);
+		throw new Error(
+			`No hero video at ${SOURCE_PATH} - it is not checked in (see the ` +
+				`module comment at the top of this file for how to recover the ` +
+				`original from git history, or supply a new clip at that path).`,
+		);
 	}
 	const bytes = new Uint8Array(fs.readFileSync(SOURCE_PATH));
 
 	if (bytes.length < 1000) {
-		// Exactly what a Git LFS pointer looks like if `git lfs pull` was
-		// never run for this checkout - a few hundred bytes of text, not a
-		// video. Catch it here instead of uploading it as one.
+		// A recovered-from-history file whose LFS object didn't actually
+		// smudge (e.g. no `git lfs` installed) looks exactly like this - a
+		// few hundred bytes of pointer text, not a video.
 		throw new Error(
-			`${SOURCE_PATH} is only ${bytes.length} bytes - looks like an unfetched Git LFS pointer, not a real video. Run "git lfs pull".`,
+			`${SOURCE_PATH} is only ${bytes.length} bytes - looks like an unsmudged Git LFS pointer, not a real video.`,
 		);
 	}
 	if (!isMp4(bytes)) {

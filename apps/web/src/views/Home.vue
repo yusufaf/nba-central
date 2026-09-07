@@ -11,11 +11,13 @@ const router = useRouter();
 // hero-loop.mp4 used to be Git LFS-tracked and served straight from public/ -
 // CI's checkout never fetched LFS objects, so production served the LFS
 // pointer text labeled video/mp4, and the browser's decoder failed with no
-// visible error. Logging here is the safety net that was missing.
+// visible error. Logging here (unconditionally - this app has no error
+// reporting service, just console.error, everywhere else it handles a
+// failure) is the safety net that was missing; a DEV-only version would
+// have stayed silent for exactly the environment - production - the
+// original bug happened in.
 const onVideoError = (event: Event) => {
-  if (import.meta.env.DEV) {
-    console.error("Hero video failed to load, poster will show instead:", event);
-  }
+  console.error("Hero video failed to load, poster will show instead:", event);
 };
 </script>
 
