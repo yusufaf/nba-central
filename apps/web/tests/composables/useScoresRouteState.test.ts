@@ -88,6 +88,22 @@ describe("useScoresRouteState", () => {
         expect(router.currentRoute.value.query.date).toBe("2026-06-01");
     });
 
+    it("falls back to maxDate instead of throwing when the date picker emits null", async () => {
+        // v-calendar's DatePicker emits null through v-model when a day is
+        // re-clicked to deselect it, since Scores.vue doesn't set
+        // is-required - the setter has to tolerate that even though the
+        // type says Date.
+        const { state, router } = await mountWithRoute();
+        await flushPromises();
+
+        expect(() => {
+            state.selectedDate.value = null as unknown as Date;
+        }).not.toThrow();
+        await flushPromises();
+
+        expect(router.currentRoute.value.query.date).toBe("2026-06-08");
+    });
+
     it("reads a valid conference filter from the query", async () => {
         const { state } = await mountWithRoute({ conf: "EAST" });
         expect(state.conferenceFilter.value).toBe("EAST");

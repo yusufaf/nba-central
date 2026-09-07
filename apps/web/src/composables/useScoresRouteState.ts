@@ -47,7 +47,17 @@ export const useScoresRouteState = (bounds: ScoresRouteStateBounds) => {
             }
             return bounds.maxDate;
         },
-        set: (value) => setQuery({ date: toIsoDate(value) }),
+        set: (value) => {
+            // v-calendar's DatePicker emits null through v-model when a
+            // day without `is-required` is re-clicked to deselect it -
+            // toIsoDate(null) throws, so fall back to today rather than
+            // crashing the page on a second click of the selected date.
+            if (!(value instanceof Date)) {
+                setQuery({ date: toIsoDate(bounds.maxDate) });
+                return;
+            }
+            setQuery({ date: toIsoDate(value) });
+        },
     });
 
     // An absent or invalid ?date= falls back to today silently in the
