@@ -452,8 +452,8 @@ const getCleanName = (coachName: string) => coachName.replace(/\*$/, '').trim();
                                 <DropdownMenuCheckboxItem
                                     v-for="filter in COACH_FILTERS"
                                     :key="filter"
-                                    :checked="selectedFilters.includes(filter)"
-                                    @update:checked="() => toggleFilter(filter)"
+                                    :model-value="selectedFilters.includes(filter)"
+                                    @update:model-value="() => toggleFilter(filter)"
                                     class="cursor-pointer focus:!bg-accent"
                                 >
                                     {{ filter }}
