@@ -1,18 +1,18 @@
 <template>
     <Card>
         <CardHeader class="pb-1 py-1.5">
-            <h3 class="text-xs font-bold">Team Statistics</h3>
+            <SectionHeading>Team Statistics</SectionHeading>
         </CardHeader>
-        <CardContent class="space-y-2 p-2">
+        <CardContent class="space-y-3 p-3">
             <div v-for="stat in comparisonStats" :key="stat.name" class="stat-row">
-                <div class="flex items-center justify-between mb-0.5">
-                    <div class="text-[0.625rem] font-medium">{{ stat.label }}</div>
+                <div class="flex items-center justify-between mb-1">
+                    <div class="text-[0.6875rem] font-bold uppercase tracking-[0.06em] text-foreground/60">{{ stat.label }}</div>
                 </div>
 
                 <div class="grid grid-cols-[1fr_auto_1fr] gap-2 items-center">
                     <!-- Away Team -->
-                    <div class="flex items-center justify-end gap-1">
-                        <span class="text-[0.625rem] font-semibold">{{ stat.awayValue }}</span>
+                    <div class="flex items-center justify-end gap-2">
+                        <span class="text-[0.9375rem] font-semibold tabular-nums">{{ stat.awayValue }}</span>
                         <div class="flex-1 h-3 bg-muted rounded-full overflow-hidden flex justify-end">
                             <div
                                 class="h-full rounded-full transition-all"
@@ -23,14 +23,14 @@
                     </div>
 
                     <!-- Team Names -->
-                    <div class="flex items-center gap-2 text-[0.5rem] text-muted-foreground min-w-[6rem]">
+                    <div class="flex items-center gap-2 text-[0.7rem] font-bold uppercase tracking-[0.08em] text-foreground/60 min-w-[6rem]">
                         <span class="text-right flex-1">{{ awayTeam.team.abbreviation }}</span>
                         <span>vs</span>
                         <span class="text-left flex-1">{{ homeTeam.team.abbreviation }}</span>
                     </div>
 
                     <!-- Home Team -->
-                    <div class="flex items-center gap-1">
+                    <div class="flex items-center gap-2">
                         <div class="flex-1 h-3 bg-muted rounded-full overflow-hidden">
                             <div
                                 class="h-full rounded-full transition-all"
@@ -38,7 +38,7 @@
                                 :style="{ width: `${stat.homePercent}%` }"
                             ></div>
                         </div>
-                        <span class="text-[0.625rem] font-semibold">{{ stat.homeValue }}</span>
+                        <span class="text-[0.9375rem] font-semibold tabular-nums">{{ stat.homeValue }}</span>
                     </div>
                 </div>
             </div>
@@ -49,6 +49,7 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
+import SectionHeading from '@/components/layout/SectionHeading.vue';
 import type { ESPNBoxScoreTeam } from '@/models/types';
 
 interface Props {
@@ -61,6 +62,9 @@ const awayTeam = computed(() => props.teams[0]);
 const homeTeam = computed(() => props.teams[1]);
 
 const comparisonStats = computed(() => {
+    // No `benchPoints` entry: ESPN's boxscore.teams[].statistics[] never
+    // sends that stat name, so a row for it used to sit here looking
+    // configured while .filter() below silently dropped it every render.
     const stats = [
         { name: 'fieldGoalPct', label: 'Field Goal %', isPercentage: true },
         { name: 'threePointFieldGoalPct', label: 'Three Point %', isPercentage: true },
@@ -72,7 +76,6 @@ const comparisonStats = computed(() => {
         { name: 'blocks', label: 'Blocks' },
         { name: 'fastBreakPoints', label: 'Fast Break Points' },
         { name: 'pointsInPaint', label: 'Points in Paint' },
-        { name: 'benchPoints', label: 'Bench Points' },
     ];
 
     return stats

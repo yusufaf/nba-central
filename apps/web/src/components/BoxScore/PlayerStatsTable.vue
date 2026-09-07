@@ -40,7 +40,7 @@
                     <template v-if="starters.length > 0">
                         <TableRow>
                             <TableCell
-                                colspan="100%"
+                                :colspan="totalColumns"
                                 class="text-primary bg-primary/6 py-1 text-[0.7rem] font-bold uppercase tracking-[0.08em]"
                             >
                                 Starters
@@ -83,7 +83,7 @@
                     <template v-if="bench.length > 0">
                         <TableRow>
                             <TableCell
-                                colspan="100%"
+                                :colspan="totalColumns"
                                 class="text-primary bg-primary/6 py-1 text-[0.7rem] font-bold uppercase tracking-[0.08em]"
                             >
                                 Bench
@@ -125,7 +125,7 @@
                     <!-- DNP Players — collapsed -->
                     <template v-if="dnpPlayers.length > 0">
                         <TableRow>
-                            <TableCell colspan="100%" class="py-1 bg-muted/20">
+                            <TableCell :colspan="totalColumns" class="py-1 bg-muted/20">
                                 <button
                                     @click="dnpExpanded = !dnpExpanded"
                                     class="flex items-center justify-between w-full hover:text-foreground transition-colors text-[0.7rem] font-semibold uppercase tracking-[0.08em] text-foreground/60"
@@ -137,20 +137,29 @@
                         </TableRow>
                         <template v-if="dnpExpanded">
                             <TableRow
-                                v-for="player in dnpPlayers"
+                                v-for="(player, rowIndex) in dnpPlayers"
                                 :key="player.athlete.id"
-                                class="opacity-50"
+                                class="hover:bg-muted/50 transition-colors"
+                                :class="{ 'bg-white/[0.015]': rowIndex % 2 === 1 }"
                             >
-                                <TableCell class="sticky left-0 bg-background py-0.5">
-                                    <span class="text-[0.8rem] font-medium">
-                                        {{ player.athlete.displayName }}
-                                        <span class="text-[0.65rem] text-foreground/40">
-                                            · {{ player.athlete.position?.abbreviation }}
-                                            <span v-if="player.reason"> — {{ player.reason }}</span>
-                                        </span>
-                                    </span>
+                                <TableCell class="sticky left-0 bg-background py-1" :class="{ 'bg-white/[0.015]': rowIndex % 2 === 1 }">
+                                    <div class="flex items-center gap-1.5 opacity-50">
+                                        <img
+                                            v-if="player.athlete.headshot?.href"
+                                            :src="player.athlete.headshot.href"
+                                            :alt="player.athlete.displayName"
+                                            class="rounded-full object-cover shrink-0 w-6 h-6"
+                                        />
+                                        <div class="flex flex-col min-w-0">
+                                            <span class="leading-tight text-[0.8rem] font-semibold">{{ player.athlete.displayName }}</span>
+                                            <span class="leading-tight text-[0.65rem] text-foreground/40 truncate">
+                                                {{ player.athlete.position?.abbreviation }}
+                                                <span v-if="player.reason"> — {{ player.reason }}</span>
+                                            </span>
+                                        </div>
+                                    </div>
                                 </TableCell>
-                                <TableCell colspan="100%" class="text-center italic text-xs text-foreground/40">
+                                <TableCell :colspan="statistics.names.length" class="text-center italic text-xs text-foreground/40 opacity-50">
                                     DNP
                                 </TableCell>
                             </TableRow>
@@ -187,6 +196,11 @@ interface Props {
 }
 
 const props = defineProps<Props>();
+
+// Player column + one per stat - real column count for the full-width
+// section-header rows, instead of the technically-invalid colspan="100%"
+// (browsers happen to clamp it to the actual row width, but it isn't one).
+const totalColumns = computed(() => props.statistics.names.length + 1);
 
 const sortColumn = ref<number | 'name' | null>(null);
 const sortDirection = ref<'asc' | 'desc'>('desc');
@@ -328,8 +342,8 @@ const getCellClass = (player: ESPNPlayerStat, columnIndex: number, stat: string)
     }
     if (columnIndex === plusMinusIndex.value && stat && stat !== '-') {
         const val = parseInt(stat);
-        if (val > 0) classes.push('text-green-500');
-        else if (val < 0) classes.push('text-red-500');
+        if (val > 0) classes.push('text-success');
+        else if (val < 0) classes.push('text-destructive');
     }
     return classes.join(' ');
 };

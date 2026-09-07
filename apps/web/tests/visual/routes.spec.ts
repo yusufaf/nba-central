@@ -1,4 +1,5 @@
 import { test, expect, type Page } from '@playwright/test';
+import gameSummaryFixture from './fixtures/game-summary.json' with { type: 'json' };
 
 /**
  * One screenshot per route, plus the overlay surfaces that the global
@@ -104,6 +105,52 @@ test('no Tailwind class on a rendered page failed to compile', async ({ page }) 
         );
         expect(dead, `${path} has classes that emit no CSS`).toEqual([]);
     }
+});
+
+test('route boxscore', async ({ page }) => {
+    // /game/:id was missing from ROUTES entirely - the box score's line
+    // score, DNP rows and stat-tab typography all shipped unreviewed
+    // because no baseline ever rendered them. The shared ESPN stub above
+    // returns { events: [] }, which is fine for every other route but
+    // renders the box score's own empty state - override it with a real
+    // captured summary response for this game's specific URL.
+    await stubNetwork(page);
+    await page.route('**/apis/site/v2/sports/basketball/nba/summary**', (route) =>
+        route.fulfill({
+            status: 200,
+            contentType: 'application/json',
+            body: JSON.stringify(gameSummaryFixture),
+        }),
+    );
+    await page.goto('/game/401859965');
+    await settle(page);
+    await expect(page).toHaveScreenshot('boxscore.png', { fullPage: true });
+});
+
+test('route boxscore, team stats and advanced tabs', async ({ page }) => {
+    // Team Stats and Advanced only render behind a tab click, so the route
+    // screenshot above never exercises them - that's exactly why their
+    // typography (and, briefly during this fix, a missing SectionHeading
+    // import that silently rendered as an unstyled <sectionheading> tag)
+    // went unreviewed. Same fixture as the route boxscore test.
+    await stubNetwork(page);
+    await page.route('**/apis/site/v2/sports/basketball/nba/summary**', (route) =>
+        route.fulfill({
+            status: 200,
+            contentType: 'application/json',
+            body: JSON.stringify(gameSummaryFixture),
+        }),
+    );
+    await page.goto('/game/401859965');
+    await settle(page);
+
+    await page.getByRole('tab', { name: /team stats/i }).click();
+    await page.waitForTimeout(100);
+    await expect(page).toHaveScreenshot('boxscore-team-stats.png', { fullPage: true });
+
+    await page.getByRole('tab', { name: /advanced/i }).click();
+    await page.waitForTimeout(100);
+    await expect(page).toHaveScreenshot('boxscore-advanced.png', { fullPage: true });
 });
 
 test('dialog and popover do not share modal sizing', async ({ page }) => {

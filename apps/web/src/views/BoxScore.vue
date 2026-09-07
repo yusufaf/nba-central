@@ -34,6 +34,7 @@
             <QuarterScores
                 v-if="gameSummary.header?.competitions?.[0]?.competitors"
                 :competitors="gameSummary.header.competitions[0].competitors"
+                :players="gameSummary.boxscore?.players"
                 class="mt-2"
             />
 

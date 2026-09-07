@@ -268,10 +268,16 @@ export type ESPNStatistic = {
     displayValue: string;
 };
 
+/**
+ * The scoreboard endpoint sends `value`/`period`; the summary endpoint
+ * (game detail pages) sends only `displayValue`. All three are optional
+ * here because no single endpoint sends all three - see utils/lineScore.ts's
+ * periodScore(), which normalizes both shapes for display.
+ */
 export type ESPNLineScore = {
-    value: number;
-    displayValue: string;
-    period: number;
+    value?: number;
+    displayValue?: string;
+    period?: number;
 };
 
 export type ESPNRecord = {
