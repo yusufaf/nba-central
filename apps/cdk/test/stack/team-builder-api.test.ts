@@ -8,6 +8,7 @@ import {
 	DATA_ROUTES,
 	NEWS_ROUTES,
 	CUSTOM_ENTITIES_ROUTES,
+	FEEDBACK_ROUTES,
 } from "../../service/team-builder-stack/team-builder-api-routes";
 
 // Locks in the public/private route split team-builder-api.ts uses to
@@ -35,12 +36,13 @@ describe("team-builder-api-routes", () => {
 		);
 	});
 
-	it("PRIVATE_ROUTES covers files, users, teams, and custom-entities — nothing else", () => {
+	it("PRIVATE_ROUTES covers files, users, teams, custom-entities, and feedback — nothing else", () => {
 		const expectedCount =
 			FILES_ROUTES.length +
 			USERS_ROUTES.length +
 			TEAMS_ROUTES.length +
-			CUSTOM_ENTITIES_ROUTES.length;
+			CUSTOM_ENTITIES_ROUTES.length +
+			FEEDBACK_ROUTES.length;
 		expect(PRIVATE_ROUTES).toHaveLength(expectedCount);
 
 		for (const publicPath of PUBLIC_ROUTE_PATHS) {
@@ -57,10 +59,17 @@ describe("team-builder-api-routes", () => {
 		for (const path of publicPaths) {
 			expect(privatePaths.has(path)).toBe(false);
 		}
-		// 26 routes total: 22 confirmed via cdk synth when the authorizer was
+		// 27 routes total: 22 confirmed via cdk synth when the authorizer was
 		// first wired to every route (commit c1e8738), plus the 4 team
-		// list/get/update/delete routes added alongside createTeam.
-		expect(publicPaths.size + privatePaths.size).toBe(26);
+		// list/get/update/delete routes added alongside createTeam, plus
+		// /api/feedback/send.
+		expect(publicPaths.size + privatePaths.size).toBe(27);
+	});
+
+	it("the feedback route is private", () => {
+		expect(
+			PRIVATE_ROUTES.some((r) => r.route === "/api/feedback/send"),
+		).toBe(true);
 	});
 
 	it("a representative write route (createTeam) is private", () => {

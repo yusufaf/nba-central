@@ -66,6 +66,23 @@ package's pin) and 0.21.5 (via the old `vitest@2` → `vite@5` chain), and synth
 kept working only because pnpm happened to hoist the right one. Bump the
 override and this package's `esbuild` together, never one alone.
 
+## SES (sendFeedback)
+
+`sendFeedback` sends via a verified identity (`auth.yusufaf.dev`) in
+**us-east-1**, chosen because that's the only region with SES production
+access on this account today — the stack itself deploys to us-west-2, which
+is still SES sandbox. Addresses/region live in `constants/index.ts`
+(`FEEDBACK_SES_REGION`, `FEEDBACK_FROM_ADDRESS`, `FEEDBACK_TO_ADDRESS`), and
+the shared `main-lambda-role` carries a scoped `ses:SendEmail` grant on that
+one identity ARN.
+
+None of the identity's setup is IaC: verification, DKIM, the custom MAIL FROM
+domain (`mail.auth.yusufaf.dev`), and DMARC were all done by hand (AWS
+console/API calls plus Porkbun DNS records), shared with the Logto deployment
+that also sends from this identity. A fresh AWS account would not have any of
+this — `cdk deploy` alone will not recreate a working sender, and `cdk synth`
+does not validate that the identity actually exists.
+
 ## Architecture
 
 See the root `CLAUDE.md` for the full stack list (constructs, Lambda

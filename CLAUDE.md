@@ -75,7 +75,8 @@ Entry point: `bin/team-builder-cdk.ts` loads env vars from dotenv.
 - `getTeamLogos`: fetch ESPN API for NBA team logos
 - `getPlayers`, `getPlayerStats`: player data + 2K ratings, merged from `players.json` and `player-ratings.json`
 - `getNews`: reads news articles fetched by `fetchNewsCron`
-- `sendFeedback`: email via SES
+- `sendFeedback`: emails the site owner via SES (sending identity is in
+  us-east-1, not this stack's own us-west-2 — see apps/cdk/CLAUDE.md)
 
 **Data ETL Lambdas** (EventBridge triggers):
 - `setArenasData`, `setCoachesData`, `setExecsData`: scrape Wikipedia / Basketball-Reference
