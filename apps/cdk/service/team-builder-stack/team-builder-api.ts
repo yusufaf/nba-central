@@ -27,7 +27,11 @@ import {
 import { HttpLambdaIntegration } from "aws-cdk-lib/aws-apigatewayv2-integrations";
 import { NodejsFunction } from "aws-cdk-lib/aws-lambda-nodejs";
 import { LogGroup } from "aws-cdk-lib/aws-logs";
-import { DEFAULT_ALLOWED_ORIGINS } from "../../constants";
+import {
+	DEFAULT_ALLOWED_ORIGINS,
+	FEEDBACK_SES_REGION,
+	FEEDBACK_SES_IDENTITY,
+} from "../../constants";
 import apiAuthorizer from "../lambdas/apiAuthorizer/index";
 import setCoachesData from "../lambdas/setCoachesData";
 import setExecsData from "../lambdas/setExecsData";
@@ -269,6 +273,19 @@ export class TeamBuilderAPI extends Construct {
 			resources: s3BucketResources,
 		});
 		mainLambdaRole.addToPolicy(s3PolicyStatement);
+
+		// The verified sending identity lives in us-east-1 (the only region
+		// with SES production access); the stack itself is us-west-2, so this
+		// ARN can't be built from this.region.
+		const sesPolicyStatement = new PolicyStatement({
+			effect: Effect.ALLOW,
+			actions: ["ses:SendEmail"],
+			resources: [
+				`arn:aws:ses:${FEEDBACK_SES_REGION}:${this.account}:identity/${FEEDBACK_SES_IDENTITY}`,
+			],
+		});
+		mainLambdaRole.addToPolicy(sesPolicyStatement);
+
 		addRole(mainLambdaRoleNameAndID, mainLambdaRole);
 	};
 

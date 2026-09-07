@@ -11,6 +11,7 @@ const USERS_PREFIX = `/api/users`;
 const TEAMS_PREFIX = `/api/teams`;
 const DATA_PREFIX = `/api/data`;
 const CUSTOM_ENTITIES_PREFIX = `/api/custom-entities`;
+const FEEDBACK_PREFIX = `/api/feedback`;
 
 export const FILES_ROUTES: ApiRoute[] = [
 	{
@@ -157,6 +158,14 @@ export const CUSTOM_ENTITIES_ROUTES: ApiRoute[] = [
 	},
 ];
 
+export const FEEDBACK_ROUTES: ApiRoute[] = [
+	{
+		route: `${FEEDBACK_PREFIX}/send`,
+		lambdaName: "sendFeedback",
+		methods: [HttpMethod.POST],
+	},
+];
+
 // DATA_ROUTES and NEWS_ROUTES are read-only reference data the frontend
 // fetches on every page load for signed-out visitors too (e.g. App.vue's
 // team-logo fetch on mount) — gating them behind the authorizer would 403
@@ -168,4 +177,5 @@ export const PRIVATE_ROUTES: ApiRoute[] = [
 	...USERS_ROUTES,
 	...TEAMS_ROUTES,
 	...CUSTOM_ENTITIES_ROUTES,
+	...FEEDBACK_ROUTES,
 ];

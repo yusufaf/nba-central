@@ -23,3 +23,13 @@ export const BBREF_BASE_URL = "https://www.basketball-reference.com";
 // endpoint needs no API key and allows 60 req/min per IP; /players/bulk is
 // one call but 401s without a key.
 export const NBA2K_API_BASE_URL = "https://api.nba2kapi.com/api";
+
+// sendFeedback sends via SES from us-east-1: that's the only region with SES
+// production access and a verified sending identity today (auth.yusufaf.dev,
+// shared with Logto — see apps/cdk/CLAUDE.md). The stack itself is
+// us-west-2, which is still SES sandbox, so the client must pin this region
+// explicitly rather than infer it from the Lambda's own AWS_REGION.
+export const FEEDBACK_SES_REGION = "us-east-1";
+export const FEEDBACK_SES_IDENTITY = "auth.yusufaf.dev";
+export const FEEDBACK_FROM_ADDRESS = `feedback@${FEEDBACK_SES_IDENTITY}`;
+export const FEEDBACK_TO_ADDRESS = "yusufafzal12@gmail.com";
