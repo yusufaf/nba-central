@@ -92,8 +92,13 @@ to put classes on.
   referenced by plain URL so ~230 images stay out of Vite's import graph.
   Historical jerseys are NOT checked in the same way - `historicalJerseys.json`'s
   `jersey` field is a full CloudFront URL (see root CLAUDE.md).
-- The Home hero is a short loop plus poster in `public/hero/`, deliberately
-  outside `src/assets` so it does not pass through the bundler.
+- The Home hero's poster lives in `public/hero/`, deliberately outside
+  `src/assets` so it does not pass through the bundler. The loop itself is
+  NOT checked in the same way - it used to be, via Git LFS, but CI's checkout
+  never fetched LFS objects and production silently served the pointer text.
+  `heroMedia.json`'s `heroLoop` field is a full CDN URL, same pattern as
+  `historicalJerseys.json` - see `apps/cdk/scripts/upload-hero-video.ts` and
+  root CLAUDE.md.
 
 ## Verifying UI work
 

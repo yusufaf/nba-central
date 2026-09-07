@@ -4,17 +4,34 @@ import { TYPE_WRITER_PROPS } from "@/constants/constants";
 import { Button } from "@/components/ui/button";
 import { ChevronsDown } from "lucide-vue-next";
 import { useRouter } from "vue-router";
+import heroMedia from "@/assets/data/heroMedia.json";
 
 const router = useRouter();
+
+// hero-loop.mp4 used to be Git LFS-tracked and served straight from public/ -
+// CI's checkout never fetched LFS objects, so production served the LFS
+// pointer text labeled video/mp4, and the browser's decoder failed with no
+// visible error. Logging here is the safety net that was missing.
+const onVideoError = (event: Event) => {
+  if (import.meta.env.DEV) {
+    console.error("Hero video failed to load, poster will show instead:", event);
+  }
+};
 </script>
 
 <template>
   <main class="home-page">
     <div class="relative w-full h-full overflow-hidden">
-      <!-- Video Background. Served from /public rather than imported so the
-           clip stays out of the Vite graph. The poster paints immediately and
-           covers the gap before the loop starts, or stands in entirely where
-           autoplay is refused. playsinline is required for iOS to autoplay. -->
+      <!-- Video Background. The clip is served from the assets CDN (see
+           apps/cdk/scripts/upload-hero-video.ts) rather than public/, which
+           used to Git-LFS-track it - CI's checkout never fetched the LFS
+           object, so production silently served a ~130-byte pointer file
+           labeled video/mp4. The poster stays local: it's not LFS-tracked,
+           it paints immediately and covers the gap before the loop starts
+           (or stands in entirely where autoplay is refused or the CDN
+           request fails), and the prefers-reduced-motion rule below
+           references it directly, which a JSON import can't do.
+           playsinline is required for iOS to autoplay. -->
       <video
         class="video"
         poster="/hero/hero-poster.jpg"
@@ -24,8 +41,9 @@ const router = useRouter();
         playsinline
         preload="metadata"
         aria-hidden="true"
+        @error="onVideoError"
       >
-        <source src="/hero/hero-loop.mp4" type="video/mp4" />
+        <source :src="heroMedia.heroLoop" type="video/mp4" />
       </video>
 
       <!-- Scrim: the hero copy is white over live footage, which has no

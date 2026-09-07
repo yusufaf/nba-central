@@ -25,8 +25,7 @@
  */
 import * as fs from "fs";
 import { config as dotEnvConfig } from "dotenv";
-import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
-import { CloudFrontClient, ListDistributionsCommand } from "@aws-sdk/client-cloudfront";
+import { PutObjectCommand } from "@aws-sdk/client-s3";
 import {
 	buildParsedJersey,
 	extractGalleryIds,
@@ -45,6 +44,7 @@ import {
 	writeIfClean,
 	type Row,
 } from "./lib/refresh";
+import { setupAssetsCdnUpload } from "./lib/assetsCdn";
 
 dotEnvConfig();
 
@@ -208,40 +208,6 @@ const fetchJerseyImage = async (
 const jerseyKey = (mediaUrl: string): string | null =>
 	mediaUrl.match(/\/media\/([a-z0-9_]+)~mv2\.\w+$/i)?.[1] ?? null;
 
-const setupUpload = async () => {
-	const { region, appName, deploymentType } = process.env;
-	if (!region || !appName || !deploymentType) {
-		throw new Error(
-			"Uploading requires apps/cdk's .env (region, appName, deploymentType) - see apps/cdk/CLAUDE.md. Pass --check to validate the scrape without uploading.",
-		);
-	}
-
-	const bucketName = `${appName}-${deploymentType}-assets`;
-	const s3Client = new S3Client({ region });
-
-	// CloudFront is a global service fronted by a single us-east-1 API
-	// endpoint, regardless of where the origin bucket lives.
-	const cloudFrontClient = new CloudFrontClient({ region: "us-east-1" });
-	let marker: string | undefined;
-	let distribution;
-	do {
-		const { DistributionList } = await cloudFrontClient.send(
-			new ListDistributionsCommand({ Marker: marker }),
-		);
-		distribution = DistributionList?.Items?.find((item) =>
-			item.Origins?.Items?.some((origin) => origin.DomainName?.startsWith(`${bucketName}.s3.`)),
-		);
-		marker = DistributionList?.IsTruncated ? DistributionList?.NextMarker : undefined;
-	} while (!distribution && marker);
-	if (!distribution?.DomainName) {
-		throw new Error(
-			`No CloudFront distribution found fronting ${bucketName} - deploy TeamBuilderAssetsCdn first (cdk deploy)`,
-		);
-	}
-
-	return { s3Client, bucketName, distributionDomain: distribution.DomainName };
-};
-
 const main = async () => {
 	const checkOnly = isCheckOnly();
 	const problems: string[] = [];
@@ -258,7 +224,7 @@ const main = async () => {
 	}
 
 	const instanceToken = await fetchInstanceToken();
-	const upload = checkOnly ? null : await setupUpload();
+	const upload = checkOnly ? null : await setupAssetsCdnUpload();
 
 	const collected: (ParsedJersey & { mediaUrl: string })[] = [];
 
