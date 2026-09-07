@@ -39,6 +39,8 @@ pnpm --filter cdk refresh-execs             # rewrite execs.json from Basketball
 pnpm --filter cdk refresh-historical-logos  # rewrite historicalLogos.json + public/logos/historical/
 pnpm --filter cdk refresh-historical-jerseys  # rewrite historicalJerseys.json, upload images to S3
 pnpm --filter cdk run refresh-<name> -- --check  # validate against the live source, write nothing
+pnpm --filter cdk upload-hero-video             # upload apps/web's hero clip, rewrite heroMedia.json
+pnpm --filter cdk run upload-hero-video -- --check  # validate the local file, upload nothing
 
 pnpm -r test                    # both packages' test suites
 ```
