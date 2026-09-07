@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, computed } from "vue";
 import type { GM, NBATeam, SortDirection, DrawerSide } from "@/models/types";
-import { WESTERN_TEAMS, EASTERN_TEAMS } from "@/constants/constants";
+import { CONFERENCE_FILTER_TEAMS } from "@/constants/constants";
 import gmData from "@/assets/data/execs.json";
 import nbaTeamsData from "@/assets/data/nbaTeams.json";
 import { getRandomIndex, getWikipediaUrl } from "@/constants/utilities";
@@ -73,10 +73,6 @@ const selectedFilters = ref<string[]>([]);
 const GM_FILTERS = ["Western Conference", "Eastern Conference"];
 // A GM matches a selected conference if any team on their resume is in it;
 // multiple selected filters are OR-ed, same reasoning as ArenaSection.
-const CONFERENCE_TEAMS: Record<string, string[]> = {
-    "Western Conference": WESTERN_TEAMS,
-    "Eastern Conference": EASTERN_TEAMS,
-};
 
 // GM.teams entries aren't full team names like Arena's - execs.json gives
 // "BOS (2003-21)" (Basketball-Reference abbreviation + year range) and
@@ -131,7 +127,7 @@ const filteredGMData = computed(() => {
             selectedFilters.value.some((filter) =>
                 gm.teams?.some((entry) => {
                     const fullName = teamAbbrToFullName(entry);
-                    return !!fullName && CONFERENCE_TEAMS[filter]?.includes(fullName);
+                    return !!fullName && CONFERENCE_FILTER_TEAMS[filter]?.includes(fullName);
                 })
             )
         );

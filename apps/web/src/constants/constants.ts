@@ -99,6 +99,15 @@ export const EASTERN_TEAMS = [
     "Washington Wizards",
 ];
 
+// Shared by ArenaSection/GMSection's "Filters" dropdown: maps a filter label
+// to the team list it matches against, so selecting multiple filters ORs
+// them together instead of ANDing them - used to be declared identically in
+// both components.
+export const CONFERENCE_FILTER_TEAMS: Record<string, string[]> = {
+    "Western Conference": WESTERN_TEAMS,
+    "Eastern Conference": EASTERN_TEAMS,
+};
+
 export const HOME = "home";
 export const HOME_C = "Home";
 export const AWAY = "away";

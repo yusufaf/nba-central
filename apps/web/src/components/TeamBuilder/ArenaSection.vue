@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, computed } from "vue";
-import { WESTERN_TEAMS, EASTERN_TEAMS } from "@/constants/constants";
+import { CONFERENCE_FILTER_TEAMS } from "@/constants/constants";
 import type { Arena, SortDirection, DrawerSide } from "@/models/types";
 import arenaData from "@/assets/data/arenas.json";
 import { getRandomIndex, getWikipediaUrl } from "@/constants/utilities";
@@ -55,13 +55,6 @@ const sortOptions = ["Alphabetic", "Capacity"];
 const selectedSort = ref<string | null>(null);
 const selectedFilters = ref<string[]>([]);
 const ARENA_FILTERS = ["Western Conference", "Eastern Conference"];
-// Maps a filter label to the team list it matches against, so multiple
-// selected filters can be OR-ed together below instead of AND-ed - ticking
-// both conferences should show every arena, not none of them.
-const CONFERENCE_TEAMS: Record<string, string[]> = {
-    "Western Conference": WESTERN_TEAMS,
-    "Eastern Conference": EASTERN_TEAMS,
-};
 const sortDirection = ref<SortDirection>("asc");
 
 /* Computed Props */
@@ -102,7 +95,7 @@ const filteredArenaData = computed(() => {
     if (selectedFilters.value.length > 0) {
         copyArenaData = copyArenaData.filter((arena: Arena) =>
             selectedFilters.value.some((filter) =>
-                CONFERENCE_TEAMS[filter]?.includes(arena.team)
+                CONFERENCE_FILTER_TEAMS[filter]?.includes(arena.team)
             )
         );
     }
