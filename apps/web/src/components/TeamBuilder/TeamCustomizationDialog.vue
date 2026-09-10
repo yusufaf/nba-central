@@ -13,6 +13,7 @@ import { MapPin, Flag, Paperclip } from 'lucide-vue-next';
 import HistoricalTeamCombobox from './HistoricalTeamCombobox.vue';
 import HistoricalLogoPicker from './HistoricalLogoPicker.vue';
 import HistoricalJerseyPicker from './HistoricalJerseyPicker.vue';
+import JerseyDrawingCanvas from './JerseyDrawingCanvas.vue';
 
 interface HistoricalTeam {
     name: string;
@@ -173,11 +174,25 @@ const handleFileChange = (event: Event) => {
 
                 <!-- Team Jersey -->
                 <div class="space-y-2">
-                    <Label class="text-base font-semibold text-foreground">Select an existing team's jersey:</Label>
-                    <HistoricalJerseyPicker
-                        v-model:teamJersey="teamJersey"
-                        v-model:expanded="historicalJerseyPickerExpanded"
-                    />
+                    <Label class="text-base font-semibold text-foreground">Team Jersey</Label>
+                    <div v-if="teamJersey" class="jersey-preview">
+                        <img :src="teamJersey" alt="Selected team jersey" class="jersey-preview-image" />
+                    </div>
+                    <Tabs :default-value="(teamJersey ?? '').startsWith('data:') ? 'draw' : 'pick'">
+                        <TabsList class="grid w-full grid-cols-2">
+                            <TabsTrigger value="pick">Pick a jersey</TabsTrigger>
+                            <TabsTrigger value="draw">Draw your own</TabsTrigger>
+                        </TabsList>
+                        <TabsContent value="pick" class="mt-4">
+                            <HistoricalJerseyPicker
+                                v-model:teamJersey="teamJersey"
+                                v-model:expanded="historicalJerseyPickerExpanded"
+                            />
+                        </TabsContent>
+                        <TabsContent value="draw" class="mt-4">
+                            <JerseyDrawingCanvas v-model:teamJersey="teamJersey" />
+                        </TabsContent>
+                    </Tabs>
                 </div>
             </div>
         </DialogContent>
@@ -193,6 +208,20 @@ textarea:focus-visible {
     border-color: hsl(var(--primary));
     box-shadow: none;
     outline: none;
+}
+
+.jersey-preview {
+    display: flex;
+    justify-content: center;
+    padding: 0.75rem;
+    border: 0.0625rem solid hsl(var(--border));
+    border-radius: var(--radius);
+    background: hsl(0 0% 100% / 0.04);
+}
+
+.jersey-preview-image {
+    max-height: 8rem;
+    object-fit: contain;
 }
 
 .team-logos {
