@@ -1,4 +1,4 @@
-import type { Player } from "@/models/types";
+import type { Arena, Coach, GM, Player } from "@/models/types";
 import type {
     EntityRef,
     PlayerSnapshot,
@@ -15,17 +15,17 @@ interface BuilderState {
     teamCountry: string;
     teamLogo: string;
     teamJersey: string;
-    selectedPlayersData: Map<number, any>;
-    teamCoach: any;
-    teamArena: any;
-    teamGM: any;
+    selectedPlayersData: Map<number, Player>;
+    teamCoach: Coach | null;
+    teamArena: Arena | null;
+    teamGM: GM | null;
 }
 
 // Career stats/rating history are fetched per slot (getPlayerStats) rather
 // than saved on the team - they're derived from the player's id, not part
 // of the roster choice, and re-fetching keeps a saved team from going stale
 // the moment a player's career continues.
-const toSnapshot = (player: any): PlayerSnapshot => {
+const toSnapshot = (player: Player): PlayerSnapshot => {
     const {
         playerStats: _playerStats,
         ratingHistory: _ratingHistory,
@@ -35,16 +35,16 @@ const toSnapshot = (player: any): PlayerSnapshot => {
     return snapshot as PlayerSnapshot;
 };
 
-const toEntityRef = (entity: any): EntityRef | null => {
+const toEntityRef = (entity: Coach | GM | null): EntityRef | null => {
     if (!entity) return null;
     return {
         name: entity.name,
         isCustom: !!entity.isCustom,
-        uuid: entity.coachUUID || entity.gmUUID || entity.playerUUID || undefined,
+        uuid: ("coachUUID" in entity && entity.coachUUID) || ("gmUUID" in entity && entity.gmUUID) || undefined,
     };
 };
 
-const toArenaRef = (arena: any): TeamArenaRef | null => {
+const toArenaRef = (arena: Arena | null): TeamArenaRef | null => {
     if (!arena) return null;
     return { name: arena.name, imgLink: arena.imgLink };
 };

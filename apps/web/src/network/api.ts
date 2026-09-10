@@ -8,6 +8,8 @@ import type {
     GetMultipartSignedUrlsResponse,
     DeleteFilePayload,
     DeleteFileResponse,
+    SaveUserDataPayload,
+    SaveUserDataResponse,
     SaveTeamPayload,
     UpdateTeamPayload,
     CreateTeamResponse,
@@ -89,10 +91,9 @@ export const fileApi = {
 
 // Users API - matches USERS_ROUTES in CDK
 export const userApi = {
-    saveUserData: async (payload: {
-        userId: string;
-        [key: string]: any;
-    }): Promise<any> => {
+    saveUserData: async (
+        payload: SaveUserDataPayload,
+    ): Promise<SaveUserDataResponse> => {
         const response = await api.post('/api/users/save-data', payload);
         return response.data;
     },

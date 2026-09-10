@@ -53,6 +53,22 @@ export interface DeleteFileResponse {
 }
 // #endregion
 
+//#region Users API Types
+
+// The saveUserData Lambda's own body only destructures `clerkUserId` off the
+// payload and stores everything else in `...userData` as-is, so the index
+// signature genuinely is an open bag - `unknown` rather than a named shape.
+export interface SaveUserDataPayload {
+    clerkUserId: string;
+    [key: string]: unknown;
+}
+
+export interface SaveUserDataResponse {
+    message: string;
+    userData: Record<string, unknown>;
+}
+// #endregion
+
 //#region Team API Types
 
 // A player as stored on a saved team - the same `Player` union already used
