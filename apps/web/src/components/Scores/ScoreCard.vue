@@ -36,7 +36,7 @@ const isGameFollowed = computed(() => isFollowed(props.game.uid));
 const fullGameName = computed(() => props.game.name);
 const shortGameName = computed(() => props.game.shortName);
 const gameNameToDisplay = computed(() => {
-    const useShortNames: boolean = props.customizationState.get("shortNames");
+    const useShortNames = props.customizationState.get("shortNames") ?? false;
     const nameToUse = useShortNames ? shortGameName : fullGameName;
     return nameToUse.value.replace('"', "");
 });

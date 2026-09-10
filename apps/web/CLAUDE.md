@@ -37,9 +37,11 @@ pnpm test:visual     # Playwright screenshots of every route
 
 Two things it deliberately does not fail on:
 
-- `@typescript-eslint/no-explicit-any` is a warning, not an error. 150
-  occurrences predate the gate and each needs a type chosen by hand — see #43.
-  Flip it to `error` once they are gone.
+- `@typescript-eslint/no-explicit-any` is a warning, not an error. 137
+  occurrences remain, each needing a type chosen by hand — see #43.
+  `src/models/`, `src/network/`, and `useTeamPersistence.ts` are already at
+  zero and ratcheted to `error` per-directory in `eslint.config.mjs`; the
+  rest flip the same way as their own slice lands.
 - `vue/multi-word-component-names` is off for `src/components/ui/**` (vendored
   shadcn-vue) and `src/views/**` (route components), where single-word names
   are the convention.

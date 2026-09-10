@@ -29,9 +29,12 @@ export default defineConfigWithVueTs(
   {
     name: "app/rule-tuning",
     rules: {
-      // 150 occurrences here, 116 more in apps/cdk. Each needs a
+      // 137 occurrences here, 155 more in apps/cdk. Each needs a
       // real type chosen by hand, so they are tracked in #43 rather than
       // blocking the lint gate this config finally makes runnable.
+      // src/models/, src/network/, and useTeamPersistence.ts are already at
+      // zero and ratcheted to "error" below - don't undo that by scoping
+      // this rule wider than "warn" default for the rest.
       "@typescript-eslint/no-explicit-any": "warn",
 
       // A leading underscore is how this codebase marks a binding it is
@@ -54,6 +57,18 @@ export default defineConfigWithVueTs(
     name: "app/single-word-component-names",
     files: ["src/components/ui/**/*.vue", "src/views/**/*.vue"],
     rules: { "vue/multi-word-component-names": "off" },
+  },
+
+  {
+    // #43's ratchet: these are at zero, so keep them there. Everything
+    // else stays "warn" until its own slice lands - see app/rule-tuning.
+    name: "app/no-explicit-any-ratchet",
+    files: [
+      "src/models/**/*.ts",
+      "src/network/**/*.ts",
+      "src/composables/useTeamPersistence.ts",
+    ],
+    rules: { "@typescript-eslint/no-explicit-any": "error" },
   },
 
   {

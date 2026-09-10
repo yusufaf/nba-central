@@ -3,19 +3,9 @@ export type CustomizationKey =
     | "hideScores"
     | "hideFinishedGames";
 
-export type CustomizationState = Map<CustomizationKey, any>;
+export type CustomizationState = Map<CustomizationKey, boolean>;
 
 export type DrawerSide = "left" | "right";
-
-export type Team = {
-    uuid: string;
-    name: string;
-    description: string;
-    players: any;
-    logo?: string;
-    city?: string;
-    country?: string;
-};
 
 export type Coach = {
     championships: number;
@@ -134,6 +124,11 @@ export type Player = {
     rating?: number;
     ratingSource?: RatingSource;
     ratingHistory?: NBA2KRating[];
+    // Populated when a roster slot's full career stats are fetched
+    // (TeamBuilder.vue's getPlayerStats) - not part of the roster choice
+    // itself, so useTeamPersistence's toSnapshot drops it again before save.
+    playerStats?: unknown[];
+    heightAndWeight?: string;
     // Custom player fields (camelCase)
     isCustom?: boolean;
     playerUUID?: string;
@@ -402,7 +397,11 @@ export type ESPNCompetition = {
     recent: boolean;
     venue: ESPNVenue;
     competitors: ESPNCompetitor[];
-    notes: any[];
+    // Not read anywhere in this repo today; ESPN's actual shape is
+    // `{ type: string; headline: string }[]`, but typing it without a live
+    // payload to confirm would be inventing an interface, so `unknown[]`
+    // is the honest placeholder until something needs it.
+    notes: unknown[];
     status: ESPNStatus;
     broadcasts?: ESPNBroadcast[];
     format: ESPNFormat;
