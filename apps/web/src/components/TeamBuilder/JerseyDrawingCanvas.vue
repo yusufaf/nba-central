@@ -43,14 +43,39 @@ const WIDTH_OPTIONS = [
 
 const teamJersey = defineModel<string>("teamJersey");
 
-// Captured once on mount, not reactive to teamJersey afterward - this
-// component is the only writer of teamJersey while it's active, and if the
-// background tracked every commit, the *next* commit would draw a
-// background that already has earlier strokes baked in underneath a canvas
-// overlay that replays every stroke again, doubling them up.
+// backgroundSrc is captured once on mount, not reactive to teamJersey
+// afterward - this component is the only writer of teamJersey while it's
+// active, and if the background tracked every commit, the *next* commit
+// would draw a background that already has earlier strokes baked in
+// underneath a canvas overlay that replays every stroke again, doubling
+// them up. isEditingSavedDrawing starts from that same mount-time check but
+// is a ref, not a plain const, since startOver() needs to be able to turn
+// it back off once the saved drawing it referred to is gone.
 const initialJersey = teamJersey.value ?? "";
-const isEditingSavedDrawing = initialJersey.startsWith("data:");
-const backgroundSrc = ref<string>(isEditingSavedDrawing ? initialJersey : jerseyTemplate);
+const isEditingSavedDrawing = ref(initialJersey.startsWith("data:"));
+const backgroundSrc = ref<string>(isEditingSavedDrawing.value ? initialJersey : jerseyTemplate);
+
+// The background is decoded once per backgroundSrc rather than on every
+// commit - a fresh `new Image()` reload-and-decode for each finished stroke
+// would get more expensive as a drawing session goes on for no benefit,
+// since the background itself never changes between strokes.
+const backgroundImage = ref<HTMLImageElement | null>(null);
+const backgroundLoadError = ref(false);
+
+const loadBackgroundImage = (src: string) => {
+    backgroundLoadError.value = false;
+    const image = new Image();
+    image.onload = () => {
+        backgroundImage.value = image;
+    };
+    image.onerror = () => {
+        backgroundImage.value = null;
+        backgroundLoadError.value = true;
+    };
+    image.src = src;
+};
+
+watch(backgroundSrc, loadBackgroundImage, { immediate: true });
 
 const canvasEl = ref<HTMLCanvasElement | null>(null);
 const isDrawing = ref(false);
@@ -147,29 +172,26 @@ const commit = () => {
     sizeError.value = null;
 
     const canvas = canvasEl.value;
-    if (!canvas) return;
+    const background = backgroundImage.value;
+    if (!canvas || !background) return;
 
-    const background = new Image();
-    background.onload = () => {
-        const output = document.createElement("canvas");
-        output.width = CANVAS_WIDTH;
-        output.height = CANVAS_HEIGHT;
-        const ctx = output.getContext("2d");
-        if (!ctx) return;
+    const output = document.createElement("canvas");
+    output.width = CANVAS_WIDTH;
+    output.height = CANVAS_HEIGHT;
+    const ctx = output.getContext("2d");
+    if (!ctx) return;
 
-        ctx.drawImage(background, 0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
-        ctx.drawImage(canvas, 0, 0);
+    ctx.drawImage(background, 0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+    ctx.drawImage(canvas, 0, 0);
 
-        const dataUrl = output.toDataURL("image/png");
-        const approxBytes = Math.ceil((dataUrl.length * 3) / 4);
-        if (approxBytes > MAX_JERSEY_DATA_URL_BYTES) {
-            sizeError.value = "This drawing is too detailed to save - try Clear and a simpler design.";
-            return;
-        }
+    const dataUrl = output.toDataURL("image/png");
+    const approxBytes = Math.ceil((dataUrl.length * 3) / 4);
+    if (approxBytes > MAX_JERSEY_DATA_URL_BYTES) {
+        sizeError.value = "This drawing is too detailed to save - try Clear and a simpler design.";
+        return;
+    }
 
-        teamJersey.value = dataUrl;
-    };
-    background.src = backgroundSrc.value;
+    teamJersey.value = dataUrl;
 };
 
 const stopDrawing = () => {
@@ -191,6 +213,7 @@ const handleClear = () => {
 const startOver = () => {
     clear();
     backgroundSrc.value = jerseyTemplate;
+    isEditingSavedDrawing.value = false;
     teamJersey.value = "";
     sizeError.value = null;
 };
@@ -265,7 +288,10 @@ const startOver = () => {
             </div>
         </div>
 
-        <p v-if="sizeError" class="jersey-error">{{ sizeError }}</p>
+        <p v-if="backgroundLoadError" class="jersey-error">
+            Couldn't load the jersey background, so drawing can't be saved right now - try reopening this dialog.
+        </p>
+        <p v-else-if="sizeError" class="jersey-error">{{ sizeError }}</p>
         <p v-else-if="isEditingSavedDrawing" class="jersey-hint">
             Editing your saved drawing - Undo only covers strokes made in this session.
         </p>
