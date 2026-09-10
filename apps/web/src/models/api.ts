@@ -59,7 +59,7 @@ export interface DeleteFileResponse {
 // payload and stores everything else in `...userData` as-is, so the index
 // signature genuinely is an open bag - `unknown` rather than a named shape.
 export interface SaveUserDataPayload {
-    userId: string;
+    clerkUserId: string;
     [key: string]: unknown;
 }
 
