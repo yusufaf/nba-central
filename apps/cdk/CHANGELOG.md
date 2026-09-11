@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.2.0](https://github.com/yusufaf/nba-central/compare/cdk-v0.1.1...cdk-v0.2.0) (2026-09-11)
+
+
+### Features
+
+* **cdk:** send feedback email via SES ([#83](https://github.com/yusufaf/nba-central/issues/83)) ([5ee5797](https://github.com/yusufaf/nba-central/commit/5ee5797d0bb2db5db1964233ee1e324facb66504)), closes [#54](https://github.com/yusufaf/nba-central/issues/54)
+
+
+### Bug Fixes
+
+* **cdk:** three real-run bugs in refresh-historical-jerseys, upload real images ([#68](https://github.com/yusufaf/nba-central/issues/68)) ([c03e6f1](https://github.com/yusufaf/nba-central/commit/c03e6f1b9c5550171dc489cc1acac207b67bc3b8))
+* derive S3 file-lambda owner from authorizer sub, not the request body ([#61](https://github.com/yusufaf/nba-central/issues/61)) ([c64be7c](https://github.com/yusufaf/nba-central/commit/c64be7ce40cde4bc640d869d7919c608eee29694))
+* **web:** serve the hero video from the assets CDN, not Git LFS ([#82](https://github.com/yusufaf/nba-central/issues/82)) ([779006f](https://github.com/yusufaf/nba-central/commit/779006f659859f7ef1591d77c13b4ba2786cb83e))
+
 ## [0.1.1](https://github.com/yusufaf/nba-central/compare/cdk-v0.1.0...cdk-v0.1.1) (2026-09-04)
 
 
