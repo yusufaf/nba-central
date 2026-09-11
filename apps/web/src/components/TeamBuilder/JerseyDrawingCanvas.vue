@@ -2,6 +2,7 @@
 import { computed, onMounted, ref, watch } from "vue";
 import { Eraser, Undo2 } from "lucide-vue-next";
 import { Button } from "@/components/ui/button";
+import { ColorPicker } from "@/components/ui/color-picker";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import jerseyTemplate from "@/assets/basketball_jersey.png";
 import {
@@ -25,11 +26,12 @@ const MAX_JERSEY_DATA_URL_BYTES = 200 * 1024;
 // Literal hex, not `hsl(var(--primary))` - Canvas2D's strokeStyle/fillStyle
 // parses its own value directly and does not resolve CSS custom properties,
 // so a var() assignment is silently ignored and the ink stays whatever
-// color was last validly set. Hex specifically (not hsl()) because the
-// custom-color control below is a native <input type="color">, which only
-// accepts and emits #rrggbb - keeping every entry in that same format means
-// strokeColor never needs a conversion step. "Team orange" mirrors
-// --primary's current value (35 100% 50%, see DESIGN.md) converted to hex.
+// color was last validly set. Hex specifically (not hsl()) because
+// ColorPicker (below) round-trips strokeColor through reka-ui's Color type,
+// which normalizes to hex - keeping every entry in that same format means
+// strokeColor never needs a conversion step on the preset side either.
+// "Team orange" mirrors --primary's current value (35 100% 50%, see
+// DESIGN.md) converted to hex.
 const STROKE_COLORS = [
     { label: "White", value: "#ffffff" },
     { label: "Black", value: "#000000" },
@@ -254,16 +256,7 @@ const startOver = () => {
                     :aria-pressed="strokeColor === swatch.value"
                     @click="strokeColor = swatch.value"
                 />
-                <input
-                    type="color"
-                    class="jersey-swatch jersey-swatch-custom"
-                    :class="{ selected: isCustomColor }"
-                    :value="strokeColor"
-                    aria-label="Custom color"
-                    :aria-current="isCustomColor"
-                    title="Custom color"
-                    @input="strokeColor = ($event.target as HTMLInputElement).value"
-                />
+                <ColorPicker v-model="strokeColor" :selected="isCustomColor" />
             </div>
 
             <ToggleGroup
@@ -379,27 +372,6 @@ const startOver = () => {
 .jersey-swatch.selected {
     border-color: hsl(var(--primary));
     box-shadow: 0 0 0 0.125rem hsl(var(--primary) / 0.3);
-}
-
-.jersey-swatch-custom {
-    appearance: none;
-    padding: 0;
-    background: none;
-    cursor: pointer;
-}
-
-.jersey-swatch-custom::-webkit-color-swatch-wrapper {
-    padding: 0;
-}
-
-.jersey-swatch-custom::-webkit-color-swatch {
-    border: none;
-    border-radius: 9999px;
-}
-
-.jersey-swatch-custom::-moz-color-swatch {
-    border: none;
-    border-radius: 9999px;
 }
 
 .jersey-width-item {
