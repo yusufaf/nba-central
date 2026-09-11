@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, ref, watch } from "vue";
+import { computed, onMounted, ref, watch } from "vue";
 import { Eraser, Undo2 } from "lucide-vue-next";
 import { Button } from "@/components/ui/button";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
@@ -22,17 +22,20 @@ const CANVAS_HEIGHT = 1253;
 // drawing, not a normal one.
 const MAX_JERSEY_DATA_URL_BYTES = 200 * 1024;
 
-// Literal HSL, not `hsl(var(--primary))` - Canvas2D's strokeStyle/fillStyle
+// Literal hex, not `hsl(var(--primary))` - Canvas2D's strokeStyle/fillStyle
 // parses its own value directly and does not resolve CSS custom properties,
 // so a var() assignment is silently ignored and the ink stays whatever
-// color was last validly set. "Team orange" mirrors --primary's current
-// value (35 100% 50%, see DESIGN.md) as a plain literal for that reason.
+// color was last validly set. Hex specifically (not hsl()) because the
+// custom-color control below is a native <input type="color">, which only
+// accepts and emits #rrggbb - keeping every entry in that same format means
+// strokeColor never needs a conversion step. "Team orange" mirrors
+// --primary's current value (35 100% 50%, see DESIGN.md) converted to hex.
 const STROKE_COLORS = [
-    { label: "White", value: "hsl(0 0% 100%)" },
-    { label: "Black", value: "hsl(0 0% 0%)" },
-    { label: "Team orange", value: "hsl(35 100% 50%)" },
-    { label: "Sky blue", value: "hsl(205 90% 55%)" },
-    { label: "Crimson", value: "hsl(355 75% 50%)" },
+    { label: "White", value: "#ffffff" },
+    { label: "Black", value: "#000000" },
+    { label: "Team orange", value: "#ff9500" },
+    { label: "Sky blue", value: "#259df4" },
+    { label: "Crimson", value: "#df2030" },
 ];
 
 const WIDTH_OPTIONS = [
@@ -98,6 +101,8 @@ watch(selectedWidthOption, (value) => {
     const option = WIDTH_OPTIONS.find((candidate) => candidate.value === value);
     if (option) strokeWidth.value = option.width;
 });
+
+const isCustomColor = computed(() => !STROKE_COLORS.some((swatch) => swatch.value === strokeColor.value));
 
 const redraw = () => {
     const canvas = canvasEl.value;
@@ -249,6 +254,16 @@ const startOver = () => {
                     :aria-pressed="strokeColor === swatch.value"
                     @click="strokeColor = swatch.value"
                 />
+                <input
+                    type="color"
+                    class="jersey-swatch jersey-swatch-custom"
+                    :class="{ selected: isCustomColor }"
+                    :value="strokeColor"
+                    aria-label="Custom color"
+                    :aria-current="isCustomColor"
+                    title="Custom color"
+                    @input="strokeColor = ($event.target as HTMLInputElement).value"
+                />
             </div>
 
             <ToggleGroup
@@ -364,6 +379,27 @@ const startOver = () => {
 .jersey-swatch.selected {
     border-color: hsl(var(--primary));
     box-shadow: 0 0 0 0.125rem hsl(var(--primary) / 0.3);
+}
+
+.jersey-swatch-custom {
+    appearance: none;
+    padding: 0;
+    background: none;
+    cursor: pointer;
+}
+
+.jersey-swatch-custom::-webkit-color-swatch-wrapper {
+    padding: 0;
+}
+
+.jersey-swatch-custom::-webkit-color-swatch {
+    border: none;
+    border-radius: 9999px;
+}
+
+.jersey-swatch-custom::-moz-color-swatch {
+    border: none;
+    border-radius: 9999px;
 }
 
 .jersey-width-item {

@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { clientToCanvasPoint, useJerseyDrawing } from "@/composables/useJerseyDrawing";
+import { clientToCanvasPoint, DEFAULT_STROKE_COLOR, useJerseyDrawing } from "@/composables/useJerseyDrawing";
 
 describe("clientToCanvasPoint", () => {
     it("maps 1:1 when the canvas is displayed at its native resolution", () => {
@@ -28,16 +28,20 @@ describe("useJerseyDrawing", () => {
         expect(canUndo.value).toBe(false);
     });
 
+    it("defaults to a literal hex color, not a token an <input type=\"color\"> can't parse", () => {
+        expect(DEFAULT_STROKE_COLOR).toMatch(/^#[0-9a-f]{6}$/);
+    });
+
     it("begins a stroke with the current color and width", () => {
         const { strokes, strokeColor, strokeWidth, beginStroke, isEmpty } = useJerseyDrawing();
-        strokeColor.value = "hsl(0 0% 0%)";
+        strokeColor.value = "#000000";
         strokeWidth.value = 8;
 
         beginStroke({ x: 1, y: 2 });
 
         expect(isEmpty.value).toBe(false);
         expect(strokes.value).toEqual([
-            { points: [{ x: 1, y: 2 }], color: "hsl(0 0% 0%)", width: 8 },
+            { points: [{ x: 1, y: 2 }], color: "#000000", width: 8 },
         ]);
     });
 
