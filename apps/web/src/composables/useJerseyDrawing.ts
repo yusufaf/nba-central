@@ -18,7 +18,7 @@ export interface CanvasRect {
     height: number;
 }
 
-export const DEFAULT_STROKE_COLOR = "hsl(0 0% 100%)";
+export const DEFAULT_STROKE_COLOR = "#ffffff";
 export const DEFAULT_STROKE_WIDTH = 6;
 
 /**
