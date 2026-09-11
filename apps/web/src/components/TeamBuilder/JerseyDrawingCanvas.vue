@@ -260,6 +260,7 @@ const startOver = () => {
                     :class="{ selected: isCustomColor }"
                     :value="strokeColor"
                     aria-label="Custom color"
+                    :aria-current="isCustomColor"
                     title="Custom color"
                     @input="strokeColor = ($event.target as HTMLInputElement).value"
                 />
