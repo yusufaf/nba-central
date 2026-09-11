@@ -1,5 +1,11 @@
 name: deploy
 
+# workflow_dispatch exists for when a push to main doesn't trigger this
+# workflow - GitHub occasionally drops a push event's Actions trigger
+# entirely (no run of any kind, not even ci.yml, which has no path filter -
+# confirmed happened for 43ef6d15). There is no way to "re-run" a workflow
+# that never ran, so the fallback is to trigger it manually for the commit
+# that should have deployed.
 on:
   push:
     branches: [main]
@@ -8,6 +14,7 @@ on:
       - "pnpm-lock.yaml"
       - "pnpm-workspace.yaml"
       - ".github/workflows/deploy.yml"
+  workflow_dispatch:
 
 permissions:
   id-token: write # required for aws-actions/configure-aws-credentials OIDC
