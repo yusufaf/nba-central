@@ -15,13 +15,15 @@ export const handler: Handler = async (event, context): Promise<any> => {
 
 	try {
 		// One query per source so a high-volume source cannot claim the whole
-		// result window and leave the other filters empty.
+		// result window and leave the other filters empty. Rows are keyed on
+		// URL, so recency ordering comes from the PK2 GSI (SK2 = publish date).
 		const results = await Promise.all(
 			NEWS_SOURCES.map((source) =>
 				docClient.send(
 					new QueryCommand({
 						TableName: MAIN_TABLE_NAME,
-						KeyConditionExpression: "PK = :pk",
+						IndexName: "PK2",
+						KeyConditionExpression: "PK2 = :pk",
 						ExpressionAttributeValues: {
 							":pk": `NEWS#${source}`,
 						},
@@ -35,7 +37,7 @@ export const handler: Handler = async (event, context): Promise<any> => {
 		const articles = results
 			.flatMap(({ Items }) => Items || [])
 			.map((item) => {
-				const { PK, SK, ttl, ...article } = item;
+				const { PK, SK, PK2, SK2, ttl, ...article } = item;
 				return article;
 			})
 			.sort((a, b) => (a.publishedAt < b.publishedAt ? 1 : -1));
