@@ -3,9 +3,10 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 // Mock the axios instance created in src/network/api.ts. `api` is built via
 // axios.create(), so mock that factory to return a stub with the verbs we use.
 // vi.hoisted keeps the stub defined before vi.mock's hoisted factory runs.
-// `interceptors.request.use` is stubbed too — api.ts registers the
-// Authorization-header interceptor immediately after axios.create(), so the
-// real instance shape needs at least this much to avoid crashing the import.
+// `interceptors.*.use` are stubbed too — api.ts registers the
+// Authorization-header and 401 interceptors immediately after axios.create(),
+// so the real instance shape needs at least this much to avoid crashing the
+// import. Their behaviour is covered in apiInterceptors.test.ts.
 const mockInstance = vi.hoisted(() => ({
     get: vi.fn(),
     post: vi.fn(),
@@ -13,6 +14,7 @@ const mockInstance = vi.hoisted(() => ({
     delete: vi.fn(),
     interceptors: {
         request: { use: vi.fn() },
+        response: { use: vi.fn() },
     },
 }));
 

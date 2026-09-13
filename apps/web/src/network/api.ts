@@ -52,6 +52,23 @@ api.interceptors.request.use(async (config) => {
     return config;
 });
 
+// Backstop for the getter above: a 401 on a request that *did* carry a token
+// means apiAuthorizer rejected it, so the session is dead even though the
+// Logto SDK thought the token was still good (revoked, key rotated, ...).
+type SessionExpiredHandler = () => void | Promise<void>;
+let onSessionExpired: SessionExpiredHandler | undefined;
+
+export const setSessionExpiredHandler = (handler: SessionExpiredHandler): void => {
+    onSessionExpired = handler;
+};
+
+api.interceptors.response.use(undefined, (error) => {
+    if (error?.response?.status === 401 && error.config?.headers?.Authorization) {
+        void onSessionExpired?.();
+    }
+    return Promise.reject(error);
+});
+
 // Files API - matches FILES_ROUTES in CDK
 export const fileApi = {
     initiateMultipartUpload: async (
