@@ -1,3 +1,4 @@
+import { createHash } from "crypto";
 import { describe, it, expect } from "vitest";
 import {
 	collapseEras,
@@ -242,12 +243,19 @@ describe("logoObjectKey", () => {
 		);
 	});
 
-	it("is stable for identical bytes and changes with them", () => {
+	it("is stable for identical source bytes and changes with them", () => {
 		const same = logoObjectKey("TRI-1950", new Uint8Array(png));
 		expect(same).toBe(logoObjectKey("TRI-1950", png));
 
 		const edited = new Uint8Array(png);
 		edited[edited.length - 1] = 9;
 		expect(logoObjectKey("TRI-1950", edited)).not.toBe(same);
+	});
+
+	it("pins the keying version into the hash", () => {
+		// A bare sha256 of the bytes must NOT be the key - otherwise bumping
+		// LOGO_KEYING_VERSION would be a no-op.
+		const bare = createHash("sha256").update(png).digest("hex").slice(0, 12);
+		expect(logoObjectKey("TRI-1950", png)).not.toContain(bare);
 	});
 });

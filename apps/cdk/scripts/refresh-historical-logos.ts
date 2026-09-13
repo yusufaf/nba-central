@@ -148,7 +148,10 @@ const uploadLogo = async (
 		);
 		return false;
 	} catch (err) {
-		if ((err as { name?: string }).name !== "NotFound") throw err;
+		// S3 answers a HEAD on a missing key with 404, or 403 when the caller
+		// lacks s3:ListBucket - either way, fall through and try the upload.
+		const status = (err as { $metadata?: { httpStatusCode?: number } }).$metadata?.httpStatusCode;
+		if (status !== 404 && status !== 403) throw err;
 	}
 	await upload.s3Client.send(
 		new PutObjectCommand({
@@ -267,14 +270,13 @@ const main = async () => {
 		// BBRef serves opaque white backgrounds; key them out so the logos
 		// sit on nba-central's dark theme instead of in a white square. The
 		// era hash above stays on the source bytes, so this never changes
-		// which seasons collapse together. Keying runs under --check too:
-		// the object key hashes the keyed bytes, so this is the path that
-		// decides each URL.
+		// which seasons collapse together. Keying runs under --check too so
+		// the dry run exercises the same path a real run does.
 		const { png, skipped } = keyOutWhiteBackground(buffer);
 		if (skipped && skipped !== "no edge-connected white") {
 			console.warn(`Note: ${imageKey}.png left opaque (${skipped})`);
 		}
-		const objectKey = logoObjectKey(imageKey, png);
+		const objectKey = logoObjectKey(imageKey, buffer);
 
 		let logo = "";
 		if (upload) {

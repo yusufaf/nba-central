@@ -51,14 +51,30 @@ const seasonLabel = (endYear: number) =>
 export const LOGO_KEY_PREFIX = "logos/historical/";
 
 /**
+ * Bump whenever pngAlpha.ts's keyOutWhiteBackground output changes in a way
+ * that should reach browsers - it is folded into every object key below, so
+ * bumping it re-uploads every era under a new URL.
+ */
+export const LOGO_KEYING_VERSION = 1;
+
+/**
  * S3 key for one era's keyed-out PNG in the assets bucket. Content-addressed
  * (imageKey.<sha256 prefix>.png) so a re-crawl that changes a logo lands on a
  * new URL under CACHING_OPTIMIZED without a CloudFront invalidation - same
- * reasoning as upload-hero-video.ts. Hashed over the final bytes the browser
- * receives, not BBRef's source image, so a keying change also busts the cache.
+ * reasoning as upload-hero-video.ts.
+ *
+ * Hashed over BBRef's source bytes plus LOGO_KEYING_VERSION rather than the
+ * keyed PNG that actually gets uploaded: the keyed bytes come out of node's
+ * zlib, whose deflate stream is not guaranteed identical across Node
+ * releases, so hashing them would re-key all 234 eras on a Node upgrade with
+ * no visible change. The source image is what BBRef serves verbatim.
  */
-export const logoObjectKey = (imageKey: string, png: Uint8Array): string => {
-	const hash = createHash("sha256").update(png).digest("hex").slice(0, 12);
+export const logoObjectKey = (imageKey: string, sourcePng: Uint8Array): string => {
+	const hash = createHash("sha256")
+		.update(`keying-v${LOGO_KEYING_VERSION}:`)
+		.update(sourcePng)
+		.digest("hex")
+		.slice(0, 12);
 	return `${LOGO_KEY_PREFIX}${imageKey}.${hash}.png`;
 };
 
