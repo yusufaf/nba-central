@@ -7,7 +7,12 @@ export const SESSION_EXPIRED_MESSAGE = 'Your session expired. Please sign in aga
 // the reload. Per-tab, and the same tab is what comes back.
 const SESSION_EXPIRED_KEY = 'nba-central:session-expired';
 
-type SignOut = (postLogoutRedirectUri: string) => Promise<void> | void;
+type SessionExpiryDeps = {
+    signOut: (postLogoutRedirectUri: string) => Promise<void> | void;
+    clearAllTokens: () => Promise<void> | void;
+    /** useLogto()'s `error` ref value - the only signal that a proxied call failed. */
+    getError: () => unknown;
+};
 
 /**
  * Ends a session whose tokens can no longer be refreshed. @logto/vue's
@@ -16,7 +21,7 @@ type SignOut = (postLogoutRedirectUri: string) => Promise<void> | void;
  * anonymous and 401s (#94). signOut() clears storage and reloads at home;
  * the flag makes App.vue explain why once it comes back.
  */
-export function createSessionExpiry(signOut: SignOut) {
+export function createSessionExpiry({ signOut, clearAllTokens, getError }: SessionExpiryDeps) {
     // Several requests fire together on a page load; only the first one
     // should start the redirect.
     let expiring = false;
@@ -31,7 +36,20 @@ export function createSessionExpiry(signOut: SignOut) {
         } catch {
             // Storage blocked - the redirect still happens, only the toast is lost.
         }
+
+        // @logto/vue swallows errors from every proxied call and reports them
+        // through its `error` ref instead. signOut() fetches the OIDC config
+        // before touching storage, and the client caches that fetch's
+        // rejection for the page's lifetime - so if Logto was unreachable
+        // when the refresh failed, signOut() does nothing at all, and the
+        // app would stay wedged. Fall back to clearing storage ourselves and
+        // reloading; the Logto-side session just isn't ended in that case.
+        const errorBefore = getError();
         await signOut(window.location.origin);
+        if (getError() !== errorBefore) {
+            await clearAllTokens();
+            window.location.assign(window.location.origin);
+        }
     };
 }
 
@@ -79,8 +97,12 @@ export function createAuthenticatedTokenGetter({
 }
 
 export function useSessionExpiry() {
-    const { isAuthenticated, getAccessToken, signOut } = useLogto();
-    const expireSession = createSessionExpiry(signOut);
+    const { isAuthenticated, getAccessToken, signOut, clearAllTokens, error } = useLogto();
+    const expireSession = createSessionExpiry({
+        signOut,
+        clearAllTokens,
+        getError: () => error.value,
+    });
     const getApiAccessToken = createAuthenticatedTokenGetter({
         isAuthenticated: () => isAuthenticated.value,
         getAccessToken: () => getAccessToken(import.meta.env.VITE_LOGTO_API_RESOURCE),

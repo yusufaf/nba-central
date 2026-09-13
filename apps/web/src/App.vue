@@ -5,7 +5,7 @@ import { toast } from 'vue-sonner';
 import AppHeader from "./views/Header.vue";
 import { useTeamsStore } from '@/stores/teams';
 import { Sonner } from "@/components/ui/sonner";
-import { setAccessTokenGetter, setSessionExpiredHandler } from '@/network/api';
+import { setAccessTokenGetter } from '@/network/api';
 import {
     useSessionExpiry,
     consumeSessionExpiredFlag,
@@ -16,9 +16,8 @@ const teamsStore = useTeamsStore();
 
 // useLogto() only works inside a component's setup context, so the api.ts
 // module can't call it directly — wire the real getter in here instead.
-const { expireSession, getApiAccessToken } = useSessionExpiry();
+const { getApiAccessToken } = useSessionExpiry();
 setAccessTokenGetter(getApiAccessToken);
-setSessionExpiredHandler(expireSession);
 
 onMounted(async () => {
     if (consumeSessionExpiredFlag()) {
