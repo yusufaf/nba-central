@@ -1,25 +1,28 @@
 <script setup lang="ts">
 import { RouterView } from "vue-router";
 import { onMounted } from 'vue';
-import { useLogto } from '@logto/vue';
+import { toast } from 'vue-sonner';
 import AppHeader from "./views/Header.vue";
 import { useTeamsStore } from '@/stores/teams';
 import { Sonner } from "@/components/ui/sonner";
 import { setAccessTokenGetter } from '@/network/api';
+import {
+    useSessionExpiry,
+    consumeSessionExpiredFlag,
+    SESSION_EXPIRED_MESSAGE,
+} from '@/composables/useSessionExpiry';
 
 const teamsStore = useTeamsStore();
-const { getAccessToken, isAuthenticated } = useLogto();
 
 // useLogto() only works inside a component's setup context, so the api.ts
 // module can't call it directly — wire the real getter in here instead.
-setAccessTokenGetter(async () => {
-    if (!isAuthenticated.value) {
-        return undefined;
-    }
-    return getAccessToken(import.meta.env.VITE_LOGTO_API_RESOURCE);
-});
+const { getApiAccessToken } = useSessionExpiry();
+setAccessTokenGetter(getApiAccessToken);
 
 onMounted(async () => {
+    if (consumeSessionExpiredFlag()) {
+        toast.error(SESSION_EXPIRED_MESSAGE);
+    }
     await teamsStore.fetchTeamLogos();
 });
 </script>

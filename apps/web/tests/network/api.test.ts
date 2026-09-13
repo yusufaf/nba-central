@@ -6,6 +6,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 // `interceptors.request.use` is stubbed too — api.ts registers the
 // Authorization-header interceptor immediately after axios.create(), so the
 // real instance shape needs at least this much to avoid crashing the import.
+// Its behaviour is covered in apiInterceptors.test.ts.
 const mockInstance = vi.hoisted(() => ({
     get: vi.fn(),
     post: vi.fn(),
