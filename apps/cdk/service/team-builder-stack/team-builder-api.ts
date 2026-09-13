@@ -233,10 +233,12 @@ export class TeamBuilderAPI extends Construct {
 		});
 
 		// Add a policy statement for DynamoDB access
-		const dynamoTableResources = [`main`, `users`].map(
-			(tableName) =>
-				`arn:aws:dynamodb:${this.region}:${this.account}:table/${this.prefix}-${tableName}`,
-		);
+		// Queries against a GSI (getNews reads the PK2 index) are authorised
+		// on the index ARN, not the table's, so both are listed.
+		const dynamoTableResources = [`main`, `users`].flatMap((tableName) => {
+			const tableArn = `arn:aws:dynamodb:${this.region}:${this.account}:table/${this.prefix}-${tableName}`;
+			return [tableArn, `${tableArn}/index/*`];
+		});
 		const dynamoDBPolicyStatement = new PolicyStatement({
 			effect: Effect.ALLOW,
 			actions: [

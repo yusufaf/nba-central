@@ -25,13 +25,16 @@ const fetchESPN = async (): Promise<NormalizedArticle[]> => {
 		const data = await res.json();
 		return (data.articles || [])
 			.map((article: any): NormalizedArticle | null => {
-				const id = article.dataSourceIdentifier || article.links?.web?.href;
-				if (!id || !article.headline || !article.published) return null;
+				// The URL is the row key, so an article without one can't be
+				// stored (and the card would have nothing to link to anyway).
+				const url = article.links?.web?.href;
+				const id = article.dataSourceIdentifier || url;
+				if (!url || !article.headline || !article.published) return null;
 				return {
 					id,
 					source: "ESPN",
 					headline: article.headline,
-					url: article.links?.web?.href || "",
+					url,
 					author: article.byline || "ESPN Staff",
 					publishedAt: article.published,
 					thumbnailUrl: article.images?.[0]?.url,
@@ -216,6 +219,13 @@ const fetchRss = async (feed: RssFeedConfig): Promise<NormalizedArticle[]> => {
 
 const SEVEN_DAYS_SECONDS = 7 * 24 * 60 * 60;
 
+/**
+ * Collapses tracking params, trailing slashes and case so the same story
+ * always maps to one key, whichever variant of its link a feed hands out.
+ */
+const normalizeUrl = (url: string): string =>
+	url.split("?")[0].replace(/\/$/, "").toLowerCase();
+
 export const handler: Handler = async (): Promise<any> => {
 	console.log("Fetching news from all sources...");
 
@@ -238,19 +248,28 @@ export const handler: Handler = async (): Promise<any> => {
 	// from more than one source. First occurrence wins.
 	const seenUrls = new Set<string>();
 	const articles = recent.filter(({ url }) => {
-		const key = url.split("?")[0].replace(/\/$/, "").toLowerCase();
+		const key = normalizeUrl(url);
 		if (seenUrls.has(key)) return false;
 		seenUrls.add(key);
 		return true;
 	});
 
-	// PK: NEWS#{source}, SK: PUBLISHED_AT#{date}#ID#{id}
+	// PK: NEWS#{source}, SK: URL#{normalized url}
 	// Partitioned per source so a high-volume source (ESPN) cannot consume the
 	// entire read window and starve the others out of the feed.
+	//
+	// The SK is the URL rather than the publish date because ESPN bumps
+	// `published` (and its dataSourceIdentifier) every time a story is edited;
+	// a date-based key gave each edit its own row and the feed filled with
+	// repeats (#92). Keyed on the URL, a re-published story overwrites itself
+	// and picks up the latest headline. Recency ordering lives on the PK2 GSI,
+	// which getNews queries newest-first.
 	const ttl = Math.floor(Date.now() / 1000) + SEVEN_DAYS_SECONDS;
 	const items = articles.map((article) => ({
 		PK: `NEWS#${article.source}`,
-		SK: `PUBLISHED_AT#${article.publishedAt}#ID#${article.id}`,
+		SK: `URL#${normalizeUrl(article.url)}`,
+		PK2: `NEWS#${article.source}`,
+		SK2: `PUBLISHED_AT#${article.publishedAt}`,
 		...article,
 		ttl,
 	}));
