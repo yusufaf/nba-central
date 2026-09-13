@@ -1,4 +1,5 @@
 import type { Arena, Coach, GM, Player } from "@/models/types";
+import { resolveLegacyLogoUrl } from "@/utils/historicalLogoUrl";
 import type {
     EntityRef,
     PlayerSnapshot,
@@ -100,7 +101,7 @@ export const hydrateTeam = (saved: SavedTeam): HydratedTeam => {
         teamDescription: saved.description ?? "",
         teamCity: saved.city ?? "",
         teamCountry: saved.country ?? "",
-        teamLogo: saved.logoUrl ?? "",
+        teamLogo: resolveLegacyLogoUrl(saved.logoUrl ?? ""),
         teamJersey: saved.jerseyUrl ?? "",
         players,
         teamCoach: saved.coach ?? null,

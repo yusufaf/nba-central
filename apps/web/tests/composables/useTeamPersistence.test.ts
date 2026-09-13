@@ -1,6 +1,8 @@
 import { describe, it, expect } from "vitest";
 import { serializeTeam, hydrateTeam } from "@/composables/useTeamPersistence";
 import type { SavedTeam } from "@/models/api";
+import historicalLogosData from "@/assets/data/historicalLogos.json";
+import type { HistoricalLogo } from "@/models/types";
 
 const apiPlayer = (overrides: Record<string, any> = {}) => ({
     id: "jamesle01",
@@ -233,5 +235,15 @@ describe("hydrateTeam", () => {
         expect(hydrated.teamCoach).toBeNull();
         expect(hydrated.teamGM).toBeNull();
         expect(hydrated.teamArena).toBeNull();
+    });
+
+    it("upgrades a pre-CDN historical logo path to the era's current URL", () => {
+        const [era] = historicalLogosData as HistoricalLogo[];
+        const hydrated = hydrateTeam({
+            ...baseSaved,
+            logoUrl: `/logos/historical/${era.team}-${era.startYear}.png`,
+        });
+
+        expect(hydrated.teamLogo).toBe(era.logo);
     });
 });
