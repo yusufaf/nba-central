@@ -2,6 +2,7 @@ import { describe, it, expect } from "vitest";
 import {
 	collapseEras,
 	formatYears,
+	logoObjectKey,
 	parseFranchiseSeasons,
 	parseFranchises,
 	parseLogoBase,
@@ -229,5 +230,24 @@ describe("collapseEras", () => {
 
 		expect(eras).toHaveLength(1);
 		expect(eras[0]).toMatchObject({ startYear: 1995, endYear: 1996 });
+	});
+});
+
+describe("logoObjectKey", () => {
+	const png = new Uint8Array([0x89, 0x50, 0x4e, 0x47, 1, 2, 3]);
+
+	it("content-addresses the era's image under logos/historical/", () => {
+		expect(logoObjectKey("TRI-1950", png)).toMatch(
+			/^logos\/historical\/TRI-1950\.[0-9a-f]{12}\.png$/,
+		);
+	});
+
+	it("is stable for identical bytes and changes with them", () => {
+		const same = logoObjectKey("TRI-1950", new Uint8Array(png));
+		expect(same).toBe(logoObjectKey("TRI-1950", png));
+
+		const edited = new Uint8Array(png);
+		edited[edited.length - 1] = 9;
+		expect(logoObjectKey("TRI-1950", edited)).not.toBe(same);
 	});
 });

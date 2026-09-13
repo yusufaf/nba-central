@@ -1,20 +1,37 @@
 /**
- * Regenerates nba-central's checked-in historicalLogos.json and the PNGs it
- * points at, by crawling every NBA/BAA/ABA franchise Basketball-Reference
- * tracks and hashing its season-by-season logo images to collapse ~1,700
- * team-seasons into a few hundred distinct logo eras.
+ * Regenerates nba-central's checked-in historicalLogos.json by crawling every
+ * NBA/BAA/ABA franchise Basketball-Reference tracks, hashing its
+ * season-by-season logo images to collapse ~1,700 team-seasons into a few
+ * hundred distinct logo eras, and uploading one keyed-out PNG per era to the
+ * assets S3 bucket that TeamBuilderAssetsCdn fronts with CloudFront.
  *
  *   pnpm run refresh-historical-logos
- *   pnpm run refresh-historical-logos -- --check    # verify only, write nothing
+ *   pnpm run refresh-historical-logos -- --check    # verify only, upload/write nothing
+ *
+ * The images are NOT checked into the repo - same model as
+ * refresh-historical-jerseys.ts and upload-hero-video.ts. Each row's `logo`
+ * is the full CDN URL; the S3 key is content-hashed (see logoObjectKey in
+ * lib/historicalLogos.ts), so an era whose bytes haven't changed is skipped
+ * on re-runs and one whose artwork did change gets a fresh, never-cached URL.
+ *
+ * Uploading (i.e. running without --check) requires apps/cdk's .env
+ * (account/region/appName/deploymentType - the same ones `cdk deploy` reads)
+ * to name the target bucket and locate its CloudFront distribution, plus AWS
+ * credentials able to write to that bucket. --check needs neither: it
+ * exercises the same crawl, keying, and key-derivation path without touching
+ * AWS at all, and leaves `logo` empty.
  *
  * Takes several minutes - BBRef throttles bulk requests, so both the HTML
  * and image fetches are deliberately spaced out.
  */
 import * as fs from "fs";
-import * as path from "path";
 import { createHash } from "crypto";
+import { config as dotEnvConfig } from "dotenv";
+import { HeadObjectCommand, PutObjectCommand } from "@aws-sdk/client-s3";
+import { setupAssetsCdnUpload, type AssetsCdnUpload } from "./lib/assetsCdn";
 import {
 	collapseEras,
+	logoObjectKey,
 	parseFranchiseSeasons,
 	parseFranchises,
 	parseLogoBase,
@@ -26,18 +43,18 @@ import {
 	dataPath,
 	fetchPage,
 	isCheckOnly,
-	nbaCentralPath,
 	parseOrThrow,
 	run,
 	sleep,
 	writeIfClean,
 } from "./lib/refresh";
 
+dotEnvConfig();
+
 const BBREF_BASE_URL = "https://www.basketball-reference.com";
 const TEAMS_INDEX_URL = `${BBREF_BASE_URL}/teams/`;
 
 const OUTPUT_PATH = dataPath("historicalLogos.json");
-const IMAGE_DIR = nbaCentralPath("public/logos/historical");
 
 // BBRef 403s a default fetch User-Agent; identify ourselves like the other
 // refresh scripts do.
@@ -114,9 +131,46 @@ const fetchLogoImage = async (
 	return bytes;
 };
 
+/**
+ * Puts one era's PNG in the assets bucket unless an object already sits at
+ * its content-addressed key - identical key means identical bytes, so a
+ * re-run skips it instead of stacking versions on the versioned bucket.
+ * Returns whether an upload actually happened.
+ */
+const uploadLogo = async (
+	upload: AssetsCdnUpload,
+	objectKey: string,
+	png: Uint8Array,
+): Promise<boolean> => {
+	try {
+		await upload.s3Client.send(
+			new HeadObjectCommand({ Bucket: upload.bucketName, Key: objectKey }),
+		);
+		return false;
+	} catch (err) {
+		if ((err as { name?: string }).name !== "NotFound") throw err;
+	}
+	await upload.s3Client.send(
+		new PutObjectCommand({
+			Bucket: upload.bucketName,
+			Key: objectKey,
+			Body: png,
+			ContentType: "image/png",
+			// The hash in the key is the whole cache-busting mechanism - this
+			// object's content never changes at this key, so cache it hard.
+			CacheControl: "public, max-age=31536000, immutable",
+		}),
+	);
+	return true;
+};
+
 const main = async () => {
 	const checkOnly = isCheckOnly();
 	const problems: string[] = [];
+
+	// Resolve the bucket and distribution before the multi-minute crawl so a
+	// missing .env or expired credentials fail immediately.
+	const upload = checkOnly ? null : await setupAssetsCdnUpload();
 
 	const indexBody = await fetchPage(TEAMS_INDEX_URL, USER_AGENT);
 	const franchises = parseOrThrow(indexBody, parseFranchises, "franchises");
@@ -183,12 +237,10 @@ const main = async () => {
 		}
 	}
 
-	if (!checkOnly) {
-		fs.mkdirSync(IMAGE_DIR, { recursive: true });
-	}
-
-	const rows = allEras
-		.map((era) => {
+	let uploaded = 0;
+	let unchanged = 0;
+	const rows: (Omit<Era, "logoHash"> & { logo: string })[] = [];
+	for (const era of allEras) {
 			for (const field of REQUIRED_FIELDS) {
 				if (era[field] === undefined || era[field] === "") {
 					problems.push(`${era.franchise} ${era.years}: missing ${field}`);
@@ -205,33 +257,43 @@ const main = async () => {
 				);
 			}
 
-			const imageKey = `${era.team}-${era.startYear}`;
-			const buffer = imageBytes.get(imageKey);
-			if (!buffer) {
-				problems.push(`${era.franchiseName} ${era.years}: no image downloaded`);
-				return null;
-			}
+		const imageKey = `${era.team}-${era.startYear}`;
+		const buffer = imageBytes.get(imageKey);
+		if (!buffer) {
+			problems.push(`${era.franchiseName} ${era.years}: no image downloaded`);
+			continue;
+		}
 
-			// BBRef serves opaque white backgrounds; key them out so the logos
-			// sit on nba-central's dark theme instead of in a white square. The
-			// era hash above stays on the source bytes, so this never changes
-			// which seasons collapse together.
-			if (!checkOnly) {
-				const { png, skipped } = keyOutWhiteBackground(buffer);
-				if (skipped && skipped !== "no edge-connected white") {
-					console.warn(`Note: ${imageKey}.png left opaque (${skipped})`);
-				}
-				fs.writeFileSync(path.join(IMAGE_DIR, `${imageKey}.png`), png);
-			}
+		// BBRef serves opaque white backgrounds; key them out so the logos
+		// sit on nba-central's dark theme instead of in a white square. The
+		// era hash above stays on the source bytes, so this never changes
+		// which seasons collapse together. Keying runs under --check too:
+		// the object key hashes the keyed bytes, so this is the path that
+		// decides each URL.
+		const { png, skipped } = keyOutWhiteBackground(buffer);
+		if (skipped && skipped !== "no edge-connected white") {
+			console.warn(`Note: ${imageKey}.png left opaque (${skipped})`);
+		}
+		const objectKey = logoObjectKey(imageKey, png);
 
-			const { logoHash: _logoHash, ...row } = era;
-			return { ...row, logo: `/logos/historical/${imageKey}.png` };
-		})
-		.filter((row): row is NonNullable<typeof row> => row !== null)
-		.sort((a, b) => a.franchise.localeCompare(b.franchise) || a.startYear - b.startYear);
+		let logo = "";
+		if (upload) {
+			if (await uploadLogo(upload, objectKey, png)) {
+				uploaded++;
+			} else {
+				unchanged++;
+			}
+			logo = `https://${upload.distributionDomain}/${objectKey}`;
+		}
+
+		const { logoHash: _logoHash, ...row } = era;
+		rows.push({ ...row, logo });
+	}
+	rows.sort((a, b) => a.franchise.localeCompare(b.franchise) || a.startYear - b.startYear);
 
 	console.log(
-		`${rows.length} logo eras across ${franchises.length} franchises, ${imageBytes.size} season images downloaded`,
+		`${rows.length} logo eras across ${franchises.length} franchises, ${imageBytes.size} season images downloaded` +
+			(upload ? `, ${uploaded} uploaded, ${unchanged} already on the CDN` : ""),
 	);
 
 	writeIfClean(OUTPUT_PATH, rows, problems, checkOnly);

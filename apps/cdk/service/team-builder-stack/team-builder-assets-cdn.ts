@@ -16,10 +16,10 @@ export interface TeamBuilderAssetsCdnProps {
 
 /**
  * Public, read-only CDN in front of the otherwise fully private assets
- * bucket - for static datasets too heavy to check into the repo the way
- * historicalLogos.json's images are (historical jerseys is the first; see
- * refresh-historical-jerseys.ts). Deployed in both development and
- * production, unlike TeamBuilderWeb, since the picker needs working image
+ * bucket - for static image datasets that stay out of the repo (historical
+ * jerseys, historical logos, the Home hero clip; see the refresh- and upload-
+ * scripts in apps/cdk/scripts). Deployed in both development and
+ * production, unlike TeamBuilderWeb, since the pickers need working image
  * URLs locally too.
  *
  * No custom domain: the frontend only ever references these images by their

@@ -8,6 +8,7 @@
  * the downloaded bytes and hands the result to collapseEras() to fold
  * ~1,700 team-seasons down into a few hundred distinct logo eras.
  */
+import { createHash } from "crypto";
 import * as cheerio from "cheerio";
 
 export interface Franchise {
@@ -46,6 +47,20 @@ const seasonEndYear = (label: string) => parseInt(label.slice(0, 4), 10) + 1;
 
 const seasonLabel = (endYear: number) =>
 	`${endYear - 1}-${String(endYear).slice(-2).padStart(2, "0")}`;
+
+export const LOGO_KEY_PREFIX = "logos/historical/";
+
+/**
+ * S3 key for one era's keyed-out PNG in the assets bucket. Content-addressed
+ * (imageKey.<sha256 prefix>.png) so a re-crawl that changes a logo lands on a
+ * new URL under CACHING_OPTIMIZED without a CloudFront invalidation - same
+ * reasoning as upload-hero-video.ts. Hashed over the final bytes the browser
+ * receives, not BBRef's source image, so a keying change also busts the cache.
+ */
+export const logoObjectKey = (imageKey: string, png: Uint8Array): string => {
+	const hash = createHash("sha256").update(png).digest("hex").slice(0, 12);
+	return `${LOGO_KEY_PREFIX}${imageKey}.${hash}.png`;
+};
 
 export const formatYears = (startYear: number, endYear: number) =>
 	startYear === endYear
