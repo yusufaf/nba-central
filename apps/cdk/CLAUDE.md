@@ -21,7 +21,6 @@ pnpm refresh-arenas            # rewrite apps/web's arenas.json from Wikipedia
 pnpm refresh-coaches           # rewrite coaches.json from Basketball-Reference
 pnpm refresh-execs             # rewrite execs.json from Basketball-Reference
 pnpm refresh-historical-logos  # rewrite historicalLogos.json, upload images to S3/CloudFront
-pnpm rekey-historical-logos    # re-key the transparent background on the legacy checked-in PNGs
 pnpm refresh-historical-jerseys  # rewrite historicalJerseys.json, upload images to S3/CloudFront
 pnpm run refresh-<name> -- --check  # validate against the live source, write nothing
 pnpm upload-hero-video          # upload apps/web's hero clip, rewrite heroMedia.json

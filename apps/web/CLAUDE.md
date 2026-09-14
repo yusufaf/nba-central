@@ -94,8 +94,7 @@ to put classes on.
   `logo` and `historicalJerseys.json`'s `jersey` fields are full CloudFront
   URLs (see root CLAUDE.md). Saved teams from before the logo CDN move hold
   the old `/logos/historical/TEAM-YEAR.png` paths; `resolveLegacyLogoUrl`
-  (`src/utils/historicalLogoUrl.ts`) maps them on hydrate. The PNGs still in
-  `public/logos/historical/` are those legacy originals, pending removal.
+  (`src/utils/historicalLogoUrl.ts`) maps them on hydrate.
 - The Home hero's poster lives in `public/hero/`, deliberately outside
   `src/assets` so it does not pass through the bundler. The loop itself is
   NOT checked in the same way - it used to be, via Git LFS, but CI's checkout
