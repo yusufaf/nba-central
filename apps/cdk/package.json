@@ -17,7 +17,6 @@
         "refresh-coaches": "ts-node -r tsconfig-paths/register scripts/refresh-coaches.ts",
         "refresh-execs": "ts-node -r tsconfig-paths/register scripts/refresh-execs.ts",
         "refresh-historical-logos": "ts-node -r tsconfig-paths/register scripts/refresh-historical-logos.ts",
-        "rekey-historical-logos": "ts-node -r tsconfig-paths/register scripts/rekey-historical-logos.ts",
         "refresh-historical-jerseys": "ts-node -r tsconfig-paths/register scripts/refresh-historical-jerseys.ts",
         "upload-hero-video": "ts-node -r tsconfig-paths/register scripts/upload-hero-video.ts",
         "cdk": "cdk"
