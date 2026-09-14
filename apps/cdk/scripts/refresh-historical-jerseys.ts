@@ -7,12 +7,13 @@
  *   pnpm run refresh-historical-jerseys
  *   pnpm run refresh-historical-jerseys -- --check    # verify only, upload/write nothing
  *
- * Unlike historicalLogos.json, the images themselves are NOT checked into the
- * repo: this corpus is a trimmed ~600 home/road and primary-alternate designs
- * (the "special" bucket - throwbacks, City editions, one-off commemoratives -
- * is deliberately dropped, see classifySlot in lib/historicalJerseys.ts), but
- * each is a much heavier watermarked illustration than a keyed-out logo PNG.
- * Only the JSON manifest of CDN URLs is written locally.
+ * The images themselves are NOT checked into the repo: this corpus is a
+ * trimmed ~600 home/road and primary-alternate designs (the "special" bucket
+ * - throwbacks, City editions, one-off commemoratives - is deliberately
+ * dropped, see classifySlot in lib/historicalJerseys.ts), each a much heavier
+ * watermarked illustration than a keyed-out logo PNG. Only the JSON manifest
+ * of CDN URLs is written locally - the same model refresh-historical-logos.ts
+ * and upload-hero-video.ts follow.
  *
  * Uploading (i.e. running without --check) requires apps/cdk's .env
  * (account/region/appName/deploymentType - the same ones `cdk deploy` reads)

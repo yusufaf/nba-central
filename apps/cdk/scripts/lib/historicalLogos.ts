@@ -8,6 +8,7 @@
  * the downloaded bytes and hands the result to collapseEras() to fold
  * ~1,700 team-seasons down into a few hundred distinct logo eras.
  */
+import { createHash } from "crypto";
 import * as cheerio from "cheerio";
 
 export interface Franchise {
@@ -46,6 +47,36 @@ const seasonEndYear = (label: string) => parseInt(label.slice(0, 4), 10) + 1;
 
 const seasonLabel = (endYear: number) =>
 	`${endYear - 1}-${String(endYear).slice(-2).padStart(2, "0")}`;
+
+export const LOGO_KEY_PREFIX = "logos/historical/";
+
+/**
+ * Bump whenever pngAlpha.ts's keyOutWhiteBackground output changes in a way
+ * that should reach browsers - it is folded into every object key below, so
+ * bumping it re-uploads every era under a new URL.
+ */
+export const LOGO_KEYING_VERSION = 1;
+
+/**
+ * S3 key for one era's keyed-out PNG in the assets bucket. Content-addressed
+ * (imageKey.<sha256 prefix>.png) so a re-crawl that changes a logo lands on a
+ * new URL under CACHING_OPTIMIZED without a CloudFront invalidation - same
+ * reasoning as upload-hero-video.ts.
+ *
+ * Hashed over BBRef's source bytes plus LOGO_KEYING_VERSION rather than the
+ * keyed PNG that actually gets uploaded: the keyed bytes come out of node's
+ * zlib, whose deflate stream is not guaranteed identical across Node
+ * releases, so hashing them would re-key all 234 eras on a Node upgrade with
+ * no visible change. The source image is what BBRef serves verbatim.
+ */
+export const logoObjectKey = (imageKey: string, sourcePng: Uint8Array): string => {
+	const hash = createHash("sha256")
+		.update(`keying-v${LOGO_KEYING_VERSION}:`)
+		.update(sourcePng)
+		.digest("hex")
+		.slice(0, 12);
+	return `${LOGO_KEY_PREFIX}${imageKey}.${hash}.png`;
+};
 
 export const formatYears = (startYear: number, endYear: number) =>
 	startYear === endYear
