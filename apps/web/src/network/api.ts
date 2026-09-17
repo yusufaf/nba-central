@@ -17,6 +17,8 @@ import type {
     GetTeamResponse,
     UpdateTeamResponse,
     DeleteTeamResponse,
+    SendFeedbackPayload,
+    SendFeedbackResponse,
     GetTeamLogosResponse,
     GetNewsResponse,
     GetPlayersParams,
@@ -123,6 +125,16 @@ export const teamApi = {
     },
     deleteTeam: async (teamUUID: string): Promise<DeleteTeamResponse> => {
         const response = await api.delete(`/api/teams/delete/${teamUUID}`);
+        return response.data;
+    },
+};
+
+// Feedback API - matches FEEDBACK_ROUTES in CDK
+export const feedbackApi = {
+    send: async (
+        payload: SendFeedbackPayload,
+    ): Promise<SendFeedbackResponse> => {
+        const response = await api.post('/api/feedback/send', payload);
         return response.data;
     },
 };

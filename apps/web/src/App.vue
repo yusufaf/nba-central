@@ -1,8 +1,9 @@
 <script setup lang="ts">
 import { RouterView } from "vue-router";
-import { onMounted } from 'vue';
+import { onMounted, ref } from 'vue';
 import { toast } from 'vue-sonner';
 import AppHeader from "./views/Header.vue";
+import FeedbackDialog from "@/components/FeedbackDialog.vue";
 import { useTeamsStore } from '@/stores/teams';
 import { Sonner } from "@/components/ui/sonner";
 import { setAccessTokenGetter } from '@/network/api';
@@ -13,6 +14,7 @@ import {
 } from '@/composables/useSessionExpiry';
 
 const teamsStore = useTeamsStore();
+const feedbackOpen = ref(false);
 
 // useLogto() only works inside a component's setup context, so the api.ts
 // module can't call it directly — wire the real getter in here instead.
@@ -35,6 +37,9 @@ onMounted(async () => {
             <RouterView />
         </main>
         <footer class="app-footer">
+            <button type="button" class="footer-link" @click="feedbackOpen = true">
+                Send feedback
+            </button>
             <a
                 class="github-logo"
                 href="https://github.com/yusufaf/nba-central"
@@ -51,6 +56,7 @@ onMounted(async () => {
             </a>
         </footer>
     </div>
+    <FeedbackDialog v-model:open="feedbackOpen" />
 </template>
 
 <style scoped>
@@ -69,6 +75,18 @@ onMounted(async () => {
     align-items: center;
     padding: 0.75rem 1rem;
     background-color: hsl(var(--primary));
+    color: hsl(var(--primary-foreground));
+}
+
+.footer-link {
+    font-size: 0.8125rem;
+    color: hsl(var(--primary-foreground) / 0.85);
+    text-decoration: underline;
+    text-underline-offset: 0.2em;
+}
+
+.footer-link:hover,
+.footer-link:focus-visible {
     color: hsl(var(--primary-foreground));
 }
 
