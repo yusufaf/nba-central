@@ -40,7 +40,13 @@ const isFormValid = computed(
         subject.value.trim().length <= MAX_SUBJECT_LENGTH,
 );
 
+// Bumped on every submit and on reset, so a request whose dialog was closed
+// (Escape / overlay / X still work while sending) can't come back and close
+// or toast over a fresh draft.
+let requestSeq = 0;
+
 const resetForm = () => {
+    requestSeq++;
     subject.value = '';
     message.value = '';
     sending.value = false;
@@ -57,9 +63,11 @@ const handleSubmit = async () => {
     const trimmedSubject = subject.value.trim();
     if (trimmedSubject) payload.subject = trimmedSubject;
 
+    const seq = ++requestSeq;
     sending.value = true;
     try {
         const response = await feedbackApi.send(payload);
+        if (seq !== requestSeq) return;
         if (!response.success) {
             toast.error(response.error || 'Failed to send feedback');
             return;
@@ -67,9 +75,10 @@ const handleSubmit = async () => {
         toast.success('Thanks, feedback sent');
         open.value = false;
     } catch (err) {
+        if (seq !== requestSeq) return;
         toast.error(getApiErrorMessage(err, 'Failed to send feedback'));
     } finally {
-        sending.value = false;
+        if (seq === requestSeq) sending.value = false;
     }
 };
 </script>
@@ -89,7 +98,7 @@ const handleSubmit = async () => {
                     Log in to send feedback - that's how we know who to get back to.
                 </p>
                 <Button as-child class="justify-self-start">
-                    <RouterLink to="/login">Log in</RouterLink>
+                    <RouterLink to="/login" @click="open = false">Log in</RouterLink>
                 </Button>
             </div>
 

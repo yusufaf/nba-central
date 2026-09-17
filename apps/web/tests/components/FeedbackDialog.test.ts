@@ -137,6 +137,44 @@ describe("FeedbackDialog", () => {
         wrapper.unmount();
     });
 
+    it("ignores a response that arrives after the dialog was closed", async () => {
+        let resolveSend!: (value: unknown) => void;
+        send.mockReturnValue(new Promise((resolve) => { resolveSend = resolve; }));
+        const wrapper = mountOpen();
+        await nextTick();
+        await nextTick();
+
+        await type(textarea()!, "First draft");
+        button("Send").click();
+        await vi.waitFor(() => expect(send).toHaveBeenCalled());
+
+        // Escape / overlay close while the request is in flight.
+        await wrapper.setProps({ open: false });
+        await nextTick();
+        resolveSend({ success: true, data: { messageId: "late" } });
+        await nextTick();
+        await nextTick();
+
+        expect(toast.success).not.toHaveBeenCalled();
+        expect(wrapper.emitted("update:open") ?? []).not.toContainEqual([false]);
+
+        wrapper.unmount();
+    });
+
+    it("closes the dialog when the signed-out Log in link is followed", async () => {
+        isAuthenticated.value = false;
+        const wrapper = mountOpen();
+        await nextTick();
+        await nextTick();
+
+        (document.querySelector('a[href="/login"]') as HTMLAnchorElement).click();
+        await nextTick();
+
+        expect(wrapper.emitted("update:open")?.at(-1)).toEqual([false]);
+
+        wrapper.unmount();
+    });
+
     it("surfaces a thrown request error", async () => {
         send.mockRejectedValue(new Error("Network Error"));
         const wrapper = mountOpen();
