@@ -147,6 +147,18 @@ export type ListTeamsResponse = ApiResult<{ teams: TeamSummary[] }>;
 export type GetTeamResponse = ApiResult<SavedTeam>;
 export type UpdateTeamResponse = ApiResult<SavedTeam>;
 export type DeleteTeamResponse = ApiResult<void>;
+// #endregion
+
+//#region Feedback API Types
+// Mirrors apps/cdk/models/api/feedback-api.ts minus the optional reply-to
+// email, which the UI doesn't collect - the route is authenticated, so the
+// Lambda already knows who sent it.
+export interface SendFeedbackPayload {
+    message: string;
+    subject?: string;
+}
+
+export type SendFeedbackResponse = ApiResult<{ messageId: string }>;
 
 // #endregion
 

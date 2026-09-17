@@ -23,7 +23,7 @@ vi.mock("axios", () => ({
     },
 }));
 
-import { teamApi, dataApi, customPlayerApi } from "@/network/api";
+import { teamApi, dataApi, customPlayerApi, feedbackApi } from "@/network/api";
 
 beforeEach(() => {
     vi.clearAllMocks();
@@ -41,6 +41,22 @@ describe("teamApi.createTeam", () => {
             payload,
         );
         expect(result).toEqual({ uuid: "abc" });
+    });
+});
+
+describe("feedbackApi.send", () => {
+    it("POSTs to /api/feedback/send and returns response.data", async () => {
+        const payload = { message: "Love the jersey picker", subject: "Kudos" };
+        const body = { success: true, data: { messageId: "ses-1" } };
+        mockInstance.post.mockResolvedValue({ data: body });
+
+        const result = await feedbackApi.send(payload);
+
+        expect(mockInstance.post).toHaveBeenCalledWith(
+            "/api/feedback/send",
+            payload,
+        );
+        expect(result).toEqual(body);
     });
 });
 
