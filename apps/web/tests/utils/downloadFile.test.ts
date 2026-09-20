@@ -34,7 +34,8 @@ describe("downloadUrlAsFile", () => {
         );
     });
 
-    it("downloads the blob and revokes the object URL when the response is ok", async () => {
+    it("downloads the blob and revokes the object URL only after the deferral delay", async () => {
+        vi.useFakeTimers();
         const blob = new Blob(["png"]);
         globalThis.fetch = vi.fn().mockResolvedValue({ ok: true, status: 200, blob: async () => blob });
         const clickSpy = vi.spyOn(HTMLAnchorElement.prototype, "click").mockImplementation(() => {});
@@ -43,8 +44,12 @@ describe("downloadUrlAsFile", () => {
 
         expect(URL.createObjectURL).toHaveBeenCalledWith(blob);
         expect(clickSpy).toHaveBeenCalled();
+        expect(URL.revokeObjectURL).not.toHaveBeenCalled();
+
+        await vi.advanceTimersByTimeAsync(1000);
         expect(URL.revokeObjectURL).toHaveBeenCalledWith("blob:mock");
 
         clickSpy.mockRestore();
+        vi.useRealTimers();
     });
 });

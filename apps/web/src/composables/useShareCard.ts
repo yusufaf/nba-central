@@ -32,9 +32,13 @@ export const toShareCardProps = (
     };
 };
 
+// A stalled image (dropped connection, ad-blocked host) must not wedge
+// publishing forever - proceed with whatever has loaded once this elapses.
+const IMAGE_WAIT_MS = 4000;
+
 const waitForImages = async (root: HTMLElement) => {
     const images = Array.from(root.querySelectorAll('img'));
-    await Promise.all(
+    const allImagesSettled = Promise.all(
         images.map(
             (img) =>
                 new Promise<void>((resolve) => {
@@ -44,6 +48,8 @@ const waitForImages = async (root: HTMLElement) => {
                 }),
         ),
     );
+    const timeout = new Promise<void>((resolve) => setTimeout(resolve, IMAGE_WAIT_MS));
+    await Promise.race([allImagesSettled, timeout]);
     // Let the component react to any @error swaps before exporting.
     await nextTick();
 };

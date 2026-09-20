@@ -114,7 +114,10 @@ for (const file of files) {
     const rawLines = raw.split(/\r?\n/);
 
     for (const [i, line] of lines.entries()) {
-        const allow = line.match(ALLOW);
+        // The marker lives inside the comment it's exempting, so it has to be
+        // read from the raw line - stripComments has already blanked it out
+        // of `line` along with everything else in that comment.
+        const allow = (rawLines[i] ?? line).match(ALLOW);
         for (const rule of RULES) {
             if (!rule.appliesTo(file)) continue;
             if (rule.skip?.(line)) continue;

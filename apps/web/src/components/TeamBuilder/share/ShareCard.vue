@@ -34,8 +34,13 @@ const location = computed(() => [props.city, props.country].filter(Boolean).join
 
 <template>
     <div
-        class="share-card flex h-[39.375rem] w-[75rem] flex-col justify-between overflow-hidden bg-background p-12 text-foreground"
-    >
+        class="share-card flex flex-col justify-between overflow-hidden bg-background p-12 text-foreground"
+        style="width: 1200px; height: 630px; font-size: 16px"><!-- style-guard-allow: px-unit -->
+        <!-- This card is exported as a fixed 1200x630 PNG via html-to-image,
+             not laid out for a variable viewport - a user font-size
+             preference other than the browser default would scale
+             75rem/39.375rem away from 1200x630 and crop the export, so it
+             is pinned in px instead. -->
         <header class="flex items-center gap-8">
             <img
                 v-if="logoUrl && !logoFailed"

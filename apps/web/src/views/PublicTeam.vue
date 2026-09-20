@@ -1,3 +1,10 @@
+<script lang="ts">
+// Module-scoped sequence number `load` (below) uses to detect a stale
+// response: an in-flight request for an earlier teamUUID must not overwrite
+// state after a later one has already resolved and rendered.
+let requestSeq = 0;
+</script>
+
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
@@ -38,11 +45,13 @@ const canShareNatively = typeof navigator !== 'undefined' && typeof navigator.sh
 // component instance and onMounted never fires again - the page would keep
 // showing team A.
 const load = async (teamUUID: string) => {
+    const seq = ++requestSeq;
     loading.value = true;
     notFound.value = false;
     team.value = null;
     try {
         const response = await teamApi.getPublicTeam(teamUUID);
+        if (seq !== requestSeq) return;
         if (response.success) {
             team.value = response.data;
             track('public_team_viewed', { teamUUID });
@@ -50,10 +59,11 @@ const load = async (teamUUID: string) => {
             notFound.value = true;
         }
     } catch (err) {
+        if (seq !== requestSeq) return;
         console.error('Error loading public team:', err);
         notFound.value = true;
     } finally {
-        loading.value = false;
+        if (seq === requestSeq) loading.value = false;
     }
 };
 

@@ -135,6 +135,27 @@ describe("PublicTeam", () => {
         expect(teamApi.getPublicTeam).toHaveBeenCalledWith("t2");
     });
 
+    it("ignores a stale response for a team that has since been navigated away from", async () => {
+        let resolveT1: (value: { success: true; data: typeof team }) => void;
+        const t1Promise = new Promise<{ success: true; data: typeof team }>((resolve) => {
+            resolveT1 = resolve;
+        });
+        vi.mocked(teamApi.getPublicTeam).mockImplementation((teamUUID: string) =>
+            teamUUID === "t1"
+                ? t1Promise
+                : Promise.resolve({ success: true, data: { ...team, teamUUID: "t2", title: "T2 Squad" } as any }),
+        );
+
+        const wrapper = mountView();
+        await wrapper.setProps({ teamUUID: "t2" });
+        await flushPromises();
+        resolveT1!({ success: true, data: team as any });
+        await flushPromises();
+
+        expect(wrapper.text()).toContain("T2 Squad");
+        expect(wrapper.text()).not.toContain("Sharers");
+    });
+
     it("toasts an error when the card download fails", async () => {
         vi.mocked(teamApi.getPublicTeam).mockResolvedValue({ success: true, data: team as any });
         downloadUrlAsFile.mockRejectedValue(new Error("nope"));

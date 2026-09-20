@@ -39,4 +39,23 @@ describe("renderShareCard", () => {
         expect(opts).toMatchObject({ width: 1200, height: 630, pixelRatio: 1 });
         expect(document.body.childElementCount).toBe(before);
     });
+
+    it("does not wait forever for an image that never loads or errors", async () => {
+        vi.useFakeTimers();
+        try {
+            const pending = renderShareCard({
+                title: "T",
+                city: "",
+                country: "",
+                logoUrl: "https://cdn.example/logo.png",
+                jerseyUrl: "",
+                username: "u",
+                starters: [],
+            });
+            await vi.advanceTimersByTimeAsync(4000);
+            await expect(pending).resolves.toBe("QUJD");
+        } finally {
+            vi.useRealTimers();
+        }
+    });
 });
