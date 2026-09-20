@@ -5,6 +5,7 @@ export const DEFAULT_ALLOWED_ORIGINS = ["http://localhost:3000"];
 // team-builder-web.ts (CloudFront domainNames + Route 53 record) so the two
 // can never drift out of sync.
 export const WEB_DOMAIN_NAME = "nba.yusufaf.dev";
+export const SITE_URL = `https://${WEB_DOMAIN_NAME}`;
 
 export const ESPN_API_BASE_URL = "https://site.api.espn.com/apis/site/v2/sports/basketball/nba";
 

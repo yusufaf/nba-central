@@ -276,6 +276,16 @@ export class TeamBuilderAPI extends Construct {
 		});
 		mainLambdaRole.addToPolicy(s3PolicyStatement);
 
+		// getPublicTeamPage reads the deployed SPA shell. Scoped to that one
+		// object: the web bucket is otherwise CloudFront's alone.
+		mainLambdaRole.addToPolicy(
+			new PolicyStatement({
+				effect: Effect.ALLOW,
+				actions: ["s3:GetObject"],
+				resources: [`arn:aws:s3:::${this.prefix}-web/index.html`],
+			}),
+		);
+
 		// The verified sending identity lives in us-east-1 (the only region
 		// with SES production access); the stack itself is us-west-2, so this
 		// ARN can't be built from this.region.

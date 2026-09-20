@@ -108,6 +108,54 @@ const ownerEvent = (body: Record<string, unknown>) => ({
 	body: JSON.stringify(body),
 });
 
+process.env.webBucket = "team-builder-test-web";
+process.env.siteUrl = "https://nba.example";
+const { handler: pageHandler, __resetShellCache } = await import(
+	"lambdas/getPublicTeamPage/src/getPublicTeamPage"
+);
+
+const SHELL = "<html><head><title>NBA Team Builder</title></head><body><div id=app></div></body></html>";
+const shellObject = () => ({ Body: { transformToString: async () => SHELL } });
+
+describe("getPublicTeamPage", () => {
+	beforeEach(() => __resetShellCache());
+
+	it("serves the shell with OG tags for a public team", async () => {
+		send.mockResolvedValueOnce({ Items: [storedPublicTeam] });
+		s3Send.mockResolvedValueOnce(shellObject());
+		const result: any = await pageHandler(anonymousEvent("t1"), {} as any, {} as any);
+		expect(result.statusCode).toBe(200);
+		expect(result.headers["content-type"]).toBe("text/html; charset=utf-8");
+		expect(result.body).toContain('property="og:title" content="Sharers"');
+		expect(result.body).toContain("<title>Sharers — NBA Team Builder</title>");
+		expect(s3Send.mock.calls[0][0].input).toEqual({ Bucket: "team-builder-test-web", Key: "index.html" });
+	});
+
+	it("serves the untouched shell when the team is not public", async () => {
+		send.mockResolvedValueOnce({ Items: [] });
+		s3Send.mockResolvedValueOnce(shellObject());
+		const result: any = await pageHandler(anonymousEvent("nope"), {} as any, {} as any);
+		expect(result.statusCode).toBe(200);
+		expect(result.body).toBe(SHELL);
+	});
+
+	it("reuses the cached shell across invocations", async () => {
+		send.mockResolvedValue({ Items: [] });
+		s3Send.mockResolvedValueOnce(shellObject());
+		await pageHandler(anonymousEvent("a"), {} as any, {} as any);
+		await pageHandler(anonymousEvent("b"), {} as any, {} as any);
+		expect(s3Send).toHaveBeenCalledTimes(1);
+	});
+
+	it("500s plainly when the shell cannot be read", async () => {
+		send.mockResolvedValueOnce({ Items: [storedPublicTeam] });
+		s3Send.mockRejectedValueOnce(new Error("NoSuchKey"));
+		const result: any = await pageHandler(anonymousEvent("t1"), {} as any, {} as any);
+		expect(result.statusCode).toBe(500);
+		expect(result.headers["content-type"]).toBe("text/plain; charset=utf-8");
+	});
+});
+
 describe("publishTeam", () => {
 	it("400s on a malformed payload", async () => {
 		const result: any = await publishTeamHandler(
