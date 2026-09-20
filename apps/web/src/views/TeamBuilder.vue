@@ -489,6 +489,7 @@ const loadRemixFromRoute = async (teamUUID: string) => {
     try {
         const response = await teamApi.getPublicTeam(teamUUID);
         if (!response.success) {
+            clearBuilderState();
             toast.error("That team isn't public");
             return;
         }
@@ -523,9 +524,12 @@ const loadRemixFromRoute = async (teamUUID: string) => {
 // "Team Builder" link) matches the same route record, so Vue Router reuses
 // this component instance and onMounted never fires again. Without this
 // watcher the builder kept showing team A - and Save would silently
-// overwrite it. `team` wins if both are present.
+// overwrite it. `team` wins if both are present. Passed as an array of
+// getters (not a single getter returning a tuple) so Vue diffs each source
+// independently - a single getter would return a new array identity on
+// every navigation and fire the callback even when neither param changed.
 watch(
-    () => [route.query.team, route.query.remix] as const,
+    [() => route.query.team, () => route.query.remix],
     ([teamUUID, remixUUID]) => {
         if (typeof teamUUID === "string" && teamUUID) {
             loadTeamFromRoute(teamUUID);
