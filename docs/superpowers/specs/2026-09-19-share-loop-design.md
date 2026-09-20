@@ -124,7 +124,7 @@ type PublicTeam = Omit<SavedTeam, "userUUID" | "favorited" | "label" | "lastView
 | Route | Auth | Lambda | Notes |
 |---|---|---|---|
 | `GET /api/teams/public/{teamUUID}` | none (`PUBLIC_ROUTES`) | `getPublicTeam` | GSI query, 404 if not public |
-| `PUT /api/teams/publish` | authorizer | `publishTeam` | `{ teamUUID, public, cardUrl? }`; conditional update on the owner's PK/SK; sets `PK2`, `SK2`, `publishedAt` (first time), `cardUrl`, `updatedAt` |
+| `PUT /api/teams/publish` | authorizer | `publishTeam` | `{ teamUUID, public, cardPng? }`; verifies ownership with a `GetItem` on the owner's PK/SK, uploads the card if present, then a conditional update sets `PK2`, `SK2`, `publishedAt` (first time only), `cardUrl`, `updatedAt`. |
 | `GET /t/{teamUUID}` | none | `getPublicTeamPage` | CloudFront behavior `/t/*` → API origin; returns HTML |
 
 `getPublicTeamPage` is registered as a route on the HttpApi like the others but
@@ -140,12 +140,10 @@ what is public remains true.
 1. Query the team via the same GSI helper `getPublicTeam` uses (shared in
    `resources/dynamo/teams.ts`, not duplicated).
 2. Load the SPA shell: `GET s3://{webBucket}/index.html`, cached in module
-   scope keyed by ETag (re-fetched at most once per 5 minutes so a deploy
-   propagates without a Lambda restart). In `development` there is no web
-   bucket; the Lambda falls back to a minimal inline shell with a
-   `<script type="module" src="/src/main.ts">` tag so the Vite dev server can
-   still be pointed at it, and tests exercise the injection logic with a
-   fixture string.
+   scope for 5 minutes so a deploy propagates without a Lambda restart. The
+   web bucket only exists in production; anywhere else the fetch fails and
+   the Lambda returns a plain-text 500, which is correct — there is no site
+   to serve. Tests exercise the injection logic with a fixture string.
 3. Inject before `</head>`:
    - `<title>{title} — nba-central</title>`
    - `og:title`, `og:description` ("Starting five: A, B, C, D, E · Coach X ·
@@ -185,17 +183,18 @@ policy keyed on the path if traffic ever warrants it.
   Images that fail to load with CORS (ESPN current-team logos are the known
   case) are swapped for a text badge before rendering rather than tainting
   the canvas.
-- Upload: reuse `fileApi` multipart flow with a new `purpose: "share-card"`
-  that stores under `cards/{teamUUID}.png` in the **assets** bucket (today's
-  flow targets the main uploads bucket; `initiateMultipartUpload` gains a
-  bucket switch on `purpose`, ownership check unchanged). Returns the
-  assets-CDN URL, which becomes `cardUrl`. The assets bucket's CORS rule in
-  `team-builder-s3.ts` is GET-only today; it gains `PUT` so the browser can
-  send the signed part uploads (same rule shape the main bucket already has).
-- **CORS on the assets CDN:** `team-builder-assets-cdn.ts` switches the
-  default behavior's `originRequestPolicy` to `CORS_S3_ORIGIN` and its cache
-  policy to one that includes the `Origin` header, so the bucket's existing
-  CORS rule actually reaches the browser. Without this, every jersey/logo
+- Upload: `useShareCard` returns the PNG as a base64 string; the frontend
+  sends it in the `publishTeam` body (`cardPng`). The Lambda verifies
+  ownership, writes `cards/{teamUUID}/{updatedAt}.png` to the **assets**
+  bucket with `Cache-Control: public, max-age=31536000, immutable`, and stores
+  the assets-CDN URL as `cardUrl`. The key carries a timestamp so a re-save
+  never serves a stale cached card; old keys are left in place. Payload cap:
+  2 MB decoded (API Gateway's limit is 10 MB); the Lambda rejects anything
+  that is not a PNG by magic bytes.
+- **CORS on the assets CDN:** `team-builder-assets-cdn.ts` attaches the
+  managed `ResponseHeadersPolicy.CORS_ALLOW_ALL_ORIGINS_WITH_PREFLIGHT` so
+  every image response carries `Access-Control-Allow-Origin: *`. The bucket's own CORS
+  rule and the cache key are unchanged. Without this, every jersey/logo
   `<img>` taints the canvas.
 - Download button on both the builder (after publish) and the public page
   fetches `cardUrl` and saves it as `{slug}.png`; no re-render.
