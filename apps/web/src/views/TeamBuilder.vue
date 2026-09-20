@@ -366,9 +366,15 @@ const tryRenderCard = async (): Promise<string | null> => {
     }
 };
 
-const copyShareLink = async () => {
-    if (!loadedTeamUUID.value) return;
-    await navigator.clipboard.writeText(shareUrlFor(loadedTeamUUID.value));
+const copyShareLink = async (): Promise<boolean> => {
+    if (!loadedTeamUUID.value) return false;
+    try {
+        await navigator.clipboard.writeText(shareUrlFor(loadedTeamUUID.value));
+        return true;
+    } catch (err) {
+        console.error("Clipboard write failed:", err);
+        return false;
+    }
 };
 
 // `silent` is the re-publish after a save of an already-public team: the
@@ -386,14 +392,22 @@ const setPublished = async (nextPublic: boolean, { silent = false } = {}) => {
         track("team_published", { public: nextPublic, hasCard: cardPng !== null });
         if (silent) return;
         if (nextPublic) {
-            await copyShareLink();
-            toast.success(cardPng ? "Published — link copied" : "Published without a preview image — link copied");
+            const copied = await copyShareLink();
+            toast.success(
+                copied
+                    ? (cardPng ? "Published — link copied" : "Published without a preview image — link copied")
+                    : "Published — copy the link from Share",
+            );
         } else {
             toast.success("Team is private again");
         }
     } catch (err) {
         console.error("Publish failed:", err);
-        if (!silent) toast.error(nextPublic ? "Failed to publish team" : "Failed to unpublish team");
+        if (silent) {
+            toast.warning("Saved, but the share preview could not be refreshed");
+        } else {
+            toast.error(nextPublic ? "Failed to publish team" : "Failed to unpublish team");
+        }
     } finally {
         publishing.value = false;
     }
@@ -413,14 +427,21 @@ const shareTeam = async (method: "copy" | "native") => {
         }
         return;
     }
-    await navigator.clipboard.writeText(url);
-    toast.success("Link copied");
+    const copied = await copyShareLink();
+    toast[copied ? "success" : "error"](
+        copied ? "Link copied" : "Couldn't copy — copy it from your browser's address bar",
+    );
 };
 
 const downloadCard = async () => {
     if (!cardUrl.value) return;
     track("card_downloaded", { page: "builder" });
-    await downloadUrlAsFile(cardUrl.value, slugFilename(teamName.value, "png"));
+    try {
+        await downloadUrlAsFile(cardUrl.value, slugFilename(teamName.value, "png"));
+    } catch (err) {
+        console.error("Card download failed:", err);
+        toast.error("Failed to download card");
+    }
 };
 
 // Loading an existing team via ?team=<uuid> (e.g. from /teams). Metadata

@@ -11,4 +11,4 @@ export const downloadUrlAsFile = async (url: string, filename: string): Promise<
 };
 
 export const slugFilename = (name: string, ext: string): string =>
-    `${(name || "team").replace(/[^\w-]+/g, "-").toLowerCase()}.${ext}`;
+    `${(name.replace(/[^\w-]+/g, "-").replace(/^-+|-+$/g, "").toLowerCase() || "team")}.${ext}`;
