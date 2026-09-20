@@ -1,0 +1,30 @@
+{
+  "success": true,
+  "data": {
+    "teamUUID": "visual-team",
+    "username": "yusuf",
+    "title": "Visual Sharers",
+    "description": "",
+    "city": "Chicago",
+    "country": "USA",
+    "logoUrl": "",
+    "jerseyUrl": "",
+    "playerCount": 7,
+    "roster": [
+      { "slot": 1, "player": { "fullName": "Michael Jordan", "position": "SG", "rating": 99 } },
+      { "slot": 2, "player": { "fullName": "Scottie Pippen", "position": "SF", "rating": 95 } },
+      { "slot": 3, "player": { "fullName": "Dennis Rodman", "position": "PF", "rating": 88 } },
+      { "slot": 4, "player": { "fullName": "Toni Kukoc", "position": "SF", "rating": 84 } },
+      { "slot": 5, "player": { "fullName": "Luc Longley", "position": "C", "rating": 76 } },
+      { "slot": 6, "player": { "fullName": "Steve Kerr", "position": "PG", "rating": 78 } },
+      { "slot": 7, "player": { "fullName": "Ron Harper", "position": "PG" } }
+    ],
+    "coach": { "name": "Phil Jackson", "isCustom": false },
+    "gm": { "name": "Jerry Krause", "isCustom": false },
+    "arena": { "name": "United Center" },
+    "createdAt": 1700000000000,
+    "updatedAt": 1700000000000,
+    "public": true,
+    "publishedAt": 1700000000000
+  }
+}

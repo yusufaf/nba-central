@@ -1,5 +1,6 @@
 import { test, expect, type Page } from '@playwright/test';
 import gameSummaryFixture from './fixtures/game-summary.json' with { type: 'json' };
+import publicTeamFixture from './fixtures/public-team.json' with { type: 'json' };
 
 /**
  * One screenshot per route, plus the overlay surfaces that the global
@@ -25,6 +26,15 @@ async function stubNetwork(page: Page) {
             status: 200,
             contentType: 'application/json',
             body: JSON.stringify([]),
+        }),
+    );
+    // Playwright runs routes in the reverse order of registration, so this
+    // has to come after the catch-all above to actually take priority over it.
+    await page.route('**/api/teams/public/**', (route) =>
+        route.fulfill({
+            status: 200,
+            contentType: 'application/json',
+            body: JSON.stringify(publicTeamFixture),
         }),
     );
 }
@@ -54,6 +64,7 @@ const ROUTES = [
     { path: '/teams', name: 'teams' },
     { path: '/login', name: 'login' },
     { path: '/sign-up', name: 'sign-up' },
+    { path: '/t/visual-team', name: 'public-team' },
 ];
 
 for (const { path, name } of ROUTES) {
