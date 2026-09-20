@@ -20,6 +20,10 @@ import {
 import { serializeTeam, hydrateTeam } from "@/composables/useTeamPersistence";
 import { dataApi, teamApi } from "@/network/api";
 import { useUserTeamsStore } from "@/stores/userTeams";
+import { renderShareCard, toShareCardProps } from "@/composables/useShareCard";
+import { shareUrlFor } from "@/utils/shareUrl";
+import { downloadUrlAsFile, slugFilename } from "@/utils/downloadFile";
+import { track } from "@/lib/analytics";
 import type { DrawerSide, NBA2KRating } from "@/models/types";
 import type { GetPlayerStatsResponse } from "@/models/api";
 
@@ -31,6 +35,13 @@ const userTeamsStore = useUserTeamsStore();
 // saved. Present means saveTeam() updates that team in place; absent means
 // it creates a new one.
 const loadedTeamUUID = ref<string | null>(null);
+
+// Share state for the loaded team. `teamOwner` is the Logto username the
+// API stamps on a saved team; the card and the public page attribute to it.
+const isPublic = ref(false);
+const cardUrl = ref<string | null>(null);
+const publishing = ref(false);
+const teamOwner = ref("");
 
 /* Team Metadata */
 const teamName = ref<string>("");
@@ -278,6 +289,9 @@ const clearBuilderState = () => {
     teamLogo.value = "";
     teamJersey.value = "";
     loadedTeamUUID.value = null;
+    isPublic.value = false;
+    cardUrl.value = null;
+    teamOwner.value = "";
 };
 
 const resetTeam = () => {
@@ -307,11 +321,16 @@ const saveTeam = () => {
                 ? await userTeamsStore.update({ ...payload, teamUUID: existingUUID })
                 : await userTeamsStore.save(payload);
             loadedTeamUUID.value = saved.teamUUID;
+            teamOwner.value = saved.username ?? teamOwner.value;
+            track("team_saved", { isNew: !existingUUID, playerCount: payload.roster.length });
             // Puts the team's uuid in the URL after the first save so a
             // refresh still knows to update this team rather than create
             // a duplicate on the next save.
             if (!existingUUID) {
                 router.replace({ query: { ...route.query, team: saved.teamUUID } });
+            }
+            if (isPublic.value) {
+                await setPublished(true, { silent: true });
             }
         },
         {
@@ -320,6 +339,88 @@ const saveTeam = () => {
             error: existingUUID ? 'Failed to save team' : 'Failed to create team',
         }
     );
+};
+
+const currentCardProps = () =>
+    toShareCardProps({
+        title: teamName.value,
+        city: teamCity.value,
+        country: teamCountry.value,
+        logoUrl: teamLogo.value,
+        jerseyUrl: teamJersey.value,
+        username: teamOwner.value,
+        roster: Array.from(selectedPlayersData.value.entries()).map(([slot, player]) => ({
+            slot,
+            player: { ...player, fullName: player.fullName },
+        })),
+    });
+
+// A failed render must not block publishing: the page falls back to the
+// site poster for og:image and the owner gets told.
+const tryRenderCard = async (): Promise<string | null> => {
+    try {
+        return await renderShareCard(currentCardProps());
+    } catch (err) {
+        console.error("Share card render failed:", err);
+        return null;
+    }
+};
+
+const copyShareLink = async () => {
+    if (!loadedTeamUUID.value) return;
+    await navigator.clipboard.writeText(shareUrlFor(loadedTeamUUID.value));
+};
+
+// `silent` is the re-publish after a save of an already-public team: the
+// card is refreshed so unfurls never show a stale roster, without toasting
+// twice.
+const setPublished = async (nextPublic: boolean, { silent = false } = {}) => {
+    const teamUUID = loadedTeamUUID.value;
+    if (!teamUUID) throw new Error("Cannot publish an unsaved team");
+    publishing.value = true;
+    try {
+        const cardPng = nextPublic ? await tryRenderCard() : null;
+        const saved = await userTeamsStore.publish({ teamUUID, public: nextPublic, cardPng });
+        isPublic.value = saved.public;
+        cardUrl.value = saved.cardUrl ?? null;
+        track("team_published", { public: nextPublic, hasCard: cardPng !== null });
+        if (silent) return;
+        if (nextPublic) {
+            await copyShareLink();
+            toast.success(cardPng ? "Published — link copied" : "Published without a preview image — link copied");
+        } else {
+            toast.success("Team is private again");
+        }
+    } catch (err) {
+        console.error("Publish failed:", err);
+        if (!silent) toast.error(nextPublic ? "Failed to publish team" : "Failed to unpublish team");
+    } finally {
+        publishing.value = false;
+    }
+};
+
+const togglePublish = () => setPublished(!isPublic.value);
+
+const shareTeam = async (method: "copy" | "native") => {
+    if (!loadedTeamUUID.value) return;
+    const url = shareUrlFor(loadedTeamUUID.value);
+    track("share_clicked", { method, page: "builder" });
+    if (method === "native" && typeof navigator.share === "function") {
+        try {
+            await navigator.share({ title: teamName.value, url });
+        } catch {
+            // User dismissed the sheet - not an error.
+        }
+        return;
+    }
+    await navigator.clipboard.writeText(url);
+    toast.success("Link copied");
+};
+
+const downloadCard = async () => {
+    if (!cardUrl.value) return;
+    track("card_downloaded", { page: "builder" });
+    await downloadUrlAsFile(cardUrl.value, slugFilename(teamName.value, "png"));
 };
 
 // Loading an existing team via ?team=<uuid> (e.g. from /teams). Metadata
@@ -335,6 +436,9 @@ const loadTeamFromRoute = async (teamUUID: string) => {
 
         const hydrated = hydrateTeam(response.data);
         loadedTeamUUID.value = response.data.teamUUID;
+        isPublic.value = response.data.public ?? false;
+        cardUrl.value = response.data.cardUrl ?? null;
+        teamOwner.value = response.data.username ?? "";
         teamName.value = hydrated.teamName;
         teamDescription.value = hydrated.teamDescription;
         teamCity.value = hydrated.teamCity;
@@ -391,8 +495,15 @@ watch(
                     v-model:teamJersey="teamJersey"
                     v-model:drawerSide="selectedDrawerSide"
                     v-model:selectedView="selectedView"
+                    :team-uuid="loadedTeamUUID"
+                    :is-public="isPublic"
+                    :publishing="publishing"
+                    :card-url="cardUrl"
                     @saveTeam="saveTeam"
                     @reset="resetTeam"
+                    @togglePublish="togglePublish"
+                    @share="shareTeam"
+                    @downloadCard="downloadCard"
                 />
             </div>
 

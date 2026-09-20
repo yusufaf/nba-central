@@ -14,6 +14,7 @@ import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import {
     DropdownMenu,
     DropdownMenuContent,
+    DropdownMenuItem,
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
@@ -22,9 +23,11 @@ import {
     RotateCcw,
     Save,
     Pencil,
+    Globe,
+    Link2,
+    Share2,
+    Download,
 } from 'lucide-vue-next';
-
-const emit = defineEmits(['reset', 'saveTeam']);
 
 /* 2-Way Bound Props */
 // Declared without binding the ref: TeamBuilder.vue binds
@@ -39,10 +42,27 @@ const teamLogo = defineModel<string>('teamLogo');
 const teamJersey = defineModel<string>('teamJersey');
 const drawerSide = defineModel<string>('drawerSide');
 
+defineProps<{
+    teamUuid: string | null;
+    isPublic: boolean;
+    publishing: boolean;
+    cardUrl: string | null;
+}>();
+
+const emit = defineEmits<{
+    reset: [];
+    saveTeam: [];
+    togglePublish: [];
+    share: [method: 'copy' | 'native'];
+    downloadCard: [];
+}>();
+
 const showConfirm = ref<boolean>(false);
 const showTeamCustomizationDialog = ref<boolean>(false);
 
 const nbaTeamLogos = ref<any[]>([]);
+
+const canShareNatively = typeof navigator !== 'undefined' && typeof navigator.share === 'function';
 
 const resetClick = () => {
     showConfirm.value = true;
@@ -177,6 +197,37 @@ onMounted(() => {
                                     </ToggleGroup>
                                 </div>
                             </div>
+                        </DropdownMenuContent>
+                    </DropdownMenu>
+
+                    <Button
+                        data-testid="publish-button"
+                        size="sm"
+                        :variant="isPublic ? 'outline' : 'secondary'"
+                        :disabled="!teamUuid || publishing"
+                        :title="teamUuid ? (isPublic ? 'Make this team private' : 'Publish a public link (shows your username)') : 'Save the team first'"
+                        @click="emit('togglePublish')"
+                    >
+                        <Globe class="h-4 w-4 mr-2" />
+                        {{ publishing ? 'Working…' : isPublic ? 'Unpublish' : 'Publish' }}
+                    </Button>
+                    <DropdownMenu v-if="isPublic && teamUuid">
+                        <DropdownMenuTrigger as-child>
+                            <Button data-testid="share-button" size="sm" variant="outline" title="Share">
+                                <Share2 class="h-4 w-4 mr-2" />
+                                Share
+                            </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end" class="bg-surface-raised">
+                            <DropdownMenuItem @click="emit('share', 'copy')">
+                                <Link2 class="h-4 w-4 mr-2" /> Copy link
+                            </DropdownMenuItem>
+                            <DropdownMenuItem v-if="canShareNatively" @click="emit('share', 'native')">
+                                <Share2 class="h-4 w-4 mr-2" /> Share…
+                            </DropdownMenuItem>
+                            <DropdownMenuItem :disabled="!cardUrl" @click="emit('downloadCard')">
+                                <Download class="h-4 w-4 mr-2" /> Download card
+                            </DropdownMenuItem>
                         </DropdownMenuContent>
                     </DropdownMenu>
 
