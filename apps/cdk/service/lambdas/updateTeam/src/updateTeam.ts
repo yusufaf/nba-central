@@ -9,6 +9,7 @@ import { AuthorizerContext } from "models/auth";
 import { UpdateTeamPayload, UpdateTeamResponse, SavedTeam } from "models/api/teams-api";
 import { validateTeamData } from "utilities/team-validation";
 import { removeKeys } from "resources/dynamo/utilities";
+import { teamGsiKey, PRIVATE_SK2 } from "resources/dynamo/teams";
 
 const { mainTable = "" } = process.env;
 
@@ -61,7 +62,10 @@ export const handler: Handler = async (
 				"SET updatedAt = :updatedAt, title = :title, description = :description, " +
 				"city = :city, country = :country, logoUrl = :logoUrl, jerseyUrl = :jerseyUrl, " +
 				"playerCount = :playerCount, " +
-				"roster = :roster, coach = :coach, gm = :gm, arena = :arena",
+				"roster = :roster, coach = :coach, gm = :gm, arena = :arena, " +
+				// Rows saved before the share loop have no GSI keys; give them
+				// one on the next save without touching an existing visibility.
+				"PK2 = :pk2, SK2 = if_not_exists(SK2, :sk2Default)",
 			ExpressionAttributeValues: {
 				":updatedAt": timestamp,
 				":title": payload.title.trim(),
@@ -75,6 +79,8 @@ export const handler: Handler = async (
 				":coach": payload.coach ?? null,
 				":gm": payload.gm ?? null,
 				":arena": payload.arena ?? null,
+				":pk2": teamGsiKey(payload.teamUUID),
+				":sk2Default": PRIVATE_SK2,
 			},
 			ConditionExpression: "attribute_exists(PK) AND attribute_exists(SK)",
 			ReturnValues: "ALL_NEW",

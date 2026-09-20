@@ -8,6 +8,7 @@ import { DynamoDBDocumentClient, PutCommand } from "@aws-sdk/lib-dynamodb";
 import { randomUUID } from "crypto";
 import { AuthorizerContext } from "models/auth";
 import { removeKeys } from "resources/dynamo/utilities";
+import { teamGsiKey, PRIVATE_SK2 } from "resources/dynamo/teams";
 import { CreateTeamResponse, SaveTeamPayload, SavedTeam } from "models/api/teams-api";
 import { validateTeamData } from "utilities/team-validation";
 
@@ -41,9 +42,11 @@ export const handler: Handler = async (
 
 		const teamUUID = randomUUID();
 		const timestamp = new Date().getTime();
-		const initialTeam: SavedTeam & { PK: string; SK: string } = {
+		const initialTeam: SavedTeam & { PK: string; SK: string; PK2: string; SK2: string } = {
 			PK: `userUUID#${userUUID}`,
 			SK: `team#${teamUUID}`,
+			PK2: teamGsiKey(teamUUID),
+			SK2: PRIVATE_SK2,
 			teamUUID,
 			userUUID,
 			username,
@@ -73,11 +76,14 @@ export const handler: Handler = async (
 
 		await docClient.send(putCommand);
 
-		removeKeys(initialTeam);
+		// Copy before stripping keys - initialTeam is the same object
+		// referenced by putCommand.input.Item, and removeKeys mutates in place.
+		const responseTeam = { ...initialTeam };
+		removeKeys(responseTeam);
 
 		const response: CreateTeamResponse = {
 			success: true,
-			data: initialTeam,
+			data: responseTeam,
 		};
 
 		return {

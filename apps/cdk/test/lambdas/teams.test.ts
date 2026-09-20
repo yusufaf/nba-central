@@ -21,6 +21,7 @@ const { handler: listTeamsHandler } = await import("lambdas/listTeams/src/listTe
 const { handler: getTeamHandler } = await import("lambdas/getTeam/src/getTeam");
 const { handler: updateTeamHandler } = await import("lambdas/updateTeam/src/updateTeam");
 const { handler: deleteTeamHandler } = await import("lambdas/deleteTeam/src/deleteTeam");
+const { handler: createTeamHandler } = await import("lambdas/createTeam/src/createTeam");
 
 const authorizerEvent = (overrides: Record<string, any> = {}) => ({
 	requestContext: {
@@ -205,5 +206,61 @@ describe("deleteTeam", () => {
 
 		expect(result.statusCode).toBe(200);
 		expect(parseBody(result)).toEqual({ success: true, data: undefined });
+	});
+});
+
+const validTeamBody = (overrides: Record<string, any> = {}) =>
+	JSON.stringify({
+		title: "Sharers",
+		roster: [{ slot: 1, player: { fullName: "LeBron James" } }],
+		coach: null,
+		gm: null,
+		arena: null,
+		...overrides,
+	});
+
+describe("createTeam GSI keys", () => {
+	it("writes PK2/SK2 so the row is indexed as private from birth", async () => {
+		send.mockResolvedValueOnce({});
+		const result: any = await createTeamHandler(
+			authorizerEvent({ body: validTeamBody() }),
+			{} as any,
+			{} as any,
+		);
+		expect(result.statusCode).toBe(200);
+		const item = send.mock.calls[0][0].input.Item;
+		expect(item.PK2).toBe(`team#${item.teamUUID}`);
+		expect(item.SK2).toBe("private");
+		expect(item.public).toBe(false);
+		const body = parseBody(result);
+		expect(body.data.PK2).toBeUndefined();
+		expect(body.data.SK2).toBeUndefined();
+	});
+});
+
+describe("updateTeam GSI keys", () => {
+	it("sets PK2 and only defaults SK2 when absent, so a save never unpublishes", async () => {
+		send.mockResolvedValueOnce({ Attributes: { teamUUID: "t1", title: "x" } });
+		await updateTeamHandler(
+			authorizerEvent({ body: validTeamBody({ teamUUID: "t1" }) }),
+			{} as any,
+			{} as any,
+		);
+		const input = send.mock.calls[0][0].input;
+		expect(input.UpdateExpression).toContain("PK2 = :pk2");
+		expect(input.UpdateExpression).toContain("SK2 = if_not_exists(SK2, :sk2Default)");
+		expect(input.ExpressionAttributeValues[":pk2"]).toBe("team#t1");
+		expect(input.ExpressionAttributeValues[":sk2Default"]).toBe("private");
+	});
+});
+
+describe("listTeams projection", () => {
+	it("projects the share fields under an alias because public is reserved", async () => {
+		send.mockResolvedValueOnce({ Items: [] });
+		await listTeamsHandler(authorizerEvent(), {} as any, {} as any);
+		const input = send.mock.calls[0][0].input;
+		expect(input.ProjectionExpression).toContain("#pub");
+		expect(input.ProjectionExpression).toContain("cardUrl");
+		expect(input.ExpressionAttributeNames["#pub"]).toBe("public");
 	});
 });
