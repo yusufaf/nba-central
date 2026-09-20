@@ -18,26 +18,46 @@ const s3Client = new S3Client({});
 // fetch. This serves the deployed SPA shell (index.html, hashed asset URLs
 // and all) with the tags injected; the browser then boots Vue exactly as it
 // would from S3 and vue-router renders /t/:teamUUID.
-const SHELL_TTL_MS = 5 * 60 * 1000;
-let shellCache: { html: string; fetchedAt: number } | null = null;
+//
+// `s3 sync --delete` in the deploy workflow removes the previous build's
+// hashed /assets/*.js the moment a new one lands, so a shell cached by
+// content (not revalidated) can outlive the assets it references and 404 a
+// warm Lambda's callers. A conditional GET is cheap, so instead of a TTL we
+// revalidate by ETag on every call and only pay for a fresh body on a real
+// change (a 304 skips the download).
+let shellCache: { html: string; etag: string } | null = null;
 
 export const __resetShellCache = () => {
 	shellCache = null;
 };
 
+const isNotModifiedError = (err: unknown): boolean => {
+	if (!err || typeof err !== "object") return false;
+	const { name, $metadata } = err as { name?: string; $metadata?: { httpStatusCode?: number } };
+	return $metadata?.httpStatusCode === 304 || name === "NotModified" || name === "304";
+};
+
 const loadShell = async (): Promise<string> => {
-	if (shellCache && Date.now() - shellCache.fetchedAt < SHELL_TTL_MS) {
+	try {
+		const object = await s3Client.send(
+			new GetObjectCommand({
+				Bucket: webBucket,
+				Key: "index.html",
+				...(shellCache ? { IfNoneMatch: shellCache.etag } : {}),
+			}),
+		);
+		const shellHtml = (await object.Body?.transformToString()) ?? "";
+		// An empty body means the object is missing or truncated - either way it
+		// isn't a shell worth serving or caching.
+		if (!shellHtml) throw new Error("index.html is empty");
+		shellCache = { html: shellHtml, etag: object.ETag ?? "" };
 		return shellCache.html;
+	} catch (err) {
+		// A 304 means our cached copy is still current - the SDK surfaces it as
+		// a rejection rather than a normal response.
+		if (shellCache && isNotModifiedError(err)) return shellCache.html;
+		throw err;
 	}
-	const object = await s3Client.send(
-		new GetObjectCommand({ Bucket: webBucket, Key: "index.html" }),
-	);
-	const shellHtml = (await object.Body?.transformToString()) ?? "";
-	// An empty body means the object is missing or truncated - either way it
-	// isn't a shell worth serving or caching for 5 minutes.
-	if (!shellHtml) throw new Error("index.html is empty");
-	shellCache = { html: shellHtml, fetchedAt: Date.now() };
-	return shellHtml;
 };
 
 const html = (body: string): APIGatewayProxyResultV2 => ({

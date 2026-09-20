@@ -116,7 +116,12 @@ const { handler: pageHandler, __resetShellCache } = await import(
 );
 
 const SHELL = "<html><head><title>NBA Team Builder</title></head><body><div id=app></div></body></html>";
-const shellObject = () => ({ Body: { transformToString: async () => SHELL } });
+const shellObject = (etag = '"v1"') => ({
+	Body: { transformToString: async () => SHELL },
+	ETag: etag,
+});
+const notModifiedError = () =>
+	Object.assign(new Error("NotModified"), { name: "304", $metadata: { httpStatusCode: 304 } });
 
 describe("getPublicTeamPage", () => {
 	beforeEach(() => __resetShellCache());
@@ -142,10 +147,42 @@ describe("getPublicTeamPage", () => {
 
 	it("reuses the cached shell across invocations", async () => {
 		send.mockResolvedValue({ Items: [] });
-		s3Send.mockResolvedValueOnce(shellObject());
+		s3Send.mockResolvedValueOnce(shellObject('"v1"'));
+		const first: any = await pageHandler(anonymousEvent("a"), {} as any, {} as any);
+		expect(first.body).toBe(SHELL);
+
+		s3Send.mockRejectedValueOnce(notModifiedError());
+		const second: any = await pageHandler(anonymousEvent("b"), {} as any, {} as any);
+
+		expect(s3Send).toHaveBeenCalledTimes(2);
+		expect(s3Send.mock.calls[1][0].input).toEqual({
+			Bucket: "team-builder-test-web",
+			Key: "index.html",
+			IfNoneMatch: '"v1"',
+		});
+		expect(second.body).toBe(SHELL);
+	});
+
+	it("replaces the cached shell when S3 returns a new body and ETag", async () => {
+		send.mockResolvedValue({ Items: [] });
+		s3Send.mockResolvedValueOnce(shellObject('"v1"'));
 		await pageHandler(anonymousEvent("a"), {} as any, {} as any);
-		await pageHandler(anonymousEvent("b"), {} as any, {} as any);
-		expect(s3Send).toHaveBeenCalledTimes(1);
+
+		const NEW_SHELL =
+			"<html><head><title>Rebuilt</title></head><body><div id=app></div></body></html>";
+		s3Send.mockResolvedValueOnce({
+			Body: { transformToString: async () => NEW_SHELL },
+			ETag: '"v2"',
+		});
+		const result: any = await pageHandler(anonymousEvent("b"), {} as any, {} as any);
+
+		expect(s3Send.mock.calls[1][0].input.IfNoneMatch).toBe('"v1"');
+		expect(result.body).toBe(NEW_SHELL);
+
+		s3Send.mockRejectedValueOnce(notModifiedError());
+		const third: any = await pageHandler(anonymousEvent("c"), {} as any, {} as any);
+		expect(s3Send.mock.calls[2][0].input.IfNoneMatch).toBe('"v2"');
+		expect(third.body).toBe(NEW_SHELL);
 	});
 
 	it("500s plainly when the shell cannot be read", async () => {
