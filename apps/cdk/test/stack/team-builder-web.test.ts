@@ -173,4 +173,17 @@ describe("TeamBuilderWeb", () => {
 				}),
 		).toThrow();
 	});
+
+	it("routes /t/* to the API origin uncached so OG pages come from the Lambda", () => {
+		const config = getDistributionConfig(buildTemplate());
+		const behavior = config.CacheBehaviors.find((b: any) => b.PathPattern === "/t/*");
+		expect(behavior).toBeDefined();
+		expect(behavior.AllowedMethods).toEqual(["GET", "HEAD"]);
+		// Managed "CachingDisabled" policy id.
+		expect(behavior.CachePolicyId).toBe("4135ea2d-6df8-44a3-9df3-4b5a84be39ad");
+		// Managed "AllViewerExceptHostHeader" policy id.
+		expect(behavior.OriginRequestPolicyId).toBe("b689b0a8-53d0-40ab-baf2-68738e2966ac");
+		const apiBehavior = config.CacheBehaviors.find((b: any) => b.PathPattern === "/api/*");
+		expect(behavior.TargetOriginId).toBe(apiBehavior.TargetOriginId);
+	});
 });

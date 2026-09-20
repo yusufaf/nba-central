@@ -103,6 +103,17 @@ export class TeamBuilderWeb extends Construct {
 					// the site itself loaded fine.
 					originRequestPolicy: OriginRequestPolicy.ALL_VIEWER_EXCEPT_HOST_HEADER,
 				},
+				// Public team pages. The Lambda returns index.html with OG tags
+				// injected, so crawlers unfurl a published team; the browser
+				// then boots the SPA from that same shell. Uncached at the edge
+				// because the body varies per team.
+				"/t/*": {
+					origin: apiOrigin,
+					viewerProtocolPolicy: ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
+					allowedMethods: AllowedMethods.ALLOW_GET_HEAD,
+					cachePolicy: CachePolicy.CACHING_DISABLED,
+					originRequestPolicy: OriginRequestPolicy.ALL_VIEWER_EXCEPT_HOST_HEADER,
+				},
 			},
 			domainNames: [WEB_DOMAIN_NAME],
 			certificate,
