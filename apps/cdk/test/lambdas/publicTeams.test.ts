@@ -82,6 +82,7 @@ describe("getPublicTeam", () => {
 		send.mockResolvedValueOnce({ Items: [storedPublicTeam] });
 		const result: any = await getPublicTeamHandler(anonymousEvent("t1"), {} as any, {} as any);
 		expect(result.statusCode).toBe(200);
+		expect(result.headers["cache-control"]).toBe("no-cache");
 		const { data } = parseBody(result);
 		expect(data.username).toBe("yusuf");
 		expect(data.cardUrl).toBe(storedPublicTeam.cardUrl);

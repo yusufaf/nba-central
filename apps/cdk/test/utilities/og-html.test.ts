@@ -50,9 +50,17 @@ describe("buildOgTags", () => {
 		expect(tags).toContain('<meta name="twitter:card" content="summary_large_image">');
 	});
 
+	it("includes the image dimensions when a card is present", () => {
+		const tags = buildOgTags(team, "https://nba.example");
+		expect(tags).toContain('<meta property="og:image:width" content="1200">');
+		expect(tags).toContain('<meta property="og:image:height" content="630">');
+	});
+
 	it("falls back to the hero poster when there is no card", () => {
 		const tags = buildOgTags({ ...team, cardUrl: undefined }, "https://nba.example");
-		expect(tags).toContain('<meta property="og:image" content="https://nba.example/hero/poster.jpg">');
+		expect(tags).toContain('<meta property="og:image" content="https://nba.example/hero/hero-poster.jpg">');
+		expect(tags).not.toContain("og:image:width");
+		expect(tags).not.toContain("og:image:height");
 	});
 });
 

@@ -30,15 +30,21 @@ export const describeTeam = (team: PublicTeam): string => {
 export const buildOgTags = (team: PublicTeam, siteUrl: string): string => {
 	const title = escapeHtml(team.title || "Untitled team");
 	const description = escapeHtml(describeTeam(team));
-	const image = escapeHtml(team.cardUrl || `${siteUrl}/hero/poster.jpg`);
+	// The hero poster isn't 1200x630, so only the rendered card gets explicit
+	// dimensions — unfurlers fall back to probing the image otherwise.
+	const image = escapeHtml(team.cardUrl || `${siteUrl}/hero/hero-poster.jpg`);
 	const url = escapeHtml(`${siteUrl}/t/${team.teamUUID}`);
 	return [
 		`<meta property="og:type" content="website">`,
 		`<meta property="og:title" content="${title}">`,
 		`<meta property="og:description" content="${description}">`,
 		`<meta property="og:image" content="${image}">`,
-		`<meta property="og:image:width" content="1200">`,
-		`<meta property="og:image:height" content="630">`,
+		...(team.cardUrl
+			? [
+				`<meta property="og:image:width" content="1200">`,
+				`<meta property="og:image:height" content="630">`,
+			]
+			: []),
 		`<meta property="og:url" content="${url}">`,
 		`<meta name="twitter:card" content="summary_large_image">`,
 		`<meta name="twitter:title" content="${title}">`,

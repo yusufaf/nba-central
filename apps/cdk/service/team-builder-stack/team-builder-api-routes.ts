@@ -83,12 +83,14 @@ export const PUBLIC_TEAM_ROUTES: ApiRoute[] = [
 ];
 
 // HTML, not JSON: CloudFront routes /t/* here so crawlers get OG tags for a
-// published team before the SPA boots.
+// published team before the SPA boots. HEAD is included alongside GET
+// because some crawlers probe with HEAD first; CloudFront already allows
+// both on this behavior.
 export const PAGE_ROUTES: ApiRoute[] = [
 	{
 		route: `/t/{teamUUID}`,
 		lambdaName: "getPublicTeamPage",
-		methods: [HttpMethod.GET],
+		methods: [HttpMethod.GET, HttpMethod.HEAD],
 	},
 ];
 

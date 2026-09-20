@@ -43,7 +43,7 @@ export const handler: Handler = async (
 		const response: GetPublicTeamResponse = { success: true, data: team };
 		return {
 			statusCode: 200,
-			headers: { "cache-control": "public, max-age=60" },
+			headers: { "cache-control": "no-cache" },
 			body: JSON.stringify(response),
 		};
 	} catch (err: any) {

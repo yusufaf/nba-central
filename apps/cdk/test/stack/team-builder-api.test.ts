@@ -32,7 +32,7 @@ const PUBLIC_ROUTE_PATHS = [
 ];
 
 describe("team-builder-api-routes", () => {
-	it("PUBLIC_ROUTES is exactly DATA_ROUTES + NEWS_ROUTES", () => {
+	it("PUBLIC_ROUTES is exactly DATA + NEWS + PUBLIC_TEAM + PAGE routes", () => {
 		const publicPaths = PUBLIC_ROUTES.map((r) => r.route).sort();
 		expect(publicPaths).toEqual(PUBLIC_ROUTE_PATHS.sort());
 		expect(PUBLIC_ROUTES).toHaveLength(
@@ -124,6 +124,11 @@ describe("team-builder-api-routes", () => {
 		expect(publicPaths).toContain("/api/teams/public/{teamUUID}");
 		expect(publicPaths).toContain("/t/{teamUUID}");
 		expect(PAGE_ROUTES.map((r) => r.route)).toEqual(["/t/{teamUUID}"]);
+	});
+
+	it("the /t/{teamUUID} page route accepts GET and HEAD", () => {
+		const pageRoute = PAGE_ROUTES.find((r) => r.route === "/t/{teamUUID}");
+		expect(pageRoute?.methods).toEqual(["GET", "HEAD"]);
 	});
 
 	it("keeps publishTeam behind the authorizer", () => {
