@@ -17,7 +17,7 @@ import {
     swapMapEntries,
     swapSetMembers,
 } from "@/composables/useRosterDragDrop";
-import { serializeTeam, hydrateTeam } from "@/composables/useTeamPersistence";
+import { serializeTeam, hydrateTeam, remixTitle } from "@/composables/useTeamPersistence";
 import { dataApi, teamApi } from "@/network/api";
 import { useUserTeamsStore } from "@/stores/userTeams";
 import { renderShareCard, toShareCardProps } from "@/composables/useShareCard";
@@ -327,7 +327,7 @@ const saveTeam = () => {
             // refresh still knows to update this team rather than create
             // a duplicate on the next save.
             if (!existingUUID) {
-                router.replace({ query: { ...route.query, team: saved.teamUUID } });
+                router.replace({ query: { ...route.query, remix: undefined, team: saved.teamUUID } });
             }
             if (isPublic.value) {
                 await setPublished(true, { silent: true });
@@ -481,16 +481,56 @@ const loadTeamFromRoute = async (teamUUID: string) => {
     }
 };
 
-// Watches route.query.team rather than onMounted alone: navigating between
-// /teambuilder?team=A and a bare /teambuilder (e.g. the nav bar's "Team
-// Builder" link) matches the same route record, so Vue Router reuses this
-// component instance and onMounted never fires again. Without this watcher
-// the builder kept showing team A - and Save would silently overwrite it.
+// Remixing a public team (/teambuilder?remix=<uuid>): same hydration as
+// loading your own, but loadedTeamUUID stays null so the first Save
+// creates a new team under the remixer. Works signed out; Save prompts
+// login as it always has.
+const loadRemixFromRoute = async (teamUUID: string) => {
+    try {
+        const response = await teamApi.getPublicTeam(teamUUID);
+        if (!response.success) {
+            toast.error("That team isn't public");
+            return;
+        }
+        const hydrated = hydrateTeam(response.data);
+        loadedTeamUUID.value = null;
+        isPublic.value = false;
+        cardUrl.value = null;
+        teamOwner.value = "";
+        teamName.value = remixTitle(hydrated.teamName);
+        teamDescription.value = hydrated.teamDescription;
+        teamCity.value = hydrated.teamCity;
+        teamCountry.value = hydrated.teamCountry;
+        teamLogo.value = hydrated.teamLogo;
+        teamJersey.value = hydrated.teamJersey;
+        teamCoach.value = hydrated.teamCoach;
+        teamArena.value = hydrated.teamArena;
+        teamGM.value = hydrated.teamGM;
+        await Promise.all(
+            Array.from(hydrated.players.entries()).map(([slot, player]) =>
+                loadPlayerIntoSlot(slot, player),
+            ),
+        );
+        track("remix_loaded", { sourceTeamUUID: teamUUID });
+    } catch (err) {
+        console.error("Error remixing team:", err);
+        toast.error("Failed to load that team");
+    }
+};
+
+// Watches route.query.team/remix rather than onMounted alone: navigating
+// between /teambuilder?team=A and a bare /teambuilder (e.g. the nav bar's
+// "Team Builder" link) matches the same route record, so Vue Router reuses
+// this component instance and onMounted never fires again. Without this
+// watcher the builder kept showing team A - and Save would silently
+// overwrite it. `team` wins if both are present.
 watch(
-    () => route.query.team,
-    (teamUUID) => {
+    () => [route.query.team, route.query.remix] as const,
+    ([teamUUID, remixUUID]) => {
         if (typeof teamUUID === "string" && teamUUID) {
             loadTeamFromRoute(teamUUID);
+        } else if (typeof remixUUID === "string" && remixUUID) {
+            loadRemixFromRoute(remixUUID);
         } else {
             clearBuilderState();
         }
