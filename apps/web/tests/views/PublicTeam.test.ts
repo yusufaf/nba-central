@@ -123,6 +123,18 @@ describe("PublicTeam", () => {
         expect(toast.error).toHaveBeenCalledWith("Couldn't copy — copy it from your browser's address bar");
     });
 
+    it("refetches when navigating from one team to another", async () => {
+        vi.mocked(teamApi.getPublicTeam).mockResolvedValue({ success: true, data: team as any });
+        const wrapper = mountView();
+        await flushPromises();
+        expect(teamApi.getPublicTeam).toHaveBeenCalledWith("t1");
+
+        await wrapper.setProps({ teamUUID: "t2" });
+        await flushPromises();
+
+        expect(teamApi.getPublicTeam).toHaveBeenCalledWith("t2");
+    });
+
     it("toasts an error when the card download fails", async () => {
         vi.mocked(teamApi.getPublicTeam).mockResolvedValue({ success: true, data: team as any });
         downloadUrlAsFile.mockRejectedValue(new Error("nope"));

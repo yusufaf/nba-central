@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue';
+import { computed, ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import { toast } from 'vue-sonner';
 import { Download, Link2, Share2, Sparkles } from 'lucide-vue-next';
@@ -33,12 +33,19 @@ const publishedOn = computed(() =>
 );
 const canShareNatively = typeof navigator !== 'undefined' && typeof navigator.share === 'function';
 
-onMounted(async () => {
+// A `load` function watched on the prop, not onMounted: navigating from
+// /t/A to /t/B matches the same route record, so Vue Router reuses this
+// component instance and onMounted never fires again - the page would keep
+// showing team A.
+const load = async (teamUUID: string) => {
+    loading.value = true;
+    notFound.value = false;
+    team.value = null;
     try {
-        const response = await teamApi.getPublicTeam(props.teamUUID);
+        const response = await teamApi.getPublicTeam(teamUUID);
         if (response.success) {
             team.value = response.data;
-            track('public_team_viewed', { teamUUID: props.teamUUID });
+            track('public_team_viewed', { teamUUID });
         } else {
             notFound.value = true;
         }
@@ -48,7 +55,9 @@ onMounted(async () => {
     } finally {
         loading.value = false;
     }
-});
+};
+
+watch(() => props.teamUUID, load, { immediate: true });
 
 const share = async (method: 'copy' | 'native') => {
     const url = shareUrlFor(props.teamUUID);

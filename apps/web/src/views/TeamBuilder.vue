@@ -2,6 +2,7 @@
 import { ref, computed, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { toast } from 'vue-sonner';
+import axios from 'axios';
 import PageTitle from "@/components/PageTitle.vue";
 import PageShell from "@/layouts/PageShell.vue";
 import TeamBuilderHeader from "@/components/TeamBuilder/TeamBuilderHeader.vue";
@@ -389,7 +390,7 @@ const setPublished = async (nextPublic: boolean, { silent = false } = {}) => {
         const saved = await userTeamsStore.publish({ teamUUID, public: nextPublic, cardPng });
         isPublic.value = saved.public;
         cardUrl.value = saved.cardUrl ?? null;
-        track("team_published", { public: nextPublic, hasCard: cardPng !== null });
+        track("team_published", { public: nextPublic, hasCard: cardPng !== null, silent });
         if (silent) return;
         if (nextPublic) {
             const copied = await copyShareLink();
@@ -486,18 +487,18 @@ const loadTeamFromRoute = async (teamUUID: string) => {
 // creates a new team under the remixer. Works signed out; Save prompts
 // login as it always has.
 const loadRemixFromRoute = async (teamUUID: string) => {
+    // Cleared before the fetch, not just on failure: the axios instance's
+    // default validateStatus makes a 404 reject rather than resolve with
+    // success: false, so it lands in the catch below - if the builder still
+    // held a previously loaded team at that point, Save would overwrite it.
+    clearBuilderState();
     try {
         const response = await teamApi.getPublicTeam(teamUUID);
         if (!response.success) {
-            clearBuilderState();
             toast.error("That team isn't public");
             return;
         }
         const hydrated = hydrateTeam(response.data);
-        loadedTeamUUID.value = null;
-        isPublic.value = false;
-        cardUrl.value = null;
-        teamOwner.value = "";
         teamName.value = remixTitle(hydrated.teamName);
         teamDescription.value = hydrated.teamDescription;
         teamCity.value = hydrated.teamCity;
@@ -515,7 +516,11 @@ const loadRemixFromRoute = async (teamUUID: string) => {
         track("remix_loaded", { sourceTeamUUID: teamUUID });
     } catch (err) {
         console.error("Error remixing team:", err);
-        toast.error("Failed to load that team");
+        if (axios.isAxiosError(err) && err.response?.status === 404) {
+            toast.error("That team isn't public");
+        } else {
+            toast.error("Failed to load that team");
+        }
     }
 };
 

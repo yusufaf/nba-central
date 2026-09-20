@@ -1,5 +1,5 @@
-import { describe, it, expect } from "vitest";
-import { slugFilename } from "@/utils/downloadFile";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { downloadUrlAsFile, slugFilename } from "@/utils/downloadFile";
 
 describe("slugFilename", () => {
     it("slugifies a team name into a lowercase, hyphenated filename", () => {
@@ -8,5 +8,43 @@ describe("slugFilename", () => {
 
     it("falls back to 'team' for an empty name", () => {
         expect(slugFilename("", "png")).toBe("team.png");
+    });
+});
+
+describe("downloadUrlAsFile", () => {
+    const originalFetch = globalThis.fetch;
+
+    beforeEach(() => {
+        vi.stubGlobal("URL", {
+            ...URL,
+            createObjectURL: vi.fn(() => "blob:mock"),
+            revokeObjectURL: vi.fn(),
+        });
+    });
+
+    afterEach(() => {
+        globalThis.fetch = originalFetch;
+        vi.unstubAllGlobals();
+    });
+
+    it("rejects when the response is not ok", async () => {
+        globalThis.fetch = vi.fn().mockResolvedValue({ ok: false, status: 404 });
+        await expect(downloadUrlAsFile("https://cdn.example/x.png", "x.png")).rejects.toThrow(
+            "Download failed: 404",
+        );
+    });
+
+    it("downloads the blob and revokes the object URL when the response is ok", async () => {
+        const blob = new Blob(["png"]);
+        globalThis.fetch = vi.fn().mockResolvedValue({ ok: true, status: 200, blob: async () => blob });
+        const clickSpy = vi.spyOn(HTMLAnchorElement.prototype, "click").mockImplementation(() => {});
+
+        await downloadUrlAsFile("https://cdn.example/x.png", "x.png");
+
+        expect(URL.createObjectURL).toHaveBeenCalledWith(blob);
+        expect(clickSpy).toHaveBeenCalled();
+        expect(URL.revokeObjectURL).toHaveBeenCalledWith("blob:mock");
+
+        clickSpy.mockRestore();
     });
 });
