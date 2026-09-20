@@ -10,6 +10,10 @@ export interface ExtendedStackProps extends StackProps {
     hostedZoneId?: string;
     hostedZoneName?: string;
     webCertificateArn?: string;
+    // Domain of the assets CloudFront distribution (no scheme). Set by
+    // TeamBuilder once TeamBuilderAssetsCdn exists; Lambdas that mint asset
+    // URLs (publishTeam) read it from their environment.
+    assetsCdnDomain?: string;
 }
 
 export interface StackConstructsProps {

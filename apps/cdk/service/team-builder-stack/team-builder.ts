@@ -20,22 +20,29 @@ export class TeamBuilder extends Construct {
         this.appName = appName;
         this.deploymentType = deploymentType;
 
-        const api = new TeamBuilderAPI(
-            scope,
-            `${appName}-${deploymentType}-api`,
-            props
-        );
-        new TeamBuilderDynamoDB(
-            scope,
-            `${appName}-${deploymentType}-dynamoDB`,
-            props
-        );
         const s3 = new TeamBuilderS3(scope, `${appName}-${deploymentType}-s3`, props);
 
         const assetsCdn = new TeamBuilderAssetsCdn(
             scope,
             `${appName}-${deploymentType}-assets-cdn`,
             { appName, deploymentType, assetsBucket: s3.assetsBucket },
+        );
+
+        // The API's Lambdas are built inside this constructor, so anything
+        // they need in their environment has to exist first — hence S3 and
+        // the assets CDN above it.
+        const api = new TeamBuilderAPI(
+            scope,
+            `${appName}-${deploymentType}-api`,
+            {
+                ...props,
+                assetsCdnDomain: assetsCdn.distribution.distributionDomainName,
+            },
+        );
+        new TeamBuilderDynamoDB(
+            scope,
+            `${appName}-${deploymentType}-dynamoDB`,
+            props
         );
 
         new CfnOutput(scope, `${appName}-${deploymentType}-api-endpoint`, {
