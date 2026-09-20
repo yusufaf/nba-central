@@ -25,9 +25,7 @@ Phase 1 only.
   the share card ("by yusufaf"). The Publish toggle copy says so.
 - **OG tags** for `/t/:uuid` are served by a Lambda behind a CloudFront
   behavior, not Lambda@Edge and not an API-path share URL.
-- **Share card PNG** is rendered client-side on Publish and uploaded through
-  the existing multipart flow. Server-side rendering (satori + resvg) is the
-  documented fallback, not the plan.
+- **Share card PNG** is rendered client-side on Publish and sent to `publishTeam` as base64; the Lambda writes it to the assets bucket. Server-side rendering (satori + resvg) is the documented fallback, not the plan.
 - **Out of scope** (separate PRs): `getPlayerStats` weekly snapshot; public
   gallery; comments/likes/profiles; logo file upload (currently a dead stub).
 
@@ -38,18 +36,19 @@ Phase 1 only.
 1. Builder header gains a **Publish** switch next to Save. Disabled with a
    tooltip until the team has been saved at least once (needs a `teamUUID`).
 2. Flipping it on:
-   - renders the share card off-screen and uploads it (see Share card);
-   - calls `PUT /api/teams/publish { teamUUID, public: true, cardUrl }`;
+   - renders the share card off-screen (see Share card);
+   - calls `PUT /api/teams/publish { teamUUID, public: true, cardPng }` — the Lambda stores the card and returns the team with its new `cardUrl`;
    - toast "Published — link copied" and the link is on the clipboard;
    - a **Share** button appears beside the switch (copy link / native share
      sheet on mobile / download card).
 3. Flipping it off calls the same endpoint with `public: false`. The page 404s
    for everyone immediately; the card object is left in place (cheap, and
    re-publishing reuses the key).
-4. Saving a published team re-renders and re-uploads the card, then re-calls
-   publish with the new `cardUrl` so unfurls never show a stale roster. If
-   card rendering fails, the save still succeeds and the publish call sends
-   `cardUrl: null`; the page falls back to a static site image for `og:image`.
+4. Saving a published team re-renders the card and re-calls publish with the
+   new `cardPng` so unfurls never show a stale roster. If card rendering fails,
+   the save still succeeds and the publish call sends `cardPng: null`; the
+   previous `cardUrl` is kept, and a team that never had one falls back to a
+   static site image for `og:image`.
 5. **My Teams** (`Teams.vue`) shows a small "Public" badge on published cards
    and a copy-link icon.
 
@@ -124,7 +123,7 @@ type PublicTeam = Omit<SavedTeam, "userUUID" | "favorited" | "label" | "lastView
 | Route | Auth | Lambda | Notes |
 |---|---|---|---|
 | `GET /api/teams/public/{teamUUID}` | none (`PUBLIC_ROUTES`) | `getPublicTeam` | GSI query, 404 if not public |
-| `PUT /api/teams/publish` | authorizer | `publishTeam` | `{ teamUUID, public, cardPng? }`; verifies ownership with a `GetItem` on the owner's PK/SK, uploads the card if present, then a conditional update sets `PK2`, `SK2`, `publishedAt` (first time only), `cardUrl`, `updatedAt`. |
+| `PUT /api/teams/publish` | authorizer | `publishTeam` | `{ teamUUID, public, cardPng? }`; verifies ownership with a `GetItem` on the owner's PK/SK, uploads the card if present, then a conditional update sets `PK2`, `SK2`, `publishedAt` (first time only), `cardUrl`, `updatedAt` |
 | `GET /t/{teamUUID}` | none | `getPublicTeamPage` | CloudFront behavior `/t/*` → API origin; returns HTML |
 
 `getPublicTeamPage` is registered as a route on the HttpApi like the others but
@@ -221,8 +220,8 @@ policy keyed on the path if traffic ever warrants it.
 - Publish with no saved UUID: switch disabled; defensive guard throws before
   any network call.
 - Card render failure: logged via `console.error`, toast "Published without a
-  preview image", publish proceeds with `cardUrl: null`.
-- Card upload failure: same as render failure.
+  preview image", publish proceeds with `cardPng: null`.
+- `publishTeam` S3 write failure: 500, toast 'Failed to publish team'; the team's visibility is unchanged because the update runs after the upload.
 - `publishTeam` conditional-check failure (not owner / missing): 404, toast.
 - `getPublicTeamPage` S3 miss for `index.html`: 500 with a plain-text body —
   this means the site itself is broken, not the team.
@@ -234,15 +233,13 @@ policy keyed on the path if traffic ever warrants it.
 **cdk (vitest)**
 - `getPublicTeam`: returns team for `SK2=public`; 404 for private/missing;
   strips `userUUID`, `PK*`, `SK*`.
-- `publishTeam`: writes `PK2/SK2/publishedAt/cardUrl`; `publishedAt` not
-  overwritten on re-publish; 404 on foreign team.
+- `publishTeam`: rejects a non-PNG or >2 MB `cardPng` with 400; uploads before
+  the conditional update; 404s on a foreign team without touching S3.
 - `getPublicTeamPage`: injects escaped tags into a fixture shell; falls back
   to poster when `cardUrl` missing; serves unmodified shell for unknown team.
-- `initiateMultipartUpload`: `purpose: "share-card"` targets the assets bucket
-  and still enforces ownership.
 - Stack tests: `/t/*` behavior present on the web distribution; assets CDN
-  behavior uses `CORS_S3_ORIGIN`; new routes registered and the public ones
-  have no authorizer.
+  default behavior carries the managed CORS-with-preflight response headers
+  policy; new routes registered and the public ones have no authorizer.
 
 **web (vitest + Playwright)**
 - `analytics.track` no-ops without `window.umami`.
