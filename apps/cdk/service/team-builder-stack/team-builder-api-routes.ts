@@ -64,6 +64,34 @@ export const TEAMS_ROUTES: ApiRoute[] = [
 		lambdaName: "deleteTeam",
 		methods: [HttpMethod.DELETE],
 	},
+	{
+		route: `${TEAMS_PREFIX}/publish`,
+		lambdaName: "publishTeam",
+		methods: [HttpMethod.PUT],
+	},
+];
+
+// Anonymous reader for published teams. Lives outside TEAMS_ROUTES so the
+// "everything under /api/teams is authenticated" reading of that list stays
+// true — this is the one exception, and it is opt-in per team.
+export const PUBLIC_TEAM_ROUTES: ApiRoute[] = [
+	{
+		route: `${TEAMS_PREFIX}/public/{teamUUID}`,
+		lambdaName: "getPublicTeam",
+		methods: [HttpMethod.GET],
+	},
+];
+
+// HTML, not JSON: CloudFront routes /t/* here so crawlers get OG tags for a
+// published team before the SPA boots. HEAD is included alongside GET
+// because some crawlers probe with HEAD first; CloudFront already allows
+// both on this behavior.
+export const PAGE_ROUTES: ApiRoute[] = [
+	{
+		route: `/t/{teamUUID}`,
+		lambdaName: "getPublicTeamPage",
+		methods: [HttpMethod.GET, HttpMethod.HEAD],
+	},
 ];
 
 export const DATA_ROUTES: ApiRoute[] = [
@@ -166,12 +194,16 @@ export const FEEDBACK_ROUTES: ApiRoute[] = [
 	},
 ];
 
-// DATA_ROUTES and NEWS_ROUTES are read-only reference data the frontend
-// fetches on every page load for signed-out visitors too (e.g. App.vue's
-// team-logo fetch on mount) — gating them behind the authorizer would 403
-// the public site. Everything that reads or writes user-owned data stays
-// authenticated.
-export const PUBLIC_ROUTES: ApiRoute[] = [...DATA_ROUTES, ...NEWS_ROUTES];
+// DATA_ROUTES, NEWS_ROUTES, PUBLIC_TEAM_ROUTES and PAGE_ROUTES are read-only
+// and reachable signed out — the first two are fetched on every page load,
+// the last two are how a published team is viewed and unfurled. Everything
+// that reads or writes user-owned data stays authenticated.
+export const PUBLIC_ROUTES: ApiRoute[] = [
+	...DATA_ROUTES,
+	...NEWS_ROUTES,
+	...PUBLIC_TEAM_ROUTES,
+	...PAGE_ROUTES,
+];
 export const PRIVATE_ROUTES: ApiRoute[] = [
 	...FILES_ROUTES,
 	...USERS_ROUTES,

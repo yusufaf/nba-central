@@ -3,8 +3,8 @@ import { resolveLegacyLogoUrl } from "@/utils/historicalLogoUrl";
 import type {
     EntityRef,
     PlayerSnapshot,
+    PublicTeam,
     SaveTeamPayload,
-    SavedTeam,
     TeamArenaRef,
     TeamRosterEntry,
 } from "@/models/api";
@@ -90,7 +90,7 @@ export interface HydratedTeam {
 }
 
 /** Inverse of serializeTeam - tolerates a null coach/GM/arena and an empty roster. */
-export const hydrateTeam = (saved: SavedTeam): HydratedTeam => {
+export const hydrateTeam = (saved: PublicTeam): HydratedTeam => {
     const players = new Map<number, Player>();
     for (const entry of saved.roster ?? []) {
         players.set(entry.slot, entry.player);
@@ -108,4 +108,12 @@ export const hydrateTeam = (saved: SavedTeam): HydratedTeam => {
         teamArena: saved.arena ?? null,
         teamGM: saved.gm ?? null,
     };
+};
+
+// A remix starts life as a new team owned by whoever is remixing; the
+// title says where it came from, once.
+export const remixTitle = (title: string): string => {
+    const trimmed = title.trim();
+    if (!trimmed) return "Remix";
+    return trimmed.startsWith("Remix of ") ? trimmed : `Remix of ${trimmed}`;
 };

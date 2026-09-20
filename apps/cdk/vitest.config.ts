@@ -21,7 +21,11 @@ export default defineConfig({
         // apps/web's (as the pre-commit hook's `pnpm -r test` does) - seen
         // intermittently timing out team-builder-dynamo/-web/-assets-cdn's
         // construct tests, none of which are otherwise slow in isolation.
-        testTimeout: 15000,
+        // 15s was still not enough on a loaded machine — the first synth in a
+        // file pays aws-cdk-lib's import cost and blew past it while a
+        // browser pinned the CPU, failing a docs-only commit. 60s covers that
+        // without hiding a real hang.
+        testTimeout: 60000,
         coverage: {
             provider: "v8",
             reporter: ["text", "html"],

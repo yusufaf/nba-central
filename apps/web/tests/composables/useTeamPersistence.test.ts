@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { serializeTeam, hydrateTeam } from "@/composables/useTeamPersistence";
+import { serializeTeam, hydrateTeam, remixTitle } from "@/composables/useTeamPersistence";
 import type { SavedTeam } from "@/models/api";
 import historicalLogosData from "@/assets/data/historicalLogos.json";
 import type { HistoricalLogo } from "@/models/types";
@@ -182,6 +182,7 @@ describe("hydrateTeam", () => {
         arena: { name: "Chase Center", imgLink: "https://example.com/chase.jpg" },
         favorited: false,
         label: "",
+        public: false,
         lastViewed: 1,
         createdAt: 1,
         updatedAt: 1,
@@ -245,5 +246,38 @@ describe("hydrateTeam", () => {
         });
 
         expect(hydrated.teamLogo).toBe(era.logo);
+    });
+});
+
+describe("remixTitle", () => {
+    it("prefixes once and falls back for an empty title", () => {
+        expect(remixTitle("Sharers")).toBe("Remix of Sharers");
+        expect(remixTitle("Remix of Sharers")).toBe("Remix of Sharers");
+        expect(remixTitle("   ")).toBe("Remix");
+    });
+});
+
+describe("hydrateTeam from a public team", () => {
+    it("accepts the public shape (no userUUID/favorited/label/lastViewed)", () => {
+        const hydrated = hydrateTeam({
+            teamUUID: "t1",
+            username: "yusuf",
+            title: "Sharers",
+            description: "",
+            city: "",
+            country: "",
+            logoUrl: "",
+            jerseyUrl: "",
+            playerCount: 1,
+            roster: [{ slot: 1, player: apiPlayer() }],
+            coach: null,
+            gm: null,
+            arena: null,
+            createdAt: 1,
+            updatedAt: 2,
+            public: true,
+        });
+        expect(hydrated.teamName).toBe("Sharers");
+        expect(hydrated.players.get(1)?.fullName).toBe("LeBron James");
     });
 });

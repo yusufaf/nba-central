@@ -64,4 +64,13 @@ describe("TeamBuilderAssetsCdn", () => {
             "redirect-to-https",
         );
     });
+
+    it("attaches the managed CORS-allow-all response headers policy", () => {
+        const config = getDistributionConfig(buildTemplate());
+        // Managed "CORS-with-preflight" policy id
+        // (ResponseHeadersPolicy.CORS_ALLOW_ALL_ORIGINS_WITH_PREFLIGHT).
+        expect(config.DefaultCacheBehavior.ResponseHeadersPolicyId).toBe(
+            "5cc3b908-e619-4b99-88e5-2cf7f45965bd",
+        );
+    });
 });

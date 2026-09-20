@@ -62,6 +62,14 @@ Main stack (`service/team-builder-stack/team-builder.ts`) instantiates:
 
 Production also gets **TeamBuilderWeb** (S3 + CloudFront for the SPA) and **TeamBuilderDeployRole** (GitHub OIDC role for CI — its trust policy is scoped to this repo's name, see Deployment below).
 
+TeamBuilderWeb's CloudFront distribution adds a `/t/*` behavior pointed at the
+API origin (`CACHING_DISABLED`, `ALL_VIEWER_EXCEPT_HOST_HEADER`) so a request
+for a published team's page reaches `getPublicTeamPage` — a shared team page
+Lambda, not Lambda@Edge — before the SPA shell ships. The assets CDN
+(`TeamBuilderAssetsCdn`) attaches the managed CORS-with-preflight
+response-headers policy to every response, which every jersey/logo/share-card
+`<img>` needs to avoid tainting the `useShareCard` canvas render.
+
 Entry point: `bin/team-builder-cdk.ts` loads env vars from dotenv.
 
 ### Lambda Functions — `apps/cdk/service/lambdas/*/src/`
@@ -77,6 +85,11 @@ Entry point: `bin/team-builder-cdk.ts` loads env vars from dotenv.
 - `getNews`: reads news articles fetched by `fetchNewsCron`
 - `sendFeedback`: emails the site owner via SES (sending identity is in
   us-east-1, not this stack's own us-west-2 — see apps/cdk/CLAUDE.md)
+- `getPublicTeam`: anonymous reader for a published team, keyed off the PK2 GSI
+- `publishTeam`: flips a team's visibility, uploads the rendered share card to
+  the assets bucket, and stamps `cardUrl`/`publishedAt`
+- `getPublicTeamPage`: serves `/t/{teamUUID}` — injects OG/Twitter tags into
+  the SPA shell for crawlers, ahead of the CloudFront `/t/*` behavior
 
 **Data ETL Lambdas** (EventBridge triggers):
 - `setArenasData`, `setCoachesData`, `setExecsData`: scrape Wikipedia / Basketball-Reference
@@ -103,7 +116,7 @@ For anything touching the UI, read `apps/web/CLAUDE.md` and
 and the constraints enforced by `pnpm --filter web check:styles`.
 
 **Key Directories** (all under `apps/web/`):
-- `src/views/`: Page components (Home, TeamBuilder, Scores, News, Teams, Login, SignUp)
+- `src/views/`: Page components (Home, TeamBuilder, Scores, News, Teams, PublicTeam, Login, SignUp)
 - `src/layouts/`: `PageShell` — the single page container (width + gutters)
 - `src/components/ui/`: vendored shadcn-vue wrappers over reka-ui primitives
 - `src/components/TeamBuilder/`: Feature components (CoachSection, ArenaSection, etc.)
@@ -171,9 +184,11 @@ shared identity provider also used by Quizaroni. No Cognito, no Clerk.
 5. Downstream Lambdas receive that context via
    `event.requestContext.authorizer.lambda`
 
-A handful of read-only routes (`/api/data/*`, `/api/news/get`) skip the
-authorizer entirely — `App.vue` calls them on every page load, signed in or
-not.
+A handful of read-only routes (`/api/data/*`, `/api/news/get`,
+`/api/teams/public/{teamUUID}`, `/t/{teamUUID}`) skip the authorizer entirely
+— `App.vue` calls the first two on every page load, signed in or not; the
+last two are how a published team is viewed and unfurled by anyone, including
+crawlers with no session at all.
 
 ### Data Models
 
@@ -194,7 +209,8 @@ Partition key patterns use UUIDs (userUUID#..., teamUUID#...).
 ### S3 Buckets
 
 - **main**: User/team file uploads (multipart for large files)
-- **assets**: Static assets
+- **assets**: Static assets; also holds rendered share cards under `cards/`
+  (`publishTeam` writes them, keyed `cards/{teamUUID}/{updatedAt}.png`)
 - **static-data**: External data cache (arenas, coaches, execs)
 
 All CORS-enabled, public access blocked.

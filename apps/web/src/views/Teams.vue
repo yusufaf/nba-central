@@ -13,8 +13,10 @@ import {
     CardTitle,
 } from "@/components/ui/card";
 import ConfirmDialog from "@/components/ui/confirm-dialog/ConfirmDialog.vue";
-import { Shield, Plus, Users, Trash2 } from "lucide-vue-next";
+import { Shield, Plus, Users, Trash2, Globe, Link2 } from "lucide-vue-next";
 import { useUserTeamsStore } from "@/stores/userTeams";
+import { shareUrlFor } from "@/utils/shareUrl";
+import { track } from "@/lib/analytics";
 import type { TeamSummary } from "@/models/api";
 
 const router = useRouter();
@@ -38,6 +40,17 @@ const openTeam = (teamUUID: string) => {
 const confirmDelete = (team: TeamSummary) => {
     teamToDelete.value = team;
     showDeleteDialog.value = true;
+};
+
+const copyLink = async (team: TeamSummary) => {
+    try {
+        await navigator.clipboard.writeText(shareUrlFor(team.teamUUID));
+        track("share_clicked", { method: "copy", page: "teams" });
+        toast.success("Link copied");
+    } catch (err) {
+        console.error("Clipboard write failed:", err);
+        toast.error("Couldn't copy — copy it from your browser's address bar");
+    }
 };
 
 const handleDelete = async () => {
@@ -110,6 +123,10 @@ onMounted(() => {
                                 <Users class="h-3 w-3 mr-1" />
                                 {{ team.playerCount ?? 0 }} {{ team.playerCount === 1 ? 'player' : 'players' }}
                             </Badge>
+                            <Badge v-if="team.public" variant="outline" class="public-badge">
+                                <Globe class="h-3 w-3 mr-1" />
+                                Public
+                            </Badge>
                             <span class="updated-at">
                                 Updated {{ formatUpdatedAt(team.updatedAt) }}
                             </span>
@@ -120,6 +137,15 @@ onMounted(() => {
                                 @click="openTeam(team.teamUUID)"
                             >
                                 Open
+                            </Button>
+                            <Button
+                                v-if="team.public"
+                                variant="outline"
+                                size="icon"
+                                aria-label="Copy public link"
+                                @click="copyLink(team)"
+                            >
+                                <Link2 class="h-4 w-4" />
                             </Button>
                             <Button
                                 variant="outline"

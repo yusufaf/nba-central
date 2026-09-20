@@ -3,6 +3,7 @@ import {
     CachePolicy,
     Distribution,
     PriceClass,
+    ResponseHeadersPolicy,
     ViewerProtocolPolicy,
 } from "aws-cdk-lib/aws-cloudfront";
 import { S3BucketOrigin } from "aws-cdk-lib/aws-cloudfront-origins";
@@ -25,6 +26,11 @@ export interface TeamBuilderAssetsCdnProps {
  * No custom domain: the frontend only ever references these images by their
  * full URL, so the default *.cloudfront.net name is fine, and it avoids
  * TeamBuilderWeb's Route53/ACM dependencies entirely.
+ *
+ * Attaches the managed CORS_ALLOW_ALL_ORIGINS_WITH_PREFLIGHT response headers
+ * policy so images load into a <canvas> (share-card export) without tainting
+ * it — a cross-origin image without CORS headers poisons the canvas even
+ * though it renders fine as a plain <img>.
  */
 export class TeamBuilderAssetsCdn extends Construct {
     readonly distribution: Distribution;
@@ -46,6 +52,11 @@ export class TeamBuilderAssetsCdn extends Construct {
                     origin,
                     viewerProtocolPolicy: ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
                     cachePolicy: CachePolicy.CACHING_OPTIMIZED,
+                    // The share card is rendered in the browser from these
+                    // images; without CORS headers a cross-origin <img>
+                    // taints the canvas and the export fails. Managed
+                    // policy: Access-Control-Allow-Origin: * on every response.
+                    responseHeadersPolicy: ResponseHeadersPolicy.CORS_ALLOW_ALL_ORIGINS_WITH_PREFLIGHT,
                 },
                 // Cost-appropriate for a personal-project audience — easy to
                 // change later.

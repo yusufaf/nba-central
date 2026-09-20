@@ -2,6 +2,7 @@
 import { ref, computed, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { toast } from 'vue-sonner';
+import axios from 'axios';
 import PageTitle from "@/components/PageTitle.vue";
 import PageShell from "@/layouts/PageShell.vue";
 import TeamBuilderHeader from "@/components/TeamBuilder/TeamBuilderHeader.vue";
@@ -17,9 +18,13 @@ import {
     swapMapEntries,
     swapSetMembers,
 } from "@/composables/useRosterDragDrop";
-import { serializeTeam, hydrateTeam } from "@/composables/useTeamPersistence";
+import { serializeTeam, hydrateTeam, remixTitle } from "@/composables/useTeamPersistence";
 import { dataApi, teamApi } from "@/network/api";
 import { useUserTeamsStore } from "@/stores/userTeams";
+import { renderShareCard, toShareCardProps } from "@/composables/useShareCard";
+import { shareUrlFor } from "@/utils/shareUrl";
+import { downloadUrlAsFile, slugFilename } from "@/utils/downloadFile";
+import { track } from "@/lib/analytics";
 import type { DrawerSide, NBA2KRating } from "@/models/types";
 import type { GetPlayerStatsResponse } from "@/models/api";
 
@@ -31,6 +36,13 @@ const userTeamsStore = useUserTeamsStore();
 // saved. Present means saveTeam() updates that team in place; absent means
 // it creates a new one.
 const loadedTeamUUID = ref<string | null>(null);
+
+// Share state for the loaded team. `teamOwner` is the Logto username the
+// API stamps on a saved team; the card and the public page attribute to it.
+const isPublic = ref(false);
+const cardUrl = ref<string | null>(null);
+const publishing = ref(false);
+const teamOwner = ref("");
 
 /* Team Metadata */
 const teamName = ref<string>("");
@@ -278,6 +290,9 @@ const clearBuilderState = () => {
     teamLogo.value = "";
     teamJersey.value = "";
     loadedTeamUUID.value = null;
+    isPublic.value = false;
+    cardUrl.value = null;
+    teamOwner.value = "";
 };
 
 const resetTeam = () => {
@@ -307,11 +322,16 @@ const saveTeam = () => {
                 ? await userTeamsStore.update({ ...payload, teamUUID: existingUUID })
                 : await userTeamsStore.save(payload);
             loadedTeamUUID.value = saved.teamUUID;
+            teamOwner.value = saved.username ?? teamOwner.value;
+            track("team_saved", { isNew: !existingUUID, playerCount: payload.roster.length });
             // Puts the team's uuid in the URL after the first save so a
             // refresh still knows to update this team rather than create
             // a duplicate on the next save.
             if (!existingUUID) {
-                router.replace({ query: { ...route.query, team: saved.teamUUID } });
+                router.replace({ query: { ...route.query, remix: undefined, team: saved.teamUUID } });
+            }
+            if (isPublic.value) {
+                await setPublished(true, { silent: true });
             }
         },
         {
@@ -320,6 +340,109 @@ const saveTeam = () => {
             error: existingUUID ? 'Failed to save team' : 'Failed to create team',
         }
     );
+};
+
+const currentCardProps = () =>
+    toShareCardProps({
+        title: teamName.value,
+        city: teamCity.value,
+        country: teamCountry.value,
+        logoUrl: teamLogo.value,
+        jerseyUrl: teamJersey.value,
+        username: teamOwner.value,
+        roster: Array.from(selectedPlayersData.value.entries()).map(([slot, player]) => ({
+            slot,
+            player: { ...player, fullName: player.fullName },
+        })),
+    });
+
+// A failed render must not block publishing: the page falls back to the
+// site poster for og:image and the owner gets told.
+const tryRenderCard = async (): Promise<string | null> => {
+    try {
+        return await renderShareCard(currentCardProps());
+    } catch (err) {
+        console.error("Share card render failed:", err);
+        return null;
+    }
+};
+
+const copyShareLink = async (): Promise<boolean> => {
+    if (!loadedTeamUUID.value) return false;
+    try {
+        await navigator.clipboard.writeText(shareUrlFor(loadedTeamUUID.value));
+        return true;
+    } catch (err) {
+        console.error("Clipboard write failed:", err);
+        return false;
+    }
+};
+
+// `silent` is the re-publish after a save of an already-public team: the
+// card is refreshed so unfurls never show a stale roster, without toasting
+// twice.
+const setPublished = async (nextPublic: boolean, { silent = false } = {}) => {
+    const teamUUID = loadedTeamUUID.value;
+    if (!teamUUID) throw new Error("Cannot publish an unsaved team");
+    publishing.value = true;
+    try {
+        const cardPng = nextPublic ? await tryRenderCard() : null;
+        const saved = await userTeamsStore.publish({ teamUUID, public: nextPublic, cardPng });
+        isPublic.value = saved.public;
+        cardUrl.value = saved.cardUrl ?? null;
+        track("team_published", { public: nextPublic, hasCard: cardPng !== null, silent });
+        if (silent) return;
+        if (nextPublic) {
+            const copied = await copyShareLink();
+            toast.success(
+                copied
+                    ? (cardPng ? "Published — link copied" : "Published without a preview image — link copied")
+                    : "Published — copy the link from Share",
+            );
+        } else {
+            toast.success("Team is private again");
+        }
+    } catch (err) {
+        console.error("Publish failed:", err);
+        if (silent) {
+            toast.warning("Saved, but the share preview could not be refreshed");
+        } else {
+            toast.error(nextPublic ? "Failed to publish team" : "Failed to unpublish team");
+        }
+    } finally {
+        publishing.value = false;
+    }
+};
+
+const togglePublish = () => setPublished(!isPublic.value);
+
+const shareTeam = async (method: "copy" | "native") => {
+    if (!loadedTeamUUID.value) return;
+    const url = shareUrlFor(loadedTeamUUID.value);
+    track("share_clicked", { method, page: "builder" });
+    if (method === "native" && typeof navigator.share === "function") {
+        try {
+            await navigator.share({ title: teamName.value, url });
+        } catch {
+            // User dismissed the sheet - not an error.
+        }
+        return;
+    }
+    const copied = await copyShareLink();
+    toast[copied ? "success" : "error"](
+        copied ? "Link copied" : "Couldn't copy — copy it from your browser's address bar",
+    );
+};
+
+const downloadCard = async () => {
+    if (!cardUrl.value) return;
+    track("card_downloaded", { page: "builder" });
+    try {
+        await downloadUrlAsFile(cardUrl.value, slugFilename(teamName.value, "png"));
+    } catch (err) {
+        console.error("Card download failed:", err);
+        toast.error("Failed to download card");
+    }
 };
 
 // Loading an existing team via ?team=<uuid> (e.g. from /teams). Metadata
@@ -335,6 +458,9 @@ const loadTeamFromRoute = async (teamUUID: string) => {
 
         const hydrated = hydrateTeam(response.data);
         loadedTeamUUID.value = response.data.teamUUID;
+        isPublic.value = response.data.public ?? false;
+        cardUrl.value = response.data.cardUrl ?? null;
+        teamOwner.value = response.data.username ?? "";
         teamName.value = hydrated.teamName;
         teamDescription.value = hydrated.teamDescription;
         teamCity.value = hydrated.teamCity;
@@ -356,16 +482,64 @@ const loadTeamFromRoute = async (teamUUID: string) => {
     }
 };
 
-// Watches route.query.team rather than onMounted alone: navigating between
-// /teambuilder?team=A and a bare /teambuilder (e.g. the nav bar's "Team
-// Builder" link) matches the same route record, so Vue Router reuses this
-// component instance and onMounted never fires again. Without this watcher
-// the builder kept showing team A - and Save would silently overwrite it.
+// Remixing a public team (/teambuilder?remix=<uuid>): same hydration as
+// loading your own, but loadedTeamUUID stays null so the first Save
+// creates a new team under the remixer. Works signed out; Save prompts
+// login as it always has.
+const loadRemixFromRoute = async (teamUUID: string) => {
+    // Cleared before the fetch, not just on failure: the axios instance's
+    // default validateStatus makes a 404 reject rather than resolve with
+    // success: false, so it lands in the catch below - if the builder still
+    // held a previously loaded team at that point, Save would overwrite it.
+    clearBuilderState();
+    try {
+        const response = await teamApi.getPublicTeam(teamUUID);
+        if (!response.success) {
+            toast.error("That team isn't public");
+            return;
+        }
+        const hydrated = hydrateTeam(response.data);
+        teamName.value = remixTitle(hydrated.teamName);
+        teamDescription.value = hydrated.teamDescription;
+        teamCity.value = hydrated.teamCity;
+        teamCountry.value = hydrated.teamCountry;
+        teamLogo.value = hydrated.teamLogo;
+        teamJersey.value = hydrated.teamJersey;
+        teamCoach.value = hydrated.teamCoach;
+        teamArena.value = hydrated.teamArena;
+        teamGM.value = hydrated.teamGM;
+        await Promise.all(
+            Array.from(hydrated.players.entries()).map(([slot, player]) =>
+                loadPlayerIntoSlot(slot, player),
+            ),
+        );
+        track("remix_loaded", { sourceTeamUUID: teamUUID });
+    } catch (err) {
+        console.error("Error remixing team:", err);
+        if (axios.isAxiosError(err) && err.response?.status === 404) {
+            toast.error("That team isn't public");
+        } else {
+            toast.error("Failed to load that team");
+        }
+    }
+};
+
+// Watches route.query.team/remix rather than onMounted alone: navigating
+// between /teambuilder?team=A and a bare /teambuilder (e.g. the nav bar's
+// "Team Builder" link) matches the same route record, so Vue Router reuses
+// this component instance and onMounted never fires again. Without this
+// watcher the builder kept showing team A - and Save would silently
+// overwrite it. `team` wins if both are present. Passed as an array of
+// getters (not a single getter returning a tuple) so Vue diffs each source
+// independently - a single getter would return a new array identity on
+// every navigation and fire the callback even when neither param changed.
 watch(
-    () => route.query.team,
-    (teamUUID) => {
+    [() => route.query.team, () => route.query.remix],
+    ([teamUUID, remixUUID]) => {
         if (typeof teamUUID === "string" && teamUUID) {
             loadTeamFromRoute(teamUUID);
+        } else if (typeof remixUUID === "string" && remixUUID) {
+            loadRemixFromRoute(remixUUID);
         } else {
             clearBuilderState();
         }
@@ -391,8 +565,15 @@ watch(
                     v-model:teamJersey="teamJersey"
                     v-model:drawerSide="selectedDrawerSide"
                     v-model:selectedView="selectedView"
+                    :team-uuid="loadedTeamUUID"
+                    :is-public="isPublic"
+                    :publishing="publishing"
+                    :card-url="cardUrl"
                     @saveTeam="saveTeam"
                     @reset="resetTeam"
+                    @togglePublish="togglePublish"
+                    @share="shareTeam"
+                    @downloadCard="downloadCard"
                 />
             </div>
 

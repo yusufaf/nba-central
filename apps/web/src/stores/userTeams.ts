@@ -3,6 +3,7 @@ import { teamApi } from "@/network/api";
 import type {
     SaveTeamPayload,
     UpdateTeamPayload,
+    PublishTeamPayload,
     TeamSummary,
 } from "@/models/api";
 
@@ -67,6 +68,19 @@ export const useUserTeamsStore = defineStore("userTeams", {
                 throw new Error(response.error);
             }
             this.teams = this.teams.filter((t) => t.teamUUID !== teamUUID);
+        },
+
+        async publish(payload: PublishTeamPayload) {
+            const response = await teamApi.publish(payload);
+            if (!response.success) {
+                throw new Error(response.error);
+            }
+            // Keep /teams' badges honest without a refetch.
+            const { teamUUID, public: isPublic, cardUrl } = response.data;
+            this.teams = this.teams.map((t) =>
+                t.teamUUID === teamUUID ? { ...t, public: isPublic, cardUrl } : t,
+            );
+            return response.data;
         },
     },
 });

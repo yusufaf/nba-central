@@ -5,6 +5,7 @@ import Scores from '@/views/Scores.vue';
 import BoxScore from '@/views/BoxScore.vue';
 import News from '@/views/News.vue';
 import Teams from '@/views/Teams.vue';
+import PublicTeam from '@/views/PublicTeam.vue';
 import Login from '@/views/Login.vue';
 import SignUp from '@/views/SignUp.vue';
 import Callback from '@/views/Callback.vue';
@@ -42,6 +43,12 @@ const router = createRouter({
             path: '/teams',
             name: 'teams',
             component: Teams,
+        },
+        {
+            path: '/t/:teamUUID',
+            name: 'publicTeam',
+            component: PublicTeam,
+            props: true,
         },
         {
             path: '/login',

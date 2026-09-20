@@ -84,6 +84,12 @@ export interface SavedTeam {
 	arena: TeamArenaRef | null;
 	favorited: boolean;
 	label: string;
+	// Share loop (see docs/superpowers/specs/2026-09-19-share-loop-design.md).
+	// `public` is opt-in and link-only; absent on rows saved before the
+	// feature shipped, which readers treat as false.
+	public: boolean;
+	publishedAt?: number;
+	cardUrl?: string;
 	lastViewed: number;
 	createdAt: number;
 	updatedAt: number;
@@ -100,3 +106,22 @@ export type ListTeamsResponse = ApiResponse<ListTeamsData>;
 export type GetTeamResponse = ApiResponse<SavedTeam>;
 export type UpdateTeamResponse = ApiResponse<SavedTeam>;
 export type DeleteTeamResponse = ApiResponse<void>;
+
+// What the anonymous `/api/teams/public/{teamUUID}` reader returns. The
+// owner's `username` is deliberate attribution; `userUUID` never leaves the
+// API, and the owner-only bookkeeping fields go with it.
+export type PublicTeam = Omit<
+	SavedTeam,
+	"userUUID" | "favorited" | "label" | "lastViewed"
+>;
+
+export interface PublishTeamPayload {
+	teamUUID: string;
+	public: boolean;
+	// Base64-encoded PNG (no data: prefix) rendered client-side. Optional so
+	// unpublishing, and publishing when the render failed, still work.
+	cardPng?: string | null;
+}
+
+export type PublishTeamResponse = ApiResponse<SavedTeam>;
+export type GetPublicTeamResponse = ApiResponse<PublicTeam>;
