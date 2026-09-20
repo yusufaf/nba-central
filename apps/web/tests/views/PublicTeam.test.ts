@@ -6,6 +6,15 @@ vi.mock("@/network/api", () => ({
 }));
 const push = vi.fn();
 vi.mock("vue-router", () => ({ useRouter: () => ({ push }) }));
+const { toast, downloadUrlAsFile } = vi.hoisted(() => ({
+    toast: { success: vi.fn(), error: vi.fn(), warning: vi.fn() },
+    downloadUrlAsFile: vi.fn(),
+}));
+vi.mock("vue-sonner", () => ({ toast }));
+vi.mock("@/utils/downloadFile", () => ({
+    downloadUrlAsFile,
+    slugFilename: vi.fn(() => "x.png"),
+}));
 
 import PublicTeam from "@/views/PublicTeam.vue";
 import { teamApi } from "@/network/api";
@@ -75,5 +84,52 @@ describe("PublicTeam", () => {
         await flushPromises();
         await wrapper.find('[data-testid="remix-button"]').trigger("click");
         expect(push).toHaveBeenCalledWith({ path: "/teambuilder", query: { remix: "t1" } });
+    });
+
+    it("shows a custom player's overallRating and includes it in the average", async () => {
+        const customTeam = {
+            ...team,
+            roster: [
+                { slot: 1, player: { fullName: "Michael Jordan", position: "SG", rating: 99 } },
+                { slot: 2, player: { fullName: "Custom Guy", position: "PF", isCustom: true, overallRating: 80 } },
+            ],
+        };
+        vi.mocked(teamApi.getPublicTeam).mockResolvedValue({ success: true, data: customTeam as any });
+        const wrapper = mountView();
+        await flushPromises();
+        const text = wrapper.text();
+        expect(text).toContain("Custom Guy");
+        expect(text).toContain("80");
+        expect(text).toContain("Avg 90");
+    });
+
+    it("toasts success when the copy-link click succeeds", async () => {
+        vi.mocked(teamApi.getPublicTeam).mockResolvedValue({ success: true, data: team as any });
+        Object.assign(navigator, { clipboard: { writeText: vi.fn().mockResolvedValue(undefined) } });
+        const wrapper = mountView();
+        await flushPromises();
+        await wrapper.find('[data-testid="copy-link-button"]').trigger("click");
+        await flushPromises();
+        expect(toast.success).toHaveBeenCalledWith("Link copied");
+    });
+
+    it("toasts an error when the copy-link click fails", async () => {
+        vi.mocked(teamApi.getPublicTeam).mockResolvedValue({ success: true, data: team as any });
+        Object.assign(navigator, { clipboard: { writeText: vi.fn().mockRejectedValue(new Error("nope")) } });
+        const wrapper = mountView();
+        await flushPromises();
+        await wrapper.find('[data-testid="copy-link-button"]').trigger("click");
+        await flushPromises();
+        expect(toast.error).toHaveBeenCalledWith("Couldn't copy — copy it from your browser's address bar");
+    });
+
+    it("toasts an error when the card download fails", async () => {
+        vi.mocked(teamApi.getPublicTeam).mockResolvedValue({ success: true, data: team as any });
+        downloadUrlAsFile.mockRejectedValue(new Error("nope"));
+        const wrapper = mountView();
+        await flushPromises();
+        await wrapper.find('[data-testid="download-card-button"]').trigger("click");
+        await flushPromises();
+        expect(toast.error).toHaveBeenCalledWith("Failed to download card");
     });
 });

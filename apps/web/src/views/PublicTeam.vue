@@ -25,7 +25,8 @@ const STARTER_SLOTS = [1, 2, 3, 4, 5];
 const bySlot = computed(() => new Map((team.value?.roster ?? []).map((e) => [e.slot, e.player])));
 const starters = computed(() => STARTER_SLOTS.flatMap((s) => (bySlot.value.get(s) ? [{ slot: s, player: bySlot.value.get(s)! }] : [])));
 const bench = computed(() => (team.value?.roster ?? []).filter((e) => e.slot > 5).sort((a, b) => a.slot - b.slot));
-const average = computed(() => averageRating(starters.value.map((s) => s.player.rating)));
+const ratingOf = (player: { rating?: number; overallRating?: number }) => player.rating ?? player.overallRating;
+const average = computed(() => averageRating(starters.value.map((s) => ratingOf(s.player))));
 const location = computed(() => [team.value?.city, team.value?.country].filter(Boolean).join(', '));
 const publishedOn = computed(() =>
     team.value?.publishedAt ? new Date(team.value.publishedAt).toLocaleDateString() : '',
@@ -88,7 +89,7 @@ const remix = () => {
 
 <template>
     <main>
-        <PageShell class="py-8">
+        <PageShell>
             <div v-if="loading" class="text-muted-foreground">Loading team…</div>
 
             <div v-else-if="notFound || !team" data-testid="not-found" class="space-y-4 text-center">
@@ -99,7 +100,7 @@ const remix = () => {
 
             <article v-else class="space-y-8">
                 <header class="flex flex-wrap items-center gap-6">
-                    <img v-if="team.logoUrl" :src="team.logoUrl" alt="" class="h-24 w-24 object-contain" />
+                    <img v-if="team.logoUrl" :src="team.logoUrl" :alt="`${team.title} logo`" class="h-24 w-24 object-contain" />
                     <div class="min-w-0 flex-1">
                         <h1 class="truncate text-4xl font-bold">{{ team.title }}</h1>
                         <p v-if="location" class="text-muted-foreground">{{ location }}</p>
@@ -107,13 +108,13 @@ const remix = () => {
                             by {{ team.username }}<span v-if="publishedOn"> · published {{ publishedOn }}</span>
                         </p>
                     </div>
-                    <img v-if="team.jerseyUrl" :src="team.jerseyUrl" alt="" class="h-32 w-32 object-contain" />
+                    <img v-if="team.jerseyUrl" :src="team.jerseyUrl" :alt="`${team.title} jersey`" class="h-32 w-32 object-contain" />
                 </header>
 
                 <div class="flex flex-wrap gap-2">
-                    <Button variant="outline" size="sm" @click="share('copy')"><Link2 class="mr-2 h-4 w-4" />Copy link</Button>
+                    <Button data-testid="copy-link-button" variant="outline" size="sm" @click="share('copy')"><Link2 class="mr-2 h-4 w-4" />Copy link</Button>
                     <Button v-if="canShareNatively" variant="outline" size="sm" @click="share('native')"><Share2 class="mr-2 h-4 w-4" />Share…</Button>
-                    <Button variant="outline" size="sm" :disabled="!team.cardUrl" @click="downloadCard"><Download class="mr-2 h-4 w-4" />Download card</Button>
+                    <Button data-testid="download-card-button" variant="outline" size="sm" :disabled="!team.cardUrl" @click="downloadCard"><Download class="mr-2 h-4 w-4" />Download card</Button>
                     <Button data-testid="remix-button" size="sm" @click="remix"><Sparkles class="mr-2 h-4 w-4" />Remix this team</Button>
                 </div>
 
@@ -126,7 +127,7 @@ const remix = () => {
                         <li v-for="{ slot, player } in starters" :key="slot" class="rounded-lg border border-border bg-card p-3">
                             <div class="text-xs uppercase text-muted-foreground">{{ player.position || '—' }}</div>
                             <div class="font-semibold">{{ player.fullName }}</div>
-                            <div v-if="player.rating !== undefined" class="text-lg font-bold">{{ player.rating }}</div>
+                            <div v-if="ratingOf(player) !== undefined" class="text-lg font-bold">{{ ratingOf(player) }}</div>
                         </li>
                     </ul>
                 </section>
