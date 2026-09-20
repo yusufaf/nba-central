@@ -90,8 +90,11 @@ renders the same snapshots the builder does.
 
 ### DynamoDB access path
 
-Rows keep `PK = userUUID#<sub>`, `SK = team#<uuid>`. The two provisioned GSIs
-(`PK2/SK2`, `PK3/SK3`) are unused today. Public lookup uses the first:
+Rows keep `PK = userUUID#<sub>`, `SK = team#<uuid>`. Of the two provisioned
+GSIs, `PK3/SK3` is unused; `PK2/SK2` is already shared with news — `getNews`/
+`fetchNewsCron` key it with `NEWS#<source>` partition keys, which don't
+collide with this feature's `team#<uuid>` prefix. Public lookup uses that
+same index:
 
 ```
 PK2 = team#<teamUUID>
@@ -146,7 +149,7 @@ what is public remains true.
 3. Inject before `</head>`:
    - `<title>{title} — nba-central</title>`
    - `og:title`, `og:description` ("Starting five: A, B, C, D, E · Coach X ·
-     by {username}"), `og:image` (`cardUrl` or `/hero/poster.jpg`),
+     by {username}"), `og:image` (`cardUrl` or `/hero/hero-poster.jpg`),
      `og:url`, `og:type=website`, `twitter:card=summary_large_image`.
    - All values HTML-escaped. Team names are user input.
 4. Respond `200 text/html`, `Cache-Control: public, max-age=60,
