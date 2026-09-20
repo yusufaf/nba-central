@@ -27,6 +27,7 @@
     "axios": "^1.18.1",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
+    "html-to-image": "^1.11.13",
     "lucide-vue-next": "^1.0.0",
     "pinia": "^4.0.2",
     "reka-ui": "^2.10.1",
