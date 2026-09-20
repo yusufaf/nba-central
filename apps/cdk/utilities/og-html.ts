@@ -52,6 +52,6 @@ export const buildOgTags = (team: PublicTeam, siteUrl: string): string => {
 export const injectOgTags = (shell: string, team: PublicTeam, siteUrl: string): string => {
 	const title = `<title>${escapeHtml(team.title || "Untitled team")} — NBA Team Builder</title>`;
 	return shell
-		.replace(/<title>[\s\S]*?<\/title>/, title)
-		.replace("</head>", `${buildOgTags(team, siteUrl)}\n</head>`);
+		.replace(/<title>[\s\S]*?<\/title>/, () => title)
+		.replace("</head>", () => `${buildOgTags(team, siteUrl)}\n</head>`);
 };

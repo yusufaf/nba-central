@@ -32,9 +32,12 @@ const loadShell = async (): Promise<string> => {
 	const object = await s3Client.send(
 		new GetObjectCommand({ Bucket: webBucket, Key: "index.html" }),
 	);
-	const html = (await object.Body?.transformToString()) ?? "";
-	shellCache = { html, fetchedAt: Date.now() };
-	return html;
+	const shellHtml = (await object.Body?.transformToString()) ?? "";
+	// An empty body means the object is missing or truncated - either way it
+	// isn't a shell worth serving or caching for 5 minutes.
+	if (!shellHtml) throw new Error("index.html is empty");
+	shellCache = { html: shellHtml, fetchedAt: Date.now() };
+	return shellHtml;
 };
 
 const html = (body: string): APIGatewayProxyResultV2 => ({

@@ -64,4 +64,13 @@ describe("injectOgTags", () => {
 		expect(out.indexOf('property="og:title"')).toBeLessThan(out.indexOf("</head>"));
 		expect(out).not.toContain("<title>NBA Team Builder</title>");
 	});
+
+	it("inserts titles containing $-patterns literally instead of expanding them", () => {
+		const shell = '<html><head><meta charset="UTF-8"><title>NBA Team Builder</title></head><body></body></html>';
+		const out = injectOgTags(shell, { ...team, title: "Bulls $` $& $' $$ 96" }, "https://nba.example");
+		expect(out).toContain("<title>Bulls $` $&amp; $&#39; $$ 96 — NBA Team Builder</title>");
+		expect(out).toContain('<meta property="og:title" content="Bulls $` $&amp; $&#39; $$ 96">');
+		// The shell's own markup must not have been spliced into the title.
+		expect(out.match(/<meta charset="UTF-8">/g)).toHaveLength(1);
+	});
 });

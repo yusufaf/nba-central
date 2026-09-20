@@ -154,6 +154,19 @@ describe("getPublicTeamPage", () => {
 		expect(result.statusCode).toBe(500);
 		expect(result.headers["content-type"]).toBe("text/plain; charset=utf-8");
 	});
+
+	it("500s plainly, without caching, when the shell body is empty", async () => {
+		send.mockResolvedValueOnce({ Items: [storedPublicTeam] });
+		s3Send.mockResolvedValueOnce({ Body: { transformToString: async () => "" } });
+		const result: any = await pageHandler(anonymousEvent("t1"), {} as any, {} as any);
+		expect(result.statusCode).toBe(500);
+		expect(result.headers["content-type"]).toBe("text/plain; charset=utf-8");
+
+		send.mockResolvedValueOnce({ Items: [storedPublicTeam] });
+		s3Send.mockResolvedValueOnce(shellObject());
+		await pageHandler(anonymousEvent("t1"), {} as any, {} as any);
+		expect(s3Send).toHaveBeenCalledTimes(2);
+	});
 });
 
 describe("publishTeam", () => {
