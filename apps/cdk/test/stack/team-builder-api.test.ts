@@ -9,6 +9,8 @@ import {
 	NEWS_ROUTES,
 	CUSTOM_ENTITIES_ROUTES,
 	FEEDBACK_ROUTES,
+	PUBLIC_TEAM_ROUTES,
+	PAGE_ROUTES,
 } from "../../service/team-builder-stack/team-builder-api-routes";
 
 // Locks in the public/private route split team-builder-api.ts uses to
@@ -25,6 +27,8 @@ const PUBLIC_ROUTE_PATHS = [
 	"/api/data/get-players",
 	"/api/data/get-player-stats",
 	"/api/news/get",
+	"/api/teams/public/{teamUUID}",
+	"/t/{teamUUID}",
 ];
 
 describe("team-builder-api-routes", () => {
@@ -32,7 +36,7 @@ describe("team-builder-api-routes", () => {
 		const publicPaths = PUBLIC_ROUTES.map((r) => r.route).sort();
 		expect(publicPaths).toEqual(PUBLIC_ROUTE_PATHS.sort());
 		expect(PUBLIC_ROUTES).toHaveLength(
-			DATA_ROUTES.length + NEWS_ROUTES.length,
+			DATA_ROUTES.length + NEWS_ROUTES.length + PUBLIC_TEAM_ROUTES.length + PAGE_ROUTES.length,
 		);
 	});
 
@@ -59,11 +63,13 @@ describe("team-builder-api-routes", () => {
 		for (const path of publicPaths) {
 			expect(privatePaths.has(path)).toBe(false);
 		}
-		// 27 routes total: 22 confirmed via cdk synth when the authorizer was
-		// first wired to every route (commit c1e8738), plus the 4 team
-		// list/get/update/delete routes added alongside createTeam, plus
-		// /api/feedback/send.
-		expect(publicPaths.size + privatePaths.size).toBe(27);
+		// 30 routes total: 27 confirmed as of the createTeam/feedback routes
+		// (22 via cdk synth when the authorizer was first wired to every
+		// route in commit c1e8738, plus the 4 team list/get/update/delete
+		// routes added alongside createTeam, plus /api/feedback/send), plus
+		// the 3 share-loop routes: /api/teams/publish, the public team
+		// reader, and the OG page.
+		expect(publicPaths.size + privatePaths.size).toBe(30);
 	});
 
 	it("the feedback route is private", () => {
@@ -111,5 +117,18 @@ describe("team-builder-api-routes", () => {
 			route: "/api/teams/delete/{teamUUID}",
 			methods: ["DELETE"],
 		});
+	});
+
+	it("exposes the public team reader and the OG page without an authorizer", () => {
+		const publicPaths = PUBLIC_ROUTES.map((r) => r.route);
+		expect(publicPaths).toContain("/api/teams/public/{teamUUID}");
+		expect(publicPaths).toContain("/t/{teamUUID}");
+		expect(PAGE_ROUTES.map((r) => r.route)).toEqual(["/t/{teamUUID}"]);
+	});
+
+	it("keeps publishTeam behind the authorizer", () => {
+		const privatePaths = PRIVATE_ROUTES.map((r) => r.route);
+		expect(privatePaths).toContain("/api/teams/publish");
+		expect(PUBLIC_ROUTES.map((r) => r.route)).not.toContain("/api/teams/publish");
 	});
 });

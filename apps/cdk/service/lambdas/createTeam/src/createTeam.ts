@@ -60,6 +60,7 @@ export const handler: Handler = async (
 			arena: payload.arena ?? null,
 			favorited: false,
 			label: "",
+			public: false,
 			lastViewed: timestamp,
 			createdAt: timestamp,
 			updatedAt: timestamp,
