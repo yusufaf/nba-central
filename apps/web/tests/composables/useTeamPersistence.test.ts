@@ -182,6 +182,7 @@ describe("hydrateTeam", () => {
         arena: { name: "Chase Center", imgLink: "https://example.com/chase.jpg" },
         favorited: false,
         label: "",
+        public: false,
         lastViewed: 1,
         createdAt: 1,
         updatedAt: 1,

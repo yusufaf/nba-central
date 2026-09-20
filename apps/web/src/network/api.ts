@@ -17,6 +17,9 @@ import type {
     GetTeamResponse,
     UpdateTeamResponse,
     DeleteTeamResponse,
+    PublishTeamPayload,
+    PublishTeamResponse,
+    GetPublicTeamResponse,
     SendFeedbackPayload,
     SendFeedbackResponse,
     GetTeamLogosResponse,
@@ -125,6 +128,17 @@ export const teamApi = {
     },
     deleteTeam: async (teamUUID: string): Promise<DeleteTeamResponse> => {
         const response = await api.delete(`/api/teams/delete/${teamUUID}`);
+        return response.data;
+    },
+    // Anonymous — no Authorization header is needed and none is required.
+    getPublicTeam: async (teamUUID: string): Promise<GetPublicTeamResponse> => {
+        const response = await api.get(`/api/teams/public/${teamUUID}`);
+        return response.data;
+    },
+    publish: async (
+        payload: PublishTeamPayload,
+    ): Promise<PublishTeamResponse> => {
+        const response = await api.put('/api/teams/publish', payload);
         return response.data;
     },
 };

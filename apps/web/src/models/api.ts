@@ -131,6 +131,11 @@ export interface SavedTeam {
     arena: TeamArenaRef | null;
     favorited: boolean;
     label: string;
+    // Share loop: opt-in, link-only. Absent on rows saved before the feature
+    // shipped, which the UI treats as false.
+    public: boolean;
+    publishedAt?: number;
+    cardUrl?: string;
     lastViewed: number;
     createdAt: number;
     updatedAt: number;
@@ -147,6 +152,25 @@ export type ListTeamsResponse = ApiResult<{ teams: TeamSummary[] }>;
 export type GetTeamResponse = ApiResult<SavedTeam>;
 export type UpdateTeamResponse = ApiResult<SavedTeam>;
 export type DeleteTeamResponse = ApiResult<void>;
+
+// What /api/teams/public/{teamUUID} returns — everything the public page and
+// a remix need, minus the owner's id and bookkeeping. `username` is the
+// attribution.
+export type PublicTeam = Omit<
+    SavedTeam,
+    'userUUID' | 'favorited' | 'label' | 'lastViewed'
+>;
+
+export interface PublishTeamPayload {
+    teamUUID: string;
+    public: boolean;
+    // Base64 PNG (no data: prefix) from useShareCard; null when the render
+    // failed or when unpublishing.
+    cardPng?: string | null;
+}
+
+export type PublishTeamResponse = ApiResult<SavedTeam>;
+export type GetPublicTeamResponse = ApiResult<PublicTeam>;
 // #endregion
 
 //#region Feedback API Types

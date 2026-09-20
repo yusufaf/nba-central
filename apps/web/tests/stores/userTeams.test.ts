@@ -7,6 +7,7 @@ vi.mock("@/network/api", () => ({
         createTeam: vi.fn(),
         updateTeam: vi.fn(),
         deleteTeam: vi.fn(),
+        publish: vi.fn(),
     },
 }));
 
@@ -136,5 +137,28 @@ describe("useUserTeamsStore.remove", () => {
 
         await expect(store.remove("t1")).rejects.toThrow("nope");
         expect(store.teams).toEqual(sampleTeams);
+    });
+});
+
+describe("useUserTeamsStore.publish", () => {
+    it("returns the updated team and patches the cached summary", async () => {
+        const store = useUserTeamsStore();
+        store.teams = [{ teamUUID: "t1", title: "One", public: false } as any];
+        vi.mocked(teamApi.publish).mockResolvedValue({
+            success: true,
+            data: { teamUUID: "t1", public: true, cardUrl: "https://cdn/x.png" } as any,
+        });
+
+        const saved = await store.publish({ teamUUID: "t1", public: true, cardPng: "abc" });
+
+        expect(teamApi.publish).toHaveBeenCalledWith({ teamUUID: "t1", public: true, cardPng: "abc" });
+        expect(saved.public).toBe(true);
+        expect(store.teams[0]).toMatchObject({ public: true, cardUrl: "https://cdn/x.png" });
+    });
+
+    it("throws the API error message on failure", async () => {
+        const store = useUserTeamsStore();
+        vi.mocked(teamApi.publish).mockResolvedValue({ success: false, error: "nope" });
+        await expect(store.publish({ teamUUID: "t1", public: true })).rejects.toThrow("nope");
     });
 });
