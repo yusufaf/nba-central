@@ -1,5 +1,22 @@
 # Changelog
 
+## [0.2.0](https://github.com/yusufaf/nba-central/compare/cdk-v0.1.1...cdk-v0.2.0) (2026-09-22)
+
+
+### Features
+
+* **cdk:** send feedback email via SES ([#83](https://github.com/yusufaf/nba-central/issues/83)) ([5ee5797](https://github.com/yusufaf/nba-central/commit/5ee5797d0bb2db5db1964233ee1e324facb66504)), closes [#54](https://github.com/yusufaf/nba-central/issues/54)
+* serve historical logos from the assets CDN ([#96](https://github.com/yusufaf/nba-central/issues/96)) ([1ec96bc](https://github.com/yusufaf/nba-central/commit/1ec96bcf55ec1b341b1c6e429ee6e9d45ce5b2c5)), closes [#66](https://github.com/yusufaf/nba-central/issues/66)
+* share loop — public team pages, share cards, remix ([#106](https://github.com/yusufaf/nba-central/issues/106)) ([48337ec](https://github.com/yusufaf/nba-central/commit/48337ec388f3882caee3403e906df91f1afeef4c))
+
+
+### Bug Fixes
+
+* **cdk:** key news rows on URL so re-published stories overwrite themselves ([#93](https://github.com/yusufaf/nba-central/issues/93)) ([a12d7cf](https://github.com/yusufaf/nba-central/commit/a12d7cf38a9ea7975e61d3e2b8f71698c4288560)), closes [#92](https://github.com/yusufaf/nba-central/issues/92)
+* **cdk:** three real-run bugs in refresh-historical-jerseys, upload real images ([#68](https://github.com/yusufaf/nba-central/issues/68)) ([c03e6f1](https://github.com/yusufaf/nba-central/commit/c03e6f1b9c5550171dc489cc1acac207b67bc3b8))
+* derive S3 file-lambda owner from authorizer sub, not the request body ([#61](https://github.com/yusufaf/nba-central/issues/61)) ([c64be7c](https://github.com/yusufaf/nba-central/commit/c64be7ce40cde4bc640d869d7919c608eee29694))
+* **web:** serve the hero video from the assets CDN, not Git LFS ([#82](https://github.com/yusufaf/nba-central/issues/82)) ([779006f](https://github.com/yusufaf/nba-central/commit/779006f659859f7ef1591d77c13b4ba2786cb83e))
+
 ## [0.1.1](https://github.com/yusufaf/nba-central/compare/cdk-v0.1.0...cdk-v0.1.1) (2026-09-04)
 
 
