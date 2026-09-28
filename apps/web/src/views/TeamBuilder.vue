@@ -19,6 +19,13 @@ import {
     swapSetMembers,
 } from "@/composables/useRosterDragDrop";
 import { serializeTeam, hydrateTeam, remixTitle } from "@/composables/useTeamPersistence";
+import {
+    useTeamHistory,
+    snapshotBuilder,
+    restoreBuilder,
+    type BuilderState,
+} from "@/composables/useTeamHistory";
+import { useUndoShortcut } from "@/composables/useUndoShortcut";
 import { dataApi, teamApi } from "@/network/api";
 import { useUserTeamsStore } from "@/stores/userTeams";
 import { renderShareCard, toShareCardProps } from "@/composables/useShareCard";
@@ -131,6 +138,11 @@ const addPlayer = (index: number) => {
 // stats round trip. Marking the slot pending first lets the card show an
 // in-place wait rather than nothing while that request is out.
 const loadPlayerIntoSlot = async (slot: number, player: any) => {
+    // Adds aren't undoable yet, so a snapshot from before one would wipe the
+    // new player out. Forgotten when the add starts (an undo could otherwise
+    // refill the slot it's landing in) and again when it lands (a removal in
+    // between captured the roster without it).
+    forgetHistory();
     pendingPlayers.value.set(slot, player.fullName ?? "");
     try {
         const { id } = player;
@@ -138,6 +150,7 @@ const loadPlayerIntoSlot = async (slot: number, player: any) => {
         const updatedPlayerData = { ...player, playerStats, ratingHistory };
         selectedPlayersData.value.set(slot, updatedPlayerData);
         cardsFlipped.value.set(slot, false);
+        forgetHistory();
     } finally {
         pendingPlayers.value.delete(slot);
     }
@@ -161,17 +174,72 @@ const addPlayerFromDialog = async (player: any) => {
     });
 };
 
+const builderState = (): BuilderState => ({
+    players: selectedPlayersData.value,
+    cardsFlipped: cardsFlipped.value,
+    comparison: selectedPlayersForComparison.value,
+    loadedTeamUUID: loadedTeamUUID.value,
+});
+
+const history = useTeamHistory<BuilderState>({
+    capture: () => snapshotBuilder(builderState()),
+    restore: (snapshot) => {
+        const next = restoreBuilder(builderState(), snapshot);
+        selectedPlayersData.value = next.players;
+        cardsFlipped.value = next.cardsFlipped;
+        selectedPlayersForComparison.value = next.comparison;
+        loadedTeamUUID.value = next.loadedTeamUUID;
+    },
+});
+
+const UNDO_TOAST_DURATION = 8000;
+
+// Only the latest removal's toast stays up, so its Undo always means "undo
+// that removal" rather than whatever happens to be on top of the stack.
+let removalToastId: string | number | undefined;
+
+const dismissRemovalToast = () => {
+    if (removalToastId !== undefined) toast.dismiss(removalToastId);
+    removalToastId = undefined;
+};
+
+// For changes that aren't undoable yet: undoing past one would silently
+// revert it along with whatever the entry was for.
+const forgetHistory = () => {
+    history.clear();
+    dismissRemovalToast();
+};
+
+const undoLastChange = () => {
+    const entry = history.undo();
+    if (!entry) return;
+    dismissRemovalToast();
+    toast.success(entry.label);
+};
+
+useUndoShortcut(undoLastChange);
+
 const deletePlayer = (index: number) => {
     const player = selectedPlayersData.value.get(index);
+    if (!player) return;
     // A held card that's just been removed has nothing left to drop.
     if (pickedUpSlot.value === index) cancelPickup();
+
+    const entryId = history.push(`Restored ${player.fullName} to ${slotLabel(index)}`);
     selectedPlayersData.value.delete(index);
     cardsFlipped.value.delete(index);
     selectedPlayersForComparison.value.delete(index);
 
-    if (player) {
-        toast.success(`Removed ${player.fullName} from team`);
-    }
+    dismissRemovalToast();
+    removalToastId = toast.success(`Removed ${player.fullName} from team`, {
+        duration: UNDO_TOAST_DURATION,
+        action: {
+            label: "Undo",
+            onClick: () => {
+                if (history.isLatest(entryId)) undoLastChange();
+            },
+        },
+    });
 };
 
 // Slots are fixed positions, not a list, so a drag is a swap: the two cards
@@ -184,6 +252,7 @@ const swapSlots = (from: number, to: number) => {
     const players = selectedPlayersData.value;
     if (!players.has(from) && !players.has(to)) return;
 
+    forgetHistory();
     swapMapEntries(players, from, to);
     swapMapEntries(cardsFlipped.value, from, to);
     swapSetMembers(selectedPlayersForComparison.value, from, to);
@@ -277,6 +346,7 @@ watch(showPlayerComparison, (open) => {
 // update the previously loaded team instead of creating a new one.
 const clearBuilderState = () => {
     cancelPickup();
+    forgetHistory();
     selectedPlayersData.value.clear();
     cardsFlipped.value.clear();
     selectedPlayersForComparison.value.clear();
@@ -322,6 +392,9 @@ const saveTeam = () => {
                 ? await userTeamsStore.update({ ...payload, teamUUID: existingUUID })
                 : await userTeamsStore.save(payload);
             loadedTeamUUID.value = saved.teamUUID;
+            // Every snapshot predates the team existing; undoing to one
+            // would detach the builder and the next Save would duplicate it.
+            if (!existingUUID) forgetHistory();
             teamOwner.value = saved.username ?? teamOwner.value;
             track("team_saved", { isNew: !existingUUID, playerCount: payload.roster.length });
             // Puts the team's uuid in the URL after the first save so a
@@ -449,6 +522,7 @@ const downloadCard = async () => {
 // restores synchronously; each roster slot then streams its career stats in
 // through loadPlayerIntoSlot, same as adding a player fresh.
 const loadTeamFromRoute = async (teamUUID: string) => {
+    forgetHistory();
     try {
         const response = await teamApi.getTeam(teamUUID);
         if (!response.success) {
