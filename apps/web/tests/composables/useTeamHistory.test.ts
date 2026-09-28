@@ -166,28 +166,27 @@ describe("snapshotBuilder / restoreBuilder", () => {
         state.players.delete(6);
         state.cardsFlipped.delete(6);
         state.comparison.delete(6);
-        // Flipped and compared after the removal - not part of what's undone.
+        // Flipped after the removal - not part of what's undone.
         state.cardsFlipped.set(7, true);
-        state.comparison.add(1);
 
         const next = restoreBuilder(state, snapshot);
 
         expect(next.cardsFlipped.get(7)).toBe(true);
-        expect(next.comparison.has(1)).toBe(true);
-        expect(next.comparison.has(6)).toBe(true);
+        expect(next.cardsFlipped.get(1)).toBe(false);
     });
 
-    it("never restores a third comparison pick", () => {
+    // Two picks is what opens the comparison; a restore that made a pair
+    // would leave it closed with both picks stuck.
+    it("never completes a comparison pair", () => {
         const state = builder();
         const snapshot = snapshotBuilder(state);
         state.players.delete(6);
         state.comparison.delete(6);
         state.comparison.add(1);
-        state.comparison.add(7);
 
         const next = restoreBuilder(state, snapshot);
 
-        expect([...next.comparison].sort()).toEqual([1, 7]);
+        expect([...next.comparison]).toEqual([1]);
     });
 
     it("restores the loaded team", () => {

@@ -88,8 +88,11 @@ export const restoreBuilder = <P>(current: BuilderState<P>, snapshot: BuilderSta
         else cardsFlipped.set(slot, flipped);
 
         comparison.delete(slot);
-        // Comparison is capped at two; a pick made since wins over the old one.
-        if (snapshot.comparison.has(slot) && comparison.size < 2) comparison.add(slot);
+        // A second pick is what opens the comparison, and the pair is only
+        // cleared when that closes - so a restore that completed a pair
+        // would leave two picks with no comparison and block further picks.
+        // A pick made since wins over the old one.
+        if (snapshot.comparison.has(slot) && comparison.size === 0) comparison.add(slot);
     }
 
     return {
