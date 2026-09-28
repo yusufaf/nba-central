@@ -258,7 +258,7 @@ onMounted(() => {
         <ConfirmDialog
             v-model:open="showConfirm"
             title="Reset Team"
-            description="Are you sure you want to reset your whole team? This action cannot be undone."
+            description="This removes every player and clears the team's details. You can undo it from the notification or with Ctrl+Z."
             confirm-text="Reset Team"
             cancel-text="Cancel"
             variant="destructive"

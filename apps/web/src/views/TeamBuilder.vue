@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, watch } from "vue";
+import { ref, computed, watch, toRaw } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { toast } from 'vue-sonner';
 import axios from 'axios';
@@ -24,15 +24,17 @@ import {
     snapshotBuilder,
     restoreBuilder,
     type BuilderState,
+    type HistoryAction,
 } from "@/composables/useTeamHistory";
 import { useUndoShortcut } from "@/composables/useUndoShortcut";
+import { usePendingPlayers } from "@/composables/usePendingPlayers";
 import { dataApi, teamApi } from "@/network/api";
 import { useUserTeamsStore } from "@/stores/userTeams";
 import { renderShareCard, toShareCardProps } from "@/composables/useShareCard";
 import { shareUrlFor } from "@/utils/shareUrl";
 import { downloadUrlAsFile, slugFilename } from "@/utils/downloadFile";
 import { track } from "@/lib/analytics";
-import type { DrawerSide, NBA2KRating } from "@/models/types";
+import type { DrawerSide, NBA2KRating, Player } from "@/models/types";
 import type { GetPlayerStatsResponse } from "@/models/api";
 
 const route = useRoute();
@@ -76,9 +78,23 @@ const selectedPlayerName = ref<string>("");
 
 const cardsFlipped = ref<Map<any, boolean>>(new Map());
 
-// Slot index -> name of the player being fetched into it. Keyed by slot rather
-// than a single flag so two slots can be filling at once.
-const pendingPlayers = ref<Map<number, string>>(new Map());
+const statsLoads = usePendingPlayers<Player>();
+
+// A player is in their slot from the moment they're added, but the card only
+// shows once their stats have landed; until then the slot shows who is being
+// fetched into it. Keyed by slot so several can be filling at once.
+const pendingPlayers = computed(() => {
+    const pending = new Map<number, string>();
+    for (const [slot, player] of selectedPlayersData.value) {
+        if (statsLoads.isPending(player)) pending.set(slot, player.fullName ?? "");
+    }
+    return pending;
+});
+const landedPlayers = computed(() => {
+    const landed = new Map(selectedPlayersData.value);
+    for (const slot of pendingPlayers.value.keys()) landed.delete(slot);
+    return landed;
+});
 const showPlayerStatsDialog = ref<boolean>(false);
 
 const selectedView = ref<string>("Default");
@@ -132,106 +148,119 @@ const addPlayer = (index: number) => {
     showPlayerDialog.value = true;
 };
 
-// Fetches a player's career stats/rating history and lands the full record
-// in the slot. Shared by adding a new player from the dialog and hydrating a
+// Puts the player in the slot and fetches their career stats/rating history
+// into them. Shared by adding a new player from the dialog and hydrating a
 // loaded team - both start from a full player object and only need the
-// stats round trip. Marking the slot pending first lets the card show an
-// in-place wait rather than nothing while that request is out.
-const loadPlayerIntoSlot = async (slot: number, player: any) => {
-    // Adds aren't undoable yet, so a snapshot from before one would wipe the
-    // new player out. Forgotten when the add starts (an undo could otherwise
-    // refill the slot it's landing in) and again when it lands (a removal in
-    // between captured the roster without it).
-    forgetHistory();
-    pendingPlayers.value.set(slot, player.fullName ?? "");
-    try {
-        const { id } = player;
-        const { data: playerStats, ratingHistory } = await getPlayerStats(id);
-        const updatedPlayerData = { ...player, playerStats, ratingHistory };
-        selectedPlayersData.value.set(slot, updatedPlayerData);
-        cardsFlipped.value.set(slot, false);
-        forgetHistory();
-    } finally {
-        pendingPlayers.value.delete(slot);
-    }
+// stats round trip. The response fills in the player wherever they are by
+// then, never the slot, so an add that's undone or cleared while it loads
+// stays gone (usePendingPlayers).
+const loadPlayerIntoSlot = (slot: number, player: any) => {
+    const loading = statsLoads.load(player, async () => {
+        const { data: playerStats, ratingHistory } = await getPlayerStats(player.id);
+        return { playerStats, ratingHistory };
+    });
+    selectedPlayersData.value.set(slot, loading.player);
+    cardsFlipped.value.set(slot, false);
+    return loading;
 };
 
-const addPlayerFromDialog = async (player: any) => {
+const isInRoster = (player: Player) =>
+    [...selectedPlayersData.value.values()].some((p) => toRaw(p) === toRaw(player));
+
+const addPlayerFromDialog = (player: any) => {
     const playerIndex = selectedPlayerIndex.value;
     // The dialog is only opened from a slot, so this is set - but the ref is
     // nullable and there is no slot to report progress against without it.
     if (playerIndex === null) return;
 
     const playerName = `${player.first_name} ${player.last_name}`;
+    const where = slotLabel(playerIndex);
+
+    recordChange({
+        undoLabel: `Removed ${playerName} from ${where}`,
+        redoLabel: `Added ${playerName} to ${where}`,
+    });
+    const { player: added, done } = loadPlayerIntoSlot(playerIndex, player);
 
     // The toast lives in the corner, far from the slot the player is landing
-    // in - loadPlayerIntoSlot marks the slot pending so the card shows the
-    // same wait in place.
-    toast.promise(loadPlayerIntoSlot(playerIndex, player), {
-        loading: `Adding ${playerName} to ${slotLabel(playerIndex)}...`,
-        success: `Added ${playerName} to ${slotLabel(playerIndex)}`,
-        error: `Failed to add ${playerName} to ${slotLabel(playerIndex)}`,
-    });
+    // in - the card shows the same wait in place. An add undone meanwhile
+    // already got its own toast, so this one just goes away.
+    const toastId = toast.loading(`Adding ${playerName} to ${where}...`);
+    done.then(
+        () => {
+            if (isInRoster(added)) toast.success(`Added ${playerName} to ${where}`, { id: toastId });
+            else toast.dismiss(toastId);
+        },
+        () => toast.error(`Failed to add ${playerName} to ${where}`, { id: toastId }),
+    );
 };
 
 const builderState = (): BuilderState => ({
     players: selectedPlayersData.value,
     cardsFlipped: cardsFlipped.value,
     comparison: selectedPlayersForComparison.value,
-    loadedTeamUUID: loadedTeamUUID.value,
+    details: {
+        name: teamName.value,
+        description: teamDescription.value,
+        city: teamCity.value,
+        country: teamCountry.value,
+        logo: teamLogo.value,
+        jersey: teamJersey.value,
+        coach: teamCoach.value,
+        arena: teamArena.value,
+        gm: teamGM.value,
+    },
+    loadedTeam: {
+        uuid: loadedTeamUUID.value,
+        isPublic: isPublic.value,
+        cardUrl: cardUrl.value,
+        owner: teamOwner.value,
+    },
 });
 
 const history = useTeamHistory<BuilderState>({
     capture: () => snapshotBuilder(builderState()),
-    restore: (snapshot) => {
-        const next = restoreBuilder(builderState(), snapshot);
+    restore: (snapshot, action) => {
+        const next = restoreBuilder(builderState(), snapshot, { details: action.includesDetails });
         selectedPlayersData.value = next.players;
         cardsFlipped.value = next.cardsFlipped;
         selectedPlayersForComparison.value = next.comparison;
-        loadedTeamUUID.value = next.loadedTeamUUID;
+        teamName.value = next.details.name;
+        teamDescription.value = next.details.description;
+        teamCity.value = next.details.city;
+        teamCountry.value = next.details.country;
+        teamLogo.value = next.details.logo;
+        teamJersey.value = next.details.jersey;
+        teamCoach.value = next.details.coach;
+        teamArena.value = next.details.arena;
+        teamGM.value = next.details.gm;
+        loadedTeamUUID.value = next.loadedTeam.uuid;
+        isPublic.value = next.loadedTeam.isPublic;
+        cardUrl.value = next.loadedTeam.cardUrl;
+        teamOwner.value = next.loadedTeam.owner;
     },
 });
 
 const UNDO_TOAST_DURATION = 8000;
 
-// Only the latest removal's toast stays up, so its Undo always means "undo
-// that removal" rather than whatever happens to be on top of the stack.
-let removalToastId: string | number | undefined;
+// Only one toast with an Undo button stays up, and any newer change takes it
+// down, so its Undo always means "undo what this toast describes" rather than
+// whatever happens to be on top of the stack.
+let undoToastId: string | number | undefined;
 
-const dismissRemovalToast = () => {
-    if (removalToastId !== undefined) toast.dismiss(removalToastId);
-    removalToastId = undefined;
+const dismissUndoToast = () => {
+    if (undoToastId !== undefined) toast.dismiss(undoToastId);
+    undoToastId = undefined;
 };
 
-// For changes that aren't undoable yet: undoing past one would silently
-// revert it along with whatever the entry was for.
-const forgetHistory = () => {
-    history.clear();
-    dismissRemovalToast();
+// Called just before every undoable change.
+const recordChange = (action: HistoryAction) => {
+    dismissUndoToast();
+    return history.push(action);
 };
 
-const undoLastChange = () => {
-    const entry = history.undo();
-    if (!entry) return;
-    dismissRemovalToast();
-    toast.success(entry.label);
-};
-
-useUndoShortcut(undoLastChange);
-
-const deletePlayer = (index: number) => {
-    const player = selectedPlayersData.value.get(index);
-    if (!player) return;
-    // A held card that's just been removed has nothing left to drop.
-    if (pickedUpSlot.value === index) cancelPickup();
-
-    const entryId = history.push(`Restored ${player.fullName} to ${slotLabel(index)}`);
-    selectedPlayersData.value.delete(index);
-    cardsFlipped.value.delete(index);
-    selectedPlayersForComparison.value.delete(index);
-
-    dismissRemovalToast();
-    removalToastId = toast.success(`Removed ${player.fullName} from team`, {
+const showUndoToast = (message: string, entryId: number) => {
+    undoToastId = toast.success(message, {
         duration: UNDO_TOAST_DURATION,
         action: {
             label: "Undo",
@@ -240,6 +269,67 @@ const deletePlayer = (index: number) => {
             },
         },
     });
+};
+
+// For moving to a different team (loading, remixing, the first Save):
+// undoing into the previous one would mix the two, or detach the builder
+// from the team it now edits.
+const forgetHistory = () => {
+    history.clear();
+    dismissUndoToast();
+};
+
+// A held card may not be in that slot any more once the roster rewinds.
+const undoLastChange = () => {
+    const entry = history.undo();
+    if (!entry) return;
+    cancelPickup();
+    dismissUndoToast();
+    toast.success(entry.undoLabel);
+};
+
+const redoLastChange = () => {
+    const entry = history.redo();
+    if (!entry) return;
+    cancelPickup();
+    dismissUndoToast();
+    toast.success(entry.redoLabel);
+};
+
+useUndoShortcut(undoLastChange, redoLastChange);
+
+const deletePlayer = (index: number) => {
+    const player = selectedPlayersData.value.get(index);
+    if (!player) return;
+    // A held card that's just been removed has nothing left to drop.
+    if (pickedUpSlot.value === index) cancelPickup();
+
+    const entryId = recordChange({
+        undoLabel: `Restored ${player.fullName} to ${slotLabel(index)}`,
+        redoLabel: `Removed ${player.fullName} from ${slotLabel(index)}`,
+    });
+    selectedPlayersData.value.delete(index);
+    cardsFlipped.value.delete(index);
+    selectedPlayersForComparison.value.delete(index);
+
+    showUndoToast(`Removed ${player.fullName} from team`, entryId);
+};
+
+const swapAction = (from: number, to: number): HistoryAction => {
+    const players = selectedPlayersData.value;
+    const [moving, displaced] = [players.get(from), players.get(to)];
+    if (moving && displaced) {
+        return {
+            undoLabel: `Swapped ${moving.fullName} and ${displaced.fullName} back`,
+            redoLabel: `Swapped ${moving.fullName} and ${displaced.fullName}`,
+        };
+    }
+    // Only one side is filled: a move into an empty slot, dragged either way.
+    const [player, origin, destination] = moving ? [moving, from, to] : [displaced, to, from];
+    return {
+        undoLabel: `Moved ${player.fullName} back to ${slotLabel(origin)}`,
+        redoLabel: `Moved ${player.fullName} to ${slotLabel(destination)}`,
+    };
 };
 
 // Slots are fixed positions, not a list, so a drag is a swap: the two cards
@@ -252,7 +342,7 @@ const swapSlots = (from: number, to: number) => {
     const players = selectedPlayersData.value;
     if (!players.has(from) && !players.has(to)) return;
 
-    forgetHistory();
+    recordChange(swapAction(from, to));
     swapMapEntries(players, from, to);
     swapMapEntries(cardsFlipped.value, from, to);
     swapSetMembers(selectedPlayersForComparison.value, from, to);
@@ -344,9 +434,8 @@ watch(showPlayerComparison, (open) => {
 // (navigating from a loaded team to a bare /teambuilder). Resetting
 // loadedTeamUUID here matters: without it, Save after a clear would still
 // update the previously loaded team instead of creating a new one.
-const clearBuilderState = () => {
+const wipeBuilder = () => {
     cancelPickup();
-    forgetHistory();
     selectedPlayersData.value.clear();
     cardsFlipped.value.clear();
     selectedPlayersForComparison.value.clear();
@@ -365,9 +454,22 @@ const clearBuilderState = () => {
     teamOwner.value = "";
 };
 
+// A route-driven reset is a different team, so its history goes too.
+const clearBuilderState = () => {
+    forgetHistory();
+    wipeBuilder();
+};
+
+// Undoing the clear brings back the roster, every detail and the loaded
+// team, so the next Save updates that team rather than creating a copy.
 const resetTeam = () => {
-    clearBuilderState();
-    toast.success('Team cleared successfully');
+    const entryId = recordChange({
+        undoLabel: "Restored team",
+        redoLabel: "Cleared team",
+        includesDetails: true,
+    });
+    wipeBuilder();
+    showUndoToast("Team cleared successfully", entryId);
 };
 
 const saveTeam = () => {
@@ -531,6 +633,8 @@ const loadTeamFromRoute = async (teamUUID: string) => {
         }
 
         const hydrated = hydrateTeam(response.data);
+        // Anything done while the team was on its way is overwritten here.
+        forgetHistory();
         loadedTeamUUID.value = response.data.teamUUID;
         isPublic.value = response.data.public ?? false;
         cardUrl.value = response.data.cardUrl ?? null;
@@ -547,7 +651,7 @@ const loadTeamFromRoute = async (teamUUID: string) => {
 
         await Promise.all(
             Array.from(hydrated.players.entries()).map(([slot, player]) =>
-                loadPlayerIntoSlot(slot, player),
+                loadPlayerIntoSlot(slot, player).done,
             ),
         );
     } catch (err) {
@@ -573,6 +677,7 @@ const loadRemixFromRoute = async (teamUUID: string) => {
             return;
         }
         const hydrated = hydrateTeam(response.data);
+        forgetHistory();
         teamName.value = remixTitle(hydrated.teamName);
         teamDescription.value = hydrated.teamDescription;
         teamCity.value = hydrated.teamCity;
@@ -584,7 +689,7 @@ const loadRemixFromRoute = async (teamUUID: string) => {
         teamGM.value = hydrated.teamGM;
         await Promise.all(
             Array.from(hydrated.players.entries()).map(([slot, player]) =>
-                loadPlayerIntoSlot(slot, player),
+                loadPlayerIntoSlot(slot, player).done,
             ),
         );
         track("remix_loaded", { sourceTeamUUID: teamUUID });
@@ -653,7 +758,7 @@ watch(
 
             <!-- Roster Section -->
             <RosterSection
-                :selected-players="selectedPlayersData"
+                :selected-players="landedPlayers"
                 :cards-flipped="cardsFlipped"
                 :pending-players="pendingPlayers"
                 :dragging-slot="draggingSlot"

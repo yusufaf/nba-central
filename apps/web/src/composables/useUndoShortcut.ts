@@ -11,18 +11,28 @@ const isTextEditingTarget = (target: EventTarget | null) =>
 const isOverlayOpen = () =>
     document.querySelector("[role='dialog'][data-state='open'], [role='alertdialog'][data-state='open']") !== null;
 
+const isUndo = (event: KeyboardEvent, key: string) => (event.ctrlKey || event.metaKey) && !event.shiftKey && key === "z";
+
+// Ctrl+Y is the Windows/Linux redo; on macOS Cmd+Y is the browser's History,
+// so only Ctrl counts.
+const isRedo = (event: KeyboardEvent, key: string) =>
+    ((event.ctrlKey || event.metaKey) && event.shiftKey && key === "z") ||
+    (event.ctrlKey && !event.metaKey && !event.shiftKey && key === "y");
+
 /**
- * Ctrl+Z (Cmd+Z on macOS) anywhere on the page, except where the browser's
- * own undo should win. Shift+Ctrl+Z is left alone for a future redo.
+ * Ctrl+Z (Cmd+Z on macOS) to undo, Ctrl+Shift+Z / Cmd+Shift+Z / Ctrl+Y to
+ * redo, anywhere on the page except where the browser's own undo should win.
  */
-export const useUndoShortcut = (onUndo: () => void) => {
+export const useUndoShortcut = (onUndo: () => void, onRedo: () => void) => {
     useEventListener(window, "keydown", (event: KeyboardEvent) => {
-        if (event.defaultPrevented || event.isComposing) return;
-        if (!(event.ctrlKey || event.metaKey) || event.shiftKey || event.altKey) return;
-        if (event.key.toLowerCase() !== "z") return;
+        if (event.defaultPrevented || event.isComposing || event.altKey) return;
+        // Shift turns "z" into "Z", and Caps Lock does the same without it.
+        const key = event.key.toLowerCase();
+        const handler = isUndo(event, key) ? onUndo : isRedo(event, key) ? onRedo : undefined;
+        if (!handler) return;
         if (isTextEditingTarget(event.target) || isOverlayOpen()) return;
 
         event.preventDefault();
-        onUndo();
+        handler();
     });
 };
