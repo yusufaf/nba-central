@@ -5,11 +5,6 @@ export interface HistoryAction {
     // and "Removed X from PG".
     undoLabel: string;
     redoLabel: string;
-    // Whether undoing this change rewinds the team details (name, logo,
-    // coach...) as well as the roster. Only Clear Team does until editing
-    // those is undoable itself (#113); before then, restoring them on every
-    // undo would throw away edits made since, which have no entry of their own.
-    includesDetails?: boolean;
     // Consecutive pushes with the same key fold into one entry that keeps the
     // first push's snapshot, so a burst of typing undoes as one step. Only
     // while nothing else has been pushed, undone or redone in between; the
@@ -44,10 +39,16 @@ export const useTeamHistory = <T>({ capture, restore, limit = 50 }: TeamHistoryO
     // between the stacks, since the top entry is then an older change.
     let mergeableId: number | undefined;
 
+    // The entry a push with this key would fold into, if any.
+    const mergeTarget = (mergeKey: string): HistoryEntry<T> | undefined => {
+        const top = undoStack.value.at(-1);
+        return top && top.id === mergeableId && top.mergeKey === mergeKey ? top : undefined;
+    };
+
     const push = (action: HistoryAction): number => {
         redoStack.value = [];
-        const top = undoStack.value.at(-1);
-        if (top && top.id === mergeableId && action.mergeKey !== undefined && top.mergeKey === action.mergeKey) {
+        const top = action.mergeKey === undefined ? undefined : mergeTarget(action.mergeKey);
+        if (top) {
             undoStack.value = [...undoStack.value.slice(0, -1), { ...top, ...action }];
             return top.id;
         }
@@ -84,6 +85,7 @@ export const useTeamHistory = <T>({ capture, restore, limit = 50 }: TeamHistoryO
         canUndo: computed(() => undoStack.value.length > 0),
         canRedo: computed(() => redoStack.value.length > 0),
         push,
+        mergeTarget,
         undo,
         redo,
         isLatest,
@@ -133,14 +135,11 @@ export const snapshotBuilder = <P>(state: BuilderState<P>): BuilderState<P> => (
     loadedTeam: { ...state.loadedTeam },
 });
 
-// The roster comes back exactly as it was. Flip and comparison state is only
-// rewound on slots whose player the undo changes: flipping another card after
-// a removal isn't part of what's being undone.
-export const restoreBuilder = <P>(
-    current: BuilderState<P>,
-    snapshot: BuilderState<P>,
-    { details = false }: { details?: boolean } = {},
-): BuilderState<P> => {
+// The roster and team details come back exactly as they were - every edit to
+// either is an entry of its own, so nothing made since is lost. Flip and
+// comparison state is only rewound on slots whose player the undo changes:
+// flipping another card after a removal isn't part of what's being undone.
+export const restoreBuilder = <P>(current: BuilderState<P>, snapshot: BuilderState<P>): BuilderState<P> => {
     const cardsFlipped = new Map(current.cardsFlipped);
     const comparison = new Set(current.comparison);
     const slots = new Set([...current.players.keys(), ...snapshot.players.keys()]);
@@ -168,7 +167,7 @@ export const restoreBuilder = <P>(
         players: new Map(snapshot.players),
         cardsFlipped,
         comparison,
-        details: details ? { ...snapshot.details } : current.details,
+        details: { ...snapshot.details },
         // isPublic, cardUrl and owner are the server's record of the loaded
         // team, not builder edits - publishing isn't undoable, so they only
         // rewind when the team itself does (undoing Clear Team).
