@@ -334,7 +334,7 @@ const handleSignOut = () => {
                         </div>
                         <Button variant="outline" class="self-start sm:self-auto" @click="handleSignOut">
                             <LogOut class="size-4" />
-                            Log out
+                            Logout
                         </Button>
                     </CardContent>
                 </Card>
