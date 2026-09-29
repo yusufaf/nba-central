@@ -32,10 +32,18 @@ export const FILES_ROUTES: ApiRoute[] = [
 	},
 ];
 
+// The signed-in user's own settings. Both handlers key the item off the
+// authorizer's sub, so these must stay in PRIVATE_ROUTES.
 export const USERS_ROUTES: ApiRoute[] = [
 	{
-		route: `${USERS_PREFIX}/save-data`,
-		lambdaName: "saveUserData",
+		route: `${USERS_PREFIX}/settings/get`,
+		lambdaName: "getUserSettings",
+		methods: [HttpMethod.GET],
+	},
+	{
+		route: `${USERS_PREFIX}/settings/update`,
+		lambdaName: "updateUserSettings",
+		methods: [HttpMethod.PUT],
 	},
 ];
 

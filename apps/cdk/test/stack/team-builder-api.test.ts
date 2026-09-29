@@ -68,8 +68,27 @@ describe("team-builder-api-routes", () => {
 		// route in commit c1e8738, plus the 4 team list/get/update/delete
 		// routes added alongside createTeam, plus /api/feedback/send), plus
 		// the 3 share-loop routes: /api/teams/publish, the public team
-		// reader, and the OG page.
-		expect(publicPaths.size + privatePaths.size).toBe(30);
+		// reader, and the OG page. The Clerk-era /api/users/save-data then
+		// gave way to the two settings routes (get, update): 31.
+		expect(publicPaths.size + privatePaths.size).toBe(31);
+	});
+
+	it("the user settings routes are private, with GET for reads and PUT for writes", () => {
+		for (const route of USERS_ROUTES) {
+			expect(PRIVATE_ROUTES).toContainEqual(route);
+		}
+		const byLambda = Object.fromEntries(
+			USERS_ROUTES.map((r) => [r.lambdaName, r]),
+		);
+		expect(byLambda.getUserSettings).toMatchObject({
+			route: "/api/users/settings/get",
+			methods: ["GET"],
+		});
+		expect(byLambda.updateUserSettings).toMatchObject({
+			route: "/api/users/settings/update",
+			methods: ["PUT"],
+		});
+		expect(USERS_ROUTES.map((r) => r.lambdaName)).not.toContain("saveUserData");
 	});
 
 	it("the feedback route is private", () => {

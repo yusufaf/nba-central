@@ -78,7 +78,8 @@ Entry point: `bin/team-builder-cdk.ts` loads env vars from dotenv.
 - `apiAuthorizer`: JWT verification for all API requests
 - Teams CRUD: `createTeam`, `getTeam`, `listTeams`, `updateTeam`, `deleteTeam`
 - Custom entities CRUD (GM/Coach/Player, each create/list/update/delete): `createCustomGM`/`createCustomCoach`/`createCustomPlayer`, and their `list*`/`update*`/`delete*` counterparts
-- `saveUserData`
+- `getUserSettings`, `updateUserSettings`: the signed-in user's settings map
+  on the users table (allowlisted keys in `apps/cdk/models/user-settings.ts`)
 - S3 multipart upload flow: `initiateMultipartUpload`, `getMultipartSignedUploadUrls`, `completeMultipartUpload`, `deleteFile`
 - `getTeamLogos`: fetch ESPN API for NBA team logos
 - `getPlayers`, `getPlayerStats`: player data + 2K ratings, merged from `players.json` and `player-ratings.json`
@@ -116,11 +117,11 @@ For anything touching the UI, read `apps/web/CLAUDE.md` and
 and the constraints enforced by `pnpm --filter web check:styles`.
 
 **Key Directories** (all under `apps/web/`):
-- `src/views/`: Page components (Home, TeamBuilder, Scores, News, Teams, PublicTeam, Login, SignUp)
+- `src/views/`: Page components (Home, TeamBuilder, Scores, News, Teams, PublicTeam, Settings, Login, SignUp)
 - `src/layouts/`: `PageShell` — the single page container (width + gutters)
 - `src/components/ui/`: vendored shadcn-vue wrappers over reka-ui primitives
 - `src/components/TeamBuilder/`: Feature components (CoachSection, ArenaSection, etc.)
-- `src/network/api.ts`: Axios client with API methods (fileApi, userApi, teamApi, dataApi)
+- `src/network/api.ts`: Axios client with API methods (fileApi, settingsApi, teamApi, dataApi)
 - `src/stores/`: Pinia stores (teams.ts)
 - `src/models/`: TypeScript types (types.ts, api.ts)
 - `src/assets/data/`: Static JSON (coaches, arenas, execs, countries, historicalLogos, historicalJerseys)

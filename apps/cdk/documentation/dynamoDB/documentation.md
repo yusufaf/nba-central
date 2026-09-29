@@ -92,31 +92,41 @@ Access Patterns:
 
 Access Patterns:
 
-- User Data (Clerk Integration)
-    - PK: `user#${clerkUserId}`
+- User metadata (settings)
+    - PK: `userUUID#${userUUID}` — `userUUID` is the Logto `sub` from the
+      authorizer context (`event.requestContext.authorizer.lambda.sub`), never
+      a value from the request
     - SK: `metadata#`
+    - Use: One item per user. `settings` is a single map of flat
+      `<section>.<field>` keys, validated against the allowlist in
+      `models/user-settings.ts` on every write. Read by `getUserSettings`,
+      written by `updateUserSettings`.
     - Example Item:
     ```json
     {
-    	"PK": "user#clerk_123abc",
+    	"PK": "userUUID#abc123",
     	"SK": "metadata#",
-    	"clerkUserId": "clerk_123abc",
-    	"createdAt": "2025-09-27T00:00:00Z",
-    	"updatedAt": "2025-09-27T00:00:00Z"
-    	// Additional user-specific data
+    	"settings": {
+    		"playerStats.statMode": "totals",
+    		"scores.hideScores": true
+    	},
+    	"settingsUpdatedAt": "2026-09-28T00:00:00.000Z",
+    	"createdAt": "2026-09-28T00:00:00.000Z"
     }
     ```
 
-    - Use: Store additional user data beyond Clerk's basic auth data
+    - `settingsUpdatedAt` is absent until the user's first write; the web
+      client reads that as "never synced" and migrates its localStorage
+      preferences up once.
+    - Writes set only the patched keys (`SET #settings.#key = :value`,
+      conditioned on the map existing), so concurrent saves of different
+      fields from two devices don't overwrite each other. The first write
+      creates the map instead (`attribute_not_exists(settings)`).
     - Common Queries:
         ```typescript
-        // Get user data
-        QueryInput = {
+        // Get a user's settings
+        GetItemInput = {
         	TableName: "team-builder-development-users",
-        	KeyConditionExpression: "PK = :pk AND SK = :sk",
-        	ExpressionAttributeValues: {
-        		":pk": "user#" + clerkUserId,
-        		":sk": "metadata#",
-        	},
+        	Key: { PK: "userUUID#" + userUUID, SK: "metadata#" },
         };
         ```
