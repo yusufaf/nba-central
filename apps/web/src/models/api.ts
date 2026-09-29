@@ -1,4 +1,5 @@
 import type { NBA2KRating, Player, RatingSource } from './types';
+import type { SettingsMap } from '@/constants/settings';
 
 // #region File API Types
 export interface InitiateMultipartUploadPayload {
@@ -55,18 +56,16 @@ export interface DeleteFileResponse {
 
 //#region Users API Types
 
-// The saveUserData Lambda's own body only destructures `clerkUserId` off the
-// payload and stores everything else in `...userData` as-is, so the index
-// signature genuinely is an open bag - `unknown` rather than a named shape.
-export interface SaveUserDataPayload {
-    clerkUserId: string;
-    [key: string]: unknown;
+// Mirrors apps/cdk/models/api/user-settings-api.ts.
+export interface UserSettingsData {
+    settings: SettingsMap;
+    // null until the account's first write - the cue to migrate this
+    // browser's localStorage preferences up.
+    updatedAt: string | null;
 }
 
-export interface SaveUserDataResponse {
-    message: string;
-    userData: Record<string, unknown>;
-}
+export type GetUserSettingsResponse = ApiResult<UserSettingsData>;
+export type UpdateUserSettingsResponse = ApiResult<UserSettingsData>;
 // #endregion
 
 //#region Team API Types

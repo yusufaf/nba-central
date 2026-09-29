@@ -9,6 +9,9 @@ import PublicTeam from '@/views/PublicTeam.vue';
 import Login from '@/views/Login.vue';
 import SignUp from '@/views/SignUp.vue';
 import Callback from '@/views/Callback.vue';
+import Settings from '@/views/Settings.vue';
+import { useLogto } from '@logto/vue';
+import { requireSignedIn } from './guards';
 
 const router = createRouter({
     history: createWebHistory(import.meta.env.BASE_URL),
@@ -61,11 +64,20 @@ const router = createRouter({
             component: SignUp,
         },
         {
+            path: '/settings',
+            name: 'settings',
+            component: Settings,
+            meta: { requiresAuth: true },
+        },
+        {
             path: '/callback',
             name: 'callback',
             component: Callback,
         },
     ],
 });
+
+// Guards run inside the app's injection context, so useLogto() works here.
+router.beforeEach((to) => (to.meta.requiresAuth ? requireSignedIn(useLogto()) : true));
 
 export default router;

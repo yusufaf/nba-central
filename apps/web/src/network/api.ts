@@ -8,8 +8,8 @@ import type {
     GetMultipartSignedUrlsResponse,
     DeleteFilePayload,
     DeleteFileResponse,
-    SaveUserDataPayload,
-    SaveUserDataResponse,
+    GetUserSettingsResponse,
+    UpdateUserSettingsResponse,
     SaveTeamPayload,
     UpdateTeamPayload,
     CreateTeamResponse,
@@ -28,6 +28,7 @@ import type {
     GetPlayersResponse,
     GetPlayerStatsResponse,
 } from '@/models/api';
+import type { SettingsMap } from '@/constants/settings';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '';
 
@@ -94,12 +95,19 @@ export const fileApi = {
     },
 };
 
-// Users API - matches USERS_ROUTES in CDK
-export const userApi = {
-    saveUserData: async (
-        payload: SaveUserDataPayload,
-    ): Promise<SaveUserDataResponse> => {
-        const response = await api.post('/api/users/save-data', payload);
+// Settings API - matches USERS_ROUTES in CDK. The user is whoever the
+// access token says; there is no user id to send.
+export const settingsApi = {
+    get: async (): Promise<GetUserSettingsResponse> => {
+        const response = await api.get('/api/users/settings/get');
+        return response.data;
+    },
+    update: async (
+        settings: SettingsMap,
+    ): Promise<UpdateUserSettingsResponse> => {
+        const response = await api.put('/api/users/settings/update', {
+            settings,
+        });
         return response.data;
     },
 };

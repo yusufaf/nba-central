@@ -1,25 +1,17 @@
 import { useStorage } from '@vueuse/core';
-import { VIEWS } from '@/constants/constants';
+import {
+  PREFERENCE_SECTIONS,
+  type ScoresPreferences,
+} from '@/constants/preferences';
+import { useSyncedPreferences } from '@/composables/useSettingsSync';
 
-export interface ScoresPreferences {
-  conferenceFilter: string;
-  selectedView: string;
-  useShortNames: boolean;
-  hideScores: boolean;
-  hideFinishedGames: boolean;
-}
+export type { ScoresPreferences };
 
-const DEFAULT_PREFERENCES: ScoresPreferences = {
-  conferenceFilter: 'ALL',
-  selectedView: VIEWS.DEFAULT,
-  useShortNames: true,
-  hideScores: false,
-  hideFinishedGames: false,
-};
+const { storageKey, defaults: DEFAULT_PREFERENCES } = PREFERENCE_SECTIONS.scores;
 
 export const useScoresPreferences = () => {
-  const preferences = useStorage<ScoresPreferences>(
-    'nba-scores-preferences',
+  const localPreferences = useStorage<ScoresPreferences>(
+    storageKey,
     // A factory, not the object itself — useStorage assigns this value
     // directly as the ref's initial contents when storage is empty, so a
     // shared object literal here would let one instance's mutations leak
@@ -30,6 +22,9 @@ export const useScoresPreferences = () => {
     // `undefined` for every key added after they first saved them.
     { mergeDefaults: true }
   );
+  // Signed out this is localPreferences, exactly as before; signed in it's
+  // the server's copy, saved field by field.
+  const preferences = useSyncedPreferences('scores', localPreferences);
 
   const resetPreferences = () => {
     preferences.value = { ...DEFAULT_PREFERENCES };

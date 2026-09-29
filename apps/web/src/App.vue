@@ -12,6 +12,7 @@ import {
     consumeSessionExpiredFlag,
     SESSION_EXPIRED_MESSAGE,
 } from '@/composables/useSessionExpiry';
+import { useAccountSession } from '@/composables/useCurrentUser';
 
 const teamsStore = useTeamsStore();
 const feedbackOpen = ref(false);
@@ -20,6 +21,7 @@ const feedbackOpen = ref(false);
 // module can't call it directly — wire the real getter in here instead.
 const { getApiAccessToken } = useSessionExpiry();
 setAccessTokenGetter(getApiAccessToken);
+useAccountSession();
 
 onMounted(async () => {
     if (consumeSessionExpiredFlag()) {
