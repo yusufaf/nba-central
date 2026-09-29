@@ -110,6 +110,17 @@ export const settingsApi = {
         });
         return response.data;
     },
+    // The one-time upload of local preferences. Only writes if the account
+    // has no settings yet, and returns whatever the server holds after.
+    initialize: async (
+        settings: SettingsMap,
+    ): Promise<UpdateUserSettingsResponse> => {
+        const response = await api.put('/api/users/settings/update', {
+            settings,
+            initialize: true,
+        });
+        return response.data;
+    },
 };
 
 // Teams API - matches TEAMS_ROUTES in CDK

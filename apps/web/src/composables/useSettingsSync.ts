@@ -21,8 +21,10 @@ import {
  * changed), and a failed save puts the field back and says so.
  *
  * The first time an account is seen (the server has never stored settings
- * for it), whatever this browser has locally is uploaded, once. That upload
- * is what creates the server copy, so no other device repeats it.
+ * for it), whatever this browser has locally is uploaded, once. The upload
+ * is create-only on the server, so if two devices sign in for the first
+ * time together, the second gets the first one's settings back instead of
+ * merging its own in. Once the copy exists, no device uploads again.
  *
  * App.vue drives start()/stop() from the Logto session, the same way it
  * wires the access token into api.ts; nothing here reads auth itself, so the
@@ -78,8 +80,13 @@ let loading: Promise<void> | null = null;
 // Bumped by stop(), so a load or save that finishes after sign-out (or
 // after a different user signed in) is dropped instead of applied.
 let generation = 0;
-let requestCounter = 0;
-const latestRequest: Partial<Record<SettingKey, number>> = {};
+// Keys with a save in flight. A newer change to one of them waits until
+// that save settles: two parallel requests for one field can reach the
+// server in either order, and the older value would win.
+const inFlight = new Set<SettingKey>();
+// Set when the user is signed in but who they are couldn't be read, so
+// retry() can try that again instead of doing nothing.
+let reconnect: (() => Promise<void>) | null = null;
 
 // In place, so an object a caller already holds stays the live one.
 const applyServerSettings = (settings: SettingsMap) => {
@@ -126,7 +133,9 @@ const load = async (run: number) => {
         let { settings } = response.data;
 
         if (response.data.updatedAt === null) {
-            const migrated = await settingsApi.update(readLocalSettings());
+            // Create-only on the server: if another device signed in first
+            // and already uploaded, this returns its settings unchanged.
+            const migrated = await settingsApi.initialize(readLocalSettings());
             if (!migrated.success) throw new Error(migrated.error);
             settings = migrated.data.settings;
         }
@@ -143,13 +152,31 @@ const load = async (run: number) => {
     }
 };
 
+// Sends every field that differs from what was last sent, skipping those
+// still waiting on an earlier save; each save calls this again as it settles.
+const flush = () => {
+    if (state.status !== 'ready') return;
+
+    const current = snapshot();
+    const patch: SettingsMap = {};
+    for (const key of SETTING_KEYS) {
+        if (current[key] === sent[key] || inFlight.has(key)) continue;
+        if (isValidSetting(key, current[key])) {
+            patch[key] = current[key];
+        } else {
+            // e.g. a ToggleGroup emitting '' on deselect.
+            writeField(key, sent[key]);
+        }
+    }
+    if (Object.keys(patch).length > 0) void save(patch);
+};
+
 const save = async (patch: SettingsMap) => {
     const keys = Object.keys(patch) as SettingKey[];
-    const request = ++requestCounter;
     const run = generation;
     for (const key of keys) {
         sent[key] = patch[key]!;
-        latestRequest[key] = request;
+        inFlight.add(key);
         state.saving[key] = true;
     }
 
@@ -161,40 +188,26 @@ const save = async (patch: SettingsMap) => {
     } catch (error) {
         if (run !== generation) return;
         console.error('Failed to save settings:', error);
-        // A newer change to the same field is already on its way; this
-        // failure is stale and must not undo it.
-        const reverted = keys.filter((key) => latestRequest[key] === request);
-        for (const key of reverted) {
-            sent[key] = confirmed[key];
-            writeField(key, confirmed[key]);
-        }
+        // A field changed again while this was in flight keeps its newer
+        // value, which flush() below sends. The rest go back.
+        const reverted = keys.filter((key) => readField(key) === patch[key]);
+        for (const key of keys) sent[key] = confirmed[key];
+        for (const key of reverted) writeField(key, confirmed[key]);
         if (reverted.length > 0) {
             toast.error("Couldn't save your settings. The change was undone.");
         }
     } finally {
         if (run === generation) {
             for (const key of keys) {
-                if (latestRequest[key] === request) delete state.saving[key];
+                inFlight.delete(key);
+                delete state.saving[key];
             }
+            flush();
         }
     }
 };
 
-watch(snapshot, (current) => {
-    if (state.status !== 'ready') return;
-
-    const patch: SettingsMap = {};
-    for (const key of SETTING_KEYS) {
-        if (current[key] === sent[key]) continue;
-        if (isValidSetting(key, current[key])) {
-            patch[key] = current[key];
-        } else {
-            // e.g. a ToggleGroup emitting '' on deselect.
-            writeField(key, sent[key]);
-        }
-    }
-    if (Object.keys(patch).length > 0) void save(patch);
-});
+watch(snapshot, flush);
 
 export const settingsSync = {
     start(userId: string): Promise<void> {
@@ -209,13 +222,27 @@ export const settingsSync = {
         return loading;
     },
 
+    /**
+     * Signed in, but whose account it is couldn't be read (e.g. the access
+     * token couldn't be refreshed). Shows as a load error, and retry()
+     * calls `tryAgain` to read it again.
+     */
+    unavailable(tryAgain: () => Promise<void>) {
+        settingsSync.stop();
+        state.status = 'error';
+        reconnect = tryAgain;
+    },
+
     retry(): Promise<void> {
-        return state.userId ? settingsSync.start(state.userId) : Promise.resolve();
+        if (state.userId) return settingsSync.start(state.userId);
+        return reconnect ? reconnect() : Promise.resolve();
     },
 
     stop() {
         generation++;
         loading = null;
+        reconnect = null;
+        inFlight.clear();
         state.status = 'signed-out';
         state.userId = null;
         state.saving = {};
