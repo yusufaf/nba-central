@@ -6,9 +6,23 @@ import { ROUTES } from '@/constants/constants';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { Separator } from '@/components/ui/separator';
-import { Menu } from 'lucide-vue-next';
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuLabel,
+    DropdownMenuSeparator,
+    DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { ChevronDown, CircleUser, LogOut, Menu, Settings } from 'lucide-vue-next';
+import { useCurrentUser } from '@/composables/useCurrentUser';
 
 const { isAuthenticated, signOut } = useLogto();
+const { currentUser } = useCurrentUser();
+
+// The username comes from the access token's claims, which resolve a
+// moment after isAuthenticated flips.
+const displayName = computed(() => currentUser.value?.username ?? 'Account');
 
 // Login is rendered separately below so it can swap for Logout once
 // isAuthenticated flips — the plain route loop has no notion of auth state.
@@ -43,7 +57,38 @@ function handleSignOut() {
                     <RouterLink v-if="!isAuthenticated" class="login" to="/login">
                         Login
                     </RouterLink>
-                    <button v-else class="login" @click="handleSignOut">Logout</button>
+                    <DropdownMenu v-else>
+                        <DropdownMenuTrigger as-child>
+                            <button
+                                type="button"
+                                class="login user-menu-trigger"
+                                data-testid="user-menu-trigger"
+                            >
+                                <CircleUser class="size-5" />
+                                <span class="max-w-40 truncate">{{ displayName }}</span>
+                                <ChevronDown class="size-4" />
+                            </button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end" class="min-w-52">
+                            <DropdownMenuLabel class="flex flex-col gap-0.5">
+                                <span class="text-[0.6875rem] font-bold uppercase tracking-[0.06em] text-foreground/50">
+                                    Signed in as
+                                </span>
+                                <span class="truncate">{{ displayName }}</span>
+                            </DropdownMenuLabel>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem as-child>
+                                <RouterLink to="/settings">
+                                    <Settings class="size-4" />
+                                    Settings
+                                </RouterLink>
+                            </DropdownMenuItem>
+                            <DropdownMenuItem @select="handleSignOut">
+                                <LogOut class="size-4" />
+                                Logout
+                            </DropdownMenuItem>
+                        </DropdownMenuContent>
+                    </DropdownMenu>
                 </ul>
             </nav>
 
@@ -72,9 +117,21 @@ function handleSignOut() {
                         >
                             Login
                         </RouterLink>
-                        <button v-else class="text-lg font-semibold login text-left" @click="handleSignOut">
-                            Logout
-                        </button>
+                        <template v-else>
+                            <div class="flex min-w-0 flex-col gap-0.5">
+                                <span class="text-[0.6875rem] font-bold uppercase tracking-[0.06em] opacity-60">
+                                    Signed in as
+                                </span>
+                                <span class="truncate text-lg font-semibold">{{ displayName }}</span>
+                            </div>
+                            <RouterLink class="text-lg font-semibold" to="/settings">
+                                Settings
+                            </RouterLink>
+                            <Separator />
+                            <button class="text-lg font-semibold login text-left" @click="handleSignOut">
+                                Logout
+                            </button>
+                        </template>
                     </nav>
                 </SheetContent>
             </Sheet>
@@ -116,6 +173,12 @@ nav button {
 nav a:hover,
 nav button:hover {
     opacity: 0.8;
+}
+
+.user-menu-trigger {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
 }
 
 .login {

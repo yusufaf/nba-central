@@ -2,6 +2,7 @@
 interface Props {
     checked: boolean;
     id?: string;
+    disabled?: boolean;
 }
 
 const props = defineProps<Props>();
@@ -22,6 +23,7 @@ const handleChange = (event: Event) => {
             type="checkbox"
             :id="props.id"
             :checked="props.checked"
+            :disabled="props.disabled"
             @change="handleChange"
             class="switch-input"
         />
