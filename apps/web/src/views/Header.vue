@@ -47,7 +47,7 @@ function handleSignOut() {
             </div>
 
             <!-- Desktop Nav -->
-            <nav class="md:flex flex-1 ml-8">
+            <nav class="desktop-nav hidden md:flex flex-1 ml-8">
                 <ul>
                     <template v-for="route in navRoutes" :key="route.id">
                         <RouterLink :class="route?.class" :to="route.path">
@@ -100,7 +100,7 @@ function handleSignOut() {
                     </Button>
                 </SheetTrigger>
                 <SheetContent>
-                    <nav class="flex flex-col gap-4 mt-8">
+                    <nav class="mobile-nav flex flex-col gap-4 mt-8">
                         <template v-for="route in navRoutes" :key="route.id">
                             <RouterLink
                                 :class="['text-lg font-semibold', route?.class]"
@@ -140,15 +140,18 @@ function handleSignOut() {
 </template>
 
 <style scoped>
-nav {
+/* These used to target every <nav>, including the one in the mobile Sheet,
+   which drew its links in the header's dark text on the Sheet's dark
+   background and squeezed it to 100vw - 18rem. */
+.desktop-nav {
     width: calc(100vw - 18rem);
 }
 
-nav a.router-link-exact-active {
+.desktop-nav a.router-link-exact-active {
     border-bottom: 0.2rem solid hsl(var(--primary-foreground));
 }
 
-nav a.router-link-exact-active:hover {
+.desktop-nav a.router-link-exact-active:hover {
     background-color: transparent;
 }
 
@@ -158,8 +161,8 @@ ul {
     gap: 2rem;
 }
 
-nav a,
-nav button {
+.desktop-nav a,
+.desktop-nav button {
     font-weight: 600;
     text-decoration: none;
     font-size: 1.15rem;
@@ -170,9 +173,18 @@ nav button {
     cursor: pointer;
 }
 
-nav a:hover,
-nav button:hover {
+.desktop-nav a:hover,
+.desktop-nav button:hover {
     opacity: 0.8;
+}
+
+.mobile-nav a,
+.mobile-nav button {
+    color: hsl(var(--foreground));
+}
+
+.mobile-nav a.router-link-exact-active {
+    color: hsl(var(--primary));
 }
 
 .user-menu-trigger {
@@ -181,7 +193,7 @@ nav button:hover {
     gap: 0.375rem;
 }
 
-.login {
+.desktop-nav .login {
     margin-left: auto;
     margin-right: 1rem;
 }
