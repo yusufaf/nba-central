@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, watch, toRaw } from "vue";
+import { ref, computed, watch, toRaw, type Ref } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { toast } from 'vue-sonner';
 import axios from 'axios';
@@ -27,6 +27,7 @@ import {
     type HistoryAction,
 } from "@/composables/useTeamHistory";
 import { useUndoShortcut } from "@/composables/useUndoShortcut";
+import { useDetailEdits, type DetailField } from "@/composables/useDetailEdits";
 import { usePendingPlayers } from "@/composables/usePendingPlayers";
 import { dataApi, teamApi } from "@/network/api";
 import { useUserTeamsStore } from "@/stores/userTeams";
@@ -64,6 +65,18 @@ const teamJersey = ref<string>("");
 const teamCoach = ref<any>(null);
 const teamArena = ref<any>(null);
 const teamGM = ref<any>(null);
+
+const detailRefs: Record<DetailField, Ref<unknown>> = {
+    name: teamName,
+    description: teamDescription,
+    city: teamCity,
+    country: teamCountry,
+    logo: teamLogo,
+    jersey: teamJersey,
+    coach: teamCoach,
+    arena: teamArena,
+    gm: teamGM,
+};
 
 const showPlayerDialog = ref<boolean>(false);
 const showCoachDrawer = ref<boolean>(false);
@@ -220,8 +233,8 @@ const builderState = (): BuilderState => ({
 
 const history = useTeamHistory<BuilderState>({
     capture: () => snapshotBuilder(builderState()),
-    restore: (snapshot, action) => {
-        const next = restoreBuilder(builderState(), snapshot, { details: action.includesDetails });
+    restore: (snapshot) => {
+        const next = restoreBuilder(builderState(), snapshot);
         selectedPlayersData.value = next.players;
         cardsFlipped.value = next.cardsFlipped;
         selectedPlayersForComparison.value = next.comparison;
@@ -297,6 +310,18 @@ const redoLastChange = () => {
 };
 
 useUndoShortcut(undoLastChange, redoLastChange);
+
+// Every edit to the team's details from the template goes through here;
+// loading a team or restoring history writes the refs directly instead, so
+// it is never recorded.
+const { edit: editDetail } = useDetailEdits({
+    details: () => builderState().details,
+    apply: (field, value) => {
+        detailRefs[field].value = value;
+    },
+    record: recordChange,
+    baseFor: (mergeKey) => history.mergeTarget(mergeKey)?.snapshot.details,
+});
 
 const deletePlayer = (index: number) => {
     const player = selectedPlayersData.value.get(index);
@@ -466,7 +491,6 @@ const resetTeam = () => {
     const entryId = recordChange({
         undoLabel: "Restored team",
         redoLabel: "Cleared team",
-        includesDetails: true,
     });
     wipeBuilder();
     showUndoToast("Team cleared successfully", entryId);
@@ -736,12 +760,18 @@ watch(
             <div class="header-card">
                 <TeamBuilderHeader
                     v-model:headerExpanded="headerExpanded"
-                    v-model:teamName="teamName"
-                    v-model:teamDescription="teamDescription"
-                    v-model:teamCity="teamCity"
-                    v-model:teamCountry="teamCountry"
-                    v-model:teamLogo="teamLogo"
-                    v-model:teamJersey="teamJersey"
+                    :teamName="teamName"
+                    @update:teamName="editDetail('name', $event)"
+                    :teamDescription="teamDescription"
+                    @update:teamDescription="editDetail('description', $event)"
+                    :teamCity="teamCity"
+                    @update:teamCity="editDetail('city', $event)"
+                    :teamCountry="teamCountry"
+                    @update:teamCountry="editDetail('country', $event)"
+                    :teamLogo="teamLogo"
+                    @update:teamLogo="editDetail('logo', $event)"
+                    :teamJersey="teamJersey"
+                    @update:teamJersey="editDetail('jersey', $event)"
                     v-model:drawerSide="selectedDrawerSide"
                     v-model:selectedView="selectedView"
                     :team-uuid="loadedTeamUUID"
@@ -784,17 +814,20 @@ watch(
                 <h2 class="section-title">Team Staff & Facilities</h2>
                 <div class="staff-grid">
                     <CoachSection
-                        v-model:teamCoach="teamCoach"
+                        :teamCoach="teamCoach"
+                        @update:teamCoach="editDetail('coach', $event)"
                         v-model:showCoachDrawer="showCoachDrawer"
                         :selectedDrawerSide="selectedDrawerSide"
                     />
                     <ArenaSection
-                        v-model:teamArena="teamArena"
+                        :teamArena="teamArena"
+                        @update:teamArena="editDetail('arena', $event)"
                         v-model:showArenaDrawer="showArenaDrawer"
                         :selectedDrawerSide="selectedDrawerSide"
                     />
                     <GMSection
-                        v-model:teamGM="teamGM"
+                        :teamGM="teamGM"
+                        @update:teamGM="editDetail('gm', $event)"
                         v-model:showGMDrawer="showGMDrawer"
                         :selectedDrawerSide="selectedDrawerSide"
                     />

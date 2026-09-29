@@ -51,11 +51,11 @@ describe("useTeamHistory", () => {
     it("hands restore the action being undone", () => {
         const { state, push, undo, restoredWith } = setup();
 
-        push(action("clear", { includesDetails: true }));
+        push(action("clear", { mergeKey: "clear" }));
         state.roster = [];
         undo();
 
-        expect(restoredWith).toEqual([expect.objectContaining({ includesDetails: true })]);
+        expect(restoredWith).toEqual([expect.objectContaining({ undoLabel: "Undid clear", mergeKey: "clear" })]);
     });
 
     it("does nothing when undoing an empty stack", () => {
@@ -228,13 +228,13 @@ describe("useTeamHistory", () => {
         it("hands restore the action being redone", () => {
             const { state, push, undo, redo, restoredWith } = setup();
 
-            push(action("clear", { includesDetails: true }));
+            push(action("clear"));
             state.roster = [];
             undo();
             redo();
 
             expect(restoredWith).toHaveLength(2);
-            expect(restoredWith[1]).toMatchObject({ redoLabel: "Redid clear", includesDetails: true });
+            expect(restoredWith[1]).toMatchObject({ redoLabel: "Redid clear" });
         });
     });
 
@@ -293,6 +293,31 @@ describe("useTeamHistory", () => {
 
             undo();
             expect(state.roster).toEqual(["D"]);
+        });
+
+        // What the next push would fold into, so a caller can label the whole
+        // burst from where it started.
+        describe("mergeTarget", () => {
+            it("is the entry a push with that key would fold into", () => {
+                const { state, push, mergeTarget } = setup();
+
+                const id = push(action("rename", { mergeKey: "name" }));
+                state.roster = ["D"];
+
+                expect(mergeTarget("name")).toMatchObject({ id, snapshot: ["Duckworth", "Lawson"] });
+                expect(mergeTarget("city")).toBeUndefined();
+            });
+
+            it("is nothing once the entry can no longer be merged into", () => {
+                const { state, push, undo, redo, mergeTarget } = setup();
+
+                push(action("rename", { mergeKey: "name" }));
+                state.roster = ["D"];
+                undo();
+                redo();
+
+                expect(mergeTarget("name")).toBeUndefined();
+            });
         });
     });
 });
@@ -428,15 +453,17 @@ describe("snapshotBuilder / restoreBuilder", () => {
         expect([...next.comparison]).toEqual([1]);
     });
 
-    it("leaves team details alone unless the entry covers them", () => {
+    it("brings back the team details, keeping the coach object", () => {
         const state = builder();
         const snapshot = snapshotBuilder(state);
-        state.players.delete(6);
-        // Typed after the removal; not undoable yet, so an undo must keep it.
         state.details.name = "Blazers";
+        state.details.coach = { name: "Phil Jackson" };
 
-        expect(restoreBuilder(state, snapshot).details.name).toBe("Blazers");
-        expect(restoreBuilder(state, snapshot, { details: true }).details.name).toBe("Rip City");
+        const next = restoreBuilder(state, snapshot);
+
+        expect(next.details.name).toBe("Rip City");
+        expect(next.details.coach).toBe(snapshot.details.coach);
+        expect([...next.players.entries()]).toEqual([...state.players.entries()]);
     });
 
     describe("undoing Clear Team on a saved team", () => {
@@ -444,7 +471,7 @@ describe("snapshotBuilder / restoreBuilder", () => {
             const before = builder();
             const snapshot = snapshotBuilder(before);
 
-            const next = restoreBuilder(cleared(), snapshot, { details: true });
+            const next = restoreBuilder(cleared(), snapshot);
 
             expect([...next.players.entries()]).toEqual([...before.players.entries()]);
             expect(next.details).toEqual(before.details);
@@ -462,7 +489,7 @@ describe("snapshotBuilder / restoreBuilder", () => {
             const before = builder();
             const afterClear = snapshotBuilder(cleared());
 
-            const next = restoreBuilder(before, afterClear, { details: true });
+            const next = restoreBuilder(before, afterClear);
 
             expect(next.players.size).toBe(0);
             expect(next.details.name).toBe("");
