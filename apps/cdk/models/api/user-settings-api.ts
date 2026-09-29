@@ -3,6 +3,10 @@ import { SettingsMap } from "../user-settings";
 
 export interface UpdateUserSettingsPayload {
 	settings: SettingsMap;
+	// Only create the map, never patch one that exists: the web client's
+	// one-time upload of local values. If the map already exists, nothing is
+	// written and the stored settings come back.
+	initialize?: boolean;
 }
 
 export interface UserSettingsData {

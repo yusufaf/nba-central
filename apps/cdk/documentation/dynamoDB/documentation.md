@@ -117,7 +117,9 @@ Access Patterns:
 
     - `settingsUpdatedAt` is absent until the user's first write; the web
       client reads that as "never synced" and migrates its localStorage
-      preferences up once.
+      preferences up once, with `initialize: true`: that write only creates
+      the map (`attribute_not_exists(settings)`), and if another device got
+      there first it writes nothing and returns the stored settings.
     - Writes set only the patched keys (`SET #settings.#key = :value`,
       conditioned on the map existing), so concurrent saves of different
       fields from two devices don't overwrite each other. The first write

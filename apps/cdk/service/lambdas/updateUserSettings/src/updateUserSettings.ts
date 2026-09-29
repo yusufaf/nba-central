@@ -4,7 +4,11 @@ import {
 	Handler,
 } from "aws-lambda";
 import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
-import { DynamoDBDocumentClient, UpdateCommand } from "@aws-sdk/lib-dynamodb";
+import {
+	DynamoDBDocumentClient,
+	GetCommand,
+	UpdateCommand,
+} from "@aws-sdk/lib-dynamodb";
 import { AuthorizerContext } from "models/auth";
 import { UpdateUserSettingsResponse } from "models/api/user-settings-api";
 import {
@@ -80,6 +84,25 @@ const writePatch = async (userUUID: string, patch: SettingsMap) => {
 	return updateKeys(userUUID, patch, timestamp);
 };
 
+// The client's one-time upload of its localStorage values. Two devices
+// signing in for the first time together must not merge their uploads, so
+// only the first one writes; the other gets back what that one stored.
+const initializeMap = async (userUUID: string, patch: SettingsMap) => {
+	try {
+		return await createMap(userUUID, patch, new Date().toISOString());
+	} catch (err) {
+		if (!isConditionFailure(err)) throw err;
+	}
+	const { Item } = await docClient.send(
+		new GetCommand({
+			TableName: usersTable,
+			Key: settingsItemKey(userUUID),
+			ProjectionExpression: "settings, settingsUpdatedAt",
+		}),
+	);
+	return { Attributes: Item };
+};
+
 const badRequest = (error: string): APIGatewayProxyResultV2 => {
 	const response: UpdateUserSettingsResponse = { success: false, error };
 	return { statusCode: 400, body: JSON.stringify(response) };
@@ -112,15 +135,22 @@ export const handler: Handler = async (
 		return badRequest("Invalid request body");
 	}
 
-	const validation = validateSettingsPatch(
-		(body as { settings?: unknown }).settings,
-	);
+	const { settings, initialize = false } = body as {
+		settings?: unknown;
+		initialize?: unknown;
+	};
+	if (typeof initialize !== "boolean") {
+		return badRequest("initialize must be a boolean");
+	}
+	const validation = validateSettingsPatch(settings);
 	if (!validation.valid) {
 		return badRequest(validation.error);
 	}
 
 	try {
-		const { Attributes } = await writePatch(userUUID, validation.patch);
+		const { Attributes } = initialize
+			? await initializeMap(userUUID, validation.patch)
+			: await writePatch(userUUID, validation.patch);
 
 		const response: UpdateUserSettingsResponse = {
 			success: true,
