@@ -6,6 +6,7 @@ vi.mock('@/network/api', () => ({
     settingsApi: {
         get: vi.fn(),
         update: vi.fn(),
+        initialize: vi.fn(),
     },
 }));
 vi.mock('vue-sonner', () => ({ toast: { error: vi.fn() } }));
@@ -25,11 +26,15 @@ const serverHas = (settings: Record<string, unknown>, updatedAt: string | null =
         data: { settings, updatedAt },
     });
 
-const updateSucceeds = () =>
-    vi.mocked(settingsApi.update).mockImplementation(async (settings) => ({
-        success: true,
-        data: { settings, updatedAt: '2026-09-28T00:00:00.000Z' },
-    }));
+const echo = async (settings: Record<string, unknown>) => ({
+    success: true as const,
+    data: { settings, updatedAt: '2026-09-28T00:00:00.000Z' },
+});
+
+const updateSucceeds = () => {
+    vi.mocked(settingsApi.update).mockImplementation(echo);
+    vi.mocked(settingsApi.initialize).mockImplementation(echo);
+};
 
 const deferred = <T>() => {
     let resolve!: (value: T) => void;
@@ -52,6 +57,7 @@ beforeEach(() => {
     vi.clearAllMocks();
     vi.mocked(settingsApi.get).mockReset();
     vi.mocked(settingsApi.update).mockReset();
+    vi.mocked(settingsApi.initialize).mockReset();
 });
 
 describe('signed out', () => {
@@ -227,28 +233,91 @@ describe('a failed save', () => {
         expect(preferences.value.conferenceFilter).toBe('WEST');
     });
 
-    it('does not undo a newer change to the same field', async () => {
+    it('keeps a newer change when an older save of the field fails', async () => {
         serverHas({});
         await settingsSync.start('user-1');
         const first = deferred<UpdateResult>();
-        const second = deferred<UpdateResult>();
-        vi.mocked(settingsApi.update)
-            .mockReturnValueOnce(first.promise)
-            .mockReturnValueOnce(second.promise);
+        vi.mocked(settingsApi.update).mockReturnValueOnce(first.promise);
 
         const { preferences } = useScoresPreferences();
         preferences.value.hideScores = true;
         await flushPromises();
         preferences.value.hideScores = false;
         await flushPromises();
-        expect(settingsApi.update).toHaveBeenCalledTimes(2);
 
         first.reject(new Error('slow and failed'));
-        second.resolve({ success: true, data: { settings: {}, updatedAt: 'x' } });
         await flushPromises();
 
+        // The server never took `true`, so `false` already matches it.
+        expect(settingsApi.update).toHaveBeenCalledTimes(1);
         expect(preferences.value.hideScores).toBe(false);
         expect(toast.error).not.toHaveBeenCalled();
+    });
+});
+
+describe('saving one field twice in a row', () => {
+    it('waits for the first save before sending the second, so they arrive in order', async () => {
+        serverHas({});
+        await settingsSync.start('user-1');
+        const first = deferred<UpdateResult>();
+        vi.mocked(settingsApi.update)
+            .mockReturnValueOnce(first.promise)
+            .mockImplementation(echo);
+
+        const { preferences } = useScoresPreferences();
+        preferences.value.hideScores = true;
+        await flushPromises();
+        preferences.value.hideScores = false;
+        await flushPromises();
+        expect(settingsApi.update).toHaveBeenCalledTimes(1);
+
+        first.resolve({ success: true, data: { settings: {}, updatedAt: 'x' } });
+        await flushPromises();
+
+        expect(settingsApi.update).toHaveBeenCalledTimes(2);
+        expect(settingsApi.update).toHaveBeenLastCalledWith({ 'scores.hideScores': false });
+        expect(preferences.value.hideScores).toBe(false);
+    });
+
+    it('sends only the latest of several queued changes', async () => {
+        serverHas({});
+        await settingsSync.start('user-1');
+        const first = deferred<UpdateResult>();
+        vi.mocked(settingsApi.update)
+            .mockReturnValueOnce(first.promise)
+            .mockImplementation(echo);
+
+        const { preferences } = useScoresPreferences();
+        preferences.value.conferenceFilter = 'EAST';
+        await flushPromises();
+        preferences.value.conferenceFilter = 'WEST';
+        preferences.value.conferenceFilter = 'CROSS';
+        await flushPromises();
+
+        first.resolve({ success: true, data: { settings: {}, updatedAt: 'x' } });
+        await flushPromises();
+
+        expect(vi.mocked(settingsApi.update).mock.calls).toEqual([
+            [{ 'scores.conferenceFilter': 'EAST' }],
+            [{ 'scores.conferenceFilter': 'CROSS' }],
+        ]);
+    });
+
+    it('does not hold back a different field', async () => {
+        serverHas({});
+        await settingsSync.start('user-1');
+        vi.mocked(settingsApi.update)
+            .mockReturnValueOnce(deferred<UpdateResult>().promise)
+            .mockImplementation(echo);
+
+        const { preferences } = useScoresPreferences();
+        preferences.value.hideScores = true;
+        await flushPromises();
+        preferences.value.useShortNames = false;
+        await flushPromises();
+
+        expect(settingsApi.update).toHaveBeenCalledTimes(2);
+        expect(settingsApi.update).toHaveBeenLastCalledWith({ 'scores.useShortNames': false });
     });
 });
 
@@ -269,8 +338,9 @@ describe('first sign-in migration', () => {
 
         await settingsSync.start('user-1');
 
-        expect(settingsApi.update).toHaveBeenCalledTimes(1);
-        expect(settingsApi.update).toHaveBeenCalledWith({
+        expect(settingsApi.initialize).toHaveBeenCalledTimes(1);
+        expect(settingsApi.update).not.toHaveBeenCalled();
+        expect(settingsApi.initialize).toHaveBeenCalledWith({
             'playerStats.seasonFormat': 'YYYY',
             'playerStats.statMode': 'totals',
             'playerStats.showCareerSummary': false,
@@ -288,7 +358,7 @@ describe('first sign-in migration', () => {
 
         await settingsSync.start('user-1');
 
-        expect(settingsApi.update).toHaveBeenCalledWith({});
+        expect(settingsApi.initialize).toHaveBeenCalledWith({});
     });
 
     it('never migrates again once the server has settings', async () => {
@@ -297,7 +367,7 @@ describe('first sign-in migration', () => {
 
         await settingsSync.start('user-1');
 
-        expect(settingsApi.update).not.toHaveBeenCalled();
+        expect(settingsApi.initialize).not.toHaveBeenCalled();
         expect(useScoresPreferences().preferences.value.hideScores).toBe(false);
     });
 
@@ -309,13 +379,29 @@ describe('first sign-in migration', () => {
         await settingsSync.start('user-1');
         await flushPromises();
 
-        expect(settingsApi.update).toHaveBeenCalledTimes(1);
+        expect(settingsApi.initialize).toHaveBeenCalledTimes(1);
+        expect(settingsApi.update).not.toHaveBeenCalled();
+    });
+
+    it('takes the settings another device uploaded first', async () => {
+        localStorage.setItem(SCORES_KEY, JSON.stringify({ hideScores: true }));
+        serverHas({}, null);
+        // The server's create-only write lost the race and returned what the
+        // other device stored.
+        vi.mocked(settingsApi.initialize).mockResolvedValue({
+            success: true,
+            data: { settings: { 'scores.hideScores': false }, updatedAt: '2026-09-28T00:00:00.000Z' },
+        });
+
+        await settingsSync.start('user-1');
+
+        expect(useScoresPreferences().preferences.value.hideScores).toBe(false);
     });
 
     it('falls back to local values for the session when the migration fails', async () => {
         localStorage.setItem(SCORES_KEY, JSON.stringify({ hideScores: true }));
         serverHas({}, null);
-        vi.mocked(settingsApi.update).mockRejectedValue(new Error('down'));
+        vi.mocked(settingsApi.initialize).mockRejectedValue(new Error('down'));
 
         await settingsSync.start('user-1');
 
@@ -350,6 +436,21 @@ describe('load failures and sign-out', () => {
 
         expect(useSettingsSync().status.value).toBe('ready');
         expect(useScoresPreferences().preferences.value.hideScores).toBe(true);
+    });
+
+    it('shows an error with a working retry when the account cannot be identified', async () => {
+        const reconnect = vi.fn(async () => {
+            serverHas({ 'scores.hideScores': true });
+            await settingsSync.start('user-1');
+        });
+
+        settingsSync.unavailable(reconnect);
+        expect(useSettingsSync().status.value).toBe('error');
+
+        await settingsSync.retry();
+
+        expect(reconnect).toHaveBeenCalledTimes(1);
+        expect(useSettingsSync().status.value).toBe('ready');
     });
 
     it('goes back to the local values on sign-out', async () => {

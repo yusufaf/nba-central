@@ -21,25 +21,34 @@ export const useCurrentUser = () => ({ currentUser: readonly(currentUser) });
 export function useAccountSession() {
     const { isAuthenticated, getAccessTokenClaims } = useLogto();
 
+    const connect = async () => {
+        // Resolves undefined, rather than throwing, when the token can't be
+        // refreshed.
+        const claims = await getAccessTokenClaims(import.meta.env.VITE_LOGTO_API_RESOURCE);
+        if (!isAuthenticated.value) {
+            return;
+        }
+        if (!claims?.sub) {
+            // Otherwise Settings would wait on a load that never starts.
+            settingsSync.unavailable(connect);
+            return;
+        }
+        currentUser.value = {
+            id: claims.sub,
+            username: typeof claims.username === 'string' ? claims.username : null,
+        };
+        void settingsSync.start(claims.sub);
+    };
+
     watch(
         isAuthenticated,
-        async (signedIn) => {
-            if (!signedIn) {
-                currentUser.value = null;
-                settingsSync.stop();
+        (signedIn) => {
+            if (signedIn) {
+                void connect();
                 return;
             }
-            // Resolves undefined when the refresh token is dead; the next
-            // API call's session-expiry handling signs the user out.
-            const claims = await getAccessTokenClaims(import.meta.env.VITE_LOGTO_API_RESOURCE);
-            if (!claims?.sub || !isAuthenticated.value) {
-                return;
-            }
-            currentUser.value = {
-                id: claims.sub,
-                username: typeof claims.username === 'string' ? claims.username : null,
-            };
-            void settingsSync.start(claims.sub);
+            currentUser.value = null;
+            settingsSync.stop();
         },
         { immediate: true },
     );

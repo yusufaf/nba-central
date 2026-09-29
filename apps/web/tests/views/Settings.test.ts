@@ -3,7 +3,7 @@ import { mount, flushPromises } from '@vue/test-utils';
 import { createRouter, createMemoryHistory } from 'vue-router';
 
 vi.mock('@/network/api', () => ({
-    settingsApi: { get: vi.fn(), update: vi.fn() },
+    settingsApi: { get: vi.fn(), update: vi.fn(), initialize: vi.fn() },
 }));
 vi.mock('vue-sonner', () => ({ toast: { error: vi.fn() } }));
 const signOut = vi.fn();
