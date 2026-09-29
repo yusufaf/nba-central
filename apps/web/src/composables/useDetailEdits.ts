@@ -83,7 +83,7 @@ interface DetailEditsOptions {
  *   starts the next one.
  * - Drawing a jersey: one entry per visit to the customization dialog, not
  *   per stroke. Focus moving between the drawing controls inside it doesn't
- *   split it; focus landing back on the page does.
+ *   split it; focus landing back on the page, or a click there, does.
  * - Anything else written in the same tick joins the entry, which is how a
  *   historical team pick setting city and country undoes as one step.
  * - Every other edit is its own entry.
@@ -94,11 +94,18 @@ export const useDetailEdits = ({ details, apply, record, baseFor }: DetailEditsO
     let editCount = 0;
     let tickKey: string | undefined;
 
+    const isInOverlay = (target: EventTarget | null) =>
+        target instanceof Element && target.closest("[role='dialog'], [role='alertdialog']") !== null;
+
     useEventListener(window, "focusin", (event: FocusEvent) => {
         focusSession++;
-        const inOverlay =
-            event.target instanceof Element && event.target.closest("[role='dialog'], [role='alertdialog']") !== null;
-        if (!inOverlay) pageFocusSession++;
+        if (!isInOverlay(event.target)) pageFocusSession++;
+    });
+    // Safari doesn't focus a clicked button, so closing the dialog can hand
+    // focus back to <body> without a focusin; reopening it still takes a
+    // click on the page.
+    useEventListener(window, "pointerdown", (event: PointerEvent) => {
+        if (!isInOverlay(event.target)) pageFocusSession++;
     });
 
     const mergeKeyFor = (field: DetailField, value: unknown) => {

@@ -262,6 +262,28 @@ describe("useDetailEdits", () => {
             history.undo();
             expect(state.details.jersey).toBe("data:image/png;base64,first");
         });
+
+        // Safari doesn't focus a clicked button, so closing the dialog can
+        // hand focus back to <body> without a focusin - but reopening it
+        // takes a click on the page.
+        it("starts a new drawing step after a click on the page, even with no focus change", async () => {
+            const { state, history, edit } = setup();
+            focusInDialog("swatch");
+            edit("jersey", "data:image/png;base64,first");
+            await nextTick();
+            document.body.innerHTML = `<button id="settings"></button><div role="dialog"><canvas></canvas></div>`;
+            document.querySelector("canvas")!.dispatchEvent(new PointerEvent("pointerdown", { bubbles: true }));
+            edit("jersey", "data:image/png;base64,first+stroke");
+            await nextTick();
+            document.querySelector("#settings")!.dispatchEvent(new PointerEvent("pointerdown", { bubbles: true }));
+            edit("jersey", "data:image/png;base64,second");
+            await nextTick();
+
+            history.undo();
+            expect(state.details.jersey).toBe("data:image/png;base64,first+stroke");
+            history.undo();
+            expect(state.details.jersey).toBe("https://cdn/jersey.png");
+        });
     });
 
     it("interleaves roster and detail changes in the order they were made", async () => {
