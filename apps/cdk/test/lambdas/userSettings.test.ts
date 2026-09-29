@@ -240,6 +240,70 @@ describe("updateUserSettings", () => {
 		});
 	});
 
+	describe("with initialize: true (the one-time upload of local values)", () => {
+		const initialize = (settings: unknown) =>
+			updateHandler(
+				authorizerEvent({ body: JSON.stringify({ settings, initialize: true }) }),
+				{} as any,
+				{} as any,
+			) as Promise<any>;
+
+		it("only creates the map, never patching an existing one", async () => {
+			send.mockResolvedValueOnce({
+				Attributes: {
+					settings: { "scores.hideScores": true },
+					settingsUpdatedAt: "2026-09-28T00:00:00.000Z",
+				},
+			});
+
+			const result = await initialize({ "scores.hideScores": true });
+
+			expect(send).toHaveBeenCalledTimes(1);
+			const { input } = send.mock.calls[0][0];
+			expect(input.Key).toEqual({ PK: "userUUID#user-1", SK: "metadata#" });
+			expect(input.ConditionExpression).toBe("attribute_not_exists(#settings)");
+			expect(input.ExpressionAttributeValues[":settings"]).toEqual({
+				"scores.hideScores": true,
+			});
+			expect(parseBody(result).data.settings).toEqual({ "scores.hideScores": true });
+		});
+
+		it("returns what another device already stored instead of overwriting it", async () => {
+			send.mockRejectedValueOnce(conditionalCheckFailed());
+			send.mockResolvedValueOnce({
+				Item: {
+					settings: { "scores.hideScores": false },
+					settingsUpdatedAt: "2026-09-27T00:00:00.000Z",
+				},
+			});
+
+			const result = await initialize({ "scores.hideScores": true });
+
+			expect(send).toHaveBeenCalledTimes(2);
+			expect(send.mock.calls[1][0].input.Key).toEqual({
+				PK: "userUUID#user-1",
+				SK: "metadata#",
+			});
+			expect(send.mock.calls[1][0].input.UpdateExpression).toBeUndefined();
+			expect(result.statusCode).toBe(200);
+			expect(parseBody(result).data).toEqual({
+				settings: { "scores.hideScores": false },
+				updatedAt: "2026-09-27T00:00:00.000Z",
+			});
+		});
+
+		it("400s when initialize is not a boolean", async () => {
+			const result = await updateHandler(
+				authorizerEvent({ body: JSON.stringify({ settings: {}, initialize: "yes" }) }),
+				{} as any,
+				{} as any,
+			) as any;
+
+			expect(result.statusCode).toBe(400);
+			expect(send).not.toHaveBeenCalled();
+		});
+	});
+
 	it("uses the authorizer sub even when the body names another user", async () => {
 		send.mockResolvedValueOnce({ Attributes: { settings: {} } });
 
