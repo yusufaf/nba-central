@@ -155,8 +155,11 @@ function handleSignOut() {
     background-color: transparent;
 }
 
+/* flex: 1 so the list spans the nav; without it the list is only as wide as
+   its links and .login's margin-left: auto has no free space to push into. */
 ul {
     display: flex;
+    flex: 1;
     flex-direction: row;
     gap: 2rem;
 }
