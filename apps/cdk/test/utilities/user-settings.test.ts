@@ -26,6 +26,10 @@ describe("validateSettingsPatch", () => {
 			"teamBuilder.undoToastSeconds": "30",
 			"teamBuilder.flipNewCards": true,
 			"teamBuilder.drawerSide": "left",
+			"display.dateFormat": "DD/MM/YYYY",
+			"display.timeFormat": "24h",
+			"display.reducedMotion": "reduce",
+			"display.fontScale": "137.5",
 		};
 		expect(validateSettingsPatch(patch)).toEqual({ valid: true, patch });
 	});
@@ -51,6 +55,46 @@ describe("validateSettingsPatch", () => {
 		expect(validateSettingsPatch({ "teamBuilder.cardsFlipped": true })).toEqual({
 			valid: false,
 			error: "Unknown setting: teamBuilder.cardsFlipped",
+		});
+	});
+
+	it("accepts every display value, Automatic and the defaults included", () => {
+		for (const [key, values] of [
+			["display.dateFormat", ["auto", "YYYY-MM-DD", "DD/MM/YYYY", "MM/DD/YYYY"]],
+			["display.timeFormat", ["auto", "12h", "24h"]],
+			["display.reducedMotion", ["system", "reduce", "allow"]],
+			["display.fontScale", ["87.5", "100", "112.5", "125", "137.5"]],
+		] as const) {
+			for (const value of values) {
+				expect(validateSettingsPatch({ [key]: value }).valid).toBe(true);
+			}
+		}
+	});
+
+	it("rejects display values outside their rules", () => {
+		for (const patch of [
+			{ "display.dateFormat": "DD.MM.YYYY" },
+			{ "display.dateFormat": "" },
+			{ "display.timeFormat": "12" },
+			{ "display.timeFormat": true },
+			{ "display.reducedMotion": true },
+			{ "display.reducedMotion": "on" },
+			{ "display.fontScale": 125 },
+			{ "display.fontScale": "150" },
+			{ "display.fontScale": "1.25" },
+		]) {
+			const [key] = Object.keys(patch);
+			expect(validateSettingsPatch(patch)).toEqual({
+				valid: false,
+				error: `Invalid value for ${key}`,
+			});
+		}
+	});
+
+	it("rejects an unknown display key", () => {
+		expect(validateSettingsPatch({ "display.theme": "light" })).toEqual({
+			valid: false,
+			error: "Unknown setting: display.theme",
 		});
 	});
 
