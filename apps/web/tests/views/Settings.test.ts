@@ -115,6 +115,40 @@ describe('Settings', () => {
         expect(west.attributes('data-state')).toBe('on');
     });
 
+    it('saves each team builder preference under its own key', async () => {
+        vi.mocked(settingsApi.update).mockResolvedValue({
+            success: true,
+            data: { settings: {}, updatedAt: 'x' },
+        });
+        const { wrapper } = await mountAt('/settings');
+
+        const confirm = wrapper.find<HTMLInputElement>('#setting-confirm-destructive');
+        expect(confirm.element.checked).toBe(true);
+        await confirm.setValue(false);
+        await flushPromises();
+        expect(settingsApi.update).toHaveBeenLastCalledWith({
+            'teamBuilder.confirmDestructive': false,
+        });
+
+        const duration = wrapper.find('[aria-label="Undo toast duration"]');
+        const eight = duration.findAll('button').find((b) => b.text() === '8s')!;
+        expect(eight.attributes('data-state')).toBe('on');
+        await duration.findAll('button').find((b) => b.text() === '15s')!.trigger('click');
+        await flushPromises();
+        expect(settingsApi.update).toHaveBeenLastCalledWith({
+            'teamBuilder.undoToastSeconds': '15',
+        });
+
+        await wrapper.find<HTMLInputElement>('#setting-flip-new-cards').setValue(true);
+        await flushPromises();
+        expect(settingsApi.update).toHaveBeenLastCalledWith({ 'teamBuilder.flipNewCards': true });
+
+        const drawer = wrapper.find('[aria-label="Drawer side"]');
+        await drawer.findAll('button').find((b) => b.text() === 'Left')!.trigger('click');
+        await flushPromises();
+        expect(settingsApi.update).toHaveBeenLastCalledWith({ 'teamBuilder.drawerSide': 'left' });
+    });
+
     it('offers a retry when the settings could not be loaded', async () => {
         settingsSync.stop();
         vi.mocked(settingsApi.get).mockClear();

@@ -1,6 +1,9 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, beforeEach } from "vitest";
+import { nextTick } from "vue";
 import { mount } from "@vue/test-utils";
 import TeamBuilderHeader from "@/components/TeamBuilder/TeamBuilderHeader.vue";
+import { useTeamBuilderPreferences } from "@/composables/useTeamBuilderPreferences";
+import { settingsSync } from "@/composables/useSettingsSync";
 
 const mountHeader = (props: Record<string, unknown>) =>
     mount(TeamBuilderHeader, {
@@ -30,5 +33,38 @@ describe("TeamBuilderHeader publish controls", () => {
     it("hides the share button while private", () => {
         const wrapper = mountHeader({ teamUuid: "t1", isPublic: false });
         expect(wrapper.find('[data-testid="share-button"]').exists()).toBe(false);
+    });
+});
+
+describe("TeamBuilderHeader reset", () => {
+    beforeEach(() => {
+        settingsSync.stop();
+        localStorage.clear();
+    });
+
+    it("asks before resetting by default", async () => {
+        const wrapper = mountHeader({});
+        await wrapper.find('[data-testid="reset-button"]').trigger("click");
+
+        expect(wrapper.findComponent({ name: "ConfirmDialog" }).props("open")).toBe(true);
+        expect(wrapper.emitted("reset")).toBeUndefined();
+    });
+
+    it("resets straight away with confirmations off, since a reset can be undone", async () => {
+        useTeamBuilderPreferences().preferences.value.confirmDestructive = false;
+        const wrapper = mountHeader({});
+        await wrapper.find('[data-testid="reset-button"]').trigger("click");
+
+        expect(wrapper.findComponent({ name: "ConfirmDialog" }).props("open")).toBe(false);
+        expect(wrapper.emitted("reset")).toHaveLength(1);
+    });
+
+    it("picks up a change to the setting without remounting", async () => {
+        const wrapper = mountHeader({});
+        useTeamBuilderPreferences().preferences.value.confirmDestructive = false;
+        await nextTick();
+        await wrapper.find('[data-testid="reset-button"]').trigger("click");
+
+        expect(wrapper.emitted("reset")).toHaveLength(1);
     });
 });

@@ -27,6 +27,8 @@ import {
     type HistoryAction,
 } from "@/composables/useTeamHistory";
 import { useUndoShortcut } from "@/composables/useUndoShortcut";
+import { useUndoToast } from "@/composables/useUndoToast";
+import { useTeamBuilderPreferences } from "@/composables/useTeamBuilderPreferences";
 import { useDetailEdits, type DetailField } from "@/composables/useDetailEdits";
 import { usePendingPlayers } from "@/composables/usePendingPlayers";
 import { dataApi, teamApi } from "@/network/api";
@@ -89,6 +91,8 @@ const selectedPlayerStats = ref<any>([]);
 const selectedPlayerRatingHistory = ref<NBA2KRating[]>([]);
 const selectedPlayerName = ref<string>("");
 
+const { preferences: teamBuilderPreferences } = useTeamBuilderPreferences();
+
 const cardsFlipped = ref<Map<any, boolean>>(new Map());
 
 const statsLoads = usePendingPlayers<Player>();
@@ -111,7 +115,13 @@ const landedPlayers = computed(() => {
 const showPlayerStatsDialog = ref<boolean>(false);
 
 const selectedView = ref<string>("Default");
-const selectedDrawerSide = ref<DrawerSide>("right");
+// The builder's own drawer side toggle and Settings share one preference.
+const selectedDrawerSide = computed<DrawerSide>({
+    get: () => teamBuilderPreferences.value.drawerSide,
+    set: (side) => {
+        teamBuilderPreferences.value.drawerSide = side;
+    },
+});
 const headerExpanded = ref<boolean>(false);
 
 const selectedPlayersForComparison = ref<Set<any>>(new Set());
@@ -194,6 +204,8 @@ const addPlayerFromDialog = (player: any) => {
         redoLabel: `Added ${playerName} to ${where}`,
     });
     const { player: added, done } = loadPlayerIntoSlot(playerIndex, player);
+    // Only a player added here, not every card of a team being opened.
+    cardsFlipped.value.set(playerIndex, teamBuilderPreferences.value.flipNewCards);
 
     // The toast lives in the corner, far from the slot the player is landing
     // in - the card shows the same wait in place. An add undone meanwhile
@@ -254,34 +266,15 @@ const history = useTeamHistory<BuilderState>({
     },
 });
 
-const UNDO_TOAST_DURATION = 8000;
-
-// Only one toast with an Undo button stays up, and any newer change takes it
-// down, so its Undo always means "undo what this toast describes" rather than
-// whatever happens to be on top of the stack.
-let undoToastId: string | number | undefined;
-
-const dismissUndoToast = () => {
-    if (undoToastId !== undefined) toast.dismiss(undoToastId);
-    undoToastId = undefined;
-};
+// How long it stays up is a team builder setting.
+const { show: showUndoToast, dismiss: dismissUndoToast } = useUndoToast((entryId) => {
+    if (history.isLatest(entryId)) undoLastChange();
+});
 
 // Called just before every undoable change.
 const recordChange = (action: HistoryAction) => {
     dismissUndoToast();
     return history.push(action);
-};
-
-const showUndoToast = (message: string, entryId: number) => {
-    undoToastId = toast.success(message, {
-        duration: UNDO_TOAST_DURATION,
-        action: {
-            label: "Undo",
-            onClick: () => {
-                if (history.isLatest(entryId)) undoLastChange();
-            },
-        },
-    });
 };
 
 // For moving to a different team (loading, remixing, the first Save):

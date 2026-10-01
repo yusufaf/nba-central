@@ -18,6 +18,8 @@ import {
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
+import { useTeamBuilderPreferences } from '@/composables/useTeamBuilderPreferences';
+import type { DrawerSide } from '@/models/types';
 import {
     MoreVertical,
     RotateCcw,
@@ -40,7 +42,7 @@ const teamCountry = defineModel<string>('teamCountry');
 const selectedView = defineModel<string>('selectedView');
 const teamLogo = defineModel<string>('teamLogo');
 const teamJersey = defineModel<string>('teamJersey');
-const drawerSide = defineModel<string>('drawerSide');
+const drawerSide = defineModel<DrawerSide>('drawerSide');
 
 defineProps<{
     teamUuid: string | null;
@@ -57,6 +59,8 @@ const emit = defineEmits<{
     downloadCard: [];
 }>();
 
+const { shouldConfirm } = useTeamBuilderPreferences();
+
 const showConfirm = ref<boolean>(false);
 const showTeamCustomizationDialog = ref<boolean>(false);
 
@@ -64,13 +68,21 @@ const nbaTeamLogos = ref<any[]>([]);
 
 const canShareNatively = typeof navigator !== 'undefined' && typeof navigator.share === 'function';
 
+// A reset can be undone (toast and Ctrl+Z), so with confirmations off in
+// Settings it happens straight away.
 const resetClick = () => {
-    showConfirm.value = true;
+    if (shouldConfirm({ undoable: true })) showConfirm.value = true;
+    else emit('reset');
 };
 
 const resetConfirm = () => {
     emit('reset');
     showConfirm.value = false;
+};
+
+// Clicking the selected side again emits '' - keep that side.
+const setDrawerSide = (value: unknown) => {
+    if (value === 'left' || value === 'right') drawerSide.value = value;
 };
 
 const saveClick = () => {
@@ -163,10 +175,10 @@ onMounted(() => {
                                 <div>
                                     <Label class="text-sm font-medium mb-2 block">Drawer Side</Label>
                                     <ToggleGroup
-                                        v-model="drawerSide"
+                                        :model-value="drawerSide"
                                         type="single"
                                         class="toggle-group"
-                                        @update:model-value="(value) => { if (!value) drawerSide = 'right' }"
+                                        @update:model-value="setDrawerSide"
                                     >
                                         <ToggleGroupItem
                                             v-for="option in DRAWER_OPTIONS"
@@ -232,6 +244,7 @@ onMounted(() => {
                     </DropdownMenu>
 
                     <Button
+                        data-testid="reset-button"
                         @click="resetClick"
                         size="sm"
                         variant="outline"
