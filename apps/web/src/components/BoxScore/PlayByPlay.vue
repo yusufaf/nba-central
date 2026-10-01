@@ -106,6 +106,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import type { ESPNPlay, ESPNCompetitor } from '@/models/types';
+import { useReducedMotion } from '@/composables/useDisplayPreferences';
 
 interface Props {
     plays: ESPNPlay[];
@@ -158,10 +159,14 @@ const getPeriodLabel = (period: number): string => {
     return `OT${period - 4}`;
 };
 
+const reduceMotion = useReducedMotion();
 const scrollToPeriod = (period: number) => {
     const ref = periodRefs.value[period];
     if (ref?.$el) {
-        ref.$el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        ref.$el.scrollIntoView({
+            behavior: reduceMotion.value ? 'instant' : 'smooth',
+            block: 'start',
+        });
     }
 };
 </script>

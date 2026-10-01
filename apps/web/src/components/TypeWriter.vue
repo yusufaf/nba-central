@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { ref, watchEffect } from "vue";
+import { onBeforeUnmount, ref, watch } from "vue";
+import { useReducedMotion } from "@/composables/useDisplayPreferences";
 
 const props = defineProps<{
   leadInText: string;
@@ -15,6 +16,12 @@ const erasingSpeed = ref<number>(100);
 const newTextDelay = ref<number>(1500);
 const displayTextArrayIndex = ref<number>(0);
 const charIndex = ref<number>(0);
+const reduceMotion = useReducedMotion();
+
+let timer: ReturnType<typeof setTimeout> | undefined;
+const schedule = (step: () => void, delay: number) => {
+  timer = setTimeout(step, delay);
+};
 
 const typeText = () => {
   if (
@@ -25,16 +32,34 @@ const typeText = () => {
       displayTextArrayIndex.value
     ].charAt(charIndex.value);
     charIndex.value += 1;
-    setTimeout(typeText, typingSpeed.value);
+    schedule(typeText, typingSpeed.value);
   } else {
     typeStatus.value = false;
-    setTimeout(eraseText, newTextDelay.value);
+    schedule(eraseText, newTextDelay.value);
   }
 }
 
-watchEffect(() => {
-  setTimeout(typeText, newTextDelay.value + 200);
-});
+// With motion reduced the headline holds still on its first word, and
+// starts typing again from the top if motion is turned back on.
+watch(
+  reduceMotion,
+  (reduce) => {
+    clearTimeout(timer);
+    displayTextArrayIndex.value = 0;
+    typeStatus.value = false;
+    if (reduce) {
+      typeValue.value = displayTextArray.value[0];
+      charIndex.value = typeValue.value.length;
+    } else {
+      typeValue.value = "";
+      charIndex.value = 0;
+      schedule(typeText, newTextDelay.value + 200);
+    }
+  },
+  { immediate: true }
+);
+
+onBeforeUnmount(() => clearTimeout(timer));
 
 const eraseText = () => {
   if (charIndex.value > 0) {
@@ -43,13 +68,13 @@ const eraseText = () => {
       displayTextArrayIndex.value
     ].substring(0, charIndex.value - 1);
     charIndex.value -= 1;
-    setTimeout(eraseText, erasingSpeed.value);
+    schedule(eraseText, erasingSpeed.value);
   } else {
     typeStatus.value = false;
     displayTextArrayIndex.value += 1;
     if (displayTextArrayIndex.value >= displayTextArray.value.length)
       displayTextArrayIndex.value = 0;
-    setTimeout(typeText, typingSpeed.value + 1000);
+    schedule(typeText, typingSpeed.value + 1000);
   }
 }
 </script>
@@ -59,7 +84,7 @@ const eraseText = () => {
     <h1>
       {{props.leadInText}}
       <span class="typed-text">{{ typeValue }}</span>
-      <span class="blinking-cursor">|</span>
+      <span v-if="!reduceMotion" class="blinking-cursor">|</span>
       <!-- <span class="cursor" :class="{ typing: typeStatus }">&nbsp;</span> -->
       <span class="close-text">{{props.closingText}}</span>
     </h1>

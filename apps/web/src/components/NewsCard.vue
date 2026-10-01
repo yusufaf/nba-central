@@ -4,11 +4,15 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { CalendarDays, ExternalLink, MessageSquare, Globe } from "lucide-vue-next";
 import type { NewsArticle } from "@/models/api";
+import { useDateFormat } from "@/composables/useDateFormat";
 
 const props = defineProps<{
     article: NewsArticle;
 }>();
 
+const { formatDate } = useDateFormat();
+
+// Recent articles say how long ago in every date format; older ones show the date.
 const formatDateTime = (dateTimeStr: string) => {
     const dateTime = new Date(dateTimeStr);
     const now = new Date();
@@ -21,11 +25,7 @@ const formatDateTime = (dateTimeStr: string) => {
     if (diffMins < 60) return `${diffMins}m ago`;
     if (diffHours < 24) return `${diffHours}h ago`;
     if (diffDays < 7) return `${diffDays}d ago`;
-    return dateTime.toLocaleDateString(undefined, {
-        month: "short",
-        day: "numeric",
-        year: "numeric",
-    });
+    return formatDate(dateTime, "medium");
 };
 
 const sourceMeta = computed(() => {

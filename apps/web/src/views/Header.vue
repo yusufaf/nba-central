@@ -34,7 +34,10 @@ function handleSignOut() {
 </script>
 
 <template>
-    <header class="bg-primary text-black shadow-lg sticky top-0 z-50">
+    <!-- The nav switches to the menu button on the header's width in rem, not a
+         viewport breakpoint: a media query's rem ignores the Text size setting,
+         and the full nav needs ~54rem at any size (signed in, with a username). -->
+    <header class="@container bg-primary text-black shadow-lg sticky top-0 z-50">
         <div class="flex items-center px-4 h-16">
             <div class="shrink-0">
                 <a href="/">
@@ -47,7 +50,7 @@ function handleSignOut() {
             </div>
 
             <!-- Desktop Nav -->
-            <nav class="desktop-nav hidden md:flex flex-1 ml-8">
+            <nav class="desktop-nav hidden @min-[56rem]:flex flex-1 ml-8">
                 <ul>
                     <template v-for="route in navRoutes" :key="route.id">
                         <RouterLink :class="route?.class" :to="route.path">
@@ -94,7 +97,7 @@ function handleSignOut() {
 
             <!-- Mobile Menu -->
             <Sheet>
-                <SheetTrigger as-child class="md:hidden ml-auto">
+                <SheetTrigger as-child class="@min-[56rem]:hidden ml-auto">
                     <Button variant="ghost" size="icon">
                         <Menu class="h-6 w-6" />
                     </Button>

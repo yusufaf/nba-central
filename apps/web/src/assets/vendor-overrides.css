@@ -187,3 +187,10 @@
   background-color: hsl(var(--popover));
   border-color: hsl(var(--border));
 }
+
+/* vue-sonner turns its toast slide off for the OS reduced-motion query only.
+   This does the same when the Reduced motion setting asks for it. */
+:root.reduce-motion [data-sonner-toast],
+:root.reduce-motion [data-sonner-toast] > * {
+  transition: none;
+}

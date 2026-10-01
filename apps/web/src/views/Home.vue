@@ -5,8 +5,10 @@ import { Button } from "@/components/ui/button";
 import { ChevronsDown } from "lucide-vue-next";
 import { useRouter } from "vue-router";
 import heroMedia from "@/assets/data/heroMedia.json";
+import { useReducedMotion } from "@/composables/useDisplayPreferences";
 
 const router = useRouter();
+const reduceMotion = useReducedMotion();
 
 // hero-loop.mp4 used to be Git LFS-tracked and served straight from public/ -
 // CI's checkout never fetched LFS objects, so production served the LFS
@@ -31,10 +33,12 @@ const onVideoError = (event: Event) => {
            labeled video/mp4. The poster stays local: it's not LFS-tracked,
            it paints immediately and covers the gap before the loop starts
            (or stands in entirely where autoplay is refused or the CDN
-           request fails), and the prefers-reduced-motion rule below
-           references it directly, which a JSON import can't do.
+           request fails), and the reduced-motion rule below references
+           it directly, which a JSON import can't do. With motion reduced
+           the video isn't rendered at all, so it never downloads or plays.
            playsinline is required for iOS to autoplay. -->
       <video
+        v-if="!reduceMotion"
         class="video"
         poster="/hero/hero-poster.jpg"
         autoplay
@@ -98,16 +102,11 @@ const onVideoError = (event: Event) => {
   );
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .video {
-    display: none;
-  }
-
-  .scrim {
-    background-image: url('/hero/hero-poster.jpg');
-    background-size: cover;
-    background-position: center;
-  }
+/* Stands in for the video, which isn't rendered with motion reduced. */
+:root.reduce-motion .scrim {
+  background-image: url('/hero/hero-poster.jpg');
+  background-size: cover;
+  background-position: center;
 }
 
 .fade-enter-active {

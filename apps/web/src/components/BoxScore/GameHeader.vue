@@ -9,10 +9,13 @@
         <!-- Main Header Card -->
         <Card>
             <CardContent class="p-6 border-l-[0.1875rem] border-l-primary">
-                <div class="flex items-center justify-center pl-5" v-if="awayTeam && homeTeam">
+                <!-- One row from sm up. Narrower, the score takes its own row on
+                     top and the teams share the one below: the single row
+                     overflowed a phone even at the default text size. -->
+                <div class="flex flex-wrap items-center justify-center gap-y-4 sm:flex-nowrap sm:pl-5" v-if="awayTeam && homeTeam">
                     <!-- Away Team -->
-                    <div class="flex items-center gap-3 flex-1 justify-end">
-                        <div class="flex flex-col text-right">
+                    <div class="flex min-w-0 flex-col-reverse items-center gap-3 flex-[1_1_40%] sm:flex-1 sm:flex-row sm:justify-end">
+                        <div class="flex min-w-0 flex-col text-center break-words sm:text-right">
                             <span class="uppercase text-[0.8rem] tracking-[0.06em] text-foreground/80">{{ awayTeam.team.displayName }}</span>
                             <span class="text-xs text-foreground/50" v-if="awayTeamRecord">{{ awayTeamRecord }}</span>
                         </div>
@@ -26,7 +29,7 @@
                     </div>
 
                     <!-- Score -->
-                    <div class="flex flex-col items-center shrink-0 px-8 py-0">
+                    <div class="order-first flex w-full flex-col items-center shrink-0 py-0 sm:order-none sm:w-auto sm:px-8">
                         <div class="flex items-baseline gap-3">
                             <span
                                 class="font-extrabold tabular-nums text-[2.5rem] leading-none"
@@ -51,7 +54,7 @@
                     </div>
 
                     <!-- Home Team -->
-                    <div class="flex items-center gap-3 flex-1">
+                    <div class="flex min-w-0 flex-col items-center gap-3 flex-[1_1_40%] sm:flex-1 sm:flex-row">
                         <div class="shrink-0 w-12 h-12">
                             <img
                                 :src="getTeamLogo('home')"
@@ -59,7 +62,7 @@
                                 class="w-full h-full object-contain rounded-lg"
                             />
                         </div>
-                        <div class="flex flex-col">
+                        <div class="flex min-w-0 flex-col text-center break-words sm:text-left">
                             <span class="uppercase text-[0.8rem] tracking-[0.06em] text-foreground/80">{{ homeTeam.team.displayName }}</span>
                             <span class="text-xs text-foreground/50" v-if="homeTeamRecord">{{ homeTeamRecord }}</span>
                         </div>
@@ -99,6 +102,7 @@ import { ChevronLeft, MapPin, Calendar, Tv } from 'lucide-vue-next';
 import type { ESPNGameSummary } from '@/models/types';
 import { isWinningTeam } from '@/utils/lineScore';
 import { getTeamLogo as resolveTeamLogo } from '@/utils/teamLogo';
+import { useDateFormat } from '@/composables/useDateFormat';
 
 interface Props {
     gameSummary: ESPNGameSummary;
@@ -164,17 +168,10 @@ const venue = computed(() => {
     return `${venueInfo.fullName}${location}`;
 });
 
+const { formatDateTime } = useDateFormat();
 const gameDate = computed(() => {
     const date = competition.value?.date;
-    if (!date) return null;
-    return new Date(date).toLocaleDateString('en-US', {
-        weekday: 'long',
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric',
-        hour: 'numeric',
-        minute: '2-digit',
-    });
+    return date ? formatDateTime(date) : null;
 });
 
 const broadcasts = computed(() => {

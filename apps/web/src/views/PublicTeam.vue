@@ -19,6 +19,7 @@ import { averageRating, ratingTier } from '@/constants/ratings';
 import { shareUrlFor } from '@/utils/shareUrl';
 import { downloadUrlAsFile, slugFilename } from '@/utils/downloadFile';
 import { track } from '@/lib/analytics';
+import { useDateFormat } from '@/composables/useDateFormat';
 
 const props = defineProps<{ teamUUID: string }>();
 const router = useRouter();
@@ -35,8 +36,9 @@ const bench = computed(() => (team.value?.roster ?? []).filter((e) => e.slot > 5
 const ratingOf = (player: { rating?: number; overallRating?: number }) => player.rating ?? player.overallRating;
 const average = computed(() => averageRating(starters.value.map((s) => ratingOf(s.player))));
 const location = computed(() => [team.value?.city, team.value?.country].filter(Boolean).join(', '));
+const { formatDate } = useDateFormat();
 const publishedOn = computed(() =>
-    team.value?.publishedAt ? new Date(team.value.publishedAt).toLocaleDateString() : '',
+    team.value?.publishedAt ? formatDate(team.value.publishedAt, 'short') : '',
 );
 const canShareNatively = typeof navigator !== 'undefined' && typeof navigator.share === 'function';
 

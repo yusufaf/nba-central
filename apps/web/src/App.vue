@@ -13,6 +13,7 @@ import {
     SESSION_EXPIRED_MESSAGE,
 } from '@/composables/useSessionExpiry';
 import { useAccountSession } from '@/composables/useCurrentUser';
+import { applyDisplayPreferences } from '@/composables/useDisplayPreferences';
 
 const teamsStore = useTeamsStore();
 const feedbackOpen = ref(false);
@@ -22,6 +23,7 @@ const feedbackOpen = ref(false);
 const { getApiAccessToken } = useSessionExpiry();
 setAccessTokenGetter(getApiAccessToken);
 useAccountSession();
+applyDisplayPreferences();
 
 onMounted(async () => {
     if (consumeSessionExpiredFlag()) {
