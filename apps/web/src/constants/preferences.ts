@@ -1,5 +1,6 @@
 import type { SeasonFormat, StatDisplayMode } from '@/constants/playerStats';
-import { VIEWS } from '@/constants/constants';
+import { DRAWER_SIDES, VIEWS } from '@/constants/constants';
+import type { DrawerSide } from '@/models/types';
 
 export interface PlayerStatsPreferences {
     seasonFormat: SeasonFormat;
@@ -16,9 +17,19 @@ export interface ScoresPreferences {
     hideFinishedGames: boolean;
 }
 
+export type UndoToastSeconds = '5' | '8' | '15' | '30';
+
+export interface TeamBuilderPreferences {
+    confirmDestructive: boolean;
+    undoToastSeconds: UndoToastSeconds;
+    flipNewCards: boolean;
+    drawerSide: DrawerSide;
+}
+
 export interface PreferenceSections {
     playerStats: PlayerStatsPreferences;
     scores: ScoresPreferences;
+    teamBuilder: TeamBuilderPreferences;
 }
 
 export type PreferenceSection = keyof PreferenceSections;
@@ -45,6 +56,16 @@ export const PREFERENCE_SECTIONS: {
             useShortNames: true,
             hideScores: false,
             hideFinishedGames: false,
+        },
+    },
+    // Each default is what the builder did before these were settings.
+    teamBuilder: {
+        storageKey: 'nba-team-builder-preferences',
+        defaults: {
+            confirmDestructive: true,
+            undoToastSeconds: '8',
+            flipNewCards: false,
+            drawerSide: DRAWER_SIDES.RIGHT,
         },
     },
 };

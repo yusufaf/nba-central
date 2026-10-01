@@ -13,10 +13,13 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { usePlayerStatsPreferences } from '@/composables/usePlayerStatsPreferences';
 import { useScoresPreferences } from '@/composables/useScoresPreferences';
+import { useTeamBuilderPreferences } from '@/composables/useTeamBuilderPreferences';
 import { useSettingsSync } from '@/composables/useSettingsSync';
 import { useCurrentUser } from '@/composables/useCurrentUser';
 import { VIEW_OPTIONS } from '@/constants/constants';
 import type { SeasonFormat, StatDisplayMode } from '@/constants/playerStats';
+import type { UndoToastSeconds } from '@/constants/preferences';
+import type { DrawerSide } from '@/models/types';
 
 const TABS = [
     { value: 'preferences', label: 'Preferences' },
@@ -35,6 +38,7 @@ const { currentUser } = useCurrentUser();
 const { status, isSaving, retry } = useSettingsSync();
 const { preferences: playerStats } = usePlayerStatsPreferences();
 const { preferences: scores } = useScoresPreferences();
+const { preferences: teamBuilder } = useTeamBuilderPreferences();
 
 // The tab lives in the URL (?tab=preferences) so it can be linked to and
 // survives a reload. replace, not push: switching tabs shouldn't fill the
@@ -79,6 +83,13 @@ const conferenceOptions = [
     { value: 'CROSS', label: 'E v W' },
 ];
 
+const undoToastOptions: UndoToastSeconds[] = ['5', '8', '15', '30'];
+
+const drawerSideOptions: { value: DrawerSide; label: string }[] = [
+    { value: 'left', label: 'Left' },
+    { value: 'right', label: 'Right' },
+];
+
 // A single-select ToggleGroup emits '' when the selected item is clicked
 // again; keep the current value instead of clearing it.
 const choose = <T extends string>(apply: (value: T) => void) => (value: unknown) => {
@@ -88,6 +99,8 @@ const setSeasonFormat = choose<SeasonFormat>((v) => (playerStats.value.seasonFor
 const setStatMode = choose<StatDisplayMode>((v) => (playerStats.value.statMode = v));
 const setConferenceFilter = choose((v) => (scores.value.conferenceFilter = v));
 const setSelectedView = choose((v) => (scores.value.selectedView = v));
+const setUndoToastSeconds = choose<UndoToastSeconds>((v) => (teamBuilder.value.undoToastSeconds = v));
+const setDrawerSide = choose<DrawerSide>((v) => (teamBuilder.value.drawerSide = v));
 
 const handleSignOut = () => {
     signOut(window.location.origin);
@@ -312,6 +325,89 @@ const handleSignOut = () => {
                                     :disabled="isSaving('scores.hideFinishedGames')"
                                     @update:checked="(v) => (scores.hideFinishedGames = v)"
                                 />
+                            </SettingRow>
+                        </Card>
+                    </section>
+
+                    <section class="flex flex-col gap-3">
+                        <SectionHeading>Team builder</SectionHeading>
+                        <Card class="px-6 py-2">
+                            <SettingRow
+                                label="Confirm before resetting"
+                                description="Ask before Reset clears the team. Off, it clears right away and you can undo it. Deleting a saved team or a custom coach, GM or player always asks."
+                                label-for="setting-confirm-destructive"
+                                :saving="isSaving('teamBuilder.confirmDestructive')"
+                            >
+                                <CustomSwitch
+                                    id="setting-confirm-destructive"
+                                    :checked="teamBuilder.confirmDestructive"
+                                    :disabled="isSaving('teamBuilder.confirmDestructive')"
+                                    @update:checked="(v) => (teamBuilder.confirmDestructive = v)"
+                                />
+                            </SettingRow>
+
+                            <SettingRow
+                                label="Undo notification"
+                                description="How long the Undo button stays up after removing a player or resetting the team."
+                                :saving="isSaving('teamBuilder.undoToastSeconds')"
+                            >
+                                <ToggleGroup
+                                    type="single"
+                                    variant="outline"
+                                    size="sm"
+                                    class="justify-start"
+                                    aria-label="Undo toast duration"
+                                    :model-value="teamBuilder.undoToastSeconds"
+                                    :disabled="isSaving('teamBuilder.undoToastSeconds')"
+                                    @update:model-value="setUndoToastSeconds"
+                                >
+                                    <ToggleGroupItem
+                                        v-for="seconds in undoToastOptions"
+                                        :key="seconds"
+                                        :value="seconds"
+                                    >
+                                        {{ seconds }}s
+                                    </ToggleGroupItem>
+                                </ToggleGroup>
+                            </SettingRow>
+
+                            <SettingRow
+                                label="Show actions on new cards"
+                                description="Players join the roster with their card flipped to View Stats, Replace and Compare."
+                                label-for="setting-flip-new-cards"
+                                :saving="isSaving('teamBuilder.flipNewCards')"
+                            >
+                                <CustomSwitch
+                                    id="setting-flip-new-cards"
+                                    :checked="teamBuilder.flipNewCards"
+                                    :disabled="isSaving('teamBuilder.flipNewCards')"
+                                    @update:checked="(v) => (teamBuilder.flipNewCards = v)"
+                                />
+                            </SettingRow>
+
+                            <SettingRow
+                                label="Drawer side"
+                                description="Where the coach, GM and arena pickers open."
+                                :saving="isSaving('teamBuilder.drawerSide')"
+                            >
+                                <ToggleGroup
+                                    type="single"
+                                    variant="outline"
+                                    size="sm"
+                                    class="justify-start"
+                                    aria-label="Drawer side"
+                                    :model-value="teamBuilder.drawerSide"
+                                    :disabled="isSaving('teamBuilder.drawerSide')"
+                                    @update:model-value="setDrawerSide"
+                                >
+                                    <ToggleGroupItem
+                                        v-for="option in drawerSideOptions"
+                                        :key="option.value"
+                                        :value="option.value"
+                                    >
+                                        {{ option.label }}
+                                    </ToggleGroupItem>
+                                </ToggleGroup>
                             </SettingRow>
                         </Card>
                     </section>

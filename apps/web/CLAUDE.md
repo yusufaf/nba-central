@@ -86,8 +86,9 @@ to put classes on.
   quotes, unlike the rest of the app — treat it as a library.
 - `reka-ui` is imported only inside `src/components/ui/`. Views use the
   wrappers, never the primitives directly.
-- User preferences (`usePlayerStatsPreferences`, `useScoresPreferences`) are
-  localStorage-only when signed out. Signed in, `useSettingsSync` swaps them
+- User preferences (`usePlayerStatsPreferences`, `useScoresPreferences`,
+  `useTeamBuilderPreferences`) are localStorage-only when signed out.
+  Signed in, `useSettingsSync` swaps them
   for the server copy (`/api/users/settings/*`), loaded once per session and
   saved per field; `App.vue` starts/stops it from the Logto session via
   `useAccountSession`. A new preference needs its key in
