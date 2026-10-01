@@ -3,15 +3,16 @@ import { computed } from "vue";
 import { useRouter } from "vue-router";
 import { ROUTES } from "@/constants/constants";
 
+// useRouter() only works during setup, so not inside the computeds: they
+// re-run on every route change.
+const router = useRouter();
+
 const title = computed(() => {
-    const currentPath = useRouter().currentRoute.value.path;
+    const currentPath = router.currentRoute.value.path;
     return ROUTES.find((route) => route.path === currentPath)?.title;
 });
 
-const isScorePage = computed(() => {
-    const currentPath = useRouter().currentRoute.value.path;
-    return currentPath === "/scores";
-});
+const isScorePage = computed(() => router.currentRoute.value.path === "/scores");
 </script>
 
 <template>
