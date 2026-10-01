@@ -22,8 +22,36 @@ describe("validateSettingsPatch", () => {
 			"scores.useShortNames": false,
 			"scores.hideScores": true,
 			"scores.hideFinishedGames": true,
+			"teamBuilder.confirmDestructive": false,
+			"teamBuilder.undoToastSeconds": "30",
+			"teamBuilder.flipNewCards": true,
+			"teamBuilder.drawerSide": "left",
 		};
 		expect(validateSettingsPatch(patch)).toEqual({ valid: true, patch });
+	});
+
+	it("rejects team builder values outside their rules", () => {
+		for (const patch of [
+			{ "teamBuilder.confirmDestructive": "false" },
+			{ "teamBuilder.undoToastSeconds": 8 },
+			{ "teamBuilder.undoToastSeconds": "0" },
+			{ "teamBuilder.undoToastSeconds": "9999" },
+			{ "teamBuilder.flipNewCards": 1 },
+			{ "teamBuilder.drawerSide": "top" },
+		]) {
+			const [key] = Object.keys(patch);
+			expect(validateSettingsPatch(patch)).toEqual({
+				valid: false,
+				error: `Invalid value for ${key}`,
+			});
+		}
+	});
+
+	it("rejects an unknown team builder key", () => {
+		expect(validateSettingsPatch({ "teamBuilder.cardsFlipped": true })).toEqual({
+			valid: false,
+			error: "Unknown setting: teamBuilder.cardsFlipped",
+		});
 	});
 
 	it("rejects non-objects", () => {

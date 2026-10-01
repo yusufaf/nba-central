@@ -24,6 +24,15 @@ export const SETTINGS_SCHEMA = {
 	"scores.useShortNames": { type: "boolean" },
 	"scores.hideScores": { type: "boolean" },
 	"scores.hideFinishedGames": { type: "boolean" },
+	"teamBuilder.confirmDestructive": { type: "boolean" },
+	// Seconds, as strings: an enum keeps the allowed durations a closed set
+	// without a numeric rule type.
+	"teamBuilder.undoToastSeconds": {
+		type: "enum",
+		values: ["5", "8", "15", "30"],
+	},
+	"teamBuilder.flipNewCards": { type: "boolean" },
+	"teamBuilder.drawerSide": { type: "enum", values: ["left", "right"] },
 } as const satisfies Record<string, SettingRule>;
 
 export type SettingKey = keyof typeof SETTINGS_SCHEMA;
