@@ -17,6 +17,7 @@ import ManageNotifications from "@/components/Scores/ManageNotifications.vue";
 import { useGameNotifications } from "@/composables/useGameNotifications";
 import { useScoresPreferences } from "@/composables/useScoresPreferences";
 import { useScoresRouteState } from "@/composables/useScoresRouteState";
+import { useDateFormat } from "@/composables/useDateFormat";
 import { formatDateForEspn, isSameDay } from "@/utils/date";
 import OptionsMenu from "@/components/Scores/OptionsMenu.vue";
 import { Button } from "@/components/ui/button";
@@ -77,14 +78,8 @@ const calendarAttributes = computed(() => {
     return attrs;
 });
 
-const primaryDateString = computed(() =>
-    selectedDate.value.toLocaleDateString("en-us", {
-        weekday: "long",
-        year: "numeric",
-        month: "long",
-        day: "numeric",
-    })
-);
+const { formatDate } = useDateFormat();
+const primaryDateString = computed(() => formatDate(selectedDate.value, "long"));
 
 // const gameStatus = ref([] as any[]);
 const gameData = ref<ESPNEvent[]>([]);

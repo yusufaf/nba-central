@@ -40,7 +40,8 @@ const location = computed(() => [props.city, props.country].filter(Boolean).join
              not laid out for a variable viewport - a user font-size
              preference other than the browser default would scale
              75rem/39.375rem away from 1200x630 and crop the export, so it
-             is pinned in px instead. -->
+             is pinned in px instead. The Tailwind classes inside are rem
+             too; the scoped style below pins the theme values they read. -->
         <header class="flex items-center gap-8">
             <img
                 v-if="logoUrl && !logoFailed"
@@ -98,6 +99,20 @@ const location = computed(() => [props.city, props.country].filter(Boolean).join
 </template>
 
 <style scoped>
+/* p-12, h-32, text-6xl and the rest resolve through these theme variables,
+   which are rem: they'd follow the Text size setting and push the content
+   out of the fixed 1200x630 frame. The same sizes, in px, for this card only. */
+.share-card {
+    --spacing: 4px; /* style-guard-allow: px-unit */
+    --radius: 8px; /* style-guard-allow: px-unit */
+    --text-sm: 14px; /* style-guard-allow: px-unit */
+    --text-xl: 20px; /* style-guard-allow: px-unit */
+    --text-2xl: 24px; /* style-guard-allow: px-unit */
+    --text-3xl: 30px; /* style-guard-allow: px-unit */
+    --text-5xl: 48px; /* style-guard-allow: px-unit */
+    --text-6xl: 60px; /* style-guard-allow: px-unit */
+}
+
 /* Rating colours follow the builder's tiers; tokens come from main.css. */
 [data-tier='elite'] { color: hsl(var(--primary)); }
 [data-tier='great'] { color: hsl(var(--foreground)); }

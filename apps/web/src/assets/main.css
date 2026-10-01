@@ -5,6 +5,13 @@
    main.ts puts .dark on <html>, so bind the variant to that class. */
 @custom-variant dark (&:is(.dark *));
 
+/* Same idea for motion: the built-in motion-* variants read the OS media
+   query, which the Reduced motion setting can override either way.
+   useDisplayPreferences puts .reduce-motion on <html> when motion should be
+   off, so these key off that class instead. */
+@custom-variant motion-reduce (&:where(.reduce-motion, .reduce-motion *));
+@custom-variant motion-safe (&:where(:root:not(.reduce-motion), :root:not(.reduce-motion) *));
+
 /* ---------------------------------------------------------------------------
    Design tokens — the single source of truth.
 
@@ -363,6 +370,28 @@
   }
 
 }
+/* Reduced motion (the setting, or the OS when it's left on System).
+   Unlayered on purpose: it has to outrank every Tailwind utility, including
+   transition-* and tw-animate-css's dialog/sheet/popover enter and exit, which
+   live in the utilities layer. Animations still run, for a frame, so reka's
+   presence logic still sees them end and unmounts closed overlays.
+   Spinners are the exception: they say something is loading, so they keep
+   turning, more slowly. Component-scoped animations opt out themselves with
+   :root.reduce-motion, since a scoped selector can outrank this one. */
+:root.reduce-motion *:not(.animate-spin),
+:root.reduce-motion *::before,
+:root.reduce-motion *::after {
+  animation-duration: 0.01ms;
+  animation-delay: 0s;
+  animation-iteration-count: 1;
+  transition-duration: 0.01ms;
+  transition-delay: 0s;
+}
+
+:root.reduce-motion .animate-spin {
+  animation-duration: 2.5s;
+}
+
 /* @media (min-width: 1024px) {
   body {
     display: flex;

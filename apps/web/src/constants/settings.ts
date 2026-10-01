@@ -32,6 +32,23 @@ export const SETTINGS_SCHEMA = {
     },
     'teamBuilder.flipNewCards': { type: 'boolean' },
     'teamBuilder.drawerSide': { type: 'enum', values: ['left', 'right'] },
+    // "auto" keeps each date and time as the app showed it before these
+    // settings existed (some follow the browser locale, some are en-US).
+    'display.dateFormat': {
+        type: 'enum',
+        values: ['auto', 'YYYY-MM-DD', 'DD/MM/YYYY', 'MM/DD/YYYY'],
+    },
+    'display.timeFormat': { type: 'enum', values: ['auto', '12h', '24h'] },
+    'display.reducedMotion': {
+        type: 'enum',
+        values: ['system', 'reduce', 'allow'],
+    },
+    // Root font size as a percentage of the browser default, as strings for
+    // the same reason as undoToastSeconds.
+    'display.fontScale': {
+        type: 'enum',
+        values: ['87.5', '100', '112.5', '125', '137.5'],
+    },
 } as const satisfies Record<string, SettingRule>;
 
 export type SettingKey = keyof typeof SETTINGS_SCHEMA;

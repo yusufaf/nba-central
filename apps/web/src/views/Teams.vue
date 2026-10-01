@@ -17,6 +17,7 @@ import { Shield, Plus, Users, Trash2, Globe, Link2 } from "lucide-vue-next";
 import { useUserTeamsStore } from "@/stores/userTeams";
 import { shareUrlFor } from "@/utils/shareUrl";
 import { track } from "@/lib/analytics";
+import { useDateFormat } from "@/composables/useDateFormat";
 import type { TeamSummary } from "@/models/api";
 
 const router = useRouter();
@@ -26,12 +27,8 @@ const teamToDelete = ref<TeamSummary | null>(null);
 const showDeleteDialog = ref(false);
 const deleting = ref(false);
 
-const formatUpdatedAt = (updatedAt: number) =>
-    new Date(updatedAt).toLocaleDateString(undefined, {
-        month: "short",
-        day: "numeric",
-        year: "numeric",
-    });
+const { formatDate } = useDateFormat();
+const formatUpdatedAt = (updatedAt: number) => formatDate(updatedAt, "medium");
 
 const openTeam = (teamUUID: string) => {
     router.push({ path: "/teambuilder", query: { team: teamUUID } });

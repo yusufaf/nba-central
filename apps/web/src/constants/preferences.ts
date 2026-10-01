@@ -1,6 +1,7 @@
 import type { SeasonFormat, StatDisplayMode } from '@/constants/playerStats';
 import { DRAWER_SIDES, VIEWS } from '@/constants/constants';
 import type { DrawerSide } from '@/models/types';
+import type { DateFormat, TimeFormat } from '@/utils/date';
 
 export interface PlayerStatsPreferences {
     seasonFormat: SeasonFormat;
@@ -26,10 +27,22 @@ export interface TeamBuilderPreferences {
     drawerSide: DrawerSide;
 }
 
+export type ReducedMotion = 'system' | 'reduce' | 'allow';
+export type FontScale = '87.5' | '100' | '112.5' | '125' | '137.5';
+export const FONT_SCALES: readonly FontScale[] = ['87.5', '100', '112.5', '125', '137.5'];
+
+export interface DisplayPreferences {
+    dateFormat: DateFormat;
+    timeFormat: TimeFormat;
+    reducedMotion: ReducedMotion;
+    fontScale: FontScale;
+}
+
 export interface PreferenceSections {
     playerStats: PlayerStatsPreferences;
     scores: ScoresPreferences;
     teamBuilder: TeamBuilderPreferences;
+    display: DisplayPreferences;
 }
 
 export type PreferenceSection = keyof PreferenceSections;
@@ -66,6 +79,17 @@ export const PREFERENCE_SECTIONS: {
             undoToastSeconds: '8',
             flipNewCards: false,
             drawerSide: DRAWER_SIDES.RIGHT,
+        },
+    },
+    // "auto" and "system" are what the app did before: each date as its page
+    // always wrote it, motion as the OS asks, and the browser's font size.
+    display: {
+        storageKey: 'nba-display-preferences',
+        defaults: {
+            dateFormat: 'auto',
+            timeFormat: 'auto',
+            reducedMotion: 'system',
+            fontScale: '100',
         },
     },
 };

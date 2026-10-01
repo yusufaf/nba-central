@@ -166,7 +166,7 @@ const averageStats = computed(() => {
         <template v-if="isPending">
           <div class="empty-state" role="status" aria-live="polite">
             <div class="empty-icon-wrapper is-pending">
-              <Loader2 class="empty-icon pending-spinner" />
+              <Loader2 class="empty-icon pending-spinner animate-spin" />
             </div>
             <p class="pending-name">{{ pendingName }}</p>
             <p class="empty-text">Adding to {{ slotLabel }}...</p>
@@ -334,15 +334,13 @@ const averageStats = computed(() => {
   cursor: grabbing;
 }
 
-/* Drag feedback is a transform; honour reduced-motion by dropping it. */
-@media (prefers-reduced-motion: reduce) {
-  .player-card-wrapper {
-    transition: none;
-  }
+/* Drag feedback is a transform; honour reduced motion by dropping it. */
+:root.reduce-motion .player-card-wrapper {
+  transition: none;
+}
 
-  .player-card-wrapper.is-drop-target {
-    transform: none;
-  }
+:root.reduce-motion .player-card-wrapper.is-drop-target {
+  transform: none;
 }
 
 .player-card {
@@ -442,21 +440,9 @@ const averageStats = computed(() => {
   background-color: hsl(var(--primary) / 0.12);
 }
 
+/* Spins with animate-spin, which main.css slows down with motion reduced. */
 .pending-spinner {
   color: hsl(var(--primary));
-  animation: pending-spin 0.9s linear infinite;
-}
-
-@keyframes pending-spin {
-  to {
-    transform: rotate(360deg);
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .pending-spinner {
-    animation-duration: 2.5s;
-  }
 }
 
 .pending-name {

@@ -123,7 +123,7 @@ onMounted(() => {
 
             <!-- States -->
             <div v-if="isLoading" class="state-wrap">
-                <div class="spinner" />
+                <div class="spinner animate-spin" />
             </div>
 
             <div v-else-if="errorMessage" class="state-wrap state-error">
@@ -310,11 +310,6 @@ onMounted(() => {
     border-radius: 50%;
     border: 0.1875rem solid hsl(var(--border));
     border-bottom-color: hsl(var(--primary));
-    animation: spin 0.8s linear infinite;
-}
-
-@keyframes spin {
-    to { transform: rotate(360deg); }
 }
 
 .state-error p {

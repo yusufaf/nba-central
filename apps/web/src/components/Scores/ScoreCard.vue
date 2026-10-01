@@ -8,6 +8,7 @@ import {
     ZERO_CLOCK,
 } from "@/constants/constants";
 import { useGameNotifications } from "@/composables/useGameNotifications";
+import { useDateFormat } from "@/composables/useDateFormat";
 import LineScore from "./LineScore.vue";
 import TeamDetailsTooltip from "./TeamDetailsTooltip.vue";
 import type { CustomizationState } from "@/models/types";
@@ -46,13 +47,8 @@ const gameNameToDisplay = computed(() => {
 - Bkref doesn't do current scores, so might have to actually differentiate data betwene previous days and current day
     - ESPN/NBA.com - current day | bkref - previous days
 */
-const gameTimeStart = computed(() => {
-    const timeString = new Date(props.game.date).toLocaleTimeString(undefined, {
-        hour: "2-digit",
-        minute: "2-digit",
-    });
-    return timeString;
-});
+const { formatTime } = useDateFormat();
+const gameTimeStart = computed(() => formatTime(props.game.date));
 
 const gameTeamsSorted = computed(() => {
     /* Ensure away team shows up on top */
@@ -207,7 +203,7 @@ const toggleGameNotification = (): void => {
         }"
         :key="game.uid"
     >
-        <Card class="score-card border-0 cursor-pointer hover:shadow-lg transition-all hover:scale-[1.02]" @click="() => router.push(`/game/${game.id}`)">
+        <Card class="score-card border-0 cursor-pointer hover:shadow-lg transition-all hover:scale-[1.02] motion-reduce:hover:scale-100" @click="() => router.push(`/game/${game.id}`)">
         <CardHeader class="card-header">
             <h6>{{ gameNameToDisplay }}</h6>
             <Button
@@ -393,6 +389,11 @@ const toggleGameNotification = (): void => {
     margin-left: auto;
     animation: ring 4s 0.7s ease-in-out;
     transform-origin: 50% 0.0625rem;
+}
+
+/* The ring is decoration, so with motion reduced it doesn't run at all. */
+:root.reduce-motion .notification-bell {
+    animation: none;
 }
 
 .notification-bell.following {
