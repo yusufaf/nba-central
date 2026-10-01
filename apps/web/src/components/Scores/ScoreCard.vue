@@ -9,6 +9,7 @@ import {
 } from "@/constants/constants";
 import { useGameNotifications } from "@/composables/useGameNotifications";
 import { useDateFormat } from "@/composables/useDateFormat";
+import { gameLeaders } from "@/utils/gameLeaders";
 import LineScore from "./LineScore.vue";
 import TeamDetailsTooltip from "./TeamDetailsTooltip.vue";
 import type { CustomizationState } from "@/models/types";
@@ -163,29 +164,8 @@ const gameClock = computed(() => {
     return clockString;
 });
 
-const leaderData = computed(() => {
-    const currentTeams = props.gameTeams[props.index];
-
-    const teamLeadersData: any[] = currentTeams.map((value) => {
-        const { leaders } = value;
-        const ratingLeaderData = leaders[leaders.length - 1];
-
-        const [ratingLeader] = ratingLeaderData.leaders;
-        const { athlete, displayValue } = ratingLeader;
-
-        return {
-            name: athlete.shortName, // Other props: displayName, fullName
-            statline: displayValue,
-            position: athlete.position.abbreviation,
-            headshot: athlete.headshot,
-            data: ratingLeader,
-            id: athlete.id,
-        };
-    });
-
-    // Reverse to go away -> home
-    return teamLeadersData.reverse();
-});
+const leaderData = computed(() => gameLeaders(props.gameTeams[props.index]));
+const hasLeaders = computed(() => leaderData.value.some(Boolean));
 
 const toggleGameNotification = (): void => {
     toggleFollow(props.game);
@@ -297,33 +277,31 @@ const toggleGameNotification = (): void => {
                 </template>
             </div>
         </CardContent>
+        <!-- Scheduled games can arrive with no leaders yet (#141). -->
+        <template v-if="hasLeaders">
         <Separator />
         <CardContent class="leaders-section">
             <div class="leaders-header">
                 {{ gameScheduled ? "Players to Watch" : "Top Performers" }}
             </div>
             <div class="leaders">
-                <div
-                    class="leader"
-                    :key="id"
-                    v-for="{
-                        id,
-                        headshot,
-                        name,
-                        position,
-                        statline,
-                    } in leaderData"
-                >
-                    <Avatar class="headshot">
-                        <AvatarImage :src="headshot" />
-                    </Avatar>
-                    <div class="leader-info">
-                        <span>{{ `${name} - ${position}` }} </span>
-                        <span>{{ statline }}</span>
+                <!-- One slot per team, away then home: an empty slot keeps a
+                     lone leader on its own team's side. -->
+                <template v-for="(leader, slot) in leaderData" :key="slot">
+                    <div v-if="leader" class="leader">
+                        <Avatar class="headshot">
+                            <AvatarImage :src="leader.headshot" />
+                        </Avatar>
+                        <div class="leader-info">
+                            <span>{{ leader.position ? `${leader.name} - ${leader.position}` : leader.name }} </span>
+                            <span>{{ leader.statline }}</span>
+                        </div>
                     </div>
-                </div>
+                    <div v-else aria-hidden="true"></div>
+                </template>
             </div>
         </CardContent>
+        </template>
     </Card>
     </div>
 </template>
