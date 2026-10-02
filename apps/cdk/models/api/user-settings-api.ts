@@ -16,5 +16,12 @@ export interface UserSettingsData {
 	updatedAt: string | null;
 }
 
-export type GetUserSettingsResponse = ApiResponse<UserSettingsData>;
+export interface GetUserSettingsData extends UserSettingsData {
+	// The image uploadAvatar last stored, or null. Read with the settings so
+	// the header can show it without a second request; whether it's shown
+	// is the "profile.avatar" setting.
+	avatarUrl: string | null;
+}
+
+export type GetUserSettingsResponse = ApiResponse<GetUserSettingsData>;
 export type UpdateUserSettingsResponse = ApiResponse<UserSettingsData>;

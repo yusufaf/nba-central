@@ -50,6 +50,26 @@ export const SETTINGS_SCHEMA = {
 		type: "enum",
 		values: ["87.5", "100", "112.5", "125", "137.5"],
 	},
+	// Which avatar the profile card and header show. "generated-N" is the
+	// Nth DiceBear avatar seeded by the user's id, rendered in the browser;
+	// "upload" is the image uploadAvatar stored. Never a URL: uploadAvatar
+	// writes that onto the user's item itself, so no client can point its
+	// avatar at another host through this map.
+	"profile.avatar": {
+		type: "enum",
+		values: [
+			"none",
+			"generated-0",
+			"generated-1",
+			"generated-2",
+			"generated-3",
+			"generated-4",
+			"generated-5",
+			"generated-6",
+			"generated-7",
+			"upload",
+		],
+	},
 } as const satisfies Record<string, SettingRule>;
 
 export type SettingKey = keyof typeof SETTINGS_SCHEMA;

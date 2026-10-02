@@ -36,7 +36,7 @@ export const handler: Handler = async (
 			new GetCommand({
 				TableName: usersTable,
 				Key: settingsItemKey(userUUID),
-				ProjectionExpression: "settings, settingsUpdatedAt",
+				ProjectionExpression: "settings, settingsUpdatedAt, avatarUrl",
 			}),
 		);
 
@@ -45,6 +45,7 @@ export const handler: Handler = async (
 			data: {
 				settings: pickValidSettings(Item?.settings),
 				updatedAt: Item?.settingsUpdatedAt ?? null,
+				avatarUrl: typeof Item?.avatarUrl === "string" ? Item.avatarUrl : null,
 			},
 		};
 		return { statusCode: 200, body: JSON.stringify(response) };

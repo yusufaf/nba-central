@@ -30,6 +30,7 @@ describe("validateSettingsPatch", () => {
 			"display.timeFormat": "24h",
 			"display.reducedMotion": "reduce",
 			"display.fontScale": "137.5",
+			"profile.avatar": "generated-3",
 		};
 		expect(validateSettingsPatch(patch)).toEqual({ valid: true, patch });
 	});
@@ -95,6 +96,51 @@ describe("validateSettingsPatch", () => {
 		expect(validateSettingsPatch({ "display.theme": "light" })).toEqual({
 			valid: false,
 			error: "Unknown setting: display.theme",
+		});
+	});
+
+	it("accepts every avatar choice", () => {
+		for (const value of [
+			"none",
+			"generated-0",
+			"generated-1",
+			"generated-2",
+			"generated-3",
+			"generated-4",
+			"generated-5",
+			"generated-6",
+			"generated-7",
+			"upload",
+		]) {
+			expect(validateSettingsPatch({ "profile.avatar": value }).valid).toBe(true);
+		}
+	});
+
+	// The choice is an enum, never a URL: the uploaded image's URL is written
+	// by uploadAvatar onto the user's item, so a client can't point its
+	// avatar at an arbitrary host through the settings map.
+	it("rejects avatar values outside the enum, URLs included", () => {
+		for (const value of [
+			"generated-8",
+			"generated--1",
+			"generated",
+			"",
+			"https://example.com/me.png",
+			"data:image/svg+xml,<svg/>",
+			true,
+			3,
+		]) {
+			expect(validateSettingsPatch({ "profile.avatar": value })).toEqual({
+				valid: false,
+				error: "Invalid value for profile.avatar",
+			});
+		}
+	});
+
+	it("rejects an unknown profile key", () => {
+		expect(validateSettingsPatch({ "profile.avatarUrl": "x" })).toEqual({
+			valid: false,
+			error: "Unknown setting: profile.avatarUrl",
 		});
 	});
 
