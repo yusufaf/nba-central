@@ -10,6 +10,8 @@ import type {
     DeleteFileResponse,
     GetUserSettingsResponse,
     UpdateUserSettingsResponse,
+    GetUserStatsResponse,
+    UploadAvatarResponse,
     SaveTeamPayload,
     UpdateTeamPayload,
     CreateTeamResponse,
@@ -119,6 +121,19 @@ export const settingsApi = {
             settings,
             initialize: true,
         });
+        return response.data;
+    },
+};
+
+// Profile API - the rest of USERS_ROUTES. Also keyed by the access token.
+export const profileApi = {
+    getStats: async (): Promise<GetUserStatsResponse> => {
+        const response = await api.get('/api/users/stats/get');
+        return response.data;
+    },
+    // Base64 image bytes; the server reads the type from the bytes.
+    uploadAvatar: async (image: string): Promise<UploadAvatarResponse> => {
+        const response = await api.put('/api/users/avatar/upload', { image });
         return response.data;
     },
 };

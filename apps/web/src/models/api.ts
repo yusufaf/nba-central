@@ -64,8 +64,25 @@ export interface UserSettingsData {
     updatedAt: string | null;
 }
 
-export type GetUserSettingsResponse = ApiResult<UserSettingsData>;
+export interface GetUserSettingsData extends UserSettingsData {
+    // The image uploadAvatar last stored, or null.
+    avatarUrl: string | null;
+}
+
+export type GetUserSettingsResponse = ApiResult<GetUserSettingsData>;
 export type UpdateUserSettingsResponse = ApiResult<UserSettingsData>;
+
+// Mirrors apps/cdk/models/api/user-profile-api.ts.
+export interface UserStats {
+    teams: number;
+    publishedTeams: number;
+    customCoaches: number;
+    customGMs: number;
+    customPlayers: number;
+}
+
+export type GetUserStatsResponse = ApiResult<UserStats>;
+export type UploadAvatarResponse = ApiResult<{ avatarUrl: string }>;
 // #endregion
 
 //#region Team API Types

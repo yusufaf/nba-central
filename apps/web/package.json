@@ -20,6 +20,8 @@
     "lint:fix": "eslint . --fix"
   },
   "dependencies": {
+    "@dicebear/core": "^10.7.0",
+    "@dicebear/styles": "^10.6.0",
     "@fontsource-variable/inter": "^5.3.0",
     "@logto/vue": "^3.0.14",
     "@tailwindcss/vite": "^4.3.3",
