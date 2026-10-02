@@ -38,11 +38,20 @@ export interface DisplayPreferences {
     fontScale: FontScale;
 }
 
+export const GENERATED_AVATAR_COUNT = 8;
+export type GeneratedAvatar = `generated-${0 | 1 | 2 | 3 | 4 | 5 | 6 | 7}`;
+export type AvatarChoice = 'none' | GeneratedAvatar | 'upload';
+
+export interface ProfilePreferences {
+    avatar: AvatarChoice;
+}
+
 export interface PreferenceSections {
     playerStats: PlayerStatsPreferences;
     scores: ScoresPreferences;
     teamBuilder: TeamBuilderPreferences;
     display: DisplayPreferences;
+    profile: ProfilePreferences;
 }
 
 export type PreferenceSection = keyof PreferenceSections;
@@ -90,6 +99,14 @@ export const PREFERENCE_SECTIONS: {
             timeFormat: 'auto',
             reducedMotion: 'system',
             fontScale: '100',
+        },
+    },
+    // Signed in only: the avatar picker is on Settings, behind sign-in, so
+    // nothing writes this section to localStorage in practice.
+    profile: {
+        storageKey: 'nba-profile-preferences',
+        defaults: {
+            avatar: 'none',
         },
     },
 };

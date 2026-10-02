@@ -479,3 +479,35 @@ describe('load failures and sign-out', () => {
         expect(useScoresPreferences().preferences.value.hideScores).toBe(false);
     });
 });
+
+describe('the uploaded avatar URL', () => {
+    it('comes with the settings and goes away on sign-out', async () => {
+        vi.mocked(settingsApi.get).mockResolvedValue({
+            success: true,
+            data: {
+                settings: { 'profile.avatar': 'upload' },
+                updatedAt: '2026-09-01T00:00:00.000Z',
+                avatarUrl: 'https://cdn.example/avatars/u1/1.webp',
+            },
+        });
+        const { avatarUrl } = useSettingsSync();
+
+        await settingsSync.start('u1');
+        expect(avatarUrl.value).toBe('https://cdn.example/avatars/u1/1.webp');
+
+        settingsSync.stop();
+        expect(avatarUrl.value).toBeNull();
+    });
+
+    it('is replaced after an upload, but only while signed in', async () => {
+        serverHas({});
+        const { avatarUrl } = useSettingsSync();
+
+        settingsSync.setAvatarUrl('https://cdn.example/avatars/u1/0.png');
+        expect(avatarUrl.value).toBeNull();
+
+        await settingsSync.start('u1');
+        settingsSync.setAvatarUrl('https://cdn.example/avatars/u1/2.png');
+        expect(avatarUrl.value).toBe('https://cdn.example/avatars/u1/2.png');
+    });
+});

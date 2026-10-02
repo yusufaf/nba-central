@@ -7,6 +7,7 @@ import { usePreferredReducedMotion } from '@vueuse/core';
 import PageShell from '@/layouts/PageShell.vue';
 import SectionHeading from '@/components/layout/SectionHeading.vue';
 import SettingRow from '@/components/Settings/SettingRow.vue';
+import ProfileCard from '@/components/Settings/ProfileCard.vue';
 import CustomSwitch from '@/components/Scores/CustomSwitch.vue';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -183,6 +184,8 @@ const handleSignOut = () => {
 <template>
     <PageShell width="narrow">
         <h1 class="mb-6 text-[2rem] font-bold">Settings</h1>
+
+        <ProfileCard class="mb-6" />
 
         <Tabs :model-value="activeTab" @update:model-value="onTabChange">
             <TabsList class="mb-6 h-auto gap-0.5 bg-muted/30 p-1">

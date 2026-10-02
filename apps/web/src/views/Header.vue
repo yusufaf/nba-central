@@ -14,7 +14,8 @@ import {
     DropdownMenuSeparator,
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { ChevronDown, CircleUser, LogOut, Menu, Settings } from 'lucide-vue-next';
+import { ChevronDown, LogOut, Menu, Settings } from 'lucide-vue-next';
+import UserAvatar from '@/components/UserAvatar.vue';
 import { useCurrentUser } from '@/composables/useCurrentUser';
 
 const { isAuthenticated, signOut } = useLogto();
@@ -67,7 +68,7 @@ function handleSignOut() {
                                 class="login user-menu-trigger"
                                 data-testid="user-menu-trigger"
                             >
-                                <CircleUser class="size-5" />
+                                <UserAvatar class="size-6" />
                                 <span class="max-w-40 truncate">{{ displayName }}</span>
                                 <ChevronDown class="size-4" />
                             </button>
@@ -121,11 +122,14 @@ function handleSignOut() {
                             Login
                         </RouterLink>
                         <template v-else>
-                            <div class="flex min-w-0 flex-col gap-0.5">
-                                <span class="text-[0.6875rem] font-bold uppercase tracking-[0.06em] opacity-60">
-                                    Signed in as
-                                </span>
-                                <span class="truncate text-lg font-semibold">{{ displayName }}</span>
+                            <div class="flex min-w-0 items-center gap-3">
+                                <UserAvatar class="size-10" />
+                                <div class="flex min-w-0 flex-col gap-0.5">
+                                    <span class="text-[0.6875rem] font-bold uppercase tracking-[0.06em] opacity-60">
+                                        Signed in as
+                                    </span>
+                                    <span class="truncate text-lg font-semibold">{{ displayName }}</span>
+                                </div>
                             </div>
                             <RouterLink class="text-lg font-semibold" to="/settings">
                                 Settings

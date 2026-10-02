@@ -48,6 +48,9 @@ const state = reactive({
     userId: null as string | null,
     sections: cloneDefaults(),
     saving: {} as Partial<Record<SettingKey, true>>,
+    // The uploaded avatar's URL. Not a setting: uploadAvatar writes it, and
+    // it arrives with the settings so the header needs no second request.
+    avatarUrl: null as string | null,
 });
 
 const splitKey = (key: SettingKey) => {
@@ -131,6 +134,7 @@ const load = async (run: number) => {
         const response = await settingsApi.get();
         if (!response.success) throw new Error(response.error);
         let { settings } = response.data;
+        const avatarUrl = response.data.avatarUrl ?? null;
 
         if (response.data.updatedAt === null) {
             // Create-only on the server: if another device signed in first
@@ -142,6 +146,7 @@ const load = async (run: number) => {
 
         if (run !== generation) return;
         applyServerSettings(settings);
+        state.avatarUrl = avatarUrl;
         state.status = 'ready';
     } catch (error) {
         if (run !== generation) return;
@@ -233,6 +238,11 @@ export const settingsSync = {
         reconnect = tryAgain;
     },
 
+    /** After a successful upload, so the new image shows without a reload. */
+    setAvatarUrl(url: string) {
+        if (state.status === 'ready') state.avatarUrl = url;
+    },
+
     retry(): Promise<void> {
         if (state.userId) return settingsSync.start(state.userId);
         return reconnect ? reconnect() : Promise.resolve();
@@ -246,6 +256,7 @@ export const settingsSync = {
         state.status = 'signed-out';
         state.userId = null;
         state.saving = {};
+        state.avatarUrl = null;
         applyServerSettings({});
     },
 };
@@ -277,5 +288,6 @@ export const useSyncedPreferences = <S extends PreferenceSection>(
 export const useSettingsSync = () => ({
     status: computed(() => state.status),
     isSaving: (key: SettingKey) => state.saving[key] === true,
+    avatarUrl: computed(() => state.avatarUrl),
     retry: settingsSync.retry,
 });

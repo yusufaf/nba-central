@@ -4,9 +4,10 @@ import { flushPromises } from '@vue/test-utils';
 
 const isAuthenticated = ref(false);
 const getAccessTokenClaims = vi.fn();
+const getIdTokenClaims = vi.fn();
 
 vi.mock('@logto/vue', () => ({
-    useLogto: () => ({ isAuthenticated, getAccessTokenClaims }),
+    useLogto: () => ({ isAuthenticated, getAccessTokenClaims, getIdTokenClaims }),
 }));
 vi.mock('@/composables/useSettingsSync', () => ({
     settingsSync: { start: vi.fn(), stop: vi.fn(), unavailable: vi.fn() },
@@ -27,6 +28,7 @@ const startSession = () => {
 beforeEach(() => {
     isAuthenticated.value = false;
     vi.clearAllMocks();
+    getIdTokenClaims.mockResolvedValue(undefined);
 });
 
 afterEach(() => scope?.stop());
@@ -43,7 +45,48 @@ describe('useAccountSession', () => {
         expect(useCurrentUser().currentUser.value).toEqual({
             id: 'logto-user-1',
             username: 'hooper',
+            memberSince: null,
         });
+    });
+
+    it("reads member-since from the ID token's created_at", async () => {
+        getAccessTokenClaims.mockResolvedValue({ sub: 'logto-user-1', username: 'hooper' });
+        getIdTokenClaims.mockResolvedValue({ sub: 'logto-user-1', created_at: 1_700_000_000_000 });
+        startSession();
+
+        isAuthenticated.value = true;
+        await flushPromises();
+
+        expect(useCurrentUser().currentUser.value?.memberSince).toEqual(new Date(1_700_000_000_000));
+    });
+
+    it('leaves member-since empty when the ID token has no usable created_at', async () => {
+        getAccessTokenClaims.mockResolvedValue({ sub: 'logto-user-1' });
+        for (const idClaims of [{ created_at: '2024-01-01' }, { created_at: 0 }]) {
+            getIdTokenClaims.mockResolvedValue(idClaims);
+            startSession();
+            isAuthenticated.value = true;
+            await flushPromises();
+
+            expect(useCurrentUser().currentUser.value?.memberSince).toBeNull();
+            expect(settingsSync.start).toHaveBeenCalledWith('logto-user-1');
+
+            isAuthenticated.value = false;
+            await nextTick();
+            scope.stop();
+        }
+    });
+
+    it('still signs in when the ID token claims fail to read', async () => {
+        getAccessTokenClaims.mockResolvedValue({ sub: 'logto-user-1' });
+        getIdTokenClaims.mockRejectedValue(new Error('no id token'));
+        startSession();
+
+        isAuthenticated.value = true;
+        await flushPromises();
+
+        expect(settingsSync.start).toHaveBeenCalledWith('logto-user-1');
+        expect(useCurrentUser().currentUser.value?.memberSince).toBeNull();
     });
 
     it('reports the sync unavailable, with a way to try again, when the claims are missing', async () => {
