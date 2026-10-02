@@ -69,11 +69,12 @@ describe("team-builder-api-routes", () => {
 		// routes added alongside createTeam, plus /api/feedback/send), plus
 		// the 3 share-loop routes: /api/teams/publish, the public team
 		// reader, and the OG page. The Clerk-era /api/users/save-data then
-		// gave way to the two settings routes (get, update): 31.
-		expect(publicPaths.size + privatePaths.size).toBe(31);
+		// gave way to the two settings routes (get, update): 31. The profile
+		// card's stats and avatar upload routes make 33.
+		expect(publicPaths.size + privatePaths.size).toBe(33);
 	});
 
-	it("the user settings routes are private, with GET for reads and PUT for writes", () => {
+	it("the user routes are private, with GET for reads and PUT for writes", () => {
 		for (const route of USERS_ROUTES) {
 			expect(PRIVATE_ROUTES).toContainEqual(route);
 		}
@@ -86,6 +87,14 @@ describe("team-builder-api-routes", () => {
 		});
 		expect(byLambda.updateUserSettings).toMatchObject({
 			route: "/api/users/settings/update",
+			methods: ["PUT"],
+		});
+		expect(byLambda.getUserStats).toMatchObject({
+			route: "/api/users/stats/get",
+			methods: ["GET"],
+		});
+		expect(byLambda.uploadAvatar).toMatchObject({
+			route: "/api/users/avatar/upload",
 			methods: ["PUT"],
 		});
 		expect(USERS_ROUTES.map((r) => r.lambdaName)).not.toContain("saveUserData");

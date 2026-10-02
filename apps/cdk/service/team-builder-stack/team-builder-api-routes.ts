@@ -32,8 +32,8 @@ export const FILES_ROUTES: ApiRoute[] = [
 	},
 ];
 
-// The signed-in user's own settings. Both handlers key the item off the
-// authorizer's sub, so these must stay in PRIVATE_ROUTES.
+// The signed-in user's own settings, stats and avatar. Every handler keys
+// off the authorizer's sub, so these must stay in PRIVATE_ROUTES.
 export const USERS_ROUTES: ApiRoute[] = [
 	{
 		route: `${USERS_PREFIX}/settings/get`,
@@ -43,6 +43,16 @@ export const USERS_ROUTES: ApiRoute[] = [
 	{
 		route: `${USERS_PREFIX}/settings/update`,
 		lambdaName: "updateUserSettings",
+		methods: [HttpMethod.PUT],
+	},
+	{
+		route: `${USERS_PREFIX}/stats/get`,
+		lambdaName: "getUserStats",
+		methods: [HttpMethod.GET],
+	},
+	{
+		route: `${USERS_PREFIX}/avatar/upload`,
+		lambdaName: "uploadAvatar",
 		methods: [HttpMethod.PUT],
 	},
 ];

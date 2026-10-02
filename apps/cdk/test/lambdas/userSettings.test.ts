@@ -77,6 +77,7 @@ describe("getUserSettings", () => {
 			data: {
 				settings: { "scores.hideScores": true },
 				updatedAt: "2026-09-28T00:00:00.000Z",
+				avatarUrl: null,
 			},
 		});
 	});
@@ -103,7 +104,26 @@ describe("getUserSettings", () => {
 
 		expect(parseBody(result)).toEqual({
 			success: true,
-			data: { settings: {}, updatedAt: null },
+			data: { settings: {}, updatedAt: null, avatarUrl: null },
+		});
+	});
+
+	it("returns the uploaded avatar's URL alongside the settings", async () => {
+		send.mockResolvedValueOnce({
+			Item: {
+				settings: { "profile.avatar": "upload" },
+				settingsUpdatedAt: "2026-09-28T00:00:00.000Z",
+				avatarUrl: "https://cdn.example/avatars/user-1/1.webp",
+			},
+		});
+
+		const result: any = await getHandler(authorizerEvent(), {} as any, {} as any);
+
+		expect(send.mock.calls[0][0].input.ProjectionExpression).toContain("avatarUrl");
+		expect(parseBody(result).data).toEqual({
+			settings: { "profile.avatar": "upload" },
+			updatedAt: "2026-09-28T00:00:00.000Z",
+			avatarUrl: "https://cdn.example/avatars/user-1/1.webp",
 		});
 	});
 
