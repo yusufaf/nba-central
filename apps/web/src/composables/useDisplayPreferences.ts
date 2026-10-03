@@ -54,10 +54,10 @@ export const useReducedMotion = () => {
  * variant to key off, and the font scale as the root font size, which every
  * rem follows. Called once from App.vue.
  *
- * index.html sets `.dark` before the first paint from this device's copy of
- * the setting. Signed in, the setting lives on the server, so the theme (and
- * only the theme) is copied to this device as well. That also keeps the
- * theme as it was after signing out.
+ * index.html sets `.dark` and the root font size before the first paint,
+ * from this device's copy of the settings. Signed in, they live on the
+ * server, so those two (and only those two) are copied to this device as
+ * well. That also keeps them as they were after signing out.
  */
 export const applyDisplayPreferences = (root: HTMLElement = document.documentElement) => {
   const reduceMotion = useReducedMotion();
@@ -74,10 +74,11 @@ export const applyDisplayPreferences = (root: HTMLElement = document.documentEle
   });
 
   watch(
-    () => preferences.value.theme,
-    (setting) => {
-      if (localPreferences.value.theme !== setting) {
-        localPreferences.value = { ...localPreferences.value, theme: setting };
+    () => [preferences.value.theme, preferences.value.fontScale] as const,
+    ([theme, fontScale]) => {
+      const local = localPreferences.value;
+      if (local.theme !== theme || local.fontScale !== fontScale) {
+        localPreferences.value = { ...local, theme, fontScale };
       }
     },
     { immediate: true }

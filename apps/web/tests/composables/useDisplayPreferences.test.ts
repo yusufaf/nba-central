@@ -297,11 +297,17 @@ describe('theme', () => {
         expect(root.classList.contains('dark')).toBe(false);
     });
 
-    it('copies only the theme to this device, not the other synced display settings', async () => {
+    // index.html paints these two before the app loads. The rest only matter
+    // once it has, so they stay the signed-out values.
+    it('copies the theme and text size to this device, not the other synced display settings', async () => {
         vi.mocked(settingsApi.get).mockResolvedValue({
             success: true,
             data: {
-                settings: { 'display.theme': 'dark', 'display.fontScale': '125' },
+                settings: {
+                    'display.theme': 'dark',
+                    'display.fontScale': '125',
+                    'display.dateFormat': 'YYYY-MM-DD',
+                },
                 updatedAt: '2026-09-01T00:00:00.000Z',
             },
         });
@@ -310,6 +316,11 @@ describe('theme', () => {
         await flushPromises();
 
         expect(storedJson().theme).toBe('dark');
-        expect(storedJson().fontScale).toBe('100');
+        expect(storedJson().fontScale).toBe('125');
+        expect(storedJson().dateFormat).toBe('auto');
+
+        useDisplayPreferences().preferences.value.fontScale = '87.5';
+        await flushPromises();
+        expect(storedJson().fontScale).toBe('87.5');
     });
 });
