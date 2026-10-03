@@ -2,7 +2,7 @@
 import { computed, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { RefreshCw } from 'lucide-vue-next';
-import { usePreferredReducedMotion } from '@vueuse/core';
+import { usePreferredDark, usePreferredReducedMotion } from '@vueuse/core';
 import PageShell from '@/layouts/PageShell.vue';
 import SectionHeading from '@/components/layout/SectionHeading.vue';
 import SettingRow from '@/components/Settings/SettingRow.vue';
@@ -26,6 +26,7 @@ import {
     FONT_SCALES,
     type FontScale,
     type ReducedMotion,
+    type Theme,
     type UndoToastSeconds,
 } from '@/constants/preferences';
 import type { DateFormat, TimeFormat } from '@/utils/date';
@@ -50,6 +51,7 @@ const { preferences: teamBuilder } = useTeamBuilderPreferences();
 const { preferences: display } = useDisplayPreferences();
 const { formatDate, formatTime } = useDateFormat();
 const osMotion = usePreferredReducedMotion();
+const osDark = usePreferredDark();
 
 // The tab lives in the URL (?tab=preferences) so it can be linked to and
 // survives a reload. replace, not push: switching tabs shouldn't fill the
@@ -114,6 +116,12 @@ const timeFormatOptions: { value: TimeFormat; label: string }[] = [
     { value: '24h', label: '24-hour' },
 ];
 
+const themeOptions: { value: Theme; label: string }[] = [
+    { value: 'system', label: 'System' },
+    { value: 'light', label: 'Light' },
+    { value: 'dark', label: 'Dark' },
+];
+
 const reducedMotionOptions: { value: ReducedMotion; label: string }[] = [
     { value: 'system', label: 'System' },
     { value: 'reduce', label: 'Reduce' },
@@ -124,6 +132,9 @@ const reducedMotionOptions: { value: ReducedMotion; label: string }[] = [
 const now = new Date();
 const dateSample = computed(() => `Today: ${formatDate(now, 'long')}`);
 const timeSample = computed(() => `Now: ${formatTime(now)}`);
+const themeDescription = computed(
+    () => `System follows this device, which is set to ${osDark.value ? 'dark' : 'light'}.`,
+);
 const motionDescription = computed(
     () =>
         'Turns off non-essential animation, like the home page video and the typing headline. ' +
@@ -172,6 +183,7 @@ const setDrawerSide = choose<DrawerSide>((v) => (teamBuilder.value.drawerSide = 
 const setDateFormat = choose<DateFormat>((v) => (display.value.dateFormat = v));
 const setTimeFormat = choose<TimeFormat>((v) => (display.value.timeFormat = v));
 const setReducedMotion = choose<ReducedMotion>((v) => (display.value.reducedMotion = v));
+const setTheme = choose<Theme>((v) => (display.value.theme = v));
 </script>
 
 <template>
@@ -186,7 +198,7 @@ const setReducedMotion = choose<ReducedMotion>((v) => (display.value.reducedMoti
                     v-for="tab in TABS"
                     :key="tab.value"
                     :value="tab.value"
-                    class="px-4 py-2 font-medium text-foreground/60 hover:text-foreground data-[state=active]:bg-primary/15 data-[state=active]:font-semibold data-[state=active]:text-primary"
+                    class="px-4 py-2 font-medium text-foreground/60 hover:text-foreground data-[state=active]:bg-primary/15 data-[state=active]:font-semibold data-[state=active]:text-primary-strong"
                 >
                     {{ tab.label }}
                 </TabsTrigger>
@@ -484,6 +496,31 @@ const setReducedMotion = choose<ReducedMotion>((v) => (display.value.reducedMoti
                     <section class="flex flex-col gap-3">
                         <SectionHeading>Display</SectionHeading>
                         <Card class="px-6 py-2">
+                            <SettingRow
+                                label="Theme"
+                                :description="themeDescription"
+                                :saving="isSaving('display.theme')"
+                            >
+                                <ToggleGroup
+                                    type="single"
+                                    variant="outline"
+                                    size="sm"
+                                    class="flex-wrap justify-start"
+                                    aria-label="Theme"
+                                    :model-value="display.theme"
+                                    :disabled="isSaving('display.theme')"
+                                    @update:model-value="setTheme"
+                                >
+                                    <ToggleGroupItem
+                                        v-for="option in themeOptions"
+                                        :key="option.value"
+                                        :value="option.value"
+                                    >
+                                        {{ option.label }}
+                                    </ToggleGroupItem>
+                                </ToggleGroup>
+                            </SettingRow>
+
                             <SettingRow
                                 label="Date format"
                                 :description="`Dates on Scores, game pages, News and your teams. ${dateSample}`"

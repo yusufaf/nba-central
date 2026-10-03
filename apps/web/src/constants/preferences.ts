@@ -30,12 +30,14 @@ export interface TeamBuilderPreferences {
 export type ReducedMotion = 'system' | 'reduce' | 'allow';
 export type FontScale = '87.5' | '100' | '112.5' | '125' | '137.5';
 export const FONT_SCALES: readonly FontScale[] = ['87.5', '100', '112.5', '125', '137.5'];
+export type Theme = 'system' | 'light' | 'dark';
 
 export interface DisplayPreferences {
     dateFormat: DateFormat;
     timeFormat: TimeFormat;
     reducedMotion: ReducedMotion;
     fontScale: FontScale;
+    theme: Theme;
 }
 
 export const GENERATED_AVATAR_COUNT = 8;
@@ -92,6 +94,9 @@ export const PREFERENCE_SECTIONS: {
     },
     // "auto" and "system" are what the app did before: each date as its page
     // always wrote it, motion as the OS asks, and the browser's font size.
+    // Theme is the exception: the app was dark-only, and System is the new
+    // default. index.html reads `theme` from this key before the app loads,
+    // so keep the two in step.
     display: {
         storageKey: 'nba-display-preferences',
         defaults: {
@@ -99,6 +104,7 @@ export const PREFERENCE_SECTIONS: {
             timeFormat: 'auto',
             reducedMotion: 'system',
             fontScale: '100',
+            theme: 'system',
         },
     },
     // Signed in only: the avatar picker is on Settings, behind sign-in, so

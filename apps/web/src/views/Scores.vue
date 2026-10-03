@@ -18,6 +18,7 @@ import { useGameNotifications } from "@/composables/useGameNotifications";
 import { useScoresPreferences } from "@/composables/useScoresPreferences";
 import { useScoresRouteState } from "@/composables/useScoresRouteState";
 import { useDateFormat } from "@/composables/useDateFormat";
+import { useResolvedTheme } from "@/composables/useDisplayPreferences";
 import { formatDateForEspn, isSameDay } from "@/utils/date";
 import OptionsMenu from "@/components/Scores/OptionsMenu.vue";
 import { Button } from "@/components/ui/button";
@@ -79,6 +80,7 @@ const calendarAttributes = computed(() => {
 });
 
 const { formatDate } = useDateFormat();
+const theme = useResolvedTheme();
 const primaryDateString = computed(() => formatDate(selectedDate.value, "long"));
 
 // const gameStatus = ref([] as any[]);
@@ -358,7 +360,7 @@ onMounted(async () => {
                                 :min-date="minDate"
                                 mode="date"
                                 color="orange"
-                                is-dark
+                                :is-dark="theme === 'dark'"
                                 borderless
                                 :attributes="calendarAttributes"
                                 @did-move="handleCalendarMove"
@@ -473,7 +475,7 @@ h2 {
 }
 
 .date {
-    color: hsl(var(--primary));
+    color: hsl(var(--primary-strong));
     font-weight: 600;
 }
 

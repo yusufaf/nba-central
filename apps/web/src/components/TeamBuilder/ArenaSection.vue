@@ -167,7 +167,7 @@ const toggleFilter = (filter: string) => {
                         variant="ghost"
                         size="icon"
                         :class="[
-                            'text-red-500 hover:text-red-600 hover:bg-red-950',
+                            'text-destructive hover:text-destructive hover:bg-destructive/10',
                             { 'invisible pointer-events-none': !teamArena }
                         ]"
                     >
@@ -184,7 +184,7 @@ const toggleFilter = (filter: string) => {
                 class="w-[28rem] flex flex-col"
             >
                 <SheetHeader>
-                    <SheetTitle class="text-white text-xl">Add Arena</SheetTitle>
+                    <SheetTitle class="text-foreground text-xl">Add Arena</SheetTitle>
                 </SheetHeader>
 
                 <div class="drawer-header-controls">
@@ -196,7 +196,7 @@ const toggleFilter = (filter: string) => {
                             type="search"
                             class="pr-10 h-11 focus-visible:ring-offset-0 outline-offset-[-0.125rem]"
                         />
-                        <Search class="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
+                        <Search class="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
                     </div>
 
                     <!-- Sort Controls -->
@@ -320,7 +320,7 @@ const toggleFilter = (filter: string) => {
 }
 
 .card-wrapper:hover {
-    border-color: hsl(var(--primary));
+    border-color: hsl(var(--primary-strong));
     box-shadow: 0 0 0.5rem hsl(var(--primary) / 0.3);
 }
 

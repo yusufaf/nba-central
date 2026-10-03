@@ -25,6 +25,13 @@ describe("ShareCard", () => {
         expect(wrapper.text()).toContain("97"); // (99 + 95) / 2
     });
 
+    // The card is a published image, so it keeps the dark tokens whatever
+    // theme the person publishing it uses.
+    it("keeps one dark look in either theme", () => {
+        const wrapper = mount(ShareCard, { props });
+        expect(wrapper.classes()).toContain("dark");
+    });
+
     it("loads images anonymously so the canvas export is not tainted", () => {
         const wrapper = mount(ShareCard, { props });
         const img = wrapper.find("img");

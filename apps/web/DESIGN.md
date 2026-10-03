@@ -14,10 +14,20 @@ This started as the direction for one screen, in
 `docs/superpowers/specs/2026-03-28-boxscore-ux-redesign.md`. It now applies
 everywhere.
 
-The app is dark-only. `main.ts` puts `.dark` on `<html>` and there is no toggle.
-The mechanism is wired correctly (`@custom-variant dark (&:is(.dark *))`), so a
-light theme would be an additive change: define the light values in `:root` and
-move the dark ones into `.dark`.
+There are two themes. Light is the base, on `:root`; dark redefines the colour
+tokens on `.dark`. The Theme setting (System, Light or Dark) decides whether
+`<html>` carries `.dark`: an inline script in `index.html` sets it before the
+first paint, then `applyDisplayPreferences` keeps it in step, including System
+following the OS live. Tailwind's `dark:` variant is bound to the class
+(`@custom-variant dark (&:is(.dark *))`).
+
+Because the tokens hang off a class, any element can carry `.dark` to keep the
+dark look in either theme. The Home hero does (white type over footage), and so
+does the share card (a published image keeps one brand look). Don't add a
+`.light` counterpart; the base is light.
+
+Design every change in both themes. A colour that only works on one background
+is a bug: take it from a token, never from a literal like `text-white`.
 
 ## Tokens
 
@@ -37,9 +47,10 @@ in `@theme inline`** — that is how the theme ended up defined three times over
 | Group | Tokens |
 | --- | --- |
 | Surface | `--background` `--card` `--popover` `--surface-raised` and their `-foreground` pairs |
-| Brand | `--primary` (NBA orange, `35 100% 50%`) `--secondary` `--muted` `--accent` |
+| Brand | `--primary` (NBA orange, `35 100% 50%`) `--primary-strong` `--secondary` `--muted` `--accent` |
 | Status | `--destructive` `--success` `--warning` |
 | Conference | `--conference-east` `--conference-west` `--conference-cross` |
+| Rating tier | `--rating-elite` `--rating-great` `--rating-good` |
 | Line | `--border` `--input` `--ring` |
 | Shape | `--radius` and the derived `--radius-sm/md/lg/xl` |
 | Layout | `--container-page` (90rem) `--container-narrow` (75rem) `--gutter` |
@@ -47,6 +58,14 @@ in `@theme inline`** — that is how the theme ended up defined three times over
 
 `--surface-raised` is for menus and dropdowns that must read as fully opaque
 above a dialog. Reach for it instead of inventing a near-black literal.
+
+**Orange as a fill or as ink.** NBA orange is 2.2:1 on white, too faint for
+text in the light theme. `--primary` is the fill: buttons, the header bar,
+toggles, low-alpha washes like `bg-primary/15`, decorative bars like
+`SectionHeading`'s rule. Orange text, icons, hairline borders and focus rings
+use `--primary-strong` (`text-primary-strong`, `border-primary-strong`), a
+darker step in light that equals `--primary` in dark. Text *on* an orange fill
+is `--primary-foreground`.
 
 ## Type
 

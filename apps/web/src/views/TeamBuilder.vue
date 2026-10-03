@@ -878,7 +878,7 @@ watch(
 }
 
 .header-card:hover {
-    border-color: hsl(var(--primary));
+    border-color: hsl(var(--primary-strong));
     box-shadow: 0 0 0.5rem hsl(var(--primary) / 0.3);
 }
 

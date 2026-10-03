@@ -223,8 +223,8 @@ onMounted(() => {
 }
 
 .refresh-btn:hover:not(:disabled) {
-    border-color: hsl(var(--primary));
-    color: hsl(var(--primary));
+    border-color: hsl(var(--primary-strong));
+    color: hsl(var(--primary-strong));
 }
 
 .refresh-btn:disabled {
@@ -270,7 +270,7 @@ onMounted(() => {
 .filter-pill.active {
     background-color: hsl(var(--primary));
     color: hsl(var(--primary-foreground));
-    border-color: hsl(var(--primary));
+    border-color: hsl(var(--primary-strong));
 }
 
 .filter-pill .count {
@@ -309,7 +309,7 @@ onMounted(() => {
     height: 2.5rem;
     border-radius: 50%;
     border: 0.1875rem solid hsl(var(--border));
-    border-bottom-color: hsl(var(--primary));
+    border-bottom-color: hsl(var(--primary-strong));
 }
 
 .state-error p {

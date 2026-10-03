@@ -82,7 +82,7 @@
                                 <img :src="team.team.logo" :alt="team.team.abbreviation" class="object-contain shrink-0 w-4 h-4" />
                                 <span class="font-semibold text-[0.8125rem]">{{ team.team.displayName }}</span>
                             </div>
-                            <span class="font-bold text-primary text-[0.9375rem] tabular-nums">
+                            <span class="font-bold text-primary-strong text-[0.9375rem] tabular-nums">
                                 {{ getBenchPoints(team) }} pts
                             </span>
                         </div>

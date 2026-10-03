@@ -73,7 +73,7 @@ describe("QuarterScores", () => {
         const totalCell = wrapper
             .findAll("td")
             .find((cell) => cell.text() === "115");
-        expect(totalCell?.classes()).toContain("text-primary");
+        expect(totalCell?.classes()).toContain("text-primary-strong");
     });
 
     it("falls back to boxscore.players' logo when a summary competitor's team.logo is null", () => {

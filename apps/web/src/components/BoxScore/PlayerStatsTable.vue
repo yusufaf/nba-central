@@ -41,7 +41,7 @@
                         <TableRow>
                             <TableCell
                                 :colspan="totalColumns"
-                                class="text-primary bg-primary/6 py-1 text-[0.7rem] font-bold uppercase tracking-[0.08em]"
+                                class="text-primary-strong bg-primary/6 py-1 text-[0.7rem] font-bold uppercase tracking-[0.08em]"
                             >
                                 Starters
                             </TableCell>
@@ -50,9 +50,9 @@
                             v-for="(player, rowIndex) in starters"
                             :key="player.athlete.id"
                             class="hover:bg-muted/50 transition-colors"
-                            :class="{ 'bg-white/[0.015]': rowIndex % 2 === 1 }"
+                            :class="{ 'bg-foreground/[0.015]': rowIndex % 2 === 1 }"
                         >
-                            <TableCell class="sticky left-0 bg-background py-1" :class="{ 'bg-white/[0.015]': rowIndex % 2 === 1 }">
+                            <TableCell class="sticky left-0 bg-background py-1" :class="{ 'bg-foreground/[0.015]': rowIndex % 2 === 1 }">
                                 <div class="flex items-center gap-1.5">
                                     <img
                                         v-if="player.athlete.headshot?.href"
@@ -84,7 +84,7 @@
                         <TableRow>
                             <TableCell
                                 :colspan="totalColumns"
-                                class="text-primary bg-primary/6 py-1 text-[0.7rem] font-bold uppercase tracking-[0.08em]"
+                                class="text-primary-strong bg-primary/6 py-1 text-[0.7rem] font-bold uppercase tracking-[0.08em]"
                             >
                                 Bench
                             </TableCell>
@@ -93,9 +93,9 @@
                             v-for="(player, rowIndex) in bench"
                             :key="player.athlete.id"
                             class="hover:bg-muted/50 transition-colors"
-                            :class="{ 'bg-white/[0.015]': rowIndex % 2 === 1 }"
+                            :class="{ 'bg-foreground/[0.015]': rowIndex % 2 === 1 }"
                         >
-                            <TableCell class="sticky left-0 bg-background py-1" :class="{ 'bg-white/[0.015]': rowIndex % 2 === 1 }">
+                            <TableCell class="sticky left-0 bg-background py-1" :class="{ 'bg-foreground/[0.015]': rowIndex % 2 === 1 }">
                                 <div class="flex items-center gap-1.5">
                                     <img
                                         v-if="player.athlete.headshot?.href"
@@ -140,9 +140,9 @@
                                 v-for="(player, rowIndex) in dnpPlayers"
                                 :key="player.athlete.id"
                                 class="hover:bg-muted/50 transition-colors"
-                                :class="{ 'bg-white/[0.015]': rowIndex % 2 === 1 }"
+                                :class="{ 'bg-foreground/[0.015]': rowIndex % 2 === 1 }"
                             >
-                                <TableCell class="sticky left-0 bg-background py-1" :class="{ 'bg-white/[0.015]': rowIndex % 2 === 1 }">
+                                <TableCell class="sticky left-0 bg-background py-1" :class="{ 'bg-foreground/[0.015]': rowIndex % 2 === 1 }">
                                     <div class="flex items-center gap-1.5 opacity-50">
                                         <img
                                             v-if="player.athlete.headshot?.href"
@@ -338,7 +338,7 @@ const plusMinusIndex = computed(() => props.statistics.names.indexOf('+/-'));
 const getCellClass = (player: ESPNPlayerStat, columnIndex: number, stat: string): string => {
     const classes: string[] = [];
     if (isColumnLeader(player, columnIndex)) {
-        classes.push('text-primary', 'font-bold');
+        classes.push('text-primary-strong', 'font-bold');
     }
     if (columnIndex === plusMinusIndex.value && stat && stat !== '-') {
         const val = parseInt(stat);

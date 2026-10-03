@@ -32,7 +32,6 @@ const logtoConfig: LogtoConfig = {
 
 app.use(createLogto, logtoConfig);
 
-// Add dark mode class to html element
-document.documentElement.classList.add('dark');
-
+// The theme class is already on <html>: index.html sets it before the first
+// paint, and applyDisplayPreferences (App.vue) keeps it in step from there.
 app.mount('#app');

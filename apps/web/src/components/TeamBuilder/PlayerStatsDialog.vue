@@ -232,7 +232,7 @@ const columns = STAT_COLUMNS;
               class="prefs-trigger"
               title="Stats display preferences"
             >
-              <Settings class="h-3.5 w-3.5 text-primary" />
+              <Settings class="h-3.5 w-3.5 text-primary-strong" />
               <span>Preferences</span>
             </Button>
           </PopoverTrigger>
@@ -368,7 +368,7 @@ const columns = STAT_COLUMNS;
                 <TableHead
                   v-for="column in columns"
                   :key="column.name"
-                  class="text-white whitespace-nowrap"
+                  class="text-foreground whitespace-nowrap"
                   :aria-sort="ariaSort(column.field)"
                 >
                   <Tooltip>
@@ -401,12 +401,12 @@ const columns = STAT_COLUMNS;
               <TableRow
                 v-for="(row, index) in sortedRows"
                 :key="row.id ?? index"
-                class="border-gray-700"
+                class="border-border"
               >
                 <TableCell
                   v-for="column in columns"
                   :key="column.name"
-                  class="text-gray-300 whitespace-nowrap"
+                  class="text-foreground/80 whitespace-nowrap"
                   :class="{ 'stat-career-best': highlightCell(column.field, row) }"
                   :title="highlightCell(column.field, row) ? highlightTitle(column.field) : undefined"
                 >
@@ -415,11 +415,11 @@ const columns = STAT_COLUMNS;
               </TableRow>
             </TableBody>
             <TableFooter v-if="preferences.showCareerSummary && summaryData">
-              <TableRow class="bg-zinc-800/80 font-bold border-t-2 border-primary/50">
+              <TableRow class="bg-muted/80 font-bold border-t-2 border-primary/50">
                 <TableCell
                   v-for="column in columns"
                   :key="column.name"
-                  class="whitespace-nowrap font-bold text-primary"
+                  class="whitespace-nowrap font-bold text-primary-strong"
                 >
                   <template v-if="column.field === 'season'">
                     {{ preferences.statMode === 'totals' ? 'Career Total' : 'Career' }}
@@ -473,17 +473,17 @@ const columns = STAT_COLUMNS;
 
 .stat-header:hover,
 .stat-header:focus-visible {
-  color: hsl(var(--primary));
+  color: hsl(var(--primary-strong));
 }
 
 .stat-header:focus-visible {
-  outline: 0.125rem solid hsl(var(--primary));
+  outline: 0.125rem solid hsl(var(--primary-strong));
   outline-offset: 0.125rem;
   border-radius: 0.125rem;
 }
 
 .stat-header-active {
-  color: hsl(var(--primary));
+  color: hsl(var(--primary-strong));
 }
 
 .stat-sort-icon {
@@ -499,10 +499,10 @@ const columns = STAT_COLUMNS;
   opacity: 0.7;
 }
 
-/* Career best in a column. The scoped attribute takes this past the .text-gray-300
+/* Career best in a column. The scoped attribute takes this past the .text-foreground/80
    utility on the same cell, so no !important is needed. */
 .stat-career-best {
-  color: hsl(var(--primary));
+  color: hsl(var(--primary-strong));
   font-weight: 700;
 }
 
@@ -548,7 +548,7 @@ const columns = STAT_COLUMNS;
 
 .rating-chart-line {
   fill: none;
-  stroke: hsl(var(--primary));
+  stroke: hsl(var(--primary-strong));
   stroke-width: 2;
   /* Keep an even stroke despite the non-uniform viewBox scaling. */
   vector-effect: non-scaling-stroke;
@@ -578,7 +578,7 @@ const columns = STAT_COLUMNS;
   font-size: 0.8125rem;
   font-weight: 700;
   font-variant-numeric: tabular-nums;
-  color: hsl(var(--primary));
+  color: hsl(var(--primary-strong));
 }
 
 .rating-history-version {

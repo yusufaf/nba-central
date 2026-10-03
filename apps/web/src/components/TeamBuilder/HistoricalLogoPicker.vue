@@ -202,7 +202,7 @@ const { collapse } = useExpandablePicker(expanded, pickerRoot, searchField);
     z-index: 60;
     padding: 1.5rem 2rem 2rem;
     gap: 0.875rem;
-    background: hsl(0 0% 7% / 0.98);
+    background: hsl(var(--surface-raised) / 0.98);
     backdrop-filter: blur(0.75rem);
     /* This overlay teleports past the dialog's own DOM subtree, so it isn't one
        of reka-ui's registered dismissable layers. A modal Dialog sets
@@ -255,8 +255,8 @@ const { collapse } = useExpandablePicker(expanded, pickerRoot, searchField);
 }
 
 .picker-icon-button:hover {
-    color: hsl(var(--primary));
-    border-color: hsl(var(--primary));
+    color: hsl(var(--primary-strong));
+    border-color: hsl(var(--primary-strong));
 }
 
 .picker-count {
@@ -317,12 +317,12 @@ const { collapse } = useExpandablePicker(expanded, pickerRoot, searchField);
 
 .team-logo-tile:focus-visible {
     outline: none;
-    border-color: hsl(var(--primary));
+    border-color: hsl(var(--primary-strong));
     box-shadow: 0 0 0 0.1875rem hsl(var(--primary) / 0.35);
 }
 
 .team-logo-tile.selected {
-    border-color: hsl(var(--primary));
+    border-color: hsl(var(--primary-strong));
     background: hsl(var(--primary) / 0.12);
     box-shadow: 0 0 0 0.125rem hsl(var(--primary) / 0.3);
 }
@@ -336,7 +336,7 @@ const { collapse } = useExpandablePicker(expanded, pickerRoot, searchField);
     border-radius: 0.625rem;
     /* The artwork is transparent now, but a lot of these logos are mostly white
        or silver; a faint plate keeps them legible on the dark theme. */
-    background: hsl(0 0% 100% / 0.08);
+    background: hsl(var(--foreground) / 0.08);
 }
 
 .team-logo {

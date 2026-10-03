@@ -118,7 +118,7 @@ defineExpose({
                 <!-- Name Input -->
                 <div class="grid gap-2">
                     <Label for="coach-name">
-                        Name <span class="text-red-500">*</span>
+                        Name <span class="text-destructive">*</span>
                     </Label>
                     <Input
                         id="coach-name"
@@ -136,7 +136,7 @@ defineExpose({
                 <!-- Overall Rating Input -->
                 <div class="grid gap-2">
                     <Label for="coach-rating">
-                        Overall Rating <span class="text-red-500">*</span>
+                        Overall Rating <span class="text-destructive">*</span>
                     </Label>
                     <div class="flex items-center gap-3">
                         <Input
@@ -148,7 +148,7 @@ defineExpose({
                             :disabled="loading"
                             class="flex-1 h-2 cursor-pointer"
                         />
-                        <div class="text-2xl font-bold text-primary w-12 text-center">
+                        <div class="text-2xl font-bold text-primary-strong w-12 text-center">
                             {{ overallRating }}
                         </div>
                     </div>
@@ -160,7 +160,7 @@ defineExpose({
                 <!-- Specialty Selection -->
                 <div class="grid gap-2">
                     <Label for="coach-specialty">
-                        Coaching Specialty <span class="text-red-500">*</span>
+                        Coaching Specialty <span class="text-destructive">*</span>
                     </Label>
                     <Select v-model="specialty" :disabled="loading">
                         <SelectTrigger class="h-11">

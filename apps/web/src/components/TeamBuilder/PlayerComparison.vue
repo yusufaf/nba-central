@@ -284,7 +284,7 @@ const headerFor = (player: any, career: ReturnType<typeof careerOf>) => ({
 }
 
 .is-better {
-  color: hsl(var(--primary));
+  color: hsl(var(--primary-strong));
   font-weight: 700;
 }
 
@@ -317,21 +317,21 @@ const headerFor = (player: any, career: ReturnType<typeof careerOf>) => ({
 
 /* Rating tiers - same bands as PlayerSlot's card badge */
 .rating-elite {
-  color: hsl(45 93% 58%);
-  border-color: hsl(45 93% 58% / 0.5);
-  background-color: hsl(45 93% 58% / 0.12);
+  color: hsl(var(--rating-elite));
+  border-color: hsl(var(--rating-elite) / 0.5);
+  background-color: hsl(var(--rating-elite) / 0.12);
 }
 
 .rating-great {
-  color: hsl(142 71% 45%);
-  border-color: hsl(142 71% 45% / 0.5);
-  background-color: hsl(142 71% 45% / 0.12);
+  color: hsl(var(--rating-great));
+  border-color: hsl(var(--rating-great) / 0.5);
+  background-color: hsl(var(--rating-great) / 0.12);
 }
 
 .rating-good {
-  color: hsl(199 89% 55%);
-  border-color: hsl(199 89% 55% / 0.5);
-  background-color: hsl(199 89% 55% / 0.12);
+  color: hsl(var(--rating-good));
+  border-color: hsl(var(--rating-good) / 0.5);
+  background-color: hsl(var(--rating-good) / 0.12);
 }
 
 .rating-average {

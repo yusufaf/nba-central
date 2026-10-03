@@ -208,7 +208,7 @@ const handleJerseyClick = (jersey: HistoricalJersey) => {
     z-index: 60;
     padding: 1.5rem 2rem 2rem;
     gap: 0.875rem;
-    background: hsl(0 0% 7% / 0.98);
+    background: hsl(var(--surface-raised) / 0.98);
     backdrop-filter: blur(0.75rem);
     /* See HistoricalLogoPicker: a modal Dialog sets body { pointer-events:
        none } and only re-enables it on layers it knows about - this overlay
@@ -259,8 +259,8 @@ const handleJerseyClick = (jersey: HistoricalJersey) => {
 }
 
 .picker-icon-button:hover {
-    color: hsl(var(--primary));
-    border-color: hsl(var(--primary));
+    color: hsl(var(--primary-strong));
+    border-color: hsl(var(--primary-strong));
 }
 
 .picker-count {
@@ -291,7 +291,7 @@ const handleJerseyClick = (jersey: HistoricalJersey) => {
 }
 
 .picker-attribution a {
-    color: hsl(var(--primary));
+    color: hsl(var(--primary-strong));
     text-decoration: underline;
     text-underline-offset: 0.125rem;
 }
@@ -332,12 +332,12 @@ const handleJerseyClick = (jersey: HistoricalJersey) => {
 
 .team-jersey-tile:focus-visible {
     outline: none;
-    border-color: hsl(var(--primary));
+    border-color: hsl(var(--primary-strong));
     box-shadow: 0 0 0 0.1875rem hsl(var(--primary) / 0.35);
 }
 
 .team-jersey-tile.selected {
-    border-color: hsl(var(--primary));
+    border-color: hsl(var(--primary-strong));
     background: hsl(var(--primary) / 0.12);
     box-shadow: 0 0 0 0.125rem hsl(var(--primary) / 0.3);
 }
@@ -353,7 +353,7 @@ const handleJerseyClick = (jersey: HistoricalJersey) => {
     /* Unlike the logos, this artwork is opaque - a full square illustration
        with its own coloured background - so no backing plate colour is
        needed underneath it. */
-    background: hsl(0 0% 100% / 0.04);
+    background: hsl(var(--foreground) / 0.04);
 }
 
 .team-jersey-image {

@@ -321,7 +321,7 @@ const startOver = () => {
     border: 0.0625rem solid hsl(var(--border));
     border-radius: var(--radius);
     overflow: hidden;
-    background: hsl(0 0% 100% / 0.04);
+    background: hsl(var(--foreground) / 0.04);
     touch-action: none;
 }
 
@@ -370,7 +370,7 @@ const startOver = () => {
 }
 
 .jersey-swatch.selected {
-    border-color: hsl(var(--primary));
+    border-color: hsl(var(--primary-strong));
     box-shadow: 0 0 0 0.125rem hsl(var(--primary) / 0.3);
 }
 

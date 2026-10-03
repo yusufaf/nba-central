@@ -169,7 +169,7 @@ const remix = () => {
                 </section>
 
                 <footer class="border-t border-border pt-6 text-center">
-                    <router-link to="/teambuilder" class="text-primary underline-offset-4 hover:underline">Build your own all-time franchise →</router-link>
+                    <router-link to="/teambuilder" class="text-primary-strong underline-offset-4 hover:underline">Build your own all-time franchise →</router-link>
                 </footer>
             </article>
         </PageShell>

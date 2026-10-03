@@ -36,6 +36,6 @@ defineProps<{
 }
 
 .external-link-icon:hover {
-    color: hsl(var(--primary));
+    color: hsl(var(--primary-strong));
 }
 </style>

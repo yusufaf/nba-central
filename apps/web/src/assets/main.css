@@ -2,7 +2,8 @@
 @import 'tw-animate-css';
 
 /* Tailwind v4 keys `dark:` off prefers-color-scheme unless told otherwise.
-   main.ts puts .dark on <html>, so bind the variant to that class. */
+   The Theme setting puts .dark on <html> (index.html before the first paint,
+   then applyDisplayPreferences), so bind the variant to that class. */
 @custom-variant dark (&:is(.dark *));
 
 /* Same idea for motion: the built-in motion-* variants read the OS media
@@ -22,49 +23,67 @@
 
    The @theme inline block below derives Tailwind's utilities from these, so a
    token is defined exactly once. Do not restate a value there.
+
+   Light is the base, on :root. Dark redefines the colours on .dark, which the
+   Theme setting puts on <html>. Any element can carry .dark to keep the dark
+   look whatever the theme: the Home hero and the share card do.
+   The light values were reviewed on #125.
 --------------------------------------------------------------------------- */
 :root {
+  color-scheme: light;
+
   /* Surfaces */
-  --background: 0 0% 10%;
-  --foreground: 0 0% 98%;
-  --card: 0 0% 11%;
-  --card-foreground: 0 0% 98%;
-  --popover: 0 0% 11%;
-  --popover-foreground: 0 0% 98%;
+  --background: 0 0% 96%;
+  --foreground: 0 0% 9%;
+  --card: 0 0% 100%;
+  --card-foreground: 0 0% 9%;
+  --popover: 0 0% 100%;
+  --popover-foreground: 0 0% 9%;
   /* Raised surface for menus and dropdowns that must read as fully opaque
      above a dialog. Replaces the rgb(9, 9, 11) literal that was repeated
-     across the team builder sections. */
-  --surface-raised: 240 6% 4%;
+     across the team builder sections. In light it's white like the dialog,
+     set apart by its border and shadow. */
+  --surface-raised: 0 0% 100%;
 
   /* Brand */
   --primary: 35 100% 50%;
   --primary-foreground: 0 0% 13%;
-  --secondary: 0 0% 20%;
-  --secondary-foreground: 0 0% 98%;
-  --muted: 0 0% 20%;
-  --muted-foreground: 0 0% 63.9%;
+  /* NBA orange is 2.2:1 on white, so orange text, icons, hairline borders
+     and the focus ring use this darker step instead. --primary stays the
+     fill. In dark the two are the same. */
+  --primary-strong: 28 100% 34%;
+  --secondary: 0 0% 91%;
+  --secondary-foreground: 0 0% 9%;
+  --muted: 0 0% 92%;
+  --muted-foreground: 0 0% 38%;
   /* Accent is a distinct role from primary: primary is the brand action
      colour, accent is the hover/selected wash behind neutral controls. */
   --accent: 35 100% 50%;
   --accent-foreground: 0 0% 13%;
 
   /* Status */
-  --destructive: 0 62.8% 50%;
-  --destructive-foreground: 0 0% 98%;
-  --success: 142 76% 36%;
-  --success-foreground: 0 0% 98%;
+  --destructive: 0 72% 45%;
+  --destructive-foreground: 0 0% 100%;
+  --success: 142 72% 29%;
+  --success-foreground: 0 0% 100%;
   --warning: 38 92% 50%;
   --warning-foreground: 0 0% 13%;
 
   /* Conference accents, previously invented inline in ScoreCard.vue */
-  --conference-east: 217 91% 60%;
-  --conference-west: 0 84% 60%;
-  --conference-cross: 270 65% 60%;
+  --conference-east: 217 91% 45%;
+  --conference-west: 0 72% 47%;
+  --conference-cross: 270 60% 50%;
+
+  /* Player rating tiers (the badges in the team builder), previously the
+     same three literals in four components. */
+  --rating-elite: 38 92% 30%;
+  --rating-great: 142 76% 27%;
+  --rating-good: 199 89% 33%;
 
   /* Lines and controls */
-  --border: 0 0% 25%;
-  --input: 0 0% 20%;
-  --ring: 35 100% 50%;
+  --border: 0 0% 85%;
+  --input: 0 0% 80%;
+  --ring: 28 100% 34%;
 
   /* Drop shadows are theme-neutral black regardless of surface colour;
      this is what the ~12 ad-hoc box-shadow rgba(0,0,0,a) literals collapsed to. */
@@ -86,6 +105,47 @@
   --z-modal: 60;
   --z-popover: 70;
   --z-toast: 80;
+}
+
+.dark {
+  color-scheme: dark;
+
+  --background: 0 0% 10%;
+  --foreground: 0 0% 98%;
+  --card: 0 0% 11%;
+  --card-foreground: 0 0% 98%;
+  --popover: 0 0% 11%;
+  --popover-foreground: 0 0% 98%;
+  --surface-raised: 240 6% 4%;
+
+  --primary: 35 100% 50%;
+  --primary-foreground: 0 0% 13%;
+  --primary-strong: 35 100% 50%;
+  --secondary: 0 0% 20%;
+  --secondary-foreground: 0 0% 98%;
+  --muted: 0 0% 20%;
+  --muted-foreground: 0 0% 63.9%;
+  --accent: 35 100% 50%;
+  --accent-foreground: 0 0% 13%;
+
+  --destructive: 0 62.8% 50%;
+  --destructive-foreground: 0 0% 98%;
+  --success: 142 76% 36%;
+  --success-foreground: 0 0% 98%;
+  --warning: 38 92% 50%;
+  --warning-foreground: 0 0% 13%;
+
+  --conference-east: 217 91% 60%;
+  --conference-west: 0 84% 60%;
+  --conference-cross: 270 65% 60%;
+
+  --rating-elite: 45 93% 58%;
+  --rating-great: 142 71% 45%;
+  --rating-good: 199 89% 55%;
+
+  --border: 0 0% 25%;
+  --input: 0 0% 20%;
+  --ring: 35 100% 50%;
 }
 
 @media (min-width: 40rem) {
@@ -111,6 +171,7 @@
 
   --color-primary: hsl(var(--primary));
   --color-primary-foreground: hsl(var(--primary-foreground));
+  --color-primary-strong: hsl(var(--primary-strong));
   --color-secondary: hsl(var(--secondary));
   --color-secondary-foreground: hsl(var(--secondary-foreground));
   --color-muted: hsl(var(--muted));
@@ -128,6 +189,10 @@
   --color-conference-east: hsl(var(--conference-east));
   --color-conference-west: hsl(var(--conference-west));
   --color-conference-cross: hsl(var(--conference-cross));
+
+  --color-rating-elite: hsl(var(--rating-elite));
+  --color-rating-great: hsl(var(--rating-great));
+  --color-rating-good: hsl(var(--rating-good));
 
   --color-border: hsl(var(--border));
   --color-input: hsl(var(--input));
@@ -152,6 +217,12 @@
 
   * {
     border-color: hsl(var(--border));
+  }
+
+  /* Inherited text has to follow the tokens too, for an element that
+     carries .dark inside the light theme. */
+  .dark {
+    color: hsl(var(--foreground));
   }
 
   body {
@@ -188,12 +259,12 @@
     border-radius: 0.5rem;
     color: hsl(var(--muted-foreground));
     border: 0.0625rem solid hsl(var(--border));
-    background-color: hsl(0 0% 16%);
+    background-color: hsl(var(--foreground) / 0.06);
   }
 
   .prefs-trigger:hover {
     color: hsl(var(--foreground));
-    background-color: hsl(0 0% 20%);
+    background-color: hsl(var(--foreground) / 0.1);
   }
 
   /* Stats preferences popover.
@@ -249,7 +320,7 @@
     width: 1.75rem;
     height: 1.75rem;
     border-radius: 0.5rem;
-    color: hsl(var(--primary));
+    color: hsl(var(--primary-strong));
     background-color: hsl(var(--primary) / 0.15);
   }
 
@@ -287,7 +358,7 @@
     padding: 0.3125rem;
     border: 0.0625rem solid hsl(var(--border));
     border-radius: 0.5rem;
-    background-color: hsl(0 0% 7%);
+    background-color: hsl(var(--background));
   }
 
   /* Same story as the grid above: `gap-2` is a utility and wins unless this is
@@ -366,7 +437,7 @@
 
   .stats-preferences-popover .prefs-reset:hover {
     color: hsl(var(--foreground));
-    background-color: hsl(0 0% 18%);
+    background-color: hsl(var(--foreground) / 0.08);
   }
 
 }

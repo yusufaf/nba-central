@@ -142,7 +142,7 @@ defineExpose({
                 <!-- Name Input -->
                 <div class="grid gap-2">
                     <Label for="player-name">
-                        Name <span class="text-red-500">*</span>
+                        Name <span class="text-destructive">*</span>
                     </Label>
                     <Input
                         id="player-name"
@@ -160,7 +160,7 @@ defineExpose({
                 <!-- Position Selection -->
                 <div class="grid gap-2">
                     <Label for="player-position">
-                        Position <span class="text-red-500">*</span>
+                        Position <span class="text-destructive">*</span>
                     </Label>
                     <Select v-model="position" :disabled="loading">
                         <SelectTrigger class="h-11">
@@ -187,7 +187,7 @@ defineExpose({
                     <!-- Height -->
                     <div class="grid gap-2">
                         <Label>
-                            Height <span class="text-red-500">*</span>
+                            Height <span class="text-destructive">*</span>
                         </Label>
                         <div class="grid grid-cols-2 gap-2">
                             <div>
@@ -221,7 +221,7 @@ defineExpose({
                     <!-- Weight -->
                     <div class="grid gap-2">
                         <Label for="player-weight">
-                            Weight (lbs) <span class="text-red-500">*</span>
+                            Weight (lbs) <span class="text-destructive">*</span>
                         </Label>
                         <Input
                             id="player-weight"
@@ -242,7 +242,7 @@ defineExpose({
                 <!-- Overall Rating Input -->
                 <div class="grid gap-2">
                     <Label for="player-rating">
-                        Overall Rating <span class="text-red-500">*</span>
+                        Overall Rating <span class="text-destructive">*</span>
                     </Label>
                     <div class="flex items-center gap-3">
                         <Input
@@ -254,7 +254,7 @@ defineExpose({
                             :disabled="loading"
                             class="flex-1 h-2 cursor-pointer"
                         />
-                        <div class="text-2xl font-bold text-primary w-12 text-center">
+                        <div class="text-2xl font-bold text-primary-strong w-12 text-center">
                             {{ overallRating }}
                         </div>
                     </div>

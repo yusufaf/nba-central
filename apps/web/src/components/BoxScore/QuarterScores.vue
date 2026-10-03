@@ -39,7 +39,7 @@
                         </TableCell>
                         <TableCell
                             class="text-center font-bold text-lg py-[0.35rem] tabular-nums"
-                            :class="awayIsWinner ? 'text-primary' : ''"
+                            :class="awayIsWinner ? 'text-primary-strong' : ''"
                         >
                             {{ awayTeam.score }}
                         </TableCell>
@@ -68,7 +68,7 @@
                         </TableCell>
                         <TableCell
                             class="text-center font-bold text-lg py-[0.35rem] tabular-nums"
-                            :class="homeIsWinner ? 'text-primary' : ''"
+                            :class="homeIsWinner ? 'text-primary-strong' : ''"
                         >
                             {{ homeTeam.score }}
                         </TableCell>

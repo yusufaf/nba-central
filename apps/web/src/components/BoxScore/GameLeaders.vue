@@ -28,7 +28,7 @@
                                     {{ getTeamAbbr(leader.team.id) }}
                                 </p>
                             </div>
-                            <div class="text-primary shrink-0 font-bold text-sm">
+                            <div class="text-primary-strong shrink-0 font-bold text-sm">
                                 {{ leader.displayValue }}
                             </div>
                         </div>
@@ -58,7 +58,7 @@
                                     {{ getTeamAbbr(leader.team.id) }}
                                 </p>
                             </div>
-                            <div class="text-primary shrink-0 font-bold text-sm">
+                            <div class="text-primary-strong shrink-0 font-bold text-sm">
                                 {{ leader.displayValue }}
                             </div>
                         </div>
@@ -88,7 +88,7 @@
                                     {{ getTeamAbbr(leader.team.id) }}
                                 </p>
                             </div>
-                            <div class="text-primary shrink-0 font-bold text-sm">
+                            <div class="text-primary-strong shrink-0 font-bold text-sm">
                                 {{ leader.displayValue }}
                             </div>
                         </div>

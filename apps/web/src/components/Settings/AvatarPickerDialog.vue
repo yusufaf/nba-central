@@ -65,7 +65,7 @@ const onFileChosen = async (event: Event) => {
                 </span>
                 <Loader2
                     v-if="isSaving('profile.avatar')"
-                    class="size-3.5 animate-spin text-primary"
+                    class="size-3.5 animate-spin text-primary-strong"
                     aria-label="Saving"
                     data-testid="setting-saving"
                 />

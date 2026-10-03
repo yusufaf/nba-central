@@ -357,7 +357,7 @@ const getCleanName = (coachName: string) => coachName.replace(/\*$/, '').trim();
                             variant="ghost"
                             size="icon"
                             :class="[
-                                'text-red-500 hover:text-red-600 hover:bg-red-950',
+                                'text-destructive hover:text-destructive hover:bg-destructive/10',
                                 { 'invisible pointer-events-none': !teamCoach }
                             ]"
                         >
@@ -374,7 +374,7 @@ const getCleanName = (coachName: string) => coachName.replace(/\*$/, '').trim();
                 class="w-[28rem] flex flex-col"
             >
                 <SheetHeader>
-                    <SheetTitle class="text-white text-xl"
+                    <SheetTitle class="text-foreground text-xl"
                         >Add Coach</SheetTitle
                     >
                 </SheetHeader>
@@ -399,7 +399,7 @@ const getCleanName = (coachName: string) => coachName.replace(/\*$/, '').trim();
                             class="pr-10 h-11 focus-visible:ring-offset-0 outline-offset-[-0.125rem]"
                         />
                         <Search
-                            class="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none"
+                            class="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none"
                         />
                     </div>
 
@@ -571,7 +571,7 @@ const getCleanName = (coachName: string) => coachName.replace(/\*$/, '').trim();
                             <div v-if="coach.isCustom" class="grid grid-cols-1 gap-2">
                                 <div class="stats-row">
                                     <span class="stats-label">Overall Rating:</span>
-                                    <span class="stats-value font-bold text-primary">{{ coach.overallRating }}</span>
+                                    <span class="stats-value font-bold text-primary-strong">{{ coach.overallRating }}</span>
                                 </div>
                                 <div class="stats-row">
                                     <span class="stats-label">Specialty:</span>
@@ -673,7 +673,7 @@ const getCleanName = (coachName: string) => coachName.replace(/\*$/, '').trim();
 }
 
 .card-wrapper:hover {
-    border-color: hsl(var(--primary));
+    border-color: hsl(var(--primary-strong));
     box-shadow: 0 0 0.5rem hsl(var(--primary) / 0.3);
 }
 

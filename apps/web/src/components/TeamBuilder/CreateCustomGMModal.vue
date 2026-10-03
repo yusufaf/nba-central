@@ -124,7 +124,7 @@ defineExpose({
                 <!-- Name Input -->
                 <div class="grid gap-2">
                     <Label for="gm-name">
-                        Name <span class="text-red-500">*</span>
+                        Name <span class="text-destructive">*</span>
                     </Label>
                     <Input
                         id="gm-name"

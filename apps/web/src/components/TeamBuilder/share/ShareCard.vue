@@ -34,8 +34,10 @@ const location = computed(() => [props.city, props.country].filter(Boolean).join
 
 <template>
     <div
-        class="share-card flex flex-col justify-between overflow-hidden bg-background p-12 text-foreground"
+        class="share-card dark flex flex-col justify-between overflow-hidden bg-background p-12 text-foreground"
         style="width: 1200px; height: 630px; font-size: 16px"><!-- style-guard-allow: px-unit -->
+        <!-- .dark: the card is a published image other people see, so it
+             keeps one brand look whatever theme its author happens to use. -->
         <!-- This card is exported as a fixed 1200x630 PNG via html-to-image,
              not laid out for a variable viewport - a user font-size
              preference other than the browser default would scale
