@@ -70,11 +70,12 @@ describe("team-builder-api-routes", () => {
 		// the 3 share-loop routes: /api/teams/publish, the public team
 		// reader, and the OG page. The Clerk-era /api/users/save-data then
 		// gave way to the two settings routes (get, update): 31. The profile
-		// card's stats and avatar upload routes make 33.
-		expect(publicPaths.size + privatePaths.size).toBe(33);
+		// card's stats and avatar upload routes make 33, and the data export
+		// and delete routes 35.
+		expect(publicPaths.size + privatePaths.size).toBe(35);
 	});
 
-	it("the user routes are private, with GET for reads and PUT for writes", () => {
+	it("the user routes are private, with GET for reads, PUT for writes and DELETE for the delete", () => {
 		for (const route of USERS_ROUTES) {
 			expect(PRIVATE_ROUTES).toContainEqual(route);
 		}
@@ -96,6 +97,15 @@ describe("team-builder-api-routes", () => {
 		expect(byLambda.uploadAvatar).toMatchObject({
 			route: "/api/users/avatar/upload",
 			methods: ["PUT"],
+		});
+		expect(byLambda.exportUserData).toMatchObject({
+			route: "/api/users/data/export",
+			methods: ["GET"],
+		});
+		// No path parameter: the delete only ever acts on the caller.
+		expect(byLambda.deleteUserData).toMatchObject({
+			route: "/api/users/data",
+			methods: ["DELETE"],
 		});
 		expect(USERS_ROUTES.map((r) => r.lambdaName)).not.toContain("saveUserData");
 	});

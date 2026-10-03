@@ -14,6 +14,10 @@ export interface ExtendedStackProps extends StackProps {
     // TeamBuilder once TeamBuilderAssetsCdn exists; Lambdas that mint asset
     // URLs (publishTeam) read it from their environment.
     assetsCdnDomain?: string;
+    // Id of the same distribution. deleteUserData invalidates the objects
+    // it deletes, and the Lambda role's CreateInvalidation grant is scoped
+    // to it.
+    assetsDistributionId?: string;
 }
 
 export interface StackConstructsProps {
