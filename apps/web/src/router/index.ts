@@ -10,6 +10,7 @@ import Login from '@/views/Login.vue';
 import SignUp from '@/views/SignUp.vue';
 import Callback from '@/views/Callback.vue';
 import Settings from '@/views/Settings.vue';
+import DataDeleted from '@/views/DataDeleted.vue';
 import { useLogto } from '@logto/vue';
 import { requireSignedIn } from './guards';
 
@@ -68,6 +69,12 @@ const router = createRouter({
             name: 'settings',
             component: Settings,
             meta: { requiresAuth: true },
+        },
+        // Where a successful "Delete my data" lands, after the sign-out.
+        {
+            path: '/data-deleted',
+            name: 'data-deleted',
+            component: DataDeleted,
         },
         {
             path: '/callback',

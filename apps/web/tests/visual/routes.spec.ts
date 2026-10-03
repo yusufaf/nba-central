@@ -65,6 +65,7 @@ const ROUTES = [
     { path: '/login', name: 'login' },
     { path: '/sign-up', name: 'sign-up' },
     { path: '/t/visual-team', name: 'public-team' },
+    { path: '/data-deleted', name: 'data-deleted' },
 ];
 
 for (const { path, name } of ROUTES) {

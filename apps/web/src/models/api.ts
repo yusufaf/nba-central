@@ -83,6 +83,27 @@ export interface UserStats {
 
 export type GetUserStatsResponse = ApiResult<UserStats>;
 export type UploadAvatarResponse = ApiResult<{ avatarUrl: string }>;
+
+// Mirrors apps/cdk/models/api/user-data-api.ts. Items are the stored ones
+// minus the table keys, so they are passed through as they come.
+export type ExportedItem = Record<string, unknown>;
+
+export interface UserDataExport {
+    version: 1;
+    exportedAt: string;
+    user: { id: string; username: string | null };
+    settings: SettingsMap;
+    settingsUpdatedAt: string | null;
+    avatarUrl: string | null;
+    teams: ExportedItem[];
+    customCoaches: ExportedItem[];
+    customGMs: ExportedItem[];
+    customPlayers: ExportedItem[];
+    other: ExportedItem[];
+}
+
+export type ExportUserDataResponse = ApiResult<UserDataExport>;
+export type DeleteUserDataResponse = ApiResult<{ deletedItems: number; deletedFiles: number }>;
 // #endregion
 
 //#region Team API Types
