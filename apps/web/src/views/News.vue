@@ -313,7 +313,7 @@ onMounted(() => {
 }
 
 .state-error p {
-    color: hsl(var(--destructive));
+    color: hsl(var(--destructive-strong));
     font-size: 1rem;
 }
 

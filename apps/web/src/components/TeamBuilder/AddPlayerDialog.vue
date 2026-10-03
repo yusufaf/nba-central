@@ -440,7 +440,7 @@ const handleDeletePlayer = async () => {
               <Button
                 size="icon"
                 variant="ghost"
-                class="h-8 w-8 hover:bg-destructive/20 hover:text-destructive"
+                class="h-8 w-8 hover:bg-destructive/20 hover:text-destructive-strong"
                 @click="openDeleteDialog(player)"
               >
                 <Trash class="h-4 w-4" />

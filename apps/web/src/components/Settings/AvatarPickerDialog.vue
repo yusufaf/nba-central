@@ -140,7 +140,7 @@ const onFileChosen = async (event: Event) => {
                 </p>
                 <p
                     v-if="uploadError"
-                    class="text-[0.8125rem] font-medium text-destructive"
+                    class="text-[0.8125rem] font-medium text-destructive-strong"
                     role="alert"
                     data-testid="avatar-upload-error"
                 >

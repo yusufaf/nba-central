@@ -167,7 +167,7 @@ const toggleFilter = (filter: string) => {
                         variant="ghost"
                         size="icon"
                         :class="[
-                            'text-destructive hover:text-destructive hover:bg-destructive/10',
+                            'text-destructive-strong hover:text-destructive-strong hover:bg-destructive/10',
                             { 'invisible pointer-events-none': !teamArena }
                         ]"
                     >

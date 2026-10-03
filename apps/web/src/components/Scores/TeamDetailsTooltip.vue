@@ -134,7 +134,7 @@ const pointDifferential = computed(() => {
     }
 
     .negative {
-        color: hsl(var(--destructive));
+        color: hsl(var(--destructive-strong));
         font-weight: 600;
     }
 </style>

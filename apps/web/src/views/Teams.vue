@@ -186,7 +186,7 @@ onMounted(() => {
 }
 
 .error-copy {
-    color: hsl(var(--destructive));
+    color: hsl(var(--destructive-strong));
 }
 
 .empty-state {

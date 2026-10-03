@@ -11,7 +11,7 @@
         <!-- Error State -->
         <div v-else-if="error" class="flex items-center justify-center min-h-[50vh]">
             <div class="text-center max-w-[31.25rem] mx-auto p-6">
-                <p class="text-destructive text-lg font-semibold mb-2">{{ error }}</p>
+                <p class="text-destructive-strong text-lg font-semibold mb-2">{{ error }}</p>
                 <Button @click="() => fetchGameSummary()" variant="outline" class="mt-4">
                     Try Again
                 </Button>
