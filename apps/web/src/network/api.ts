@@ -12,6 +12,8 @@ import type {
     UpdateUserSettingsResponse,
     GetUserStatsResponse,
     UploadAvatarResponse,
+    ExportUserDataResponse,
+    DeleteUserDataResponse,
     SaveTeamPayload,
     UpdateTeamPayload,
     CreateTeamResponse,
@@ -134,6 +136,19 @@ export const profileApi = {
     // Base64 image bytes; the server reads the type from the bytes.
     uploadAvatar: async (image: string): Promise<UploadAvatarResponse> => {
         const response = await api.put('/api/users/avatar/upload', { image });
+        return response.data;
+    },
+};
+
+// Everything the account stores, exported or deleted. Also keyed by the
+// access token: neither call takes a user id.
+export const accountDataApi = {
+    exportData: async (): Promise<ExportUserDataResponse> => {
+        const response = await api.get('/api/users/data/export');
+        return response.data;
+    },
+    deleteData: async (): Promise<DeleteUserDataResponse> => {
+        const response = await api.delete('/api/users/data');
         return response.data;
     },
 };

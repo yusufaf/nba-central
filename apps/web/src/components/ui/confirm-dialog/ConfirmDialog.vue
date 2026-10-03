@@ -17,6 +17,8 @@ interface Props {
     cancelText?: string;
     variant?: 'default' | 'destructive';
     loading?: boolean;
+    /** Holds the confirm button off, e.g. until a typed confirmation matches. */
+    confirmDisabled?: boolean;
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -24,6 +26,7 @@ const props = withDefaults(defineProps<Props>(), {
     cancelText: 'Cancel',
     variant: 'default',
     loading: false,
+    confirmDisabled: false,
 });
 
 const emit = defineEmits<{
@@ -34,7 +37,7 @@ const emit = defineEmits<{
 const open = defineModel<boolean>('open', { default: false });
 
 const handleConfirm = () => {
-    if (!props.loading) {
+    if (!props.loading && !props.confirmDisabled) {
         emit('confirm');
     }
 };
@@ -59,11 +62,16 @@ const confirmVariant = computed(() => props.variant);
                 <DialogTitle class="pr-10">{{ title }}</DialogTitle>
                 <DialogDescription>{{ description }}</DialogDescription>
             </DialogHeader>
+            <slot />
             <DialogFooter class="mt-2 gap-4">
                 <Button variant="outline" :disabled="loading" @click="handleCancel">
                     {{ cancelText }}
                 </Button>
-                <Button :variant="confirmVariant" :disabled="loading" @click="handleConfirm">
+                <Button
+                    :variant="confirmVariant"
+                    :disabled="loading || confirmDisabled"
+                    @click="handleConfirm"
+                >
                     {{ loading ? 'Please wait...' : confirmText }}
                 </Button>
             </DialogFooter>

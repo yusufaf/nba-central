@@ -1,16 +1,16 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
-import { useLogto } from '@logto/vue';
-import { LogOut, RefreshCw } from 'lucide-vue-next';
+import { RefreshCw } from 'lucide-vue-next';
 import { usePreferredReducedMotion } from '@vueuse/core';
 import PageShell from '@/layouts/PageShell.vue';
 import SectionHeading from '@/components/layout/SectionHeading.vue';
 import SettingRow from '@/components/Settings/SettingRow.vue';
 import ProfileCard from '@/components/Settings/ProfileCard.vue';
+import AccountPanel from '@/components/Settings/AccountPanel.vue';
 import CustomSwitch from '@/components/Scores/CustomSwitch.vue';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
+import { Card } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Slider } from '@/components/ui/slider';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
@@ -20,7 +20,6 @@ import { useTeamBuilderPreferences } from '@/composables/useTeamBuilderPreferenc
 import { useDisplayPreferences } from '@/composables/useDisplayPreferences';
 import { useDateFormat } from '@/composables/useDateFormat';
 import { useSettingsSync } from '@/composables/useSettingsSync';
-import { useCurrentUser } from '@/composables/useCurrentUser';
 import { VIEW_OPTIONS } from '@/constants/constants';
 import type { SeasonFormat, StatDisplayMode } from '@/constants/playerStats';
 import {
@@ -44,8 +43,6 @@ const isTab = (value: unknown): value is Tab =>
 
 const route = useRoute();
 const router = useRouter();
-const { signOut } = useLogto();
-const { currentUser } = useCurrentUser();
 const { status, isSaving, retry } = useSettingsSync();
 const { preferences: playerStats } = usePlayerStatsPreferences();
 const { preferences: scores } = useScoresPreferences();
@@ -175,10 +172,6 @@ const setDrawerSide = choose<DrawerSide>((v) => (teamBuilder.value.drawerSide = 
 const setDateFormat = choose<DateFormat>((v) => (display.value.dateFormat = v));
 const setTimeFormat = choose<TimeFormat>((v) => (display.value.timeFormat = v));
 const setReducedMotion = choose<ReducedMotion>((v) => (display.value.reducedMotion = v));
-
-const handleSignOut = () => {
-    signOut(window.location.origin);
-};
 </script>
 
 <template>
@@ -606,25 +599,7 @@ const handleSignOut = () => {
             </TabsContent>
 
             <TabsContent value="account">
-                <Card>
-                    <CardContent class="flex flex-col gap-4 pt-6 sm:flex-row sm:items-center sm:justify-between">
-                        <div class="min-w-0">
-                            <p class="text-[0.6875rem] font-bold uppercase tracking-[0.06em] text-foreground/50">
-                                Signed in as
-                            </p>
-                            <p class="truncate text-[1.125rem] font-semibold">
-                                {{ currentUser?.username ?? 'Your account' }}
-                            </p>
-                            <p class="mt-1 text-[0.8125rem] text-foreground/60">
-                                Your yusufaf.dev sign-in. Settings here apply to NBA Central only.
-                            </p>
-                        </div>
-                        <Button variant="outline" class="self-start sm:self-auto" @click="handleSignOut">
-                            <LogOut class="size-4" />
-                            Logout
-                        </Button>
-                    </CardContent>
-                </Card>
+                <AccountPanel />
             </TabsContent>
         </Tabs>
     </PageShell>
