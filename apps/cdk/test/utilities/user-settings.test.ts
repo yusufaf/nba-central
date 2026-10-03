@@ -30,6 +30,7 @@ describe("validateSettingsPatch", () => {
 			"display.timeFormat": "24h",
 			"display.reducedMotion": "reduce",
 			"display.fontScale": "137.5",
+			"display.theme": "light",
 			"profile.avatar": "generated-3",
 		};
 		expect(validateSettingsPatch(patch)).toEqual({ valid: true, patch });
@@ -65,6 +66,7 @@ describe("validateSettingsPatch", () => {
 			["display.timeFormat", ["auto", "12h", "24h"]],
 			["display.reducedMotion", ["system", "reduce", "allow"]],
 			["display.fontScale", ["87.5", "100", "112.5", "125", "137.5"]],
+			["display.theme", ["system", "light", "dark"]],
 		] as const) {
 			for (const value of values) {
 				expect(validateSettingsPatch({ [key]: value }).valid).toBe(true);
@@ -83,6 +85,10 @@ describe("validateSettingsPatch", () => {
 			{ "display.fontScale": 125 },
 			{ "display.fontScale": "150" },
 			{ "display.fontScale": "1.25" },
+			{ "display.theme": "auto" },
+			{ "display.theme": "Light" },
+			{ "display.theme": "" },
+			{ "display.theme": true },
 		]) {
 			const [key] = Object.keys(patch);
 			expect(validateSettingsPatch(patch)).toEqual({
@@ -93,9 +99,9 @@ describe("validateSettingsPatch", () => {
 	});
 
 	it("rejects an unknown display key", () => {
-		expect(validateSettingsPatch({ "display.theme": "light" })).toEqual({
+		expect(validateSettingsPatch({ "display.colorScheme": "light" })).toEqual({
 			valid: false,
-			error: "Unknown setting: display.theme",
+			error: "Unknown setting: display.colorScheme",
 		});
 	});
 

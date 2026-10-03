@@ -50,6 +50,8 @@ export const SETTINGS_SCHEMA = {
 		type: "enum",
 		values: ["87.5", "100", "112.5", "125", "137.5"],
 	},
+	// "system" follows the device's light/dark setting.
+	"display.theme": { type: "enum", values: ["system", "light", "dark"] },
 	// Which avatar the profile card and header show. "generated-N" is the
 	// Nth DiceBear avatar seeded by the user's id, rendered in the browser;
 	// "upload" is the image uploadAvatar stored. Never a URL: uploadAvatar
