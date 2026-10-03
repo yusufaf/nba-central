@@ -99,10 +99,11 @@ to put classes on.
   setting, or the OS on System), sets the root font size from Text size and
   puts `.reduce-motion` on it when motion should be off (the setting, or the
   OS on System). So:
-  - The theme is painted before the app loads by the inline script in
-    `index.html`, from `theme` in the `nba-display-preferences` localStorage
-    entry. Signed in, `applyDisplayPreferences` copies the synced theme there
-    too. Change the key or the values in one place and the other has to follow
+  - The theme and text size are painted before the app loads by the inline
+    script in `index.html`, from `theme` and `fontScale` in the
+    `nba-display-preferences` localStorage entry. Signed in,
+    `applyDisplayPreferences` copies those two synced values there too.
+    Change the key or the values in one place and the other has to follow
     (`tests/indexHtml.test.ts` runs the script). JS that needs the theme (a
     third-party `theme` prop) reads `useResolvedTheme()`.
   - Show a date or time with `useDateFormat`, never `toLocale*String`.

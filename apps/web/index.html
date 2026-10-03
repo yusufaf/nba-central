@@ -5,17 +5,22 @@
     <link rel="icon" href="/favicon.ico">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>NBA Team Builder</title>
-    <!-- Sets the theme before the first paint: the app (useDisplayPreferences)
-         loads too late to avoid a flash of the wrong one. Reads this device's
-         copy of the Theme setting, and the OS for System or when it can't. -->
+    <!-- Sets the theme and text size before the first paint: the app
+         (useDisplayPreferences) loads too late to avoid a flash of the wrong
+         theme or a jump in size. Reads this device's copy of the Display
+         settings, and the OS for System or when it can't. -->
     <script>
       (function () {
-        var theme;
+        var prefs;
         try {
-          theme = JSON.parse(localStorage.getItem('nba-display-preferences')).theme;
+          prefs = JSON.parse(localStorage.getItem('nba-display-preferences'));
         } catch (e) {}
+        var theme = prefs && prefs.theme;
+        var scale = prefs && prefs.fontScale;
+        var root = document.documentElement;
         var dark = theme === 'dark' || (theme !== 'light' && matchMedia('(prefers-color-scheme: dark)').matches);
-        document.documentElement.classList.toggle('dark', dark);
+        root.classList.toggle('dark', dark);
+        if (['87.5', '112.5', '125', '137.5'].indexOf(scale) !== -1) root.style.fontSize = scale + '%';
       })();
     </script>
     <!-- Umami analytics — self-hosted, cookieless. See C:\Projects\umami-flyio. -->
