@@ -1,5 +1,32 @@
 # Changelog
 
+## [0.4.0](https://github.com/yusufaf/nba-central/compare/web-v0.3.0...web-v0.4.0) (2026-10-03)
+
+
+### Features
+
+* **web:** add a profile card with avatar and stats to Settings ([cec6c8b](https://github.com/yusufaf/nba-central/commit/cec6c8b5f91199ed3cd55c1130f7f65f652860af))
+* **web:** add data export and delete to the Settings account tab ([988220a](https://github.com/yusufaf/nba-central/commit/988220aa100e7e82be08436fb452e8e161da7f04))
+* **web:** add display preferences to Settings ([c6420b6](https://github.com/yusufaf/nba-central/commit/c6420b618c7bfd7daa56c9b5b1b6be941b30310a)), closes [#124](https://github.com/yusufaf/nba-central/issues/124)
+* **web:** add light theme and theme preference ([fe5dfd9](https://github.com/yusufaf/nba-central/commit/fe5dfd9ff8341bf95dcaadd5196df15c7113c565)), closes [#125](https://github.com/yusufaf/nba-central/issues/125)
+* **web:** add settings page with server-synced preferences ([19552d3](https://github.com/yusufaf/nba-central/commit/19552d3113244e7dc1e2be322ad92eeac51e3d11)), closes [#122](https://github.com/yusufaf/nba-central/issues/122)
+* **web:** add team builder preferences to Settings ([b870405](https://github.com/yusufaf/nba-central/commit/b870405717920782e62e968f3911b98936d733a3))
+* **web:** undo player removal from toast and Ctrl/Cmd+Z ([#133](https://github.com/yusufaf/nba-central/issues/133)) ([d4d7e09](https://github.com/yusufaf/nba-central/commit/d4d7e09dbbe423154eff7f91903ecb5edc2825da))
+* **web:** undo/redo for swap, add and clear team ([#135](https://github.com/yusufaf/nba-central/issues/135)) ([959e063](https://github.com/yusufaf/nba-central/commit/959e063094b9de344cab63f1e49b17e5019fad0e))
+* **web:** undo/redo for team customization and staff ([#136](https://github.com/yusufaf/nba-central/issues/136)) ([96ed81b](https://github.com/yusufaf/nba-central/commit/96ed81bf249c0be273a67c6577ba4e3a37851926)), closes [#113](https://github.com/yusufaf/nba-central/issues/113)
+
+
+### Bug Fixes
+
+* **web:** apply Text size before the first paint ([8f03c91](https://github.com/yusufaf/nba-central/commit/8f03c9119ef3e47c14aeb4d938bda99a3a74d235))
+* **web:** hide the desktop nav on phones and make the mobile nav readable ([8c4f67d](https://github.com/yusufaf/nba-central/commit/8c4f67dea4b73938e19ed25c159dcd3c9cfa85ec))
+* **web:** keep settings saves in order and never stall on a missing account ([eacbd95](https://github.com/yusufaf/nba-central/commit/eacbd955ad257b73fde7f3f7a70acfdd3ff3ef19))
+* **web:** make red text readable on dark surfaces ([f32f8d2](https://github.com/yusufaf/nba-central/commit/f32f8d24ae5690254471ca69d50e4db4abef53a5))
+* **web:** read the router once in PageTitle ([e4ecc6e](https://github.com/yusufaf/nba-central/commit/e4ecc6e857743da8014cc6c701f99af62905741c))
+* **web:** render score cards for games with no leaders yet ([1342644](https://github.com/yusufaf/nba-central/commit/1342644a4f04f8413a795f8c76f17cae289c2bb2)), closes [#141](https://github.com/yusufaf/nba-central/issues/141)
+* **web:** right-align the user menu and Login link in the header ([af46664](https://github.com/yusufaf/nba-central/commit/af4666415ebd0f4baa9bca33808b34141d36c563))
+* **web:** use the header's Logout label on the settings account tab ([40787a4](https://github.com/yusufaf/nba-central/commit/40787a445c2d2f561c854270d9c1f67dbe855d18))
+
 ## [0.3.0](https://github.com/yusufaf/nba-central/compare/web-v0.2.0...web-v0.3.0) (2026-09-22)
 
 
