@@ -80,6 +80,10 @@ Entry point: `bin/team-builder-cdk.ts` loads env vars from dotenv.
 - Custom entities CRUD (GM/Coach/Player, each create/list/update/delete): `createCustomGM`/`createCustomCoach`/`createCustomPlayer`, and their `list*`/`update*`/`delete*` counterparts
 - `getUserSettings`, `updateUserSettings`: the signed-in user's settings map
   on the users table (allowlisted keys in `apps/cdk/models/user-settings.ts`)
+- `exportUserData`, `deleteUserData`: everything nba-central stores for the
+  signed-in user, as one JSON file or deleted (teams, custom entities,
+  settings, share cards, avatar). Keyed only by the authorizer's sub; the
+  Logto account is never touched
 - S3 multipart upload flow: `initiateMultipartUpload`, `getMultipartSignedUploadUrls`, `completeMultipartUpload`, `deleteFile`
 - `getTeamLogos`: fetch ESPN API for NBA team logos
 - `getPlayers`, `getPlayerStats`: player data + 2K ratings, merged from `players.json` and `player-ratings.json`

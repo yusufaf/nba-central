@@ -7,7 +7,6 @@ import {
 	ServicePrincipal,
 	PolicyStatement,
 	ManagedPolicy,
-	Effect,
 } from "aws-cdk-lib/aws-iam";
 import { addRole } from "../../resources/roles";
 import {
@@ -29,8 +28,6 @@ import { NodejsFunction } from "aws-cdk-lib/aws-lambda-nodejs";
 import { LogGroup } from "aws-cdk-lib/aws-logs";
 import {
 	DEFAULT_ALLOWED_ORIGINS,
-	FEEDBACK_SES_REGION,
-	FEEDBACK_SES_IDENTITY,
 } from "../../constants";
 import apiAuthorizer from "../lambdas/apiAuthorizer/index";
 import setCoachesData from "../lambdas/setCoachesData";
@@ -40,6 +37,7 @@ import setPlayersData from "../lambdas/setPlayersData";
 import setPlayerRatingsData from "../lambdas/setPlayerRatingsData";
 import fetchNewsCron from "../lambdas/fetchNewsCron";
 import { PUBLIC_ROUTES, PRIVATE_ROUTES } from "./team-builder-api-routes";
+import { mainLambdaPolicyStatements } from "./main-lambda-policy";
 
 type CreateLambdaProxyIntegrationProps = {
 	lambda: LambdaFunction;
@@ -156,7 +154,7 @@ export class TeamBuilderAPI extends Construct {
 			stageName: deploymentType,
 		});
 
-		this.createLambdaRoles();
+		this.createLambdaRoles(props.assetsDistributionId);
 
 		const lambdaProps = {
 			construct: this,
@@ -220,7 +218,7 @@ export class TeamBuilderAPI extends Construct {
 		}
 	}
 
-	createLambdaRoles = () => {
+	createLambdaRoles = (assetsDistributionId?: string) => {
 		const mainLambdaRoleNameAndID = `${this.appName}-${this.deploymentType}-main-lambda-role`;
 		const mainLambdaRole = new Role(this, mainLambdaRoleNameAndID, {
 			assumedBy: new ServicePrincipal("lambda.amazonaws.com"),
@@ -232,71 +230,14 @@ export class TeamBuilderAPI extends Construct {
 			],
 		});
 
-		// Add a policy statement for DynamoDB access
-		// Queries against a GSI (getNews reads the PK2 index) are authorised
-		// on the index ARN, not the table's, so both are listed.
-		const dynamoTableResources = [`main`, `users`].flatMap((tableName) => {
-			const tableArn = `arn:aws:dynamodb:${this.region}:${this.account}:table/${this.prefix}-${tableName}`;
-			return [tableArn, `${tableArn}/index/*`];
-		});
-		const dynamoDBPolicyStatement = new PolicyStatement({
-			effect: Effect.ALLOW,
-			actions: [
-				"dynamodb:GetItem",
-				"dynamodb:Query",
-				"dynamodb:Scan",
-				"dynamodb:PutItem",
-				"dynamodb:UpdateItem",
-				"dynamodb:DeleteItem",
-				"dynamodb:BatchWriteItem",
-				"dynamodb:BatchGetItem",
-			],
-			resources: dynamoTableResources,
-		});
-		mainLambdaRole.addToPolicy(dynamoDBPolicyStatement);
-
-		// Add a policy statement for S3 read and write access
-		const s3BucketResources = [`main`, `assets`, `static-data`]
-			.map((bucketName) => [
-				`arn:aws:s3:::${bucketName}`,
-				`arn:aws:s3:::${this.prefix}-${bucketName}/*`,
-			])
-			.flat();
-		const s3PolicyStatement = new PolicyStatement({
-			effect: Effect.ALLOW,
-			actions: [
-				"s3:GetObject",
-				"s3:PutObject",
-				"s3:ListBucket",
-				"s3:DeleteObject",
-				"s3:AbortMultipartUpload",
-				"s3:ListMultipartUploadParts",
-			],
-			resources: s3BucketResources,
-		});
-		mainLambdaRole.addToPolicy(s3PolicyStatement);
-
-		// getPublicTeamPage reads the deployed SPA shell. Scoped to that one
-		// object: the web bucket is otherwise CloudFront's alone.
-		mainLambdaRole.addToPolicy(
-			new PolicyStatement({
-				effect: Effect.ALLOW,
-				actions: ["s3:GetObject"],
-				resources: [`arn:aws:s3:::${this.prefix}-web/index.html`],
-			}),
-		);
-
-		// The verified sending identity lives in us-east-1 (the only region
-		// with SES production access); the stack itself is us-west-2, so this
-		// ARN can't be built from this.region.
-		const sesPolicyStatement = new PolicyStatement({
-			effect: Effect.ALLOW,
-			actions: ["ses:SendEmail"],
-			resources: [
-				`arn:aws:ses:${FEEDBACK_SES_REGION}:${this.account}:identity/${FEEDBACK_SES_IDENTITY}`,
-			],
-		});
-		mainLambdaRole.addToPolicy(sesPolicyStatement);
+		for (const statement of mainLambdaPolicyStatements({
+			prefix: this.prefix,
+			account: this.account,
+			region: this.region,
+			assetsDistributionId,
+		})) {
+			mainLambdaRole.addToPolicy(statement);
+		}
 
 		addRole(mainLambdaRoleNameAndID, mainLambdaRole);
 	};

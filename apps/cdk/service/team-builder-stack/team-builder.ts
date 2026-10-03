@@ -37,6 +37,7 @@ export class TeamBuilder extends Construct {
             {
                 ...props,
                 assetsCdnDomain: assetsCdn.distribution.distributionDomainName,
+                assetsDistributionId: assetsCdn.distribution.distributionId,
             },
         );
         new TeamBuilderDynamoDB(

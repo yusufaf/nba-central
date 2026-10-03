@@ -32,7 +32,7 @@ export const FILES_ROUTES: ApiRoute[] = [
 	},
 ];
 
-// The signed-in user's own settings, stats and avatar. Every handler keys
+// The signed-in user's own settings, stats, avatar and data export/delete. Every handler keys
 // off the authorizer's sub, so these must stay in PRIVATE_ROUTES.
 export const USERS_ROUTES: ApiRoute[] = [
 	{
@@ -54,6 +54,16 @@ export const USERS_ROUTES: ApiRoute[] = [
 		route: `${USERS_PREFIX}/avatar/upload`,
 		lambdaName: "uploadAvatar",
 		methods: [HttpMethod.PUT],
+	},
+	{
+		route: `${USERS_PREFIX}/data/export`,
+		lambdaName: "exportUserData",
+		methods: [HttpMethod.GET],
+	},
+	{
+		route: `${USERS_PREFIX}/data`,
+		lambdaName: "deleteUserData",
+		methods: [HttpMethod.DELETE],
 	},
 ];
 
