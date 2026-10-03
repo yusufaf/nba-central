@@ -9,13 +9,14 @@
 /* Dropdown Menu Styling */
 [data-radix-dropdown-menu-content],
 [data-reka-menu-content] {
-  background-color: rgb(24, 24, 27);
+  background-color: hsl(var(--popover));
   backdrop-filter: blur(0.75rem);
-  border: 0.125rem solid rgb(80, 80, 90);
-  box-shadow: 0 0.625rem 1.5625rem rgba(0, 0, 0, 0.8);
+  border: 0.0625rem solid hsl(var(--border));
+  box-shadow: 0 0.625rem 1.5625rem hsl(var(--shadow-color) / 0.25);
 }
 
-/* Toast/Sonner Styling - Dark theme with app colors */
+/* Toast/Sonner Styling - app colours in both themes. App.vue passes the
+   resolved theme to <Sonner>, which picks its own rich colours to match. */
 .toaster {
   position: fixed;
   z-index: 9999;
@@ -26,7 +27,6 @@
   pointer-events: auto;
 }
 
-/* Force dark theme styling for toasts */
 [data-sonner-toast] {
   background-color: hsl(var(--card));
   border-color: hsl(var(--border));
@@ -49,14 +49,23 @@
 
 [data-sonner-toast][data-type="warning"] {
   background-color: hsl(var(--card));
-  border-color: hsl(var(--primary));
+  border-color: hsl(var(--primary-strong));
 }
 
 [data-sonner-toast][data-description] {
   color: hsl(var(--muted-foreground));
 }
 
-/* Date Picker (v-calendar) - dark theme with orange accents
+/* vue-sonner's light rich colours put the text at 3.1-4.4:1 on its own tinted
+   backgrounds. The same hues, darkened to pass AA (5.5:1 or better). */
+[data-sonner-toaster][data-sonner-theme='light'] {
+  --success-text: hsl(140 100% 22%);
+  --info-text: hsl(210 92% 38%);
+  --warning-text: hsl(31 92% 32%);
+  --error-text: hsl(360 100% 38%);
+}
+
+/* Date Picker (v-calendar) - theme tokens with orange accents
    Higher-specificity overrides for the global [role="dialog"] rules above */
 .date-picker-popover {
   background: hsl(var(--popover));
@@ -65,7 +74,7 @@
   padding: 0;
   max-width: none;
   overflow: hidden;
-  box-shadow: 0 0.625rem 1.5625rem rgba(0, 0, 0, 0.5);
+  box-shadow: 0 0.625rem 1.5625rem hsl(var(--shadow-color) / 0.25);
 }
 
 .date-picker-popover .vc-container {
@@ -86,7 +95,7 @@
 }
 
 .date-picker-popover .vc-weekday {
-  color: hsl(var(--primary));
+  color: hsl(var(--primary-strong));
   font-weight: 600;
 }
 
@@ -179,7 +188,7 @@
   background-color: hsl(var(--popover));
   color: hsl(var(--popover-foreground));
   border: 0.0625rem solid hsl(var(--border));
-  box-shadow: 0 0.25rem 0.375rem -0.0625rem rgb(0 0 0 / 0.3), 0 0.125rem 0.25rem -0.125rem rgb(0 0 0 / 0.3);
+  box-shadow: 0 0.25rem 0.375rem -0.0625rem hsl(var(--shadow-color) / 0.3), 0 0.125rem 0.25rem -0.125rem hsl(var(--shadow-color) / 0.3);
 }
 
 .vc-popover-caret,

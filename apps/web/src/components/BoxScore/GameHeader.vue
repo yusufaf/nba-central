@@ -33,21 +33,21 @@
                         <div class="flex items-baseline gap-3">
                             <span
                                 class="font-extrabold tabular-nums text-[2.5rem] leading-none"
-                                :class="awayIsWinner ? 'text-primary' : 'text-muted-foreground'"
+                                :class="awayIsWinner ? 'text-primary-strong' : 'text-muted-foreground'"
                             >
                                 {{ awayTeam.score || '0' }}
                             </span>
                             <span class="text-base text-muted-foreground font-light leading-none">—</span>
                             <span
                                 class="font-extrabold tabular-nums text-[2.5rem] leading-none"
-                                :class="homeIsWinner ? 'text-primary' : 'text-muted-foreground'"
+                                :class="homeIsWinner ? 'text-primary-strong' : 'text-muted-foreground'"
                             >
                                 {{ homeTeam.score || '0' }}
                             </span>
                         </div>
                         <Badge class="mt-2 text-[0.7rem] px-[0.65rem] py-[0.2rem] font-semibold"
                             :variant="statusVariant"
-                            :class="isLive ? 'bg-primary/15 text-primary border-transparent' : ''"
+                            :class="isLive ? 'bg-primary/15 text-primary-strong border-transparent' : ''"
                         >
                             {{ statusText }}
                         </Badge>
@@ -77,12 +77,12 @@
                         <Calendar :size="12" class="shrink-0" />
                         {{ gameDate }}
                     </span>
-                    <span v-if="gameDate && venue" class="text-primary/30">·</span>
+                    <span v-if="gameDate && venue" class="text-primary-strong/30">·</span>
                     <span v-if="venue" class="flex items-center text-foreground/60 gap-1">
                         <MapPin :size="12" class="shrink-0" />
                         {{ venue }}
                     </span>
-                    <span v-if="venue && broadcasts" class="text-primary/30">·</span>
+                    <span v-if="venue && broadcasts" class="text-primary-strong/30">·</span>
                     <span v-if="broadcasts" class="flex items-center text-foreground/60 gap-1">
                         <Tv :size="12" class="shrink-0" />
                         {{ broadcasts }}

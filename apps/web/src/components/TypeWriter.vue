@@ -105,12 +105,12 @@ h1 {
 }
 
 span.typed-text {
-  color: hsl(var(--primary));
+  color: hsl(var(--primary-strong));
 }
 
 .blinking-cursor {
   font-size: 6rem;
-  color: hsl(var(--primary));
+  color: hsl(var(--primary-strong));
   /* color: #2c3e50; */
   -webkit-animation: 1s blink step-end infinite;
   -moz-animation: 1s blink step-end infinite;
@@ -126,7 +126,7 @@ span.typed-text {
   }
 
   50% {
-    color: hsl(var(--primary));
+    color: hsl(var(--primary-strong));
   }
 }
 
@@ -137,7 +137,7 @@ span.typed-text {
   }
 
   50% {
-    color: hsl(var(--primary));
+    color: hsl(var(--primary-strong));
   }
 }
 
@@ -148,7 +148,7 @@ span.typed-text {
   }
 
   50% {
-    color: hsl(var(--primary));
+    color: hsl(var(--primary-strong));
   }
 }
 
@@ -159,7 +159,7 @@ span.typed-text {
   }
 
   50% {
-    color: hsl(var(--primary));
+    color: hsl(var(--primary-strong));
   }
 }
 
@@ -170,12 +170,12 @@ span.typed-text {
   }
 
   50% {
-    color: hsl(var(--primary));
+    color: hsl(var(--primary-strong));
   }
 }
 
 .typing {
-  border-right: 0.2rem solid hsl(var(--primary));
+  border-right: 0.2rem solid hsl(var(--primary-strong));
 }
 
 .close-text {

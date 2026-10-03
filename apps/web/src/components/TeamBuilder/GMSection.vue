@@ -270,7 +270,7 @@ const handleDeleteGM = async () => {
                         variant="ghost"
                         size="icon"
                         :class="[
-                            'text-red-500 hover:text-red-600 hover:bg-red-950',
+                            'text-destructive hover:text-destructive hover:bg-destructive/10',
                             { 'invisible pointer-events-none': !teamGM }
                         ]"
                     >
@@ -287,7 +287,7 @@ const handleDeleteGM = async () => {
                 class="w-[28rem] flex flex-col"
             >
                 <SheetHeader>
-                    <SheetTitle class="text-white text-xl">Add GM</SheetTitle>
+                    <SheetTitle class="text-foreground text-xl">Add GM</SheetTitle>
                 </SheetHeader>
 
                 <!-- Create Custom GM Button -->
@@ -309,7 +309,7 @@ const handleDeleteGM = async () => {
                             type="search"
                             class="pr-10 h-11 focus-visible:ring-offset-0 outline-offset-[-0.125rem]"
                         />
-                        <Search class="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
+                        <Search class="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
                     </div>
 
                     <!-- Sort Controls -->
@@ -476,7 +476,7 @@ const handleDeleteGM = async () => {
 }
 
 .card-wrapper:hover {
-    border-color: hsl(var(--primary));
+    border-color: hsl(var(--primary-strong));
     box-shadow: 0 0 0.5rem hsl(var(--primary) / 0.3);
 }
 

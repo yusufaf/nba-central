@@ -3,7 +3,7 @@
         <!-- Loading State -->
         <div v-if="loading" class="flex items-center justify-center min-h-[50vh]">
             <div class="text-center">
-                <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+                <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-strong mx-auto mb-4"></div>
                 <p class="text-muted-foreground">Loading game data...</p>
             </div>
         </div>
@@ -41,10 +41,10 @@
             <!-- Tabs Navigation -->
             <Tabs default-value="box-score" class="mt-2">
                 <TabsList class="grid w-full grid-cols-4 h-auto bg-muted/30 p-1 gap-0.5 border-b border-b-primary/10">
-                    <TabsTrigger value="box-score" class="font-medium hover:text-foreground data-[state=active]:bg-primary/15 data-[state=active]:text-primary data-[state=active]:font-semibold text-[0.85rem] pt-2 pb-2 text-foreground/60">Box Score</TabsTrigger>
-                    <TabsTrigger value="play-by-play" class="font-medium hover:text-foreground data-[state=active]:bg-primary/15 data-[state=active]:text-primary data-[state=active]:font-semibold text-[0.85rem] pt-2 pb-2 text-foreground/60">Play-by-Play</TabsTrigger>
-                    <TabsTrigger value="team-stats" class="font-medium hover:text-foreground data-[state=active]:bg-primary/15 data-[state=active]:text-primary data-[state=active]:font-semibold text-[0.85rem] pt-2 pb-2 text-foreground/60">Team Stats</TabsTrigger>
-                    <TabsTrigger value="advanced" class="font-medium hover:text-foreground data-[state=active]:bg-primary/15 data-[state=active]:text-primary data-[state=active]:font-semibold text-[0.85rem] pt-2 pb-2 text-foreground/60">Advanced</TabsTrigger>
+                    <TabsTrigger value="box-score" class="font-medium hover:text-foreground data-[state=active]:bg-primary/15 data-[state=active]:text-primary-strong data-[state=active]:font-semibold text-[0.85rem] pt-2 pb-2 text-foreground/60">Box Score</TabsTrigger>
+                    <TabsTrigger value="play-by-play" class="font-medium hover:text-foreground data-[state=active]:bg-primary/15 data-[state=active]:text-primary-strong data-[state=active]:font-semibold text-[0.85rem] pt-2 pb-2 text-foreground/60">Play-by-Play</TabsTrigger>
+                    <TabsTrigger value="team-stats" class="font-medium hover:text-foreground data-[state=active]:bg-primary/15 data-[state=active]:text-primary-strong data-[state=active]:font-semibold text-[0.85rem] pt-2 pb-2 text-foreground/60">Team Stats</TabsTrigger>
+                    <TabsTrigger value="advanced" class="font-medium hover:text-foreground data-[state=active]:bg-primary/15 data-[state=active]:text-primary-strong data-[state=active]:font-semibold text-[0.85rem] pt-2 pb-2 text-foreground/60">Advanced</TabsTrigger>
                 </TabsList>
 
                 <!-- Box Score Tab -->

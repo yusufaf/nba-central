@@ -186,11 +186,13 @@ describe('Settings', () => {
         const { wrapper } = await mountAt('/settings');
 
         const choices: [string, string, string, string][] = [
+            ['Theme', 'System', 'Light', 'display.theme'],
             ['Date format', 'Automatic', 'DD/MM/YYYY', 'display.dateFormat'],
             ['Time format', 'Automatic', '24-hour', 'display.timeFormat'],
             ['Reduced motion', 'System', 'Reduce', 'display.reducedMotion'],
         ];
         const values: Record<string, string> = {
+            Light: 'light',
             'DD/MM/YYYY': 'DD/MM/YYYY',
             '24-hour': '24h',
             Reduce: 'reduce',
@@ -204,6 +206,23 @@ describe('Settings', () => {
         }
 
         expect(wrapper.text()).toMatch(/Today: \w+day, \d{2}\/\d{2}\/\d{4}/);
+    });
+
+    it('says which theme System is following on this device', async () => {
+        const original = window.matchMedia;
+        window.matchMedia = vi.fn((media: string) =>
+            Object.assign(new EventTarget(), {
+                media,
+                matches: media === '(prefers-color-scheme: dark)',
+            }),
+        ) as unknown as typeof window.matchMedia;
+        try {
+            const { wrapper } = await mountAt('/settings');
+            const row = wrapper.find('[aria-label="Theme"]').element.closest('.setting-row');
+            expect(row?.textContent).toContain('System follows this device, which is set to dark.');
+        } finally {
+            window.matchMedia = original;
+        }
     });
 
     // The page isn't rescaled mid-drag: that would move the slider out from

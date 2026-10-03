@@ -194,7 +194,7 @@ ul {
 }
 
 .mobile-nav a.router-link-exact-active {
-    color: hsl(var(--primary));
+    color: hsl(var(--primary-strong));
 }
 
 .user-menu-trigger {

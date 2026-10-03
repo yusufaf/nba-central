@@ -346,7 +346,7 @@ const toggleGameNotification = (): void => {
 }
 
 .score-card-wrapper:not(.east):not(.west):not(.cross):hover {
-    border-color: hsl(var(--primary));
+    border-color: hsl(var(--primary-strong));
     box-shadow: 0 0 0.5rem hsl(var(--primary) / 0.3);
 }
 
@@ -375,7 +375,7 @@ const toggleGameNotification = (): void => {
 }
 
 .notification-bell.following {
-    color: hsl(var(--primary));
+    color: hsl(var(--primary-strong));
 }
 
 @keyframes ring {
@@ -526,7 +526,7 @@ const toggleGameNotification = (): void => {
 }
 
 .clock.active {
-    color: hsl(var(--primary));
+    color: hsl(var(--primary-strong));
 }
 
 .scores-section {
@@ -571,7 +571,7 @@ const toggleGameNotification = (): void => {
 }
 
 .score.winning {
-    color: hsl(var(--primary));
+    color: hsl(var(--primary-strong));
 }
 
 .leaders-header {

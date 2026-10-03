@@ -184,3 +184,43 @@ test('dialog and popover do not share modal sizing', async ({ page }) => {
 
     await expect(sheet).toHaveScreenshot('sheet-add-player.png');
 });
+
+// The baselines above run in dark (colorScheme in playwright.config.ts, and
+// Theme defaults to System). These are the same surfaces in the light theme.
+test.describe('light theme', () => {
+    test.use({ colorScheme: 'light' });
+
+    for (const { path, name } of ROUTES) {
+        test(`route ${name}`, async ({ page }) => {
+            await stubNetwork(page);
+            await page.goto(path);
+            await settle(page);
+            await expect(page.locator('html')).not.toHaveClass(/\bdark\b/);
+            await expect(page).toHaveScreenshot(`light-${name}.png`, { fullPage: true });
+        });
+    }
+
+    test('route boxscore', async ({ page }) => {
+        await stubNetwork(page);
+        await page.route('**/apis/site/v2/sports/basketball/nba/summary**', (route) =>
+            route.fulfill({
+                status: 200,
+                contentType: 'application/json',
+                body: JSON.stringify(gameSummaryFixture),
+            }),
+        );
+        await page.goto('/game/401859965');
+        await settle(page);
+        await expect(page).toHaveScreenshot('light-boxscore.png', { fullPage: true });
+    });
+
+    test('add player sheet', async ({ page }) => {
+        await stubNetwork(page);
+        await page.goto('/teambuilder');
+        await settle(page);
+        await page.getByRole('button', { name: /add player/i }).first().click();
+        const sheet = page.locator('[role="dialog"]').first();
+        await expect(sheet).toBeVisible();
+        await expect(sheet).toHaveScreenshot('light-sheet-add-player.png');
+    });
+});

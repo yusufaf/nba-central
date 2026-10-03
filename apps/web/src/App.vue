@@ -14,7 +14,7 @@ import {
 } from '@/composables/useSessionExpiry';
 import { useAccountSession } from '@/composables/useCurrentUser';
 import { consumeDataDeletedFlag } from '@/composables/useAccountData';
-import { applyDisplayPreferences } from '@/composables/useDisplayPreferences';
+import { applyDisplayPreferences, useResolvedTheme } from '@/composables/useDisplayPreferences';
 
 const teamsStore = useTeamsStore();
 const feedbackOpen = ref(false);
@@ -25,6 +25,7 @@ const { getApiAccessToken } = useSessionExpiry();
 setAccessTokenGetter(getApiAccessToken);
 useAccountSession();
 applyDisplayPreferences();
+const theme = useResolvedTheme();
 
 // Signing out after a delete can only return to the site root, the one
 // post-sign-out URL Logto is known to accept; this finishes the trip.
@@ -42,7 +43,7 @@ onMounted(async () => {
 </script>
 
 <template>
-    <Sonner position="bottom-right" theme="dark" rich-colors />
+    <Sonner position="bottom-right" :theme="theme" rich-colors />
     <div class="app-shell">
         <AppHeader />
         <main class="app-main">

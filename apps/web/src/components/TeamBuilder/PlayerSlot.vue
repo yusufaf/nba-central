@@ -152,7 +152,7 @@ const averageStats = computed(() => {
             @click.stop="emit('remove', slotIndex)"
             variant="ghost"
             size="icon"
-            class="h-7 w-7 text-red-500 hover:text-red-400 hover:bg-red-500/10"
+            class="h-7 w-7 text-destructive hover:text-destructive hover:bg-destructive/10"
           >
             <X class="w-4 h-4" />
           </Button>
@@ -290,7 +290,7 @@ const averageStats = computed(() => {
 }
 
 .player-card-wrapper:hover {
-  border-color: hsl(var(--primary));
+  border-color: hsl(var(--primary-strong));
   box-shadow: 0 0 0.5rem hsl(var(--primary) / 0.3);
 }
 
@@ -306,7 +306,7 @@ const averageStats = computed(() => {
 
 /* The card the pointer is currently over - reads as "release here". */
 .player-card-wrapper.is-drop-target {
-  border-color: hsl(var(--primary));
+  border-color: hsl(var(--primary-strong));
   border-style: dashed;
   box-shadow: 0 0 0.75rem hsl(var(--primary) / 0.5);
   transform: scale(1.02);
@@ -321,7 +321,7 @@ const averageStats = computed(() => {
 /* The card held by the keyboard flow, which persists between keypresses. */
 .player-card-wrapper.is-picked-up {
   border-style: dashed;
-  border-color: hsl(var(--primary));
+  border-color: hsl(var(--primary-strong));
   box-shadow: 0 0 0.75rem hsl(var(--primary) / 0.5);
 }
 
@@ -376,21 +376,21 @@ const averageStats = computed(() => {
 }
 
 .rating-elite {
-  color: hsl(45 93% 58%);
-  border-color: hsl(45 93% 58% / 0.5);
-  background-color: hsl(45 93% 58% / 0.12);
+  color: hsl(var(--rating-elite));
+  border-color: hsl(var(--rating-elite) / 0.5);
+  background-color: hsl(var(--rating-elite) / 0.12);
 }
 
 .rating-great {
-  color: hsl(142 71% 45%);
-  border-color: hsl(142 71% 45% / 0.5);
-  background-color: hsl(142 71% 45% / 0.12);
+  color: hsl(var(--rating-great));
+  border-color: hsl(var(--rating-great) / 0.5);
+  background-color: hsl(var(--rating-great) / 0.12);
 }
 
 .rating-good {
-  color: hsl(199 89% 55%);
-  border-color: hsl(199 89% 55% / 0.5);
-  background-color: hsl(199 89% 55% / 0.12);
+  color: hsl(var(--rating-good));
+  border-color: hsl(var(--rating-good) / 0.5);
+  background-color: hsl(var(--rating-good) / 0.12);
 }
 
 .rating-average {
@@ -442,7 +442,7 @@ const averageStats = computed(() => {
 
 /* Spins with animate-spin, which main.css slows down with motion reduced. */
 .pending-spinner {
-  color: hsl(var(--primary));
+  color: hsl(var(--primary-strong));
 }
 
 .pending-name {
@@ -483,7 +483,7 @@ const averageStats = computed(() => {
 
 .avatar-fallback {
   background: linear-gradient(135deg, hsl(var(--primary) / 0.2) 0%, hsl(var(--primary) / 0.1) 100%);
-  color: hsl(var(--primary));
+  color: hsl(var(--primary-strong));
   font-size: 1.25rem;
   font-weight: 700;
   border: 0.125rem solid hsl(var(--primary) / 0.3);
@@ -537,7 +537,7 @@ const averageStats = computed(() => {
 .stat-value {
   font-size: 1.25rem;
   font-weight: 700;
-  color: hsl(var(--primary));
+  color: hsl(var(--primary-strong));
   line-height: 1;
 }
 

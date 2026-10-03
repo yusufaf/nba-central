@@ -85,7 +85,7 @@ const handleFileChange = (event: Event) => {
                     <textarea
                         id="team-description"
                         v-model="teamDescription"
-                        class="flex min-h-[7.5rem] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus:!border-primary focus-visible:!border-primary focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                        class="flex min-h-[7.5rem] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus:!border-primary-strong focus-visible:!border-primary-strong focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                         placeholder="Enter team description..."
                     />
                 </div>
@@ -137,7 +137,7 @@ const handleFileChange = (event: Event) => {
                             type="file"
                             accept="image/*,.jpg,.png"
                             @change="handleFileChange"
-                            class="flex h-10 w-full rounded-md border border-input bg-background px-10 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus:!border-primary focus-visible:!border-primary focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                            class="flex h-10 w-full rounded-md border border-input bg-background px-10 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus:!border-primary-strong focus-visible:!border-primary-strong focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                         />
                     </div>
                 </div>
@@ -205,7 +205,7 @@ input:focus,
 input:focus-visible,
 textarea:focus,
 textarea:focus-visible {
-    border-color: hsl(var(--primary));
+    border-color: hsl(var(--primary-strong));
     box-shadow: none;
     outline: none;
 }
@@ -216,7 +216,7 @@ textarea:focus-visible {
     padding: 0.75rem;
     border: 0.0625rem solid hsl(var(--border));
     border-radius: var(--radius);
-    background: hsl(0 0% 100% / 0.04);
+    background: hsl(var(--foreground) / 0.04);
 }
 
 .jersey-preview-image {
@@ -241,11 +241,11 @@ textarea:focus-visible {
 }
 
 .team-logo:hover {
-    border-color: hsl(var(--primary));
+    border-color: hsl(var(--primary-strong));
 }
 
 .team-logo.selected {
-    border: 0.25rem solid hsl(var(--primary));
+    border: 0.25rem solid hsl(var(--primary-strong));
     box-shadow: 0 0 0 0.125rem hsl(var(--primary) / 0.2);
 }
 

@@ -21,7 +21,7 @@ defineProps<{
                 <span v-else class="setting-label">{{ label }}</span>
                 <Loader2
                     v-if="saving"
-                    class="size-3.5 animate-spin text-primary"
+                    class="size-3.5 animate-spin text-primary-strong"
                     aria-label="Saving"
                     data-testid="setting-saving"
                 />

@@ -279,7 +279,7 @@ const handleDeletePlayer = async () => {
       class="w-[28rem] flex flex-col"
     >
       <SheetHeader>
-        <SheetTitle class="text-white text-xl">Add Player</SheetTitle>
+        <SheetTitle class="text-foreground text-xl">Add Player</SheetTitle>
       </SheetHeader>
 
       <!-- Create Custom Player Button -->
@@ -298,9 +298,9 @@ const handleDeletePlayer = async () => {
             v-model="search"
             placeholder="Search for a player..."
             type="search"
-            class="pr-10 h-12 border-2 border-primary/30 bg-background/50 focus:border-primary focus-visible:ring-2 focus-visible:ring-primary/30 placeholder:text-muted-foreground/60"
+            class="pr-10 h-12 border-2 border-primary/30 bg-background/50 focus:border-primary-strong focus-visible:ring-2 focus-visible:ring-primary-strong/30 placeholder:text-muted-foreground/60"
           />
-          <Search class="absolute right-3 top-1/2 -translate-y-1/2 h-5 w-5 text-primary group-focus-within:text-primary transition-colors" />
+          <Search class="absolute right-3 top-1/2 -translate-y-1/2 h-5 w-5 text-primary-strong group-focus-within:text-primary-strong transition-colors" />
         </div>
 
         <div class="flex items-center gap-3 p-3 rounded-lg bg-background/30 border border-border/30">
@@ -308,22 +308,22 @@ const handleDeletePlayer = async () => {
             @click="toggleSortDirection"
             size="icon"
             variant="outline"
-            class="shrink-0 h-11 w-11 border-2 border-primary/50 bg-primary/10 hover:bg-primary/25 hover:border-primary shadow-sm transition-all"
+            class="shrink-0 h-11 w-11 border-2 border-primary/50 bg-primary/10 hover:bg-primary/25 hover:border-primary-strong shadow-sm transition-all"
           >
-            <ArrowUp v-if="sortDirection === 'asc'" class="h-5 w-5 text-primary" />
-            <ArrowDown v-else class="h-5 w-5 text-primary" />
+            <ArrowUp v-if="sortDirection === 'asc'" class="h-5 w-5 text-primary-strong" />
+            <ArrowDown v-else class="h-5 w-5 text-primary-strong" />
           </Button>
           <div class="flex-1">
             <Select v-model="selectedSort">
-              <SelectTrigger class="border-2 border-primary/40 bg-background/50 focus:border-primary focus:ring-2 focus:ring-primary/30 hover:border-primary/60 transition-colors">
+              <SelectTrigger class="border-2 border-primary/40 bg-background/50 focus:border-primary-strong focus:ring-2 focus:ring-primary-strong/30 hover:border-primary/60 transition-colors">
                 <SelectValue placeholder="Sort by..." />
               </SelectTrigger>
-              <SelectContent class="bg-background/98 backdrop-blur-md border-2 border-primary shadow-lg shadow-primary/20">
+              <SelectContent class="bg-background/98 backdrop-blur-md border-2 border-primary-strong shadow-lg shadow-primary/20">
                 <SelectItem
                   v-for="option in SORT_OPTIONS"
                   :key="option"
                   :value="option"
-                  class="focus:bg-primary/20 focus:text-primary hover:bg-primary/15 cursor-pointer data-[highlighted]:bg-primary/20 data-[highlighted]:text-primary"
+                  class="focus:bg-primary/20 focus:text-primary-strong hover:bg-primary/15 cursor-pointer data-[highlighted]:bg-primary/20 data-[highlighted]:text-primary-strong"
                 >
                   {{ option }}
                 </SelectItem>
@@ -334,15 +334,15 @@ const handleDeletePlayer = async () => {
 
         <div class="p-3 rounded-lg bg-background/30 border border-border/30">
           <Select v-model="selectedPosition">
-            <SelectTrigger class="border-2 border-primary/40 bg-background/50 focus:border-primary focus:ring-2 focus:ring-primary/30 hover:border-primary/60 transition-colors">
+            <SelectTrigger class="border-2 border-primary/40 bg-background/50 focus:border-primary-strong focus:ring-2 focus:ring-primary-strong/30 hover:border-primary/60 transition-colors">
               <SelectValue placeholder="Filter by position..." />
             </SelectTrigger>
-            <SelectContent class="bg-background/98 backdrop-blur-md border-2 border-primary shadow-lg shadow-primary/20">
+            <SelectContent class="bg-background/98 backdrop-blur-md border-2 border-primary-strong shadow-lg shadow-primary/20">
               <SelectItem
                 v-for="pos in POSITION_FILTERS"
                 :key="pos"
                 :value="pos"
-                class="focus:bg-primary/20 focus:text-primary hover:bg-primary/15 cursor-pointer data-[highlighted]:bg-primary/20 data-[highlighted]:text-primary"
+                class="focus:bg-primary/20 focus:text-primary-strong hover:bg-primary/15 cursor-pointer data-[highlighted]:bg-primary/20 data-[highlighted]:text-primary-strong"
               >
                 {{ pos === 'All' ? 'All Positions' : pos }}
               </SelectItem>
@@ -357,7 +357,7 @@ const handleDeletePlayer = async () => {
         <div v-if="searchLoading" class="flex items-center justify-center py-16 px-6">
           <div class="text-center">
             <div class="relative inline-block mb-3">
-              <div class="animate-spin rounded-full h-10 w-10 border-4 border-primary/30 border-t-primary"></div>
+              <div class="animate-spin rounded-full h-10 w-10 border-4 border-primary/30 border-t-primary-strong"></div>
             </div>
             <p class="text-sm text-muted-foreground font-medium">Searching for players...</p>
           </div>
@@ -365,7 +365,7 @@ const handleDeletePlayer = async () => {
 
         <div v-else-if="!search" class="flex flex-col items-center justify-center py-16 px-6 text-center">
           <div class="rounded-full bg-primary/10 p-5 mb-3">
-            <Search class="h-10 w-10 text-primary" />
+            <Search class="h-10 w-10 text-primary-strong" />
           </div>
           <p class="text-base text-foreground font-semibold leading-none">Start Your Search</p>
           <p class="text-xs text-muted-foreground/70 mt-0.5">Type a player name to begin</p>
@@ -373,7 +373,7 @@ const handleDeletePlayer = async () => {
 
         <div v-else-if="searchListResults.length === 0" class="flex flex-col items-center justify-center py-16 px-6 text-center">
           <div class="rounded-full bg-primary/10 p-5 mb-3">
-            <Search class="h-10 w-10 text-primary" />
+            <Search class="h-10 w-10 text-primary-strong" />
           </div>
           <p class="text-base text-foreground font-semibold leading-none">No Players Found</p>
           <p class="text-xs text-muted-foreground/70 mt-0.5">Try adjusting your search or filters</p>
@@ -386,7 +386,7 @@ const handleDeletePlayer = async () => {
             class="player-item p-4 rounded-xl transition-all flex items-center gap-4 hover:bg-primary/15 hover:border-primary/50 hover:shadow-lg hover:shadow-primary/10 active:scale-[0.98] relative group"
           >
             <div @click="handleSelect(player)" class="flex items-center gap-4 flex-1 cursor-pointer">
-              <Avatar class="h-14 w-14 border-2 border-primary shrink-0 shadow-md">
+              <Avatar class="h-14 w-14 border-2 border-primary-strong shrink-0 shadow-md">
                 <AvatarFallback class="bg-gradient-to-br from-primary to-primary/80 text-primary-foreground font-bold text-lg">
                   {{ getPlayerInitials(player) }}
                 </AvatarFallback>
@@ -405,7 +405,7 @@ const handleDeletePlayer = async () => {
                   {{ player.team?.full_name || (player.isCustom ? 'Custom player' : 'Free Agent / Retired') }}
                 </p>
                 <div class="flex items-center gap-2">
-                  <Badge variant="secondary" class="text-xs font-semibold bg-primary/25 text-primary border border-primary/40 px-2 py-0.5">
+                  <Badge variant="secondary" class="text-xs font-semibold bg-primary/25 text-primary-strong border border-primary/40 px-2 py-0.5">
                     {{ player.position }}
                   </Badge>
                   <span
@@ -504,21 +504,21 @@ const handleDeletePlayer = async () => {
 }
 
 .rating-elite {
-  color: hsl(45 93% 58%);
-  border-color: hsl(45 93% 58% / 0.5);
-  background-color: hsl(45 93% 58% / 0.12);
+  color: hsl(var(--rating-elite));
+  border-color: hsl(var(--rating-elite) / 0.5);
+  background-color: hsl(var(--rating-elite) / 0.12);
 }
 
 .rating-great {
-  color: hsl(142 71% 45%);
-  border-color: hsl(142 71% 45% / 0.5);
-  background-color: hsl(142 71% 45% / 0.12);
+  color: hsl(var(--rating-great));
+  border-color: hsl(var(--rating-great) / 0.5);
+  background-color: hsl(var(--rating-great) / 0.12);
 }
 
 .rating-good {
-  color: hsl(199 89% 55%);
-  border-color: hsl(199 89% 55% / 0.5);
-  background-color: hsl(199 89% 55% / 0.12);
+  color: hsl(var(--rating-good));
+  border-color: hsl(var(--rating-good) / 0.5);
+  background-color: hsl(var(--rating-good) / 0.12);
 }
 
 .rating-average {

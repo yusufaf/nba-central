@@ -116,7 +116,7 @@ const handleHexUpdate = (hex: string) => {
 }
 
 .color-picker-trigger.selected {
-    border-color: hsl(var(--primary));
+    border-color: hsl(var(--primary-strong));
     box-shadow: 0 0 0 0.125rem hsl(var(--primary) / 0.3);
 }
 

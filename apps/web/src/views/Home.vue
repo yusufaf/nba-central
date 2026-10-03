@@ -24,7 +24,10 @@ const onVideoError = (event: Event) => {
 </script>
 
 <template>
-  <main class="home-page">
+  <main class="home-page dark bg-background">
+    <!-- .dark keeps the hero dark in the light theme too, background included:
+         the white headline over darkened footage is the brand moment, and a
+         light scrim washes the clip out. -->
     <div class="relative w-full h-full overflow-hidden">
       <!-- Video Background. The clip is served from the assets CDN (see
            apps/cdk/scripts/upload-hero-video.ts) rather than public/, which

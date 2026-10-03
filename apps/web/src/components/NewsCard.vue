@@ -73,7 +73,7 @@ const sourceMeta = computed(() => {
 
                 <div class="footer-row">
                     <span class="author">{{ article.author }}</span>
-                    <ExternalLink class="w-3.5 h-3.5 text-muted-foreground group-hover:text-primary transition-colors" />
+                    <ExternalLink class="w-3.5 h-3.5 text-muted-foreground group-hover:text-primary-strong transition-colors" />
                 </div>
             </div>
         </Card>
@@ -141,7 +141,7 @@ const sourceMeta = computed(() => {
 }
 
 .news-card:hover .headline {
-    color: hsl(var(--primary));
+    color: hsl(var(--primary-strong));
 }
 
 .summary {

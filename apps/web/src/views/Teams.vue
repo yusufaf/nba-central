@@ -90,7 +90,7 @@ onMounted(() => {
 
             <div v-else-if="userTeamsStore.teams.length === 0" class="empty-state">
                 <div class="empty-state-icon">
-                    <Shield class="h-10 w-10 text-primary" />
+                    <Shield class="h-10 w-10 text-primary-strong" />
                 </div>
                 <p class="empty-state-title">No teams yet</p>
                 <p class="empty-state-copy">
@@ -244,7 +244,7 @@ onMounted(() => {
 }
 
 .team-card:hover {
-    border-color: hsl(var(--primary));
+    border-color: hsl(var(--primary-strong));
     box-shadow: 0 0 0.5rem hsl(var(--primary) / 0.3);
 }
 

@@ -241,21 +241,21 @@ const onKeydown = (event: KeyboardEvent) => {
 }
 
 .team-rating.rating-elite {
-  color: hsl(45 93% 58%);
-  border-color: hsl(45 93% 58% / 0.5);
-  background-color: hsl(45 93% 58% / 0.12);
+  color: hsl(var(--rating-elite));
+  border-color: hsl(var(--rating-elite) / 0.5);
+  background-color: hsl(var(--rating-elite) / 0.12);
 }
 
 .team-rating.rating-great {
-  color: hsl(142 71% 45%);
-  border-color: hsl(142 71% 45% / 0.5);
-  background-color: hsl(142 71% 45% / 0.12);
+  color: hsl(var(--rating-great));
+  border-color: hsl(var(--rating-great) / 0.5);
+  background-color: hsl(var(--rating-great) / 0.12);
 }
 
 .team-rating.rating-good {
-  color: hsl(199 89% 55%);
-  border-color: hsl(199 89% 55% / 0.5);
-  background-color: hsl(199 89% 55% / 0.12);
+  color: hsl(var(--rating-good));
+  border-color: hsl(var(--rating-good) / 0.5);
+  background-color: hsl(var(--rating-good) / 0.12);
 }
 
 .team-rating.rating-average {

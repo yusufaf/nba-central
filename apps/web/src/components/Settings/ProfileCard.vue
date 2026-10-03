@@ -65,7 +65,7 @@ const STAT_LABELS: { key: keyof UserStats; label: string }[] = [
                 <UserAvatar class="size-16" />
                 <span
                     v-if="canEdit"
-                    class="absolute -bottom-0.5 -right-0.5 grid size-6 place-items-center rounded-full border border-border bg-card text-foreground/80 group-hover:text-primary"
+                    class="absolute -bottom-0.5 -right-0.5 grid size-6 place-items-center rounded-full border border-border bg-card text-foreground/80 group-hover:text-primary-strong"
                     aria-hidden="true"
                 >
                     <Pencil class="size-3" />
