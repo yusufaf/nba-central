@@ -357,7 +357,7 @@ const getCleanName = (coachName: string) => coachName.replace(/\*$/, '').trim();
                             variant="ghost"
                             size="icon"
                             :class="[
-                                'text-destructive hover:text-destructive hover:bg-destructive/10',
+                                'text-destructive-strong hover:text-destructive-strong hover:bg-destructive/10',
                                 { 'invisible pointer-events-none': !teamCoach }
                             ]"
                         >
@@ -558,7 +558,7 @@ const getCleanName = (coachName: string) => coachName.replace(/\*$/, '').trim();
                                         <Button
                                             size="icon"
                                             variant="ghost"
-                                            class="h-8 w-8 hover:bg-destructive/20 hover:text-destructive"
+                                            class="h-8 w-8 hover:bg-destructive/20 hover:text-destructive-strong"
                                             @click="openDeleteDialog(coach)"
                                         >
                                             <Trash class="h-4 w-4" />

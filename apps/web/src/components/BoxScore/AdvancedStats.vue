@@ -24,7 +24,7 @@
 
                     <!-- Negative Leaders -->
                     <div>
-                        <h4 class="font-bold text-destructive mb-1 text-[0.6875rem] uppercase tracking-[0.06em]">Bottom +/-</h4>
+                        <h4 class="font-bold text-destructive-strong mb-1 text-[0.6875rem] uppercase tracking-[0.06em]">Bottom +/-</h4>
                         <div class="space-y-0.5">
                             <div
                                 v-for="leader in bottomPlusMinus"
@@ -32,7 +32,7 @@
                                 class="flex items-center justify-between rounded hover:bg-muted/50 p-1 text-[0.9375rem]"
                             >
                                 <span class="font-medium truncate">{{ leader.name }}</span>
-                                <span class="text-destructive font-bold shrink-0 tabular-nums">{{ leader.value }}</span>
+                                <span class="text-destructive-strong font-bold shrink-0 tabular-nums">{{ leader.value }}</span>
                             </div>
                         </div>
                     </div>

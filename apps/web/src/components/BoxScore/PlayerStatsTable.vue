@@ -343,7 +343,7 @@ const getCellClass = (player: ESPNPlayerStat, columnIndex: number, stat: string)
     if (columnIndex === plusMinusIndex.value && stat && stat !== '-') {
         const val = parseInt(stat);
         if (val > 0) classes.push('text-success');
-        else if (val < 0) classes.push('text-destructive');
+        else if (val < 0) classes.push('text-destructive-strong');
     }
     return classes.join(' ');
 };

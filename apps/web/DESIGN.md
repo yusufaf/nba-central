@@ -48,7 +48,7 @@ in `@theme inline`** — that is how the theme ended up defined three times over
 | --- | --- |
 | Surface | `--background` `--card` `--popover` `--surface-raised` and their `-foreground` pairs |
 | Brand | `--primary` (NBA orange, `35 100% 50%`) `--primary-strong` `--secondary` `--muted` `--accent` |
-| Status | `--destructive` `--success` `--warning` |
+| Status | `--destructive` `--destructive-strong` `--success` `--warning` |
 | Conference | `--conference-east` `--conference-west` `--conference-cross` |
 | Rating tier | `--rating-elite` `--rating-great` `--rating-good` |
 | Line | `--border` `--input` `--ring` |
@@ -66,6 +66,12 @@ toggles, low-alpha washes like `bg-primary/15`, decorative bars like
 use `--primary-strong` (`text-primary-strong`, `border-primary-strong`), a
 darker step in light that equals `--primary` in dark. Text *on* an orange fill
 is `--primary-foreground`.
+
+Red works the same way: `--destructive` is the fill (the destructive button,
+`bg-destructive/10` washes, invalid borders), and red text or icons use
+`--destructive-strong`, which is lighter in dark (the fill is 3.35:1 on a dark
+card). `tests/designTokens.test.ts` checks these pairs against WCAG AA in both
+themes.
 
 ## Type
 

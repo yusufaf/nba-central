@@ -21,7 +21,7 @@ onMounted(startSignIn);
 <template>
     <div class="auth-container">
         <template v-if="error">
-            <p class="text-destructive">Couldn't sign in. {{ error }}</p>
+            <p class="text-destructive-strong">Couldn't sign in. {{ error }}</p>
             <Button variant="outline" :disabled="isSigningIn" @click="startSignIn">
                 Try again
             </Button>

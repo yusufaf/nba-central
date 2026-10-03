@@ -100,7 +100,7 @@ const handleSignOut = () => {
                             v-if="exportError"
                             data-testid="export-error"
                             role="alert"
-                            class="max-w-[20rem] text-[0.8125rem] text-destructive sm:text-right"
+                            class="max-w-[20rem] text-[0.8125rem] text-destructive-strong sm:text-right"
                         >
                             Couldn't download your data. {{ exportError }}
                         </p>
@@ -145,7 +145,7 @@ const handleSignOut = () => {
                     v-if="deleteError"
                     data-testid="delete-error"
                     role="alert"
-                    class="text-[0.8125rem] text-destructive"
+                    class="text-[0.8125rem] text-destructive-strong"
                 >
                     {{ deleteError }}
                 </p>

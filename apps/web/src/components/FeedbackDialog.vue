@@ -116,7 +116,7 @@ const handleSubmit = async () => {
                     </div>
                     <div class="grid gap-2">
                         <Label for="feedback-message">
-                            Message <span class="text-destructive">*</span>
+                            Message <span class="text-destructive-strong">*</span>
                         </Label>
                         <Textarea
                             id="feedback-message"

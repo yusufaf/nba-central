@@ -394,6 +394,6 @@ const startOver = () => {
 }
 
 .jersey-error {
-    color: hsl(var(--destructive));
+    color: hsl(var(--destructive-strong));
 }
 </style>

@@ -270,7 +270,7 @@ const handleDeleteGM = async () => {
                         variant="ghost"
                         size="icon"
                         :class="[
-                            'text-destructive hover:text-destructive hover:bg-destructive/10',
+                            'text-destructive-strong hover:text-destructive-strong hover:bg-destructive/10',
                             { 'invisible pointer-events-none': !teamGM }
                         ]"
                     >
@@ -433,7 +433,7 @@ const handleDeleteGM = async () => {
                                     <Button
                                         size="icon"
                                         variant="ghost"
-                                        class="h-8 w-8 hover:bg-destructive/20 hover:text-destructive"
+                                        class="h-8 w-8 hover:bg-destructive/20 hover:text-destructive-strong"
                                         @click="openDeleteDialog(gm)"
                                     >
                                         <Trash class="h-4 w-4" />

@@ -152,7 +152,7 @@ const averageStats = computed(() => {
             @click.stop="emit('remove', slotIndex)"
             variant="ghost"
             size="icon"
-            class="h-7 w-7 text-destructive hover:text-destructive hover:bg-destructive/10"
+            class="h-7 w-7 text-destructive-strong hover:text-destructive-strong hover:bg-destructive/10"
           >
             <X class="w-4 h-4" />
           </Button>
