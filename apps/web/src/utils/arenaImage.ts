@@ -34,15 +34,16 @@ export const encodeUnderLimit = async (
     throw new Error("That photo couldn't be made small enough. Try a smaller image.");
 };
 
-/** Scales the photo to a 1600px long edge (never up) and encodes it as JPEG. */
-export const resizeArenaPhoto = async (file: File): Promise<Blob> => {
+// Draws the image onto a canvas scaled to `longEdge` (never up). Drawing it
+// also drops its metadata (camera, location).
+const drawFitted = async (file: File, longEdge: number, background?: string) => {
     let bitmap: ImageBitmap;
     try {
         bitmap = await createImageBitmap(file);
     } catch {
         throw new Error("That file couldn't be read as an image.");
     }
-    const { width, height } = fitLongEdge(bitmap.width, bitmap.height);
+    const { width, height } = fitLongEdge(bitmap.width, bitmap.height, longEdge);
     const canvas = document.createElement('canvas');
     canvas.width = width;
     canvas.height = height;
@@ -51,13 +52,39 @@ export const resizeArenaPhoto = async (file: File): Promise<Blob> => {
         bitmap.close();
         throw new Error("Your browser couldn't resize the image.");
     }
-    // JPEG has no alpha: a transparent PNG would otherwise turn black.
-    context.fillStyle = 'white';
-    context.fillRect(0, 0, width, height);
+    if (background) {
+        context.fillStyle = background;
+        context.fillRect(0, 0, width, height);
+    }
     context.drawImage(bitmap, 0, 0, width, height);
     bitmap.close();
+    return canvas;
+};
 
+/** Scales the photo to a 1600px long edge (never up) and encodes it as JPEG. */
+export const resizeArenaPhoto = async (file: File): Promise<Blob> => {
+    // JPEG has no alpha: a transparent PNG would otherwise turn black.
+    const canvas = await drawFitted(file, ARENA_PHOTO_LONG_EDGE, 'white');
     return encodeUnderLimit(
         (quality) => new Promise((resolve) => canvas.toBlob(resolve, 'image/jpeg', quality)),
     );
+};
+
+// The centre circle is about 100 units of a 1040-unit court, so even the
+// 1200px share card draws it near 115px: 512 leaves room for 4x screens.
+export const COURT_LOGO_EDGE = 512;
+
+/**
+ * Scales a centre logo to a 512px long edge and keeps it PNG, so its
+ * transparency shows the paint behind it. At 512px that is far under the
+ * limit for anything logo-like; a photo full of noise is refused.
+ */
+export const resizeCourtLogo = async (file: File): Promise<Blob> => {
+    const canvas = await drawFitted(file, COURT_LOGO_EDGE);
+    const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, 'image/png'));
+    if (!blob) throw new Error("Your browser couldn't resize the image.");
+    if (blob.size >= ARENA_PHOTO_MAX_BYTES) {
+        throw new Error('That logo is too detailed to fit in 1 MB. Try a simpler image.');
+    }
+    return blob;
 };

@@ -1,8 +1,11 @@
 <script setup lang="ts">
 import { computed } from 'vue';
+import { useMediaQuery } from '@vueuse/core';
 import PlayerSlot from './PlayerSlot.vue';
+import CourtStage from '@/components/court/CourtStage.vue';
 import { ratingTier, averageRating } from '@/constants/ratings';
 import type { RatingSource } from '@/models/types';
+import type { CourtDesign } from '@/models/api';
 
 interface Player {
   id: string;
@@ -29,6 +32,9 @@ interface Props {
   dropTargetSlot?: number | null;
   pickedUpSlot?: number | null;
   liveMessage?: string;
+  /** The team's arena court, drawn behind the starters. */
+  court?: CourtDesign | null;
+  courtLogoUrl?: string;
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -37,6 +43,8 @@ const props = withDefaults(defineProps<Props>(), {
   dropTargetSlot: null,
   pickedUpSlot: null,
   liveMessage: '',
+  court: null,
+  courtLogoUrl: undefined,
 });
 
 const emit = defineEmits<{
@@ -84,6 +92,10 @@ const ratedStarterCount = computed(
 
 const isPickupActive = computed(() => props.pickedUpSlot !== null);
 
+// The same query as the starters' five-column rule below, in px like it:
+// the floor only tilts back when the five cards stand in one row.
+const startersInOneRow = useMediaQuery('(min-width: 1280px)'); // style-guard-allow: px-unit
+
 // Escape cancels a keyboard pickup from anywhere in the roster, so it's bound
 // once here rather than on every slot.
 const onKeydown = (event: KeyboardEvent) => {
@@ -116,32 +128,34 @@ const onKeydown = (event: KeyboardEvent) => {
           <div class="starter-count">{{ starterCount }}/5</div>
         </div>
       </div>
-      <div class="starters-grid">
-        <PlayerSlot
-          v-for="(index, posIndex) in STARTER_INDICES"
-          :key="index"
-          :slot-index="index"
-          :position="POSITIONS[posIndex]"
-          :player="selectedPlayers.get(index)"
-          :is-flipped="cardsFlipped.get(index)"
-          :pending-name="pendingPlayers.get(index)"
-          :is-dragging="draggingSlot === index"
-          :is-drop-target="dropTargetSlot === index"
-          :is-picked-up="pickedUpSlot === index"
-          :is-pickup-active="isPickupActive"
-          @add="emit('addPlayer', $event)"
-          @remove="emit('removePlayer', $event)"
-          @flip="emit('flipCard', $event)"
-          @view-stats="emit('viewStats', $event)"
-          @compare="emit('compare', $event)"
-          @drag-start="(slot, event) => emit('dragStart', slot, event)"
-          @drag-end="emit('dragEnd')"
-          @drag-over="(slot, event) => emit('dragOver', slot, event)"
-          @drag-leave="emit('dragLeave', $event)"
-          @drop="(slot, event) => emit('dropSlot', slot, event)"
-          @pickup="emit('pickup', $event)"
-        />
-      </div>
+      <CourtStage :court="court" :logo-url="courtLogoUrl" :tilted="startersInOneRow">
+        <div class="starters-grid">
+          <PlayerSlot
+            v-for="(index, posIndex) in STARTER_INDICES"
+            :key="index"
+            :slot-index="index"
+            :position="POSITIONS[posIndex]"
+            :player="selectedPlayers.get(index)"
+            :is-flipped="cardsFlipped.get(index)"
+            :pending-name="pendingPlayers.get(index)"
+            :is-dragging="draggingSlot === index"
+            :is-drop-target="dropTargetSlot === index"
+            :is-picked-up="pickedUpSlot === index"
+            :is-pickup-active="isPickupActive"
+            @add="emit('addPlayer', $event)"
+            @remove="emit('removePlayer', $event)"
+            @flip="emit('flipCard', $event)"
+            @view-stats="emit('viewStats', $event)"
+            @compare="emit('compare', $event)"
+            @drag-start="(slot, event) => emit('dragStart', slot, event)"
+            @drag-end="emit('dragEnd')"
+            @drag-over="(slot, event) => emit('dragOver', slot, event)"
+            @drag-leave="emit('dragLeave', $event)"
+            @drop="(slot, event) => emit('dropSlot', slot, event)"
+            @pickup="emit('pickup', $event)"
+          />
+        </div>
+      </CourtStage>
     </div>
 
     <!-- Bench Section -->

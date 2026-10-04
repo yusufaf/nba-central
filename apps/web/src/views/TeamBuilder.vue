@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, watch, toRaw, type Ref } from "vue";
+import { ref, computed, watch, toRaw, provide, type Ref } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { toast } from 'vue-sonner';
 import axios from 'axios';
@@ -34,6 +34,8 @@ import { usePendingPlayers } from "@/composables/usePendingPlayers";
 import { dataApi, teamApi } from "@/network/api";
 import { useUserTeamsStore } from "@/stores/userTeams";
 import { renderShareCard, toShareCardProps } from "@/composables/useShareCard";
+import { customArenasKey, findLiveArena, useCustomArenas } from "@/composables/useCustomArenas";
+import { centreLogoUrl } from "@/utils/court";
 import { shareUrlFor } from "@/utils/shareUrl";
 import { downloadUrlAsFile, slugFilename } from "@/utils/downloadFile";
 import { track } from "@/lib/analytics";
@@ -66,6 +68,17 @@ const teamJersey = ref<string>("");
 
 const teamCoach = ref<any>(null);
 const teamArena = ref<any>(null);
+
+// One list of your arenas for the drawer and the court behind the starters,
+// so an edit in the arena dialog shows on both without a refetch. Only an
+// arena in that list has a court here: a remixed team's arena belongs to
+// someone else, and saving drops its link.
+const customArenaList = useCustomArenas();
+provide(customArenasKey, customArenaList);
+const liveArena = computed(() => findLiveArena(teamArena.value, customArenaList.customArenas.value));
+const courtLogoUrl = computed(() =>
+    centreLogoUrl(liveArena.value?.court, { teamLogo: teamLogo.value, uploadedLogo: liveArena.value?.logoUrl }),
+);
 const teamGM = ref<any>(null);
 
 const detailRefs: Record<DetailField, Ref<unknown>> = {
@@ -546,6 +559,7 @@ const currentCardProps = () =>
             slot,
             player: { ...player, fullName: player.fullName },
         })),
+        arena: liveArena.value,
     });
 
 // A failed render must not block publishing: the page falls back to the
@@ -788,6 +802,8 @@ watch(
                 :drop-target-slot="dropTargetSlot"
                 :picked-up-slot="pickedUpSlot"
                 :live-message="liveMessage"
+                :court="liveArena?.court"
+                :court-logo-url="courtLogoUrl"
                 @add-player="addPlayer"
                 @remove-player="deletePlayer"
                 @flip-card="flipCard"
@@ -815,6 +831,7 @@ watch(
                     <ArenaSection
                         :teamArena="teamArena"
                         @update:teamArena="editDetail('arena', $event)"
+                        :teamLogo="teamLogo"
                         v-model:showArenaDrawer="showArenaDrawer"
                         :selectedDrawerSide="selectedDrawerSide"
                     />

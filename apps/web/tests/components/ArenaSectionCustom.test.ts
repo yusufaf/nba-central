@@ -21,6 +21,17 @@ const foundry: CustomArena = {
     photoUrl: "https://cdn.example/arenas/a2/photo-1.jpg",
 };
 
+const court = {
+    version: 1 as const,
+    wood: "maple" as const,
+    paint: "#4b2a7b",
+    apron: "#4b2a7b",
+    lines: "#ffffff",
+    centerLogo: "upload" as const,
+    baselineText: "Harbor Pavilion",
+    sidelineText: "Seattle",
+};
+
 const api = vi.hoisted(() => ({
     list: vi.fn(),
     delete: vi.fn(),
@@ -36,11 +47,12 @@ vi.mock("@/composables/useCurrentUser", () => ({
 
 vi.mock("vue-sonner", () => ({ toast: { success: vi.fn(), error: vi.fn(), info: vi.fn() } }));
 
-const mountSection = (teamArena: unknown, showArenaDrawer = true) => {
+const mountSection = (teamArena: unknown, showArenaDrawer = true, teamLogo = "") => {
     const updates: unknown[] = [];
     const wrapper = mount(ArenaSection, {
         props: {
             selectedDrawerSide: "right",
+            teamLogo,
             teamArena,
             "onUpdate:teamArena": (value: unknown) => updates.push(value),
             showArenaDrawer,
@@ -189,6 +201,53 @@ describe("ArenaSection with custom arenas", () => {
             openedYear: 2026,
             isCustom: true,
         });
+        wrapper.unmount();
+    });
+
+    it("shows a linked arena's court on the card, with the team's logo for a Team logo centre", async () => {
+        const withCourt = { ...foundry, court: { ...court, centerLogo: "team" as const } };
+        api.list.mockResolvedValue({ success: true, data: { customArenas: [harbor, withCourt] } });
+        const { wrapper } = mountSection({ name: "The Foundry", isCustom: true, arenaUUID: "a2" }, false, "https://cdn.example/team.png");
+        await settle();
+
+        const thumb = wrapper.find('[data-testid="arena-court"]');
+        expect(thumb.find('[data-part="floor"]').exists()).toBe(true);
+        expect(thumb.find("image").attributes("href")).toBe("https://cdn.example/team.png");
+        expect(wrapper.find(".main-card-section img").exists()).toBe(false);
+        wrapper.unmount();
+    });
+
+    it("keeps the photo on the card when the arena has no court", async () => {
+        const { wrapper } = mountSection({ name: "The Foundry", isCustom: true, arenaUUID: "a2" }, false);
+        await settle();
+        expect(wrapper.find('[data-testid="arena-court"]').exists()).toBe(false);
+        expect(wrapper.find(".main-card-section img").attributes("src")).toBe(foundry.photoUrl);
+        wrapper.unmount();
+    });
+
+    it("never draws a court that isn't in your own list, like a remixed team's", async () => {
+        const { wrapper } = mountSection(
+            { name: "Theirs", isCustom: true, arenaUUID: "someone-elses", court },
+            false,
+        );
+        await settle();
+        expect(wrapper.find('[data-testid="arena-court"]').exists()).toBe(false);
+        wrapper.unmount();
+    });
+
+    it("shows each of your arenas by its court in the drawer, or its photo without one", async () => {
+        api.list.mockResolvedValue({
+            success: true,
+            data: { customArenas: [{ ...harbor, court }, foundry] },
+        });
+        const { wrapper } = mountSection(null);
+        await settle();
+
+        const [first, second] = document.querySelectorAll('[data-testid="custom-arena-item"]');
+        expect(first.querySelector('[data-part="floor"]')).not.toBeNull();
+        expect(first.querySelector("img")).toBeNull();
+        expect(second.querySelector('[data-part="floor"]')).toBeNull();
+        expect(second.querySelector("img")?.getAttribute("src")).toBe(foundry.photoUrl);
         wrapper.unmount();
     });
 });

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, watch } from "vue";
+import { ref, computed, watch, inject } from "vue";
 import { toast } from "vue-sonner";
 import { CONFERENCE_FILTER_TEAMS } from "@/constants/constants";
 import type { Arena, SortDirection, DrawerSide } from "@/models/types";
@@ -8,9 +8,16 @@ import arenaData from "@/assets/data/arenas.json";
 import { getRandomIndex, getWikipediaUrl } from "@/constants/utilities";
 import ExternalLinksMenu from "@/components/ExternalLinksMenu.vue";
 import { useCurrentUser } from "@/composables/useCurrentUser";
-import { useCustomArenas, type ArenaPhotoChange } from "@/composables/useCustomArenas";
+import {
+    customArenasKey,
+    findLiveArena,
+    useCustomArenas,
+    type ArenaImageChanges,
+} from "@/composables/useCustomArenas";
 import type { BuilderArena } from "@/composables/useTeamPersistence";
 import { arenaDetails, formatCapacity, parseCapacity } from "@/utils/arenaDetails";
+import { centreLogoUrl } from "@/utils/court";
+import CourtFloor from "@/components/court/CourtFloor.vue";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -51,6 +58,8 @@ import {
 
 const props = defineProps<{
     selectedDrawerSide: DrawerSide;
+    // The team being built, whose logo a "Team logo" centre shows.
+    teamLogo?: string;
 }>();
 
 const teamArena = defineModel<BuilderArena | null>("teamArena");
@@ -59,8 +68,13 @@ const showArenaDrawer = defineModel<boolean>("showArenaDrawer");
 const typedArenaData = arenaData as Arena[];
 
 const { currentUser } = useCurrentUser();
-const { customArenas, loading: savingArena, saveArena, deleteArena: deleteCustomArena } =
-    useCustomArenas();
+// TeamBuilder provides the list it also draws the court from; mounted on
+// its own (as in tests), the section keeps a list of its own.
+const { customArenas, loading: savingArena, saveArena, deleteArena: deleteCustomArena } = inject(
+    customArenasKey,
+    () => useCustomArenas(),
+    true,
+);
 
 const search = ref<string>("");
 
@@ -128,11 +142,7 @@ const hasResults = computed(
 /* The card */
 // A linked custom arena shows the live copy from the list, so an edit made
 // in the dialog shows here straight away. Anything else shows as stored.
-const liveArena = computed(() => {
-    const arena = teamArena.value;
-    const arenaUUID = arena && "arenaUUID" in arena ? arena.arenaUUID : undefined;
-    return arenaUUID ? (customArenas.value.find((a) => a.arenaUUID === arenaUUID) ?? null) : null;
-});
+const liveArena = computed(() => findLiveArena(teamArena.value ?? null, customArenas.value));
 
 const shownArena = computed(() => liveArena.value ?? teamArena.value ?? null);
 
@@ -141,6 +151,9 @@ const shownImage = computed(() => {
     if (!arena) return null;
     return ("photoUrl" in arena && arena.photoUrl) || ("imgLink" in arena && arena.imgLink) || null;
 });
+
+const logoFor = (arena: CustomArena) =>
+    centreLogoUrl(arena.court, { teamLogo: props.teamLogo, uploadedLogo: arena.logoUrl });
 
 const isCustomArena = (arena: BuilderArena | null) => !!arena && "isCustom" in arena && !!arena.isCustom;
 
@@ -200,8 +213,8 @@ const openEditModal = (arena: CustomArena) => {
     showArenaModal.value = true;
 };
 
-const handleSubmitArena = async (data: CustomArenaPayload, photo: ArenaPhotoChange) => {
-    const saved = await saveArena(editingArena.value?.arenaUUID ?? null, data, photo);
+const handleSubmitArena = async (data: CustomArenaPayload, images: ArenaImageChanges) => {
+    const saved = await saveArena(editingArena.value?.arenaUUID ?? null, data, images);
     if (saved) {
         showArenaModal.value = false;
         editingArena.value = null;
@@ -256,8 +269,15 @@ const handleDeleteArena = async () => {
                         <Plus class="h-8 w-8" />
                     </Button>
                     <template v-else>
+                        <div
+                            v-if="liveArena?.court"
+                            class="arena-card-court overflow-hidden rounded shadow-md"
+                            data-testid="arena-court"
+                        >
+                            <CourtFloor :court="liveArena.court" :logo-url="logoFor(liveArena)" :label="`${liveArena.name} court`" />
+                        </div>
                         <img
-                            v-if="shownImage && !imageFailed"
+                            v-else-if="shownImage && !imageFailed"
                             :src="shownImage"
                             alt=""
                             class="arena-card-image rounded object-cover shadow-md"
@@ -442,8 +462,14 @@ const handleDeleteArena = async () => {
                                         class="flex flex-1 min-w-0 gap-3 text-left cursor-pointer"
                                         @click="setArena(arena)"
                                     >
+                                        <span
+                                            v-if="arena.court"
+                                            class="arena-list-court overflow-hidden rounded-md flex-shrink-0"
+                                        >
+                                            <CourtFloor :court="arena.court" :logo-url="logoFor(arena)" decorative />
+                                        </span>
                                         <img
-                                            v-if="arena.photoUrl"
+                                            v-else-if="arena.photoUrl"
                                             :src="arena.photoUrl"
                                             alt=""
                                             class="arena-list-image rounded-md object-cover flex-shrink-0"
@@ -513,13 +539,14 @@ const handleDeleteArena = async () => {
             v-model:open="showArenaModal"
             :editing-arena="editingArena"
             :saving="savingArena"
+            :team-logo="teamLogo"
             @submit="handleSubmitArena"
         />
 
         <ConfirmDialog
             v-model:open="showDeleteDialog"
             title="Delete arena?"
-            :description="`${arenaToDelete?.name} and its photo will be deleted. Teams that use it keep its name and details. This can't be undone.`"
+            :description="`${arenaToDelete?.name} and its images will be deleted. Teams that use it keep its name and details. This can't be undone.`"
             confirm-text="Delete"
             variant="destructive"
             :loading="savingArena"
@@ -639,6 +666,21 @@ const handleDeleteArena = async () => {
 .arena-list-image {
     width: 5.625rem;
     height: 3.75rem;
+}
+
+/* Courts keep their own shape (94 x 50 ft plus the apron), so they're
+   never cropped. */
+.arena-card-court {
+    width: 16rem;
+    max-width: 100%;
+    aspect-ratio: 104 / 58;
+}
+
+.arena-list-court {
+    display: block;
+    width: 5.625rem;
+    aspect-ratio: 104 / 58;
+    align-self: flex-start;
 }
 
 /* Custom arenas without a photo, and photos that fail to load. */

@@ -26,6 +26,13 @@ export const dialogVariants = cva(
         // For dialogs holding wide tabular data. The player stats table is 21
         // columns; at the default width only about a third of it is reachable.
         wide: "max-w-[min(95vw,110rem)] p-6",
+        // A form with a header, a scrolling body and a footer, laid out by
+        // the dialog itself (it's a flex column with no padding). Below its
+        // 56rem width it fills the screen: no inset, no rounding, full
+        // height. That's done with clamp() on rem rather than a media query,
+        // so it follows the Text size setting, and the body lays itself out
+        // with container queries against this box (@container).
+        sheet: "@container flex flex-col gap-0 p-0 overflow-hidden w-[min(100vw,56rem)] max-w-none max-h-[calc(100dvh_-_clamp(0rem,(100vw_-_56rem)*100,4rem))] min-h-[clamp(0rem,(56rem_-_100vw)*100,100dvh)] rounded-[clamp(0rem,(100vw_-_56rem)*100,0.75rem)]",
       },
     },
     defaultVariants: {

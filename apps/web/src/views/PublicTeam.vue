@@ -8,6 +8,7 @@ let requestSeq = 0;
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
+import { useMediaQuery } from '@vueuse/core';
 import { toast } from 'vue-sonner';
 import { Download, Link2, Share2, Sparkles } from 'lucide-vue-next';
 import PageShell from '@/layouts/PageShell.vue';
@@ -21,6 +22,9 @@ import { downloadUrlAsFile, slugFilename } from '@/utils/downloadFile';
 import { track } from '@/lib/analytics';
 import { useDateFormat } from '@/composables/useDateFormat';
 import { arenaDetails, backfillArena } from '@/utils/arenaDetails';
+import { centreLogoUrl } from '@/utils/court';
+import CourtFloor from '@/components/court/CourtFloor.vue';
+import CourtStage from '@/components/court/CourtStage.vue';
 
 const props = defineProps<{ teamUUID: string }>();
 const router = useRouter();
@@ -40,6 +44,12 @@ const location = computed(() => [team.value?.city, team.value?.country].filter(B
 // Older teams saved only the arena's name and image; the rest comes from arenas.json.
 const arena = computed(() => backfillArena(team.value?.arena ?? null));
 const arenaImage = computed(() => arena.value?.photoUrl || arena.value?.imgLink || null);
+// "Team logo" is this team's logo.
+const courtLogoUrl = computed(() =>
+    centreLogoUrl(arena.value?.court, { teamLogo: team.value?.logoUrl, uploadedLogo: arena.value?.logoUrl }),
+);
+// md, where the starters' grid goes to five columns.
+const startersInOneRow = useMediaQuery('(min-width: 48rem)');
 const arenaImageFailed = ref(false);
 watch(arenaImage, () => {
     arenaImageFailed.value = false;
@@ -152,13 +162,15 @@ const remix = () => {
                         <h2 class="text-xl font-semibold">Starting five</h2>
                         <Badge v-if="average !== null" :data-tier="ratingTier(average)">Avg {{ average }}</Badge>
                     </div>
-                    <ul class="grid grid-cols-2 gap-3 md:grid-cols-5">
-                        <li v-for="{ slot, player } in starters" :key="slot" class="rounded-lg border border-border bg-card p-3">
-                            <div class="text-xs uppercase text-muted-foreground">{{ player.position || '—' }}</div>
-                            <div class="font-semibold">{{ player.fullName }}</div>
-                            <div v-if="ratingOf(player) !== undefined" class="text-lg font-bold">{{ ratingOf(player) }}</div>
-                        </li>
-                    </ul>
+                    <CourtStage :court="arena?.court" :logo-url="courtLogoUrl" :tilted="startersInOneRow">
+                        <ul class="grid grid-cols-2 gap-3 md:grid-cols-5">
+                            <li v-for="{ slot, player } in starters" :key="slot" class="rounded-lg border border-border bg-card p-3">
+                                <div class="text-xs uppercase text-muted-foreground">{{ player.position || '—' }}</div>
+                                <div class="font-semibold">{{ player.fullName }}</div>
+                                <div v-if="ratingOf(player) !== undefined" class="text-lg font-bold">{{ ratingOf(player) }}</div>
+                            </li>
+                        </ul>
+                    </CourtStage>
                 </section>
 
                 <section v-if="bench.length">
@@ -174,8 +186,11 @@ const remix = () => {
                     <div v-if="team.coach" class="rounded-lg border border-border p-3"><div class="text-xs uppercase text-muted-foreground">Coach</div><div class="font-semibold">{{ team.coach.name }}</div></div>
                     <div v-if="team.gm" class="rounded-lg border border-border p-3"><div class="text-xs uppercase text-muted-foreground">GM</div><div class="font-semibold">{{ team.gm.name }}</div></div>
                     <div v-if="arena" class="flex gap-3 rounded-lg border border-border p-3" data-testid="public-arena">
+                        <div v-if="arena.court" class="aspect-[104/58] w-24 shrink-0 self-start overflow-hidden rounded">
+                            <CourtFloor :court="arena.court" :logo-url="courtLogoUrl" :label="`${arena.name} court`" />
+                        </div>
                         <img
-                            v-if="arenaImage && !arenaImageFailed"
+                            v-else-if="arenaImage && !arenaImageFailed"
                             :src="arenaImage"
                             alt=""
                             class="aspect-[3/2] w-24 shrink-0 self-start rounded object-cover"
