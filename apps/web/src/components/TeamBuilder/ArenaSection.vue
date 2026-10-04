@@ -1,11 +1,18 @@
 <script setup lang="ts">
-import { ref, computed } from "vue";
+import { ref, computed, watch } from "vue";
+import { toast } from "vue-sonner";
 import { CONFERENCE_FILTER_TEAMS } from "@/constants/constants";
 import type { Arena, SortDirection, DrawerSide } from "@/models/types";
+import type { CustomArena, CustomArenaPayload } from "@/models/api";
 import arenaData from "@/assets/data/arenas.json";
 import { getRandomIndex, getWikipediaUrl } from "@/constants/utilities";
 import ExternalLinksMenu from "@/components/ExternalLinksMenu.vue";
+import { useCurrentUser } from "@/composables/useCurrentUser";
+import { useCustomArenas, type ArenaPhotoChange } from "@/composables/useCustomArenas";
+import type { BuilderArena } from "@/composables/useTeamPersistence";
+import { arenaDetails, formatCapacity, parseCapacity } from "@/utils/arenaDetails";
 import { Card, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
@@ -29,6 +36,8 @@ import {
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import ConfirmDialog from "@/components/ui/confirm-dialog/ConfirmDialog.vue";
+import CreateCustomArenaModal from "./CreateCustomArenaModal.vue";
 import {
     Plus,
     Trash2,
@@ -36,16 +45,22 @@ import {
     ArrowUp,
     ArrowDown,
     Shuffle,
+    Pencil,
+    Building2,
 } from "lucide-vue-next";
 
 const props = defineProps<{
     selectedDrawerSide: DrawerSide;
 }>();
 
-const teamArena = defineModel<any>("teamArena");
+const teamArena = defineModel<BuilderArena | null>("teamArena");
 const showArenaDrawer = defineModel<boolean>("showArenaDrawer");
 
 const typedArenaData = arenaData as Arena[];
+
+const { currentUser } = useCurrentUser();
+const { customArenas, loading: savingArena, saveArena, deleteArena: deleteCustomArena } =
+    useCustomArenas();
 
 const search = ref<string>("");
 
@@ -57,38 +72,41 @@ const selectedFilters = ref<string[]>([]);
 const ARENA_FILTERS = ["Western Conference", "Eastern Conference"];
 const sortDirection = ref<SortDirection>("asc");
 
-/* Computed Props */
-const sortedArenaData = computed(() => {
-    const copyArenaData = [...typedArenaData];
+type ListedArena = Arena | CustomArena;
 
+const sortArenas = <T extends ListedArena>(arenas: T[]): T[] => {
+    const copy = [...arenas];
     const sortModifier = sortDirection.value === "asc" ? 1 : -1;
 
     switch (selectedSort.value) {
         case "Alphabetic":
-            return copyArenaData.sort((a: Arena, b: Arena) => {
-                return sortModifier * a.name.localeCompare(b.name);
-            });
+            return copy.sort((a, b) => sortModifier * a.name.localeCompare(b.name));
         case "Capacity":
-            return copyArenaData.sort((a: Arena, b: Arena) => {
-                const capacityA = parseInt(a.capacity.replaceAll(",", ""));
-                const capacityB = parseInt(b.capacity.replaceAll(",", ""));
-                return sortModifier * (capacityA - capacityB);
-            });
+            return copy.sort(
+                (a, b) =>
+                    sortModifier *
+                    ((parseCapacity(a.capacity) ?? 0) - (parseCapacity(b.capacity) ?? 0)),
+            );
         default:
-            return copyArenaData;
+            return copy;
     }
-});
+};
+
+const matchesSearch = (arena: ListedArena) => {
+    const searchLower = search.value.toLowerCase().trim();
+    return !searchLower || arena.name.toLowerCase().includes(searchLower);
+};
+
+/* Computed Props */
+// The conference filter is about NBA teams, so it hides your arenas while on.
+const visibleCustomArenas = computed(() =>
+    selectedFilters.value.length > 0
+        ? []
+        : sortArenas(customArenas.value.filter(matchesSearch)),
+);
 
 const filteredArenaData = computed(() => {
-    let copyArenaData = [...sortedArenaData.value];
-
-    /* Apply search filter */
-    if (search.value.trim()) {
-        const searchLower = search.value.toLowerCase().trim();
-        copyArenaData = copyArenaData.filter((arena: Arena) =>
-            arena.name.toLowerCase().includes(searchLower)
-        );
-    }
+    let copyArenaData = sortArenas(typedArenaData).filter(matchesSearch);
 
     /* Apply checkbox filters - a team only needs to match one selected
        conference, not all of them. */
@@ -103,12 +121,42 @@ const filteredArenaData = computed(() => {
     return copyArenaData;
 });
 
+const hasResults = computed(
+    () => visibleCustomArenas.value.length > 0 || filteredArenaData.value.length > 0,
+);
+
+/* The card */
+// A linked custom arena shows the live copy from the list, so an edit made
+// in the dialog shows here straight away. Anything else shows as stored.
+const liveArena = computed(() => {
+    const arena = teamArena.value;
+    const arenaUUID = arena && "arenaUUID" in arena ? arena.arenaUUID : undefined;
+    return arenaUUID ? (customArenas.value.find((a) => a.arenaUUID === arenaUUID) ?? null) : null;
+});
+
+const shownArena = computed(() => liveArena.value ?? teamArena.value ?? null);
+
+const shownImage = computed(() => {
+    const arena = shownArena.value;
+    if (!arena) return null;
+    return ("photoUrl" in arena && arena.photoUrl) || ("imgLink" in arena && arena.imgLink) || null;
+});
+
+const isCustomArena = (arena: BuilderArena | null) => !!arena && "isCustom" in arena && !!arena.isCustom;
+
+// A photo that fails to load (an old link, a deleted object) falls back to
+// the placeholder instead of a broken image.
+const imageFailed = ref(false);
+watch(shownImage, () => {
+    imageFailed.value = false;
+});
+
 const toggleSortDirection = () => {
     sortDirection.value = sortDirection.value === "asc" ? "desc" : "asc";
 };
 
 /* Arena Select Logic */
-const setArena = (arena: any) => {
+const setArena = (arena: ListedArena) => {
     teamArena.value = arena;
     showArenaDrawer.value = false;
 };
@@ -118,9 +166,9 @@ const deleteArena = () => {
 };
 
 const selectRandomArena = () => {
-    const copyArenaData = filteredArenaData.value;
-    const randomIndex = getRandomIndex(copyArenaData);
-    teamArena.value = copyArenaData[randomIndex];
+    const candidates: ListedArena[] = [...visibleCustomArenas.value, ...filteredArenaData.value];
+    if (candidates.length === 0) return;
+    teamArena.value = candidates[getRandomIndex(candidates)];
 };
 
 const toggleFilter = (filter: string) => {
@@ -129,6 +177,60 @@ const toggleFilter = (filter: string) => {
         selectedFilters.value.splice(index, 1);
     } else {
         selectedFilters.value.push(filter);
+    }
+};
+
+/* Custom arenas */
+const showArenaModal = ref(false);
+const editingArena = ref<CustomArena | null>(null);
+const showDeleteDialog = ref(false);
+const arenaToDelete = ref<CustomArena | null>(null);
+
+const openCreateModal = () => {
+    if (!currentUser.value) {
+        toast.info("Sign in to create your own arenas");
+        return;
+    }
+    editingArena.value = null;
+    showArenaModal.value = true;
+};
+
+const openEditModal = (arena: CustomArena) => {
+    editingArena.value = arena;
+    showArenaModal.value = true;
+};
+
+const handleSubmitArena = async (data: CustomArenaPayload, photo: ArenaPhotoChange) => {
+    const saved = await saveArena(editingArena.value?.arenaUUID ?? null, data, photo);
+    if (saved) {
+        showArenaModal.value = false;
+        editingArena.value = null;
+    }
+};
+
+const openDeleteDialog = (arena: CustomArena) => {
+    arenaToDelete.value = arena;
+    showDeleteDialog.value = true;
+};
+
+const handleDeleteArena = async () => {
+    const arena = arenaToDelete.value;
+    if (!arena) return;
+    if (!(await deleteCustomArena(arena))) return;
+    showDeleteDialog.value = false;
+    arenaToDelete.value = null;
+
+    // A team keeps a deleted arena's details, without the link or photo -
+    // the same thing a reload shows.
+    const onTeam = teamArena.value;
+    if (onTeam && "arenaUUID" in onTeam && onTeam.arenaUUID === arena.arenaUUID) {
+        teamArena.value = {
+            name: arena.name,
+            location: arena.location || undefined,
+            capacity: arena.capacity ?? undefined,
+            openedYear: arena.openedYear ?? undefined,
+            isCustom: true,
+        };
     }
 };
 </script>
@@ -144,20 +246,46 @@ const toggleFilter = (filter: string) => {
                 <Separator class="mb-4" />
                 <div class="main-card-section">
                     <Button
-                        v-if="!teamArena"
+                        v-if="!shownArena"
                         size="icon"
                         variant="outline"
                         class="rounded-full h-16 w-16"
+                        aria-label="Add arena"
                         @click="showArenaDrawer = true"
                     >
                         <Plus class="h-8 w-8" />
                     </Button>
                     <template v-else>
-                        <img :src="teamArena.imgLink" height="100" width="150" class="rounded shadow-md" />
-                        <div class="flex items-center gap-2 mt-3">
-                            <div class="arena-name !mt-0">{{ teamArena.name }}</div>
-                            <ExternalLinksMenu :links="[{ label: 'Wikipedia', url: getWikipediaUrl(teamArena.name) }]" />
+                        <img
+                            v-if="shownImage && !imageFailed"
+                            :src="shownImage"
+                            alt=""
+                            class="arena-card-image rounded object-cover shadow-md"
+                            @error="imageFailed = true"
+                        />
+                        <div v-else class="arena-card-image arena-image-placeholder rounded" data-testid="arena-placeholder">
+                            <Building2 class="h-8 w-8" aria-hidden="true" />
                         </div>
+                        <div class="flex items-center justify-center gap-2 mt-3">
+                            <div class="arena-name !mt-0">{{ shownArena.name }}</div>
+                            <Badge v-if="isCustomArena(shownArena)" variant="secondary" class="text-xs uppercase">Custom</Badge>
+                            <ExternalLinksMenu
+                                v-else
+                                :links="[{ label: 'Wikipedia', url: getWikipediaUrl(shownArena.name) }]"
+                            />
+                        </div>
+                        <div v-if="arenaDetails(shownArena)" class="arena-details">
+                            {{ arenaDetails(shownArena) }}
+                        </div>
+                        <Button
+                            v-if="liveArena"
+                            variant="outline"
+                            size="sm"
+                            class="mt-3"
+                            @click="openEditModal(liveArena)"
+                        >
+                            Edit arena
+                        </Button>
                     </template>
                 </div>
                 <Separator class="my-4" />
@@ -166,6 +294,7 @@ const toggleFilter = (filter: string) => {
                         @click="deleteArena"
                         variant="ghost"
                         size="icon"
+                        aria-label="Remove arena from team"
                         :class="[
                             'text-destructive-strong hover:text-destructive-strong hover:bg-destructive/10',
                             { 'invisible pointer-events-none': !teamArena }
@@ -181,11 +310,20 @@ const toggleFilter = (filter: string) => {
         <Sheet v-model:open="showArenaDrawer">
             <SheetContent
                 :side="props.selectedDrawerSide"
-                class="w-[28rem] flex flex-col"
+                class="w-[28rem] max-w-full flex flex-col"
             >
                 <SheetHeader>
                     <SheetTitle class="text-foreground text-xl">Add Arena</SheetTitle>
                 </SheetHeader>
+
+                <Button
+                    @click="openCreateModal"
+                    class="mt-4 mx-1 w-auto"
+                    variant="default"
+                >
+                    <Plus class="h-4 w-4 mr-2" />
+                    Create arena
+                </Button>
 
                 <div class="drawer-header-controls">
                     <!-- Search -->
@@ -281,36 +419,114 @@ const toggleFilter = (filter: string) => {
                      as room for the cards, clear of the scrollbar itself. -->
                 <ScrollArea class="flex-1 -mr-6">
                     <!-- Empty State -->
-                    <div v-if="filteredArenaData.length === 0" class="flex flex-col items-center justify-center py-12 px-4 text-center">
-                        <div class="h-16 w-16 text-muted-foreground/50 mb-4 flex items-center justify-center text-4xl">🏟️</div>
+                    <div v-if="!hasResults" class="flex flex-col items-center justify-center py-12 px-4 text-center">
+                        <Building2 class="h-16 w-16 text-muted-foreground/50 mb-4" aria-hidden="true" />
                         <h3 class="text-lg font-semibold text-foreground mb-2">No arenas found</h3>
                         <p class="text-sm text-muted-foreground">
                             Try adjusting your search or filters
                         </p>
                     </div>
 
-                    <!-- Arena List -->
-                    <div v-else class="arena-list pr-6">
-                        <div
-                            v-for="(arena, index) in filteredArenaData"
-                            :key="index"
-                            @click="() => setArena(arena)"
-                            class="arena-item p-4 cursor-pointer rounded-lg transition-all flex gap-3"
-                        >
-                            <img :src="arena.imgLink" height="60" width="90" class="rounded-md object-cover flex-shrink-0" />
-                            <div class="flex-1 min-w-0">
-                                <div class="arena-name-improved font-bold text-base mb-2">{{ arena.name }}</div>
-                                <div class="text-sm text-muted-foreground">Capacity: {{ arena.capacity }}</div>
-                                <div class="text-sm text-muted-foreground">Opened {{ arena.openedYear }}</div>
+                    <div v-else class="pr-6">
+                        <section v-if="visibleCustomArenas.length > 0" aria-labelledby="your-arenas-heading" class="arena-group">
+                            <h4 id="your-arenas-heading" class="arena-group-heading">Your arenas</h4>
+                            <div class="arena-list">
+                                <div
+                                    v-for="arena in visibleCustomArenas"
+                                    :key="arena.arenaUUID"
+                                    class="arena-item p-4 rounded-lg transition-all flex gap-3"
+                                    data-testid="custom-arena-item"
+                                >
+                                    <button
+                                        type="button"
+                                        class="flex flex-1 min-w-0 gap-3 text-left cursor-pointer"
+                                        @click="setArena(arena)"
+                                    >
+                                        <img
+                                            v-if="arena.photoUrl"
+                                            :src="arena.photoUrl"
+                                            alt=""
+                                            class="arena-list-image rounded-md object-cover flex-shrink-0"
+                                        />
+                                        <span v-else class="arena-list-image arena-image-placeholder rounded-md flex-shrink-0">
+                                            <Building2 class="h-5 w-5" aria-hidden="true" />
+                                        </span>
+                                        <span class="flex-1 min-w-0">
+                                            <Badge variant="secondary" class="text-xs uppercase mb-1">Custom</Badge>
+                                            <span class="arena-name-improved block font-bold text-base mb-2">{{ arena.name }}</span>
+                                            <span v-if="arena.capacity" class="block text-sm text-muted-foreground">Capacity: {{ formatCapacity(arena.capacity) }}</span>
+                                            <span v-if="arena.openedYear" class="block text-sm text-muted-foreground">Opened {{ arena.openedYear }}</span>
+                                        </span>
+                                    </button>
+                                    <div class="flex flex-col gap-1">
+                                        <Button
+                                            size="icon"
+                                            variant="ghost"
+                                            class="h-8 w-8 hover:bg-primary/20"
+                                            :aria-label="`Edit ${arena.name}`"
+                                            @click="openEditModal(arena)"
+                                        >
+                                            <Pencil class="h-4 w-4" />
+                                        </Button>
+                                        <Button
+                                            size="icon"
+                                            variant="ghost"
+                                            class="h-8 w-8 hover:bg-destructive/20 hover:text-destructive-strong"
+                                            :aria-label="`Delete ${arena.name}`"
+                                            @click="openDeleteDialog(arena)"
+                                        >
+                                            <Trash2 class="h-4 w-4" />
+                                        </Button>
+                                    </div>
+                                </div>
                             </div>
-                        </div>
+                        </section>
+
+                        <section
+                            v-if="filteredArenaData.length > 0"
+                            :aria-labelledby="visibleCustomArenas.length > 0 ? 'nba-arenas-heading' : undefined"
+                            class="arena-group"
+                        >
+                            <h4 v-if="visibleCustomArenas.length > 0" id="nba-arenas-heading" class="arena-group-heading">NBA arenas</h4>
+                            <div class="arena-list">
+                                <div
+                                    v-for="arena in filteredArenaData"
+                                    :key="arena.name"
+                                    @click="() => setArena(arena)"
+                                    class="arena-item p-4 cursor-pointer rounded-lg transition-all flex gap-3"
+                                >
+                                    <img :src="arena.imgLink" alt="" class="arena-list-image rounded-md object-cover flex-shrink-0" />
+                                    <div class="flex-1 min-w-0">
+                                        <div class="arena-name-improved font-bold text-base mb-2">{{ arena.name }}</div>
+                                        <div class="text-sm text-muted-foreground">Capacity: {{ arena.capacity }}</div>
+                                        <div class="text-sm text-muted-foreground">Opened {{ arena.openedYear }}</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </section>
                     </div>
                 </ScrollArea>
             </SheetContent>
         </Sheet>
+
+        <CreateCustomArenaModal
+            v-model:open="showArenaModal"
+            :editing-arena="editingArena"
+            :saving="savingArena"
+            @submit="handleSubmitArena"
+        />
+
+        <ConfirmDialog
+            v-model:open="showDeleteDialog"
+            title="Delete arena?"
+            :description="`${arenaToDelete?.name} and its photo will be deleted. Teams that use it keep its name and details. This can't be undone.`"
+            confirm-text="Delete"
+            variant="destructive"
+            :loading="savingArena"
+            @confirm="handleDeleteArena"
+        />
     </div>
 </template>
-
 <style scoped>
 .card-wrapper {
     border-radius: 0.5rem;
@@ -412,5 +628,46 @@ const toggleFilter = (filter: string) => {
 .arena-name-improved {
     color: hsl(var(--foreground));
     line-height: 1.3;
+}
+
+/* 3:2, close to the Wikimedia thumbnails' own shape. */
+.arena-card-image {
+    width: 10rem;
+    aspect-ratio: 3 / 2;
+}
+
+.arena-list-image {
+    width: 5.625rem;
+    height: 3.75rem;
+}
+
+/* Custom arenas without a photo, and photos that fail to load. */
+.arena-image-placeholder {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: hsl(var(--muted));
+    color: hsl(var(--muted-foreground));
+    border: 0.0625rem dashed hsl(var(--border));
+}
+
+.arena-details {
+    margin-top: 0.25rem;
+    font-size: 0.8125rem;
+    color: hsl(var(--muted-foreground));
+    text-align: center;
+}
+
+.arena-group + .arena-group {
+    margin-top: 1.5rem;
+}
+
+.arena-group-heading {
+    margin-bottom: 0.75rem;
+    font-size: 0.6875rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: hsl(var(--muted-foreground));
 }
 </style>

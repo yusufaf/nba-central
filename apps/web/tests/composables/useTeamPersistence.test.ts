@@ -130,6 +130,111 @@ describe("serializeTeam", () => {
         });
     });
 
+    const emptyState = {
+        teamName: "Test Team",
+        teamDescription: "",
+        teamCity: "",
+        teamCountry: "",
+        teamLogo: "",
+        teamJersey: "",
+        selectedPlayersData: new Map(),
+        teamCoach: null,
+        teamGM: null,
+    };
+
+    it("saves a built-in arena's full details, with capacity as a number", () => {
+        const payload = serializeTeam({
+            ...emptyState,
+            teamArena: {
+                imgLink: "https://example.com/chase.jpg",
+                name: "Chase Center",
+                location: "San Francisco, California",
+                team: "Golden State Warriors",
+                capacity: "18,064",
+                openedYear: 2019,
+            },
+        });
+
+        expect(payload.arena).toEqual({
+            name: "Chase Center",
+            location: "San Francisco, California",
+            capacity: 18064,
+            openedYear: 2019,
+            imgLink: "https://example.com/chase.jpg",
+        });
+        expect(payload.arena).not.toHaveProperty("isCustom");
+    });
+
+    it("saves a custom arena by arenaUUID with a text copy, never its images or court", () => {
+        const payload = serializeTeam({
+            ...emptyState,
+            teamArena: {
+                arenaUUID: "a1",
+                name: "Harbor Pavilion",
+                location: "Seattle, Washington",
+                capacity: null,
+                openedYear: 2026,
+                court: null,
+                photoUrl: "https://cdn.example/arenas/a1/photo-1.jpg",
+                created: "2026-10-01T00:00:00.000Z",
+                isCustom: true,
+            },
+        });
+
+        expect(JSON.parse(JSON.stringify(payload.arena))).toEqual({
+            name: "Harbor Pavilion",
+            location: "Seattle, Washington",
+            openedYear: 2026,
+            isCustom: true,
+            arenaUUID: "a1",
+        });
+    });
+
+    it("drops the resolved fields of an arena read back from the server", () => {
+        const payload = serializeTeam({
+            ...emptyState,
+            teamArena: {
+                name: "Harbor Pavilion",
+                capacity: 18600,
+                isCustom: true,
+                arenaUUID: "a1",
+                photoUrl: "https://cdn.example/arenas/a1/photo-1.jpg",
+                court: {
+                    version: 1,
+                    wood: "maple",
+                    paint: null,
+                    apron: null,
+                    lines: "#ffffff",
+                    centerLogo: "none",
+                    baselineText: "",
+                    sidelineText: "",
+                },
+                missing: true,
+            },
+        });
+
+        expect(JSON.parse(JSON.stringify(payload.arena))).toEqual({
+            name: "Harbor Pavilion",
+            capacity: 18600,
+            isCustom: true,
+            arenaUUID: "a1",
+        });
+    });
+
+    it("keeps an unlinked custom arena (deleted, or a remix) as custom text", () => {
+        const payload = serializeTeam({
+            ...emptyState,
+            teamArena: { name: "Gone Arena", location: "Nowhere", capacity: 500, isCustom: true },
+        });
+
+        expect(JSON.parse(JSON.stringify(payload.arena))).toEqual({
+            name: "Gone Arena",
+            location: "Nowhere",
+            capacity: 500,
+            isCustom: true,
+        });
+    });
+
     it("tolerates a null coach, GM, and arena", () => {
         const payload = serializeTeam({
             teamName: "Test Team",
@@ -200,9 +305,13 @@ describe("hydrateTeam", () => {
         expect(hydrated.players.get(1)?.fullName).toBe("LeBron James");
         expect(hydrated.teamCoach).toEqual({ name: "Steve Kerr", isCustom: false });
         expect(hydrated.teamGM).toEqual({ name: "My GM", isCustom: true, uuid: "gm-1" });
+        // A row saved before arenas kept their details is filled from arenas.json.
         expect(hydrated.teamArena).toEqual({
             name: "Chase Center",
             imgLink: "https://example.com/chase.jpg",
+            location: "San Francisco, California",
+            capacity: 18064,
+            openedYear: 2019,
         });
 
         // Re-serializing the hydrated state reproduces the roster slot/name pairing.
@@ -236,6 +345,32 @@ describe("hydrateTeam", () => {
         expect(hydrated.teamCoach).toBeNull();
         expect(hydrated.teamGM).toBeNull();
         expect(hydrated.teamArena).toBeNull();
+    });
+
+    it("leaves a legacy arena that isn't in arenas.json as its name", () => {
+        const hydrated = hydrateTeam({
+            ...baseSaved,
+            arena: { name: "The Forum", imgLink: "https://example.com/forum.jpg" },
+        });
+
+        expect(hydrated.teamArena).toEqual({
+            name: "The Forum",
+            imgLink: "https://example.com/forum.jpg",
+        });
+    });
+
+    it("keeps stored details over arenas.json, and never fills a custom arena", () => {
+        const stored = hydrateTeam({
+            ...baseSaved,
+            arena: { name: "Chase Center", location: "SF", capacity: 1, openedYear: 1 },
+        });
+        expect(stored.teamArena).toMatchObject({ location: "SF", capacity: 1, openedYear: 1 });
+
+        const custom = hydrateTeam({
+            ...baseSaved,
+            arena: { name: "Chase Center", isCustom: true },
+        });
+        expect(custom.teamArena).toEqual({ name: "Chase Center", isCustom: true });
     });
 
     it("upgrades a pre-CDN historical logo path to the era's current URL", () => {

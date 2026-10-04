@@ -12,8 +12,18 @@ import publicTeamFixture from './fixtures/public-team.json' with { type: 'json' 
  */
 
 const ESPN = 'https://site.api.espn.com/**';
+// Arena photos are hotlinked Wikimedia thumbnails. A fixed grey pixel keeps
+// the arena tile's layout in the shot without depending on the live image.
+const WIKIMEDIA = 'https://upload.wikimedia.org/**';
+const GREY_PIXEL = Buffer.from(
+    'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAAAAAA6fptVAAAACklEQVR4nGNoAAAAggCBd81ytgAAAABJRU5ErkJggg==',
+    'base64',
+);
 
 async function stubNetwork(page: Page) {
+    await page.route(WIKIMEDIA, (route) =>
+        route.fulfill({ status: 200, contentType: 'image/png', body: GREY_PIXEL }),
+    );
     await page.route(ESPN, (route) =>
         route.fulfill({
             status: 200,
