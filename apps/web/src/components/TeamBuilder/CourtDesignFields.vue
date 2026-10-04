@@ -25,6 +25,8 @@ import {
 const props = defineProps<{
     // The centre logo the preview draws, already resolved.
     logoUrl?: string;
+    // The drawing as it stands, so the preview shows the ink staying put.
+    drawingUrl?: string;
     // The uploaded logo, saved or newly chosen, for the Upload option.
     uploadedLogo: string | null;
     logoPreparing: boolean;
@@ -91,7 +93,7 @@ const onLogoInput = (event: Event) => {
              beside them in a wide one. -->
         <div class="sticky top-0 z-[var(--z-sticky)] -mx-6 -mt-4 bg-card px-6 pb-3 pt-4 @min-[44rem]:mx-0 @min-[44rem]:px-0">
             <div class="aspect-[104/58] overflow-hidden rounded-lg shadow-md" data-testid="court-preview">
-                <CourtFloor :court="court" :logo-url="logoUrl" label="Court preview" />
+                <CourtFloor :court="court" :logo-url="logoUrl" :drawing-url="drawingUrl" label="Court preview" />
             </div>
         </div>
 

@@ -205,7 +205,7 @@ describe("ArenaSection with custom arenas", () => {
     });
 
     it("shows a linked arena's court on the card, with the team's logo for a Team logo centre", async () => {
-        const withCourt = { ...foundry, court: { ...court, centerLogo: "team" as const } };
+        const withCourt = { ...foundry, court: { ...court, centerLogo: "team" as const }, drawingUrl: "https://cdn.example/arenas/a1/drawing-1.png" };
         api.list.mockResolvedValue({ success: true, data: { customArenas: [harbor, withCourt] } });
         const { wrapper } = mountSection({ name: "The Foundry", isCustom: true, arenaUUID: "a2" }, false, "https://cdn.example/team.png");
         await settle();
@@ -213,6 +213,7 @@ describe("ArenaSection with custom arenas", () => {
         const thumb = wrapper.find('[data-testid="arena-court"]');
         expect(thumb.find('[data-part="floor"]').exists()).toBe(true);
         expect(thumb.find("image").attributes("href")).toBe("https://cdn.example/team.png");
+        expect(thumb.find('[data-part="drawing"]').attributes("href")).toBe("https://cdn.example/arenas/a1/drawing-1.png");
         expect(wrapper.find(".main-card-section img").exists()).toBe(false);
         wrapper.unmount();
     });
@@ -238,7 +239,7 @@ describe("ArenaSection with custom arenas", () => {
     it("shows each of your arenas by its court in the drawer, or its photo without one", async () => {
         api.list.mockResolvedValue({
             success: true,
-            data: { customArenas: [{ ...harbor, court }, foundry] },
+            data: { customArenas: [{ ...harbor, court, drawingUrl: "https://cdn.example/arenas/a1/drawing-1.png" }, foundry] },
         });
         const { wrapper } = mountSection(null);
         await settle();
@@ -246,6 +247,7 @@ describe("ArenaSection with custom arenas", () => {
         const [first, second] = document.querySelectorAll('[data-testid="custom-arena-item"]');
         expect(first.querySelector('[data-part="floor"]')).not.toBeNull();
         expect(first.querySelector("img")).toBeNull();
+        expect(first.querySelector('[data-part="drawing"]')?.getAttribute("href")).toBe("https://cdn.example/arenas/a1/drawing-1.png");
         expect(second.querySelector('[data-part="floor"]')).toBeNull();
         expect(second.querySelector("img")?.getAttribute("src")).toBe(foundry.photoUrl);
         wrapper.unmount();

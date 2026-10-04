@@ -27,7 +27,7 @@ const mountCanvas = () =>
         attachTo: document.body,
     });
 
-const swatchButtons = (wrapper: ReturnType<typeof mountCanvas>) => wrapper.findAll(".jersey-swatch");
+const swatchButtons = (wrapper: ReturnType<typeof mountCanvas>) => wrapper.findAll(".drawing-swatch");
 
 const customTrigger = (wrapper: ReturnType<typeof mountCanvas>) =>
     wrapper.get<HTMLButtonElement>(".color-picker-trigger");

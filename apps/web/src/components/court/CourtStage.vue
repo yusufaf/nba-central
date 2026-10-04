@@ -10,6 +10,7 @@ import type { CourtDesign } from '@/models/api';
 defineProps<{
     court: CourtDesign | null | undefined;
     logoUrl?: string;
+    drawingUrl?: string;
     // Five across. The parent decides, because it owns the grid's breakpoints.
     tilted: boolean;
 }>();
@@ -23,6 +24,7 @@ defineProps<{
                 <CourtFloor
                     :court="court"
                     :logo-url="logoUrl"
+                    :drawing-url="drawingUrl"
                     :preserve-aspect-ratio="tilted ? 'xMidYMid meet' : 'xMidYMid slice'"
                     decorative
                 />

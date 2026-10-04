@@ -162,7 +162,7 @@ const remix = () => {
                         <h2 class="text-xl font-semibold">Starting five</h2>
                         <Badge v-if="average !== null" :data-tier="ratingTier(average)">Avg {{ average }}</Badge>
                     </div>
-                    <CourtStage :court="arena?.court" :logo-url="courtLogoUrl" :tilted="startersInOneRow">
+                    <CourtStage :court="arena?.court" :logo-url="courtLogoUrl" :drawing-url="arena?.drawingUrl" :tilted="startersInOneRow">
                         <ul class="grid grid-cols-2 gap-3 md:grid-cols-5">
                             <li v-for="{ slot, player } in starters" :key="slot" class="rounded-lg border border-border bg-card p-3">
                                 <div class="text-xs uppercase text-muted-foreground">{{ player.position || '—' }}</div>
@@ -187,7 +187,7 @@ const remix = () => {
                     <div v-if="team.gm" class="rounded-lg border border-border p-3"><div class="text-xs uppercase text-muted-foreground">GM</div><div class="font-semibold">{{ team.gm.name }}</div></div>
                     <div v-if="arena" class="flex gap-3 rounded-lg border border-border p-3" data-testid="public-arena">
                         <div v-if="arena.court" class="aspect-[104/58] w-24 shrink-0 self-start overflow-hidden rounded">
-                            <CourtFloor :court="arena.court" :logo-url="courtLogoUrl" :label="`${arena.name} court`" />
+                            <CourtFloor :court="arena.court" :logo-url="courtLogoUrl" :drawing-url="arena.drawingUrl" :label="`${arena.name} court`" />
                         </div>
                         <img
                             v-else-if="arenaImage && !arenaImageFailed"

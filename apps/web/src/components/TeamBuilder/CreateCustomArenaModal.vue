@@ -14,15 +14,26 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import CourtFloor from '@/components/court/CourtFloor.vue';
+import DrawingCanvas from '@/components/drawing/DrawingCanvas.vue';
 import CourtDesignFields from './CourtDesignFields.vue';
 import type { CourtDesign, CustomArena, CustomArenaPayload } from '@/models/api';
 import type { ArenaImageChanges } from '@/composables/useCustomArenas';
+import { DEFAULT_STROKE_WIDTH, dataUrlToBlob, useDrawing } from '@/composables/useDrawing';
 import { useImageChoice } from '@/composables/useImageChoice';
 import { parseCapacity } from '@/utils/arenaDetails';
 import { resizeArenaPhoto, resizeCourtLogo } from '@/utils/arenaImage';
-import { centreLogoUrl, courtModes, newCourt, type ApronMode, type LinesMode } from '@/utils/court';
+import {
+    COURT_DRAWING_SCALE,
+    COURT_HEIGHT,
+    COURT_WIDTH,
+    MAX_COURT_DRAWING_BYTES,
+    centreLogoUrl,
+    courtModes,
+    newCourt,
+    type ApronMode,
+    type LinesMode,
+} from '@/utils/court';
 
-// #118 adds a Drawing tab next to these.
 const props = defineProps<{
     editingArena?: CustomArena | null;
     saving?: boolean;
@@ -39,7 +50,7 @@ const open = defineModel<boolean>('open');
 const NAME_MAX = 60;
 const LOCATION_MAX = 60;
 
-const tab = ref<'details' | 'court'>('details');
+const tab = ref<'details' | 'court' | 'drawing'>('details');
 const name = ref('');
 const location = ref('');
 const capacity = ref('');
@@ -51,7 +62,48 @@ const linesMode = ref<LinesMode>('custom');
 const photo = useImageChoice(resizeArenaPhoto, "That photo couldn't be used.");
 const logo = useImageChoice(resizeCourtLogo, "That logo couldn't be used.");
 
+// The drawing lives here too, strokes and Undo included, so a tab switch
+// doesn't lose it. The saved drawing is flattened under the new strokes;
+// the court never is, so changing the court later keeps the ink.
+const drawing = useDrawing({ strokeWidth: DEFAULT_STROKE_WIDTH * COURT_DRAWING_SCALE });
+// The saved drawing still in effect: Start over and Clear drawing drop it.
+const drawingBase = ref<string | null>(null);
+// The last export that could be saved, and whether the strokes since can't
+// be: over the size limit, or the saved drawing under them still loading.
+const drawingExport = ref<string | null>(null);
+const drawingBlocked = ref(false);
+const drawingCanvas = ref<InstanceType<typeof DrawingCanvas> | null>(null);
+
 const isEditMode = computed(() => !!props.editingArena);
+
+const resetDrawing = (base: string | null) => {
+    drawing.clear();
+    drawingBase.value = base;
+    drawingExport.value = null;
+    drawingBlocked.value = false;
+    drawingCanvas.value?.resetError();
+};
+
+const onDrawingCommit = (dataUrl: string | null) => {
+    drawingBlocked.value = dataUrl === null;
+    if (dataUrl) drawingExport.value = dataUrl;
+};
+
+const hasStrokes = computed(() => drawing.strokes.value.length > 0);
+// What the court shows for the drawing right now, in the preview and the
+// read-only view.
+const drawingPreview = computed(() =>
+    hasStrokes.value && drawingExport.value ? drawingExport.value : (drawingBase.value ?? undefined),
+);
+const drawingUnsaved = computed(() => drawingBlocked.value || (hasStrokes.value && !drawingExport.value));
+
+// A new PNG when there are strokes, null when a saved drawing was cleared,
+// and undefined when the saved drawing (or the lack of one) stands.
+const drawingChange = (): Blob | null | undefined => {
+    if (hasStrokes.value && drawingExport.value) return dataUrlToBlob(drawingExport.value);
+    if (props.editingArena?.drawingUrl && !drawingBase.value) return null;
+    return undefined;
+};
 
 const setCourt = (next: CourtDesign | null) => {
     court.value = next;
@@ -68,6 +120,7 @@ const reset = () => {
     setCourt(arena?.court ? { ...arena.court } : null);
     photo.reset();
     logo.reset();
+    resetDrawing(arena?.drawingUrl ?? null);
 };
 
 watch(
@@ -110,7 +163,8 @@ const isFormValid = computed(
         !openedYearInvalid.value &&
         !photo.preparing.value &&
         !logo.preparing.value &&
-        !logoMissing.value,
+        !logoMissing.value &&
+        !drawingUnsaved.value,
 );
 
 const onPhotoInput = (event: Event) => {
@@ -145,7 +199,7 @@ const handleSubmit = () => {
                   }
                 : null,
         },
-        { photo: photo.change.value, logo: logo.change.value },
+        { photo: photo.change.value, logo: logo.change.value, drawing: drawingChange() },
     );
 };
 </script>
@@ -165,6 +219,7 @@ const handleSubmit = () => {
                     <TabsList class="mx-6 mt-4 self-start">
                         <TabsTrigger value="details">Details</TabsTrigger>
                         <TabsTrigger value="court">Court</TabsTrigger>
+                        <TabsTrigger value="drawing">Drawing</TabsTrigger>
                     </TabsList>
 
                     <div class="min-h-0 flex-1 overflow-y-auto px-6 pb-6">
@@ -290,6 +345,7 @@ const handleSubmit = () => {
                                     v-model:apron-mode="apronMode"
                                     v-model:lines-mode="linesMode"
                                     :logo-url="previewLogo"
+                                    :drawing-url="drawingPreview"
                                     :uploaded-logo="shownLogo"
                                     :logo-preparing="logo.preparing.value"
                                     :logo-error="logo.error.value"
@@ -312,6 +368,73 @@ const handleSubmit = () => {
                                     This arena has no court yet. A court shows behind your starting five, on your public team page and on the share card.
                                 </p>
                                 <Button type="button" :disabled="saving" @click="addCourt">Design a court</Button>
+                            </div>
+                        </TabsContent>
+
+                        <TabsContent value="drawing" class="mt-0 pt-4">
+                            <template v-if="court">
+                                <!-- Too narrow to draw on (a container query, so it follows
+                                     Text size): the drawing shows read-only, with Clear. -->
+                                <div class="hidden @min-[40rem]:block" data-testid="drawing-editor">
+                                    <DrawingCanvas
+                                        ref="drawingCanvas"
+                                        :drawing="drawing"
+                                        :width="COURT_WIDTH * COURT_DRAWING_SCALE"
+                                        :height="COURT_HEIGHT * COURT_DRAWING_SCALE"
+                                        :template="drawingBase"
+                                        :max-bytes="MAX_COURT_DRAWING_BYTES"
+                                        :brush-scale="COURT_DRAWING_SCALE"
+                                        :editing-saved="!!drawingBase"
+                                        label="Court drawing"
+                                        too-large-message="This drawing is over 1 MB, too detailed to save. Undo a few strokes, or Clear and try a simpler design."
+                                        template-error-message="Couldn't load your saved drawing, so changes to it can't be saved right now. Try reopening this dialog."
+                                        @commit="onDrawingCommit"
+                                    >
+                                        <template #backdrop>
+                                            <CourtFloor :court="court" :logo-url="previewLogo" part="floor" decorative />
+                                        </template>
+                                        <template #overlay>
+                                            <CourtFloor :court="court" part="text" decorative />
+                                        </template>
+                                        <template #actions>
+                                            <Button
+                                                v-if="drawingBase || hasStrokes"
+                                                type="button"
+                                                variant="ghost"
+                                                size="sm"
+                                                :disabled="saving"
+                                                @click="resetDrawing(null)"
+                                            >
+                                                Start over
+                                            </Button>
+                                        </template>
+                                    </DrawingCanvas>
+                                </div>
+                                <div class="grid gap-4 @min-[40rem]:hidden" data-testid="drawing-read-only">
+                                    <div class="aspect-[104/58] overflow-hidden rounded-lg shadow-md">
+                                        <CourtFloor :court="court" :logo-url="previewLogo" :drawing-url="drawingPreview" label="Court drawing" />
+                                    </div>
+                                    <p class="rounded-md bg-muted px-4 py-3 text-sm text-muted-foreground">
+                                        Drawing on the court needs a wider screen.
+                                        <template v-if="drawingPreview">Your drawing still shows here, and you can clear it.</template>
+                                    </p>
+                                    <Button
+                                        v-if="drawingPreview"
+                                        type="button"
+                                        variant="outline"
+                                        class="h-11 w-full"
+                                        :disabled="saving"
+                                        @click="resetDrawing(null)"
+                                    >
+                                        Clear drawing
+                                    </Button>
+                                </div>
+                            </template>
+                            <div v-else class="grid justify-items-center gap-4 py-6 text-center">
+                                <p class="max-w-sm text-sm text-muted-foreground">
+                                    Design a court first, then draw on it here. The drawing sits on top of the court, so you can change the court later and keep it.
+                                </p>
+                                <Button type="button" variant="outline" :disabled="saving" @click="tab = 'court'">Go to Court</Button>
                             </div>
                         </TabsContent>
                     </div>

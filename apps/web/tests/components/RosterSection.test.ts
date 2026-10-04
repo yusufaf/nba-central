@@ -133,4 +133,10 @@ describe("RosterSection", () => {
         expect(wrapper.findAll('[data-testid="court-stage"]')).toHaveLength(1);
         expect(wrapper.find(".bench-grid").element.closest('[data-testid="court-stage"]')).toBeNull();
     });
+
+    it("draws the court's drawing on the stage", async () => {
+        const wrapper = mountRoster(new Map(), { court, courtDrawingUrl: "https://cdn.example/arenas/a1/drawing-1.png" });
+        expect(wrapper.find('[data-testid="court-stage"] [data-part="drawing"]').attributes("href")).toBe("https://cdn.example/arenas/a1/drawing-1.png");
+        expect(mountRoster(new Map(), { court }).find('[data-part="drawing"]').exists()).toBe(false);
+    });
 });

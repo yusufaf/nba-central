@@ -74,4 +74,11 @@ describe("ShareCard", () => {
         expect(wrapper.text()).toContain("Home court: Harbor Pavilion");
         expect(wrapper.classes()).toContain("dark");
     });
+
+    it("draws the court's drawing on the card, and nothing extra without one", () => {
+        const withDrawing = mount(ShareCard, { props: { ...props, court, courtDrawingUrl: "https://cdn.example/arenas/a1/drawing-1.png" } });
+        expect(withDrawing.find('[data-testid="share-court"] [data-part="drawing"]').attributes("href")).toBe("https://cdn.example/arenas/a1/drawing-1.png");
+        const without = mount(ShareCard, { props: { ...props, court } });
+        expect(without.find('[data-part="drawing"]').exists()).toBe(false);
+    });
 });

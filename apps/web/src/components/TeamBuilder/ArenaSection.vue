@@ -274,7 +274,7 @@ const handleDeleteArena = async () => {
                             class="arena-card-court overflow-hidden rounded shadow-md"
                             data-testid="arena-court"
                         >
-                            <CourtFloor :court="liveArena.court" :logo-url="logoFor(liveArena)" :label="`${liveArena.name} court`" />
+                            <CourtFloor :court="liveArena.court" :logo-url="logoFor(liveArena)" :drawing-url="liveArena.drawingUrl" :label="`${liveArena.name} court`" />
                         </div>
                         <img
                             v-else-if="shownImage && !imageFailed"
@@ -466,7 +466,7 @@ const handleDeleteArena = async () => {
                                             v-if="arena.court"
                                             class="arena-list-court overflow-hidden rounded-md flex-shrink-0"
                                         >
-                                            <CourtFloor :court="arena.court" :logo-url="logoFor(arena)" decorative />
+                                            <CourtFloor :court="arena.court" :logo-url="logoFor(arena)" :drawing-url="arena.drawingUrl" decorative />
                                         </span>
                                         <img
                                             v-else-if="arena.photoUrl"

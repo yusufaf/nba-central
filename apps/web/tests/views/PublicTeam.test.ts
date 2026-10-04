@@ -192,6 +192,7 @@ describe("PublicTeam", () => {
             arenaUUID: "a1",
             court: { ...court, centerLogo: "team" as const },
             logoUrl: "https://cdn.example/arenas/a1/logo-1.png",
+            drawingUrl: "https://cdn.example/arenas/a1/drawing-1.png",
         };
         vi.mocked(teamApi.getPublicTeam).mockResolvedValue({
             success: true,
@@ -207,5 +208,7 @@ describe("PublicTeam", () => {
         const tile = wrapper.find('[data-testid="public-arena"]');
         expect(tile.find('[data-part="floor"]').exists()).toBe(true);
         expect(tile.find("img").exists()).toBe(false);
+        expect(stage.find('[data-part="drawing"]').attributes("href")).toBe("https://cdn.example/arenas/a1/drawing-1.png");
+        expect(tile.find('[data-part="drawing"]').attributes("href")).toBe("https://cdn.example/arenas/a1/drawing-1.png");
     });
 });
