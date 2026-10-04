@@ -78,11 +78,18 @@ Entry point: `bin/team-builder-cdk.ts` loads env vars from dotenv.
 - `apiAuthorizer`: JWT verification for all API requests
 - Teams CRUD: `createTeam`, `getTeam`, `listTeams`, `updateTeam`, `deleteTeam`
 - Custom entities CRUD (GM/Coach/Player, each create/list/update/delete): `createCustomGM`/`createCustomCoach`/`createCustomPlayer`, and their `list*`/`update*`/`delete*` counterparts
+- Custom arenas: `createCustomArena`, `listCustomArenas`, `updateCustomArena`,
+  `deleteCustomArena` (deletes its images first, the item last), plus
+  `uploadArenaImage`/`deleteArenaImage` for its photo, centre logo and court
+  drawing slots. A team links to its owner's arena by `arenaUUID` and keeps a
+  text copy; `resources/dynamo/arenas.ts` drops a link to anyone else's arena
+  on save and resolves the live arena on read (spec:
+  `docs/superpowers/specs/2026-10-03-custom-arenas-design.md`)
 - `getUserSettings`, `updateUserSettings`: the signed-in user's settings map
   on the users table (allowlisted keys in `apps/cdk/models/user-settings.ts`)
 - `exportUserData`, `deleteUserData`: everything nba-central stores for the
   signed-in user, as one JSON file or deleted (teams, custom entities,
-  settings, share cards, avatar). Keyed only by the authorizer's sub; the
+  settings, share cards, avatar, arena images). Keyed only by the authorizer's sub; the
   Logto account is never touched
 - S3 multipart upload flow: `initiateMultipartUpload`, `getMultipartSignedUploadUrls`, `completeMultipartUpload`, `deleteFile`
 - `getTeamLogos`: fetch ESPN API for NBA team logos
@@ -215,7 +222,9 @@ Partition key patterns use UUIDs (userUUID#..., teamUUID#...).
 
 - **main**: User/team file uploads (multipart for large files)
 - **assets**: Static assets; also holds rendered share cards under `cards/`
-  (`publishTeam` writes them, keyed `cards/{teamUUID}/{updatedAt}.png`)
+  (`publishTeam` writes them, keyed `cards/{teamUUID}/{updatedAt}.png`) and
+  custom arena images under `arenas/{arenaUUID}/{slot}-{ms}.{ext}` (keyed by
+  the arena, never the owner, so a public URL doesn't say whose it is)
 - **static-data**: External data cache (arenas, coaches, execs)
 
 All CORS-enabled, public access blocked.

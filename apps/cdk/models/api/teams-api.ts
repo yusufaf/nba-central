@@ -1,4 +1,5 @@
 import { ApiResponse } from "./custom-entities-api";
+import type { CourtDesign } from "../custom-entities";
 
 // A player record as embedded in a saved team - a snapshot so a team
 // renders exactly as it was saved, independent of later roster/rating
@@ -45,9 +46,34 @@ export interface EntityRef {
 	uuid?: string;
 }
 
+// What a team stores for its arena. Built-in arenas keep their full details
+// (rows saved before #116 only have name and imgLink). A custom arena keeps
+// its uuid plus a text copy of its details, which is what's shown if the
+// arena is later deleted, or when the team is someone else's remix.
 export interface TeamArenaRef {
 	name: string;
+	location?: string;
+	capacity?: number;
+	openedYear?: number;
+	// Built-in only: the Wikimedia thumbnail.
 	imgLink?: string;
+	// Absent = built-in.
+	isCustom?: boolean;
+	// Custom only, and only ever the team owner's own arena (see
+	// resources/dynamo/arenas.ts).
+	arenaUUID?: string;
+}
+
+// What getTeam and getPublicTeam return: the stored ref with the live
+// arena's details, court and images. A separate type, so none of these is
+// ever saved back onto the team.
+export interface ResolvedArena extends TeamArenaRef {
+	court?: CourtDesign;
+	photoUrl?: string;
+	logoUrl?: string;
+	drawingUrl?: string;
+	// The arenaUUID no longer resolves: show the text copy alone.
+	missing?: true;
 }
 
 export interface SaveTeamPayload {
@@ -81,7 +107,7 @@ export interface SavedTeam {
 	roster: TeamRosterEntry[];
 	coach: EntityRef | null;
 	gm: EntityRef | null;
-	arena: TeamArenaRef | null;
+	arena: ResolvedArena | null;
 	favorited: boolean;
 	label: string;
 	// Share loop (see docs/superpowers/specs/2026-09-19-share-loop-design.md).

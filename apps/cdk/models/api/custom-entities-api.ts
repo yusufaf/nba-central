@@ -1,3 +1,5 @@
+import type { ArenaImageSlot, CourtDesign } from "../custom-entities";
+
 // Generic API response wrapper with discriminated union for type safety
 export type ApiResponse<T = void> =
 	| { success: true; data: T }
@@ -177,3 +179,53 @@ export type CreateCustomPlayerResponse = ApiResponse<CustomPlayerData>;
 export type ListCustomPlayersResponse = ApiResponse<ListCustomPlayersData>;
 export type UpdateCustomPlayerResponse = ApiResponse<UpdatedCustomPlayerData>;
 export type DeleteCustomPlayerResponse = ApiResponse<void>;
+
+// ============================================================================
+// Arena API Types
+// ============================================================================
+
+export interface CreateCustomArenaPayload {
+	name: string;
+	location: string;
+	capacity: number | null;
+	openedYear: number | null;
+	court: CourtDesign | null;
+}
+
+export interface UpdateCustomArenaPayload extends CreateCustomArenaPayload {
+	arenaUUID: string;
+}
+
+// The item minus its keys, the S3 object keys and createdBy.
+export interface CustomArenaListItem {
+	arenaUUID: string;
+	name: string;
+	location: string;
+	capacity: number | null;
+	openedYear: number | null;
+	court: CourtDesign | null;
+	photoUrl?: string;
+	logoUrl?: string;
+	drawingUrl?: string;
+	created: string;
+	isCustom: true;
+}
+
+export interface ListCustomArenasData {
+	customArenas: CustomArenaListItem[];
+}
+
+// PUT /api/custom-entities/arena/{arenaUUID}/image. The type is read from
+// the bytes, as for the avatar.
+export interface UploadArenaImagePayload {
+	slot: ArenaImageSlot;
+	image: string;
+}
+
+export type CreateCustomArenaResponse = ApiResponse<CustomArenaListItem>;
+export type ListCustomArenasResponse = ApiResponse<ListCustomArenasData>;
+export type UpdateCustomArenaResponse = ApiResponse<CustomArenaListItem>;
+export type DeleteCustomArenaResponse = ApiResponse<void>;
+export type UploadArenaImageResponse = ApiResponse<{ url: string }>;
+// DELETE /api/custom-entities/arena/{arenaUUID}/image/{slot}
+export type DeleteArenaImageResponse = ApiResponse<void>;

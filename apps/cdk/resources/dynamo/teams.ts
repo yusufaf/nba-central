@@ -10,7 +10,7 @@ export const teamGsiKey = (teamUUID: string): string => `team#${teamUUID}`;
 export const PUBLIC_SK2 = "public";
 export const PRIVATE_SK2 = "private";
 
-type StoredTeam = SavedTeam & {
+export type StoredTeam = SavedTeam & {
 	PK?: string;
 	SK?: string;
 	PK2?: string;
@@ -34,11 +34,15 @@ export const toPublicTeam = (item: StoredTeam): PublicTeam => {
 	return rest;
 };
 
-export const queryPublicTeam = async (
+/**
+ * The stored item, owner id included. getPublicTeam needs that id to resolve
+ * the arena from the owner's partition before toPublicTeam strips it.
+ */
+export const queryPublicTeamItem = async (
 	docClient: DynamoDBDocumentClient,
 	tableName: string,
 	teamUUID: string,
-): Promise<PublicTeam | null> => {
+): Promise<StoredTeam | null> => {
 	const result = await docClient.send(
 		new QueryCommand({
 			TableName: tableName,
@@ -51,6 +55,14 @@ export const queryPublicTeam = async (
 			Limit: 1,
 		}),
 	);
-	const item = result.Items?.[0] as StoredTeam | undefined;
+	return (result.Items?.[0] as StoredTeam | undefined) ?? null;
+};
+
+export const queryPublicTeam = async (
+	docClient: DynamoDBDocumentClient,
+	tableName: string,
+	teamUUID: string,
+): Promise<PublicTeam | null> => {
+	const item = await queryPublicTeamItem(docClient, tableName, teamUUID);
 	return item ? toPublicTeam(item) : null;
 };

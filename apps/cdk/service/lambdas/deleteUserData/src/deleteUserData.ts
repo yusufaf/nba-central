@@ -23,19 +23,21 @@ import {
 	invalidateKeys,
 	listKeys,
 	teamCardsPrefix,
+	arenaImagesPrefix,
 } from "utilities/assets-objects";
+import { CUSTOM_ARENA_SK_PREFIX } from "resources/dynamo/arenas";
 
 /*
  * Deletes everything nba-central stores for the caller: every item under
- * their partition in the main table, their teams' share cards and their
- * avatar in the assets bucket, and their settings item in the users table.
- * Their Logto account is not touched.
+ * their partition in the main table, their teams' share cards, their
+ * avatar and their custom arenas' images in the assets bucket, and their
+ * settings item in the users table. Their Logto account is not touched.
  *
  * The order makes any failure safe to retry:
  *   1. Unpublish their public teams, so no public page is left pointing at
  *      a card that's about to go.
- *   2. Delete the S3 objects. Team UUIDs come from the team items, which
- *      still exist, so a retry finds the same cards again.
+ *   2. Delete the S3 objects. Team and arena UUIDs come from their items,
+ *      which still exist, so a retry finds the same objects again.
  *   3. Delete the main-table items.
  *   4. Delete the users item last.
  * Every step is a no-op on data that's already gone, so a second run
@@ -80,6 +82,8 @@ const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
 const isTeam = (item: StoredItem) => item.SK.startsWith("team#");
 const teamUUIDOf = (item: StoredItem) => item.SK.slice("team#".length);
+const isArena = (item: StoredItem) => item.SK.startsWith(CUSTOM_ARENA_SK_PREFIX);
+const arenaUUIDOf = (item: StoredItem) => item.SK.slice(CUSTOM_ARENA_SK_PREFIX.length);
 
 const unpublish = async (item: StoredItem) => {
 	try {
@@ -150,6 +154,7 @@ export const handler: Handler = async (
 
 		const prefixes = [
 			...teams.map((item) => teamCardsPrefix(teamUUIDOf(item))),
+			...items.filter(isArena).map((item) => arenaImagesPrefix(arenaUUIDOf(item))),
 			`avatars/${userUUID}/`,
 		];
 		const keys = (

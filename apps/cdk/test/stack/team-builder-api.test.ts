@@ -71,8 +71,9 @@ describe("team-builder-api-routes", () => {
 		// reader, and the OG page. The Clerk-era /api/users/save-data then
 		// gave way to the two settings routes (get, update): 31. The profile
 		// card's stats and avatar upload routes make 33, and the data export
-		// and delete routes 35.
-		expect(publicPaths.size + privatePaths.size).toBe(35);
+		// and delete routes 35. Custom arenas (#116) add CRUD plus the image
+		// upload and delete routes: 41.
+		expect(publicPaths.size + privatePaths.size).toBe(41);
 	});
 
 	it("the user routes are private, with GET for reads, PUT for writes and DELETE for the delete", () => {
@@ -126,6 +127,36 @@ describe("team-builder-api-routes", () => {
 		for (const route of CUSTOM_ENTITIES_ROUTES) {
 			expect(PRIVATE_ROUTES).toContainEqual(route);
 		}
+	});
+
+	it("CUSTOM_ENTITIES_ROUTES has the arena CRUD and image routes with the right methods", () => {
+		const byLambda = Object.fromEntries(
+			CUSTOM_ENTITIES_ROUTES.map((r) => [r.lambdaName, r]),
+		);
+		expect(byLambda.createCustomArena).toMatchObject({
+			route: "/api/custom-entities/arena/create",
+			methods: ["POST"],
+		});
+		expect(byLambda.listCustomArenas).toMatchObject({
+			route: "/api/custom-entities/arena/list",
+			methods: ["GET"],
+		});
+		expect(byLambda.updateCustomArena).toMatchObject({
+			route: "/api/custom-entities/arena/update",
+			methods: ["PUT"],
+		});
+		expect(byLambda.deleteCustomArena).toMatchObject({
+			route: "/api/custom-entities/arena/delete/{arenaUUID}",
+			methods: ["DELETE"],
+		});
+		expect(byLambda.uploadArenaImage).toMatchObject({
+			route: "/api/custom-entities/arena/{arenaUUID}/image",
+			methods: ["PUT"],
+		});
+		expect(byLambda.deleteArenaImage).toMatchObject({
+			route: "/api/custom-entities/arena/{arenaUUID}/image/{slot}",
+			methods: ["DELETE"],
+		});
 	});
 
 	it("every team route is private", () => {

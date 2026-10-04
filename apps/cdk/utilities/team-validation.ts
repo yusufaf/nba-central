@@ -7,6 +7,27 @@ const isEntityRef = (value: any): boolean => {
 	return true;
 };
 
+const isOptional = (value: unknown, type: "string" | "number" | "boolean") =>
+	value === undefined ||
+	value === null ||
+	(type === "number" ? Number.isFinite(value) : typeof value === type);
+
+// Type checks only: the text of a linked custom arena is replaced from the
+// arena item on save, and resolved fields are dropped there too.
+const isArenaRef = (value: any): boolean => {
+	if (value === null) return true;
+	if (typeof value !== "object" || Array.isArray(value)) return false;
+	if (typeof value.name !== "string" || value.name.trim().length === 0) return false;
+	return (
+		isOptional(value.location, "string") &&
+		isOptional(value.capacity, "number") &&
+		isOptional(value.openedYear, "number") &&
+		isOptional(value.imgLink, "string") &&
+		isOptional(value.isCustom, "boolean") &&
+		isOptional(value.arenaUUID, "string")
+	);
+};
+
 // API and custom players carry different field sets (see PlayerSnapshot),
 // so `fullName` - always set on a player before it reaches the roster - is
 // the only field checked here.
@@ -66,12 +87,11 @@ export const validateTeamData = (data: any): { valid: boolean; error?: string } 
 		return { valid: false, error: "gm must be null or {name, isCustom, uuid?}" };
 	}
 
-	if (
-		data.arena !== undefined &&
-		data.arena !== null &&
-		(typeof data.arena !== "object" || typeof data.arena.name !== "string")
-	) {
-		return { valid: false, error: "arena must be null or {name}" };
+	if (data.arena !== undefined && !isArenaRef(data.arena)) {
+		return {
+			valid: false,
+			error: "arena must be null or {name, location?, capacity?, openedYear?, imgLink?, isCustom?, arenaUUID?}",
+		};
 	}
 
 	return { valid: true };

@@ -10,6 +10,7 @@ import { UpdateTeamPayload, UpdateTeamResponse, SavedTeam } from "models/api/tea
 import { validateTeamData } from "utilities/team-validation";
 import { removeKeys } from "resources/dynamo/utilities";
 import { teamGsiKey, PRIVATE_SK2 } from "resources/dynamo/teams";
+import { toStoredArenaRef } from "resources/dynamo/arenas";
 
 const { mainTable = "" } = process.env;
 
@@ -50,6 +51,7 @@ export const handler: Handler = async (
 			};
 		}
 
+		const arena = await toStoredArenaRef(docClient, mainTable, userUUID, payload.arena);
 		const timestamp = new Date().getTime();
 
 		const updateCommand = new UpdateCommand({
@@ -78,7 +80,7 @@ export const handler: Handler = async (
 				":roster": payload.roster,
 				":coach": payload.coach ?? null,
 				":gm": payload.gm ?? null,
-				":arena": payload.arena ?? null,
+				":arena": arena.stored,
 				":pk2": teamGsiKey(payload.teamUUID),
 				":sk2Default": PRIVATE_SK2,
 			},
@@ -89,6 +91,7 @@ export const handler: Handler = async (
 		const dbResponse = await docClient.send(updateCommand);
 		const team = dbResponse.Attributes as SavedTeam & { PK?: string; SK?: string };
 		removeKeys(team);
+		team.arena = arena.resolved;
 
 		const response: UpdateTeamResponse = {
 			success: true,

@@ -9,6 +9,12 @@ import { DeleteObjectCommand, PutObjectCommand, S3Client } from "@aws-sdk/client
 import { AuthorizerContext } from "models/auth";
 import { UploadAvatarResponse } from "models/api/user-profile-api";
 import { settingsItemKey } from "models/user-settings";
+import {
+	detectImageType,
+	IMMUTABLE_CACHE_CONTROL,
+	MAX_IMAGE_BASE64_LENGTH,
+	MAX_IMAGE_BYTES,
+} from "utilities/image-upload";
 
 const { usersTable = "", assetsBucket = "", assetsCdnDomain = "" } = process.env;
 
@@ -16,33 +22,7 @@ const docClient = DynamoDBDocumentClient.from(new DynamoDBClient({}));
 const s3Client = new S3Client({});
 
 // The web client sends a 256px square it resized itself, typically well under
-// 100 KB. The cap is for any other caller.
-const MAX_AVATAR_BYTES = 1024 * 1024;
-const MAX_BASE64_LENGTH = Math.ceil(MAX_AVATAR_BYTES / 3) * 4;
-
-type ImageType = { ext: string; contentType: string };
-
-const startsWith = (bytes: Buffer, signature: number[], offset = 0) =>
-	bytes.length >= offset + signature.length &&
-	signature.every((byte, i) => bytes[offset + i] === byte);
-
-const ascii = (text: string) => [...text].map((c) => c.charCodeAt(0));
-
-// The type comes from the file's own signature, never from a name or a
-// Content-Type the client sends. GIF (animation) and SVG (script) are left
-// out on purpose.
-const detectImageType = (bytes: Buffer): ImageType | null => {
-	if (startsWith(bytes, [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a])) {
-		return { ext: "png", contentType: "image/png" };
-	}
-	if (startsWith(bytes, [0xff, 0xd8, 0xff])) {
-		return { ext: "jpg", contentType: "image/jpeg" };
-	}
-	if (startsWith(bytes, ascii("RIFF")) && startsWith(bytes, ascii("WEBP"), 8)) {
-		return { ext: "webp", contentType: "image/webp" };
-	}
-	return null;
-};
+// 100 KB. The 1 MB cap (MAX_IMAGE_BYTES) is for any other caller.
 
 const fail = (statusCode: number, error: string): APIGatewayProxyResultV2 => {
 	const response: UploadAvatarResponse = { success: false, error };
@@ -83,11 +63,11 @@ export const handler: Handler = async (
 		return fail(400, "image (base64 string) is required");
 	}
 	// Checked before decoding, so an oversize body isn't copied again.
-	if (image.length > MAX_BASE64_LENGTH) {
+	if (image.length > MAX_IMAGE_BASE64_LENGTH) {
 		return fail(400, "Avatar must be under 1 MB");
 	}
 	const bytes = Buffer.from(image, "base64");
-	if (bytes.length > MAX_AVATAR_BYTES) {
+	if (bytes.length > MAX_IMAGE_BYTES) {
 		return fail(400, "Avatar must be under 1 MB");
 	}
 	const type = detectImageType(bytes);
@@ -96,8 +76,7 @@ export const handler: Handler = async (
 	}
 
 	const prefix = `avatars/${userUUID}/`;
-	// Timestamped: the CDN caches each object for a year, so a new upload
-	// needs a new URL rather than waiting out the old one.
+	// Timestamped: see IMMUTABLE_CACHE_CONTROL.
 	const objectKey = `${prefix}${Date.now()}.${type.ext}`;
 	const avatarUrl = `https://${assetsCdnDomain}/${objectKey}`;
 
@@ -108,7 +87,7 @@ export const handler: Handler = async (
 				Key: objectKey,
 				Body: bytes,
 				ContentType: type.contentType,
-				CacheControl: "public, max-age=31536000, immutable",
+				CacheControl: IMMUTABLE_CACHE_CONTROL,
 			}),
 		);
 	} catch (err) {

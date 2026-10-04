@@ -6,7 +6,8 @@ import {
 import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
 import { DynamoDBDocumentClient } from "@aws-sdk/lib-dynamodb";
 import { GetPublicTeamResponse } from "models/api/teams-api";
-import { queryPublicTeam } from "resources/dynamo/teams";
+import { queryPublicTeamItem, toPublicTeam } from "resources/dynamo/teams";
+import { resolveArena } from "resources/dynamo/arenas";
 
 const { mainTable = "" } = process.env;
 
@@ -31,14 +32,19 @@ export const handler: Handler = async (
 	}
 
 	try {
-		const team = await queryPublicTeam(docClient, mainTable, teamUUID);
-		if (!team) {
+		const item = await queryPublicTeamItem(docClient, mainTable, teamUUID);
+		if (!item) {
 			const response: GetPublicTeamResponse = {
 				success: false,
 				error: "Team not found",
 			};
 			return { statusCode: 404, body: JSON.stringify(response) };
 		}
+
+		// The arena is looked up in the owner's partition, then toPublicTeam
+		// drops the owner's id before anything is returned.
+		const arena = await resolveArena(docClient, mainTable, item.userUUID, item.arena);
+		const team = toPublicTeam({ ...item, arena });
 
 		const response: GetPublicTeamResponse = { success: true, data: team };
 		return {
