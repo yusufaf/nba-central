@@ -20,6 +20,7 @@ import { shareUrlFor } from '@/utils/shareUrl';
 import { downloadUrlAsFile, slugFilename } from '@/utils/downloadFile';
 import { track } from '@/lib/analytics';
 import { useDateFormat } from '@/composables/useDateFormat';
+import { arenaDetails, backfillArena } from '@/utils/arenaDetails';
 
 const props = defineProps<{ teamUUID: string }>();
 const router = useRouter();
@@ -36,6 +37,13 @@ const bench = computed(() => (team.value?.roster ?? []).filter((e) => e.slot > 5
 const ratingOf = (player: { rating?: number; overallRating?: number }) => player.rating ?? player.overallRating;
 const average = computed(() => averageRating(starters.value.map((s) => ratingOf(s.player))));
 const location = computed(() => [team.value?.city, team.value?.country].filter(Boolean).join(', '));
+// Older teams saved only the arena's name and image; the rest comes from arenas.json.
+const arena = computed(() => backfillArena(team.value?.arena ?? null));
+const arenaImage = computed(() => arena.value?.photoUrl || arena.value?.imgLink || null);
+const arenaImageFailed = ref(false);
+watch(arenaImage, () => {
+    arenaImageFailed.value = false;
+});
 const { formatDate } = useDateFormat();
 const publishedOn = computed(() =>
     team.value?.publishedAt ? formatDate(team.value.publishedAt, 'short') : '',
@@ -165,7 +173,20 @@ const remix = () => {
                 <section class="grid gap-3 md:grid-cols-3">
                     <div v-if="team.coach" class="rounded-lg border border-border p-3"><div class="text-xs uppercase text-muted-foreground">Coach</div><div class="font-semibold">{{ team.coach.name }}</div></div>
                     <div v-if="team.gm" class="rounded-lg border border-border p-3"><div class="text-xs uppercase text-muted-foreground">GM</div><div class="font-semibold">{{ team.gm.name }}</div></div>
-                    <div v-if="team.arena" class="rounded-lg border border-border p-3"><div class="text-xs uppercase text-muted-foreground">Arena</div><div class="font-semibold">{{ team.arena.name }}</div></div>
+                    <div v-if="arena" class="flex gap-3 rounded-lg border border-border p-3" data-testid="public-arena">
+                        <img
+                            v-if="arenaImage && !arenaImageFailed"
+                            :src="arenaImage"
+                            alt=""
+                            class="aspect-[3/2] w-24 shrink-0 self-start rounded object-cover"
+                            @error="arenaImageFailed = true"
+                        />
+                        <div class="min-w-0">
+                            <div class="text-xs uppercase text-muted-foreground">Arena</div>
+                            <div class="font-semibold">{{ arena.name }}</div>
+                            <div v-if="arenaDetails(arena)" class="text-sm text-muted-foreground">{{ arenaDetails(arena) }}</div>
+                        </div>
+                    </div>
                 </section>
 
                 <footer class="border-t border-border pt-6 text-center">

@@ -31,6 +31,14 @@ import type {
     GetPlayersParams,
     GetPlayersResponse,
     GetPlayerStatsResponse,
+    ArenaImageSlot,
+    CustomArenaPayload,
+    CreateCustomArenaResponse,
+    ListCustomArenasResponse,
+    UpdateCustomArenaResponse,
+    DeleteCustomArenaResponse,
+    UploadArenaImageResponse,
+    DeleteArenaImageResponse,
 } from '@/models/api';
 import type { SettingsMap } from '@/constants/settings';
 
@@ -272,6 +280,39 @@ export const customCoachApi = {
     },
     delete: async (coachUUID: string) => {
         const response = await api.delete(`/api/custom-entities/coach/delete/${coachUUID}`);
+        return response.data;
+    },
+};
+
+// Custom Arena API. Images are their own calls: base64 bytes for one slot,
+// whose type the server reads from the bytes.
+export const customArenaApi = {
+    create: async (data: CustomArenaPayload): Promise<CreateCustomArenaResponse> => {
+        const response = await api.post('/api/custom-entities/arena/create', data);
+        return response.data;
+    },
+    list: async (): Promise<ListCustomArenasResponse> => {
+        const response = await api.get('/api/custom-entities/arena/list');
+        return response.data;
+    },
+    update: async (arenaUUID: string, data: CustomArenaPayload): Promise<UpdateCustomArenaResponse> => {
+        const response = await api.put('/api/custom-entities/arena/update', { arenaUUID, ...data });
+        return response.data;
+    },
+    delete: async (arenaUUID: string): Promise<DeleteCustomArenaResponse> => {
+        const response = await api.delete(`/api/custom-entities/arena/delete/${arenaUUID}`);
+        return response.data;
+    },
+    uploadImage: async (
+        arenaUUID: string,
+        slot: ArenaImageSlot,
+        image: string,
+    ): Promise<UploadArenaImageResponse> => {
+        const response = await api.put(`/api/custom-entities/arena/${arenaUUID}/image`, { slot, image });
+        return response.data;
+    },
+    deleteImage: async (arenaUUID: string, slot: ArenaImageSlot): Promise<DeleteArenaImageResponse> => {
+        const response = await api.delete(`/api/custom-entities/arena/${arenaUUID}/image/${slot}`);
         return response.data;
     },
 };

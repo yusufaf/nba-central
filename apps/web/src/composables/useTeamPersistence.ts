@@ -1,13 +1,20 @@
 import type { Arena, Coach, GM, Player } from "@/models/types";
 import { resolveLegacyLogoUrl } from "@/utils/historicalLogoUrl";
+import { backfillArena, parseCapacity } from "@/utils/arenaDetails";
 import type {
+    CustomArena,
     EntityRef,
     PlayerSnapshot,
     PublicTeam,
+    ResolvedArena,
     SaveTeamPayload,
     TeamArenaRef,
     TeamRosterEntry,
 } from "@/models/api";
+
+// What the builder can hold as its arena: a row from arenas.json, one of the
+// user's custom arenas from the drawer, or the resolved arena a load returned.
+export type BuilderArena = Arena | CustomArena | ResolvedArena;
 
 interface BuilderState {
     teamName: string;
@@ -18,7 +25,7 @@ interface BuilderState {
     teamJersey: string;
     selectedPlayersData: Map<number, Player>;
     teamCoach: Coach | null;
-    teamArena: Arena | null;
+    teamArena: BuilderArena | null;
     teamGM: GM | null;
 }
 
@@ -45,9 +52,24 @@ const toEntityRef = (entity: Coach | GM | null): EntityRef | null => {
     };
 };
 
-const toArenaRef = (arena: Arena | null): TeamArenaRef | null => {
+// Only the stored fields. A resolved arena's court, image URLs and `missing`
+// flag are read live on every load, so they're never sent back.
+const toArenaRef = (arena: BuilderArena | null): TeamArenaRef | null => {
     if (!arena) return null;
-    return { name: arena.name, imgLink: arena.imgLink };
+    const details = {
+        name: arena.name,
+        location: arena.location || undefined,
+        capacity: parseCapacity(arena.capacity),
+        openedYear: arena.openedYear ?? undefined,
+    };
+    if ("arenaUUID" in arena && arena.arenaUUID) {
+        return { ...details, isCustom: true, arenaUUID: arena.arenaUUID };
+    }
+    // A custom arena without a link: deleted, or from someone else's team.
+    if ("isCustom" in arena && arena.isCustom) {
+        return { ...details, isCustom: true };
+    }
+    return { ...details, imgLink: "imgLink" in arena ? arena.imgLink : undefined };
 };
 
 /**
@@ -85,7 +107,7 @@ export interface HydratedTeam {
     teamJersey: string;
     players: Map<number, Player>;
     teamCoach: EntityRef | null;
-    teamArena: TeamArenaRef | null;
+    teamArena: ResolvedArena | null;
     teamGM: EntityRef | null;
 }
 
@@ -105,7 +127,7 @@ export const hydrateTeam = (saved: PublicTeam): HydratedTeam => {
         teamJersey: saved.jerseyUrl ?? "",
         players,
         teamCoach: saved.coach ?? null,
-        teamArena: saved.arena ?? null,
+        teamArena: backfillArena(saved.arena ?? null),
         teamGM: saved.gm ?? null,
     };
 };

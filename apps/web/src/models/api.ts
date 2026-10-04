@@ -99,6 +99,7 @@ export interface UserDataExport {
     customCoaches: ExportedItem[];
     customGMs: ExportedItem[];
     customPlayers: ExportedItem[];
+    customArenas: ExportedItem[];
     other: ExportedItem[];
 }
 
@@ -129,9 +130,30 @@ export interface EntityRef {
     uuid?: string;
 }
 
+// Mirrors apps/cdk/models/api/teams-api.ts. Built-in arenas keep their full
+// details (rows saved before custom arenas only have name and imgLink, and
+// hydrateTeam fills the rest from arenas.json). A custom arena keeps its
+// arenaUUID plus a text copy, shown if the arena is deleted.
 export interface TeamArenaRef {
     name: string;
+    location?: string;
+    capacity?: number;
+    openedYear?: number;
+    // Built-in only.
     imgLink?: string;
+    // Absent = built-in.
+    isCustom?: boolean;
+    arenaUUID?: string;
+}
+
+// What getTeam and getPublicTeam return: the ref with the live arena.
+export interface ResolvedArena extends TeamArenaRef {
+    court?: CourtDesign;
+    photoUrl?: string;
+    logoUrl?: string;
+    drawingUrl?: string;
+    // The arena was deleted: show the text copy alone.
+    missing?: true;
 }
 
 export interface SaveTeamPayload {
@@ -165,7 +187,7 @@ export interface SavedTeam {
     roster: TeamRosterEntry[];
     coach: EntityRef | null;
     gm: EntityRef | null;
-    arena: TeamArenaRef | null;
+    arena: ResolvedArena | null;
     favorited: boolean;
     label: string;
     // Share loop: opt-in, link-only. Absent on rows saved before the feature
@@ -208,6 +230,46 @@ export interface PublishTeamPayload {
 
 export type PublishTeamResponse = ApiResult<SavedTeam>;
 export type GetPublicTeamResponse = ApiResult<PublicTeam>;
+// #endregion
+
+//#region Custom Arena API Types
+// Mirrors apps/cdk/models/custom-entities.ts and custom-entities-api.ts.
+export interface CourtDesign {
+    version: 1;
+    wood: 'maple' | 'honey' | 'walnut' | 'ash' | 'ebony';
+    paint: string | null;
+    apron: string | null;
+    lines: string;
+    centerLogo: 'none' | 'team' | 'upload';
+    baselineText: string;
+    sidelineText: string;
+}
+
+export type ArenaImageSlot = 'photo' | 'logo' | 'drawing';
+
+export interface CustomArenaPayload {
+    name: string;
+    location: string;
+    capacity: number | null;
+    openedYear: number | null;
+    court: CourtDesign | null;
+}
+
+export interface CustomArena extends CustomArenaPayload {
+    arenaUUID: string;
+    photoUrl?: string;
+    logoUrl?: string;
+    drawingUrl?: string;
+    created: string;
+    isCustom: true;
+}
+
+export type CreateCustomArenaResponse = ApiResult<CustomArena>;
+export type ListCustomArenasResponse = ApiResult<{ customArenas: CustomArena[] }>;
+export type UpdateCustomArenaResponse = ApiResult<CustomArena>;
+export type DeleteCustomArenaResponse = ApiResult<void>;
+export type UploadArenaImageResponse = ApiResult<{ url: string }>;
+export type DeleteArenaImageResponse = ApiResult<void>;
 // #endregion
 
 //#region Feedback API Types
