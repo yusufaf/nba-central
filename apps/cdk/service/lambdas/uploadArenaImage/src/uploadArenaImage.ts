@@ -85,6 +85,11 @@ export const handler: Handler = async (
 	if (!type) {
 		return fail(400, `${label} must be a PNG, JPEG or WebP image`);
 	}
+	// The drawing is ink on a transparent layer over the court. A JPEG has
+	// no alpha and would cover the whole floor.
+	if (slot === "drawing" && type.ext !== "png") {
+		return fail(400, `${label} must be a PNG image`);
+	}
 
 	// Ownership first: a guessed arenaUUID can't write into someone else's
 	// prefix, because the item has to be in the caller's own partition.

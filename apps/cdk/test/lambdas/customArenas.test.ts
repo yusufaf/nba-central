@@ -532,6 +532,23 @@ describe("uploadArenaImage", () => {
 		);
 	});
 
+	it("takes only a PNG for the drawing, which has to stay transparent", async () => {
+		for (const bytes of [JPEG, WEBP]) {
+			const result = await upload("a1", { slot: "drawing", image: bytes.toString("base64") });
+			expect(result.statusCode).toBe(400);
+			expect(parseBody(result).error).toBe("Drawing must be a PNG image");
+		}
+		expect(bucket.size).toBe(0);
+	});
+
+	it("rejects a drawing over 1 MB", async () => {
+		const over = Buffer.concat([PNG, Buffer.alloc(1024 * 1024)]);
+		const result = await upload("a1", { slot: "drawing", image: over.toString("base64") });
+		expect(result.statusCode).toBe(400);
+		expect(parseBody(result).error).toBe("Drawing must be under 1 MB");
+		expect(bucket.size).toBe(0);
+	});
+
 	it("can't write into another user's arena", async () => {
 		const result = await upload("b1", { slot: "photo", image: PNG.toString("base64") });
 
