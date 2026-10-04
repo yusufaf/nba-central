@@ -8,6 +8,7 @@ import { DynamoDBDocumentClient, UpdateCommand } from "@aws-sdk/lib-dynamodb";
 import { AuthorizerContext } from "models/auth";
 import { GetTeamResponse, SavedTeam } from "models/api/teams-api";
 import { removeKeys } from "resources/dynamo/utilities";
+import { resolveArena } from "resources/dynamo/arenas";
 
 const { mainTable = "" } = process.env;
 
@@ -53,6 +54,7 @@ export const handler: Handler = async (
 		const dbResponse = await docClient.send(updateCommand);
 		const team = dbResponse.Attributes as SavedTeam & { PK?: string; SK?: string };
 		removeKeys(team);
+		team.arena = await resolveArena(docClient, mainTable, userUUID, team.arena);
 
 		const response: GetTeamResponse = {
 			success: true,

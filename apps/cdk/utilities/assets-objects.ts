@@ -10,6 +10,11 @@ const INVALIDATION_PATH_LIMIT = 3000;
 // back to them.
 export const teamCardsPrefix = (teamUUID: string) => `cards/${teamUUID}/`;
 
+// Keyed by the arena alone, never the owner, so a public image URL doesn't
+// give away whose arena it is. Like cards, these can only be found while the
+// arena item still exists.
+export const arenaImagesPrefix = (arenaUUID: string) => `arenas/${arenaUUID}/`;
+
 export const chunk = <T>(items: T[], size: number): T[][] =>
 	Array.from({ length: Math.ceil(items.length / size) }, (_, i) =>
 		items.slice(i * size, (i + 1) * size),

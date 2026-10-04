@@ -13,6 +13,7 @@ export const USER_ITEM_KINDS = {
 	"customCoach#": "customCoaches",
 	"customGM#": "customGMs",
 	"customPlayer#": "customPlayers",
+	"customArena#": "customArenas",
 } as const;
 
 export type UserItemKind = (typeof USER_ITEM_KINDS)[keyof typeof USER_ITEM_KINDS];

@@ -226,6 +226,17 @@ const entity = (owner: string, kind: string, n: number): Item => ({
 	name: `${kind} ${n}`,
 });
 
+const arena = (owner: string, n: number): Item => ({
+	PK: `userUUID#${owner}`,
+	SK: `customArena#${owner}-arena-${n}`,
+	userUUID: owner,
+	arenaUUID: `${owner}-arena-${n}`,
+	name: `Arena ${n}`,
+	court: { version: 1, wood: "maple" },
+	photoUrl: `https://cdn.example/arenas/${owner}-arena-${n}/photo-1.jpg`,
+	photoKey: `arenas/${owner}-arena-${n}/photo-1.jpg`,
+});
+
 const settingsItem = (owner: string): Item => ({
 	PK: `userUUID#${owner}`,
 	SK: "metadata#",
@@ -363,11 +374,29 @@ describe("exportUserData", () => {
 	});
 
 	it("puts items with an unknown SK prefix under `other`, so nothing is left out", async () => {
-		db.main.push({ PK: `userUUID#${ME}`, SK: "customArena#a1", name: "Arena" });
+		db.main.push({ PK: `userUUID#${ME}`, SK: "customReferee#r1", name: "Ref" });
 
 		const { data } = parseBody(await runExport());
 
-		expect(data.other).toEqual([{ name: "Arena" }]);
+		expect(data.other).toEqual([{ name: "Ref" }]);
+	});
+
+	it("lists custom arenas with their court and image URLs", async () => {
+		seed({ teams: 0, published: 0, perKind: 0 });
+		db.main.push(arena(ME, 1), arena(OTHER, 2));
+
+		const { data } = parseBody(await runExport());
+
+		expect(data.customArenas).toEqual([
+			{
+				arenaUUID: `${ME}-arena-1`,
+				name: "Arena 1",
+				court: { version: 1, wood: "maple" },
+				photoUrl: `https://cdn.example/arenas/${ME}-arena-1/photo-1.jpg`,
+				photoKey: `arenas/${ME}-arena-1/photo-1.jpg`,
+			},
+		]);
+		expect(data.other).toEqual([]);
 	});
 
 	it("exports empty collections and null settings for a user with no data", async () => {
@@ -381,6 +410,7 @@ describe("exportUserData", () => {
 			customCoaches: [],
 			customGMs: [],
 			customPlayers: [],
+			customArenas: [],
 			other: [],
 		});
 	});
@@ -539,6 +569,36 @@ describe("deleteUserData", () => {
 		expect(order.indexOf("DeleteObjectsCommand")).toBeLessThan(order.indexOf("BatchWriteCommand"));
 		// The users item (settings, avatar URL) goes last.
 		expect(order[order.length - 1]).toBe("DeleteCommand");
+	});
+
+	it("deletes every custom arena's images, and nobody else's", async () => {
+		seed({ teams: 1, published: 0 });
+		db.main.push(arena(ME, 1), arena(ME, 2), arena(OTHER, 3));
+		for (const key of [
+			`arenas/${ME}-arena-1/photo-1.jpg`,
+			`arenas/${ME}-arena-1/logo-1.png`,
+			`arenas/${ME}-arena-2/photo-1.jpg`,
+			`arenas/${OTHER}-arena-3/photo-1.jpg`,
+		]) {
+			bucket.add(key);
+		}
+
+		const result = await runDelete();
+
+		expect(result.statusCode).toBe(200);
+		expect([...bucket].filter((key) => key.startsWith("arenas/"))).toEqual([
+			`arenas/${OTHER}-arena-3/photo-1.jpg`,
+		]);
+		expect(mine(db.main)).toEqual([]);
+		expect(theirs(db.main).some((item) => item.SK === `customArena#${OTHER}-arena-3`)).toBe(true);
+		const paths = (cloudFrontSend.mock.calls[0][0] as any).input.InvalidationBatch.Paths.Items;
+		expect(paths).toEqual(
+			expect.arrayContaining([
+				`/arenas/${ME}-arena-1/photo-1.jpg`,
+				`/arenas/${ME}-arena-1/logo-1.png`,
+				`/arenas/${ME}-arena-2/photo-1.jpg`,
+			]),
+		);
 	});
 
 	it("invalidates exactly the deleted object paths at the assets CDN", async () => {

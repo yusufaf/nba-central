@@ -191,6 +191,38 @@ export const CUSTOM_ENTITIES_ROUTES: ApiRoute[] = [
 		lambdaName: "deleteCustomCoach",
 		methods: [HttpMethod.DELETE],
 	},
+	// Arena routes. The image routes sit under the arena's own path so the
+	// handler can check ownership from it before touching S3.
+	{
+		route: `${CUSTOM_ENTITIES_PREFIX}/arena/create`,
+		lambdaName: "createCustomArena",
+		methods: [HttpMethod.POST],
+	},
+	{
+		route: `${CUSTOM_ENTITIES_PREFIX}/arena/list`,
+		lambdaName: "listCustomArenas",
+		methods: [HttpMethod.GET],
+	},
+	{
+		route: `${CUSTOM_ENTITIES_PREFIX}/arena/update`,
+		lambdaName: "updateCustomArena",
+		methods: [HttpMethod.PUT],
+	},
+	{
+		route: `${CUSTOM_ENTITIES_PREFIX}/arena/delete/{arenaUUID}`,
+		lambdaName: "deleteCustomArena",
+		methods: [HttpMethod.DELETE],
+	},
+	{
+		route: `${CUSTOM_ENTITIES_PREFIX}/arena/{arenaUUID}/image`,
+		lambdaName: "uploadArenaImage",
+		methods: [HttpMethod.PUT],
+	},
+	{
+		route: `${CUSTOM_ENTITIES_PREFIX}/arena/{arenaUUID}/image/{slot}`,
+		lambdaName: "deleteArenaImage",
+		methods: [HttpMethod.DELETE],
+	},
 	// Player routes
 	{
 		route: `${CUSTOM_ENTITIES_PREFIX}/player/create`,

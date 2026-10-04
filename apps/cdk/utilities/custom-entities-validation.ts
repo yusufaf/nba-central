@@ -1,3 +1,5 @@
+import { COURT_CENTER_LOGOS, COURT_WOODS, CourtDesign } from "../models/custom-entities";
+
 export const validateGMData = (data: any): { valid: boolean; error?: string } => {
 	if (!data.name || typeof data.name !== "string") {
 		return { valid: false, error: "Name is required and must be a string" };
@@ -109,3 +111,94 @@ export const validatePlayerData = (data: any): { valid: boolean; error?: string 
 
 	return { valid: true };
 };
+
+const HEX_COLOUR = /^#[0-9a-fA-F]{6}$/;
+
+const isWholeNumberIn = (value: unknown, min: number, max: number) =>
+	Number.isInteger(value) && (value as number) >= min && (value as number) <= max;
+
+const courtError = (court: any): string | null => {
+	if (typeof court !== "object" || court === null || Array.isArray(court)) {
+		return "Court must be an object or null";
+	}
+	if (court.version !== 1) return "Court version must be 1";
+	if (!COURT_WOODS.includes(court.wood)) {
+		return `Court wood must be one of ${COURT_WOODS.join(", ")}`;
+	}
+	for (const field of ["paint", "apron"]) {
+		if (court[field] !== null && !HEX_COLOUR.test(court[field])) {
+			return `Court ${field} must be a #rrggbb colour or null`;
+		}
+	}
+	if (!HEX_COLOUR.test(court.lines)) return "Court lines must be a #rrggbb colour";
+	if (!COURT_CENTER_LOGOS.includes(court.centerLogo)) {
+		return `Court centre logo must be one of ${COURT_CENTER_LOGOS.join(", ")}`;
+	}
+	if (typeof court.baselineText !== "string" || court.baselineText.length > 20) {
+		return "Baseline text must be at most 20 characters";
+	}
+	if (typeof court.sidelineText !== "string" || court.sidelineText.length > 24) {
+		return "Sideline text must be at most 24 characters";
+	}
+	return null;
+};
+
+export const validateArenaData = (data: any): { valid: boolean; error?: string } => {
+	if (typeof data !== "object" || data === null || Array.isArray(data)) {
+		return { valid: false, error: "Invalid request body" };
+	}
+
+	if (typeof data.name !== "string") {
+		return { valid: false, error: "Name is required and must be a string" };
+	}
+	const trimmedName = data.name.trim();
+	if (trimmedName.length === 0 || trimmedName.length > 60) {
+		return { valid: false, error: "Name must be between 1 and 60 characters" };
+	}
+
+	if (data.location !== undefined && typeof data.location !== "string") {
+		return { valid: false, error: "City must be a string" };
+	}
+	if ((data.location ?? "").trim().length > 60) {
+		return { valid: false, error: "City must be at most 60 characters" };
+	}
+
+	if (data.capacity != null && !isWholeNumberIn(data.capacity, 1, 200_000)) {
+		return { valid: false, error: "Capacity must be a whole number from 1 to 200,000" };
+	}
+
+	if (data.openedYear != null && !isWholeNumberIn(data.openedYear, 1850, 2100)) {
+		return { valid: false, error: "Opened year must be from 1850 to 2100" };
+	}
+
+	if (data.court != null) {
+		const error = courtError(data.court);
+		if (error) return { valid: false, error };
+	}
+
+	return { valid: true };
+};
+
+/**
+ * The stored fields of a payload that passed validateArenaData. Only known
+ * keys are copied, so nothing else a client sends lands on the item.
+ */
+export const toArenaFields = (data: any) => ({
+	name: (data.name as string).trim(),
+	location: ((data.location as string | undefined) ?? "").trim(),
+	capacity: (data.capacity as number | null | undefined) ?? null,
+	openedYear: (data.openedYear as number | null | undefined) ?? null,
+	court:
+		data.court == null
+			? null
+			: ({
+					version: 1,
+					wood: data.court.wood,
+					paint: data.court.paint,
+					apron: data.court.apron,
+					lines: data.court.lines,
+					centerLogo: data.court.centerLogo,
+					baselineText: data.court.baselineText,
+					sidelineText: data.court.sidelineText,
+				} satisfies CourtDesign),
+});

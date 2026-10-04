@@ -19,6 +19,8 @@ export interface UserDataExport {
 	customCoaches: ExportedItem[];
 	customGMs: ExportedItem[];
 	customPlayers: ExportedItem[];
+	// With their court settings and image URLs.
+	customArenas: ExportedItem[];
 	// Anything else under the user's partition, so a kind added later is
 	// never silently left out.
 	other: ExportedItem[];

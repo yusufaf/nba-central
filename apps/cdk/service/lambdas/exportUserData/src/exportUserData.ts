@@ -77,6 +77,7 @@ export const handler: Handler = async (
 			customCoaches: [],
 			customGMs: [],
 			customPlayers: [],
+			customArenas: [],
 			other: [],
 		};
 		for (const item of items) {

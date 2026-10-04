@@ -11,6 +11,7 @@ import { removeKeys } from "resources/dynamo/utilities";
 import { teamGsiKey, PRIVATE_SK2 } from "resources/dynamo/teams";
 import { CreateTeamResponse, SaveTeamPayload, SavedTeam } from "models/api/teams-api";
 import { validateTeamData } from "utilities/team-validation";
+import { toStoredArenaRef } from "resources/dynamo/arenas";
 
 const { mainTable = "" } = process.env;
 
@@ -40,6 +41,8 @@ export const handler: Handler = async (
 			};
 		}
 
+		const arena = await toStoredArenaRef(docClient, mainTable, userUUID, payload.arena);
+
 		const teamUUID = randomUUID();
 		const timestamp = new Date().getTime();
 		const initialTeam: SavedTeam & { PK: string; SK: string; PK2: string; SK2: string } = {
@@ -60,7 +63,7 @@ export const handler: Handler = async (
 			roster: payload.roster,
 			coach: payload.coach ?? null,
 			gm: payload.gm ?? null,
-			arena: payload.arena ?? null,
+			arena: arena.stored,
 			favorited: false,
 			label: "",
 			public: false,
@@ -78,7 +81,7 @@ export const handler: Handler = async (
 
 		// Copy before stripping keys - initialTeam is the same object
 		// referenced by putCommand.input.Item, and removeKeys mutates in place.
-		const responseTeam = { ...initialTeam };
+		const responseTeam = { ...initialTeam, arena: arena.resolved };
 		removeKeys(responseTeam);
 
 		const response: CreateTeamResponse = {
