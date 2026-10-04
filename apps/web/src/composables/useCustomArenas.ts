@@ -1,20 +1,35 @@
-import { ref, watch } from 'vue';
+import { ref, watch, type InjectionKey } from 'vue';
 import { toast } from 'vue-sonner';
 import { customArenaApi } from '@/network/api';
 import { getApiErrorMessage } from '@/composables/useApiErrorMessage';
 import { useCurrentUser } from '@/composables/useCurrentUser';
 import { blobToBase64 } from '@/utils/avatarImage';
 import type { CustomArena, CustomArenaPayload } from '@/models/api';
+import type { BuilderArena } from '@/composables/useTeamPersistence';
 
-// What the dialog hands back for the photo: a new JPEG to upload, null to
-// remove the current one, or undefined to leave it as it is.
-export type ArenaPhotoChange = Blob | null | undefined;
+// What the dialog hands back for each image: a new file to upload, null to
+// remove the current one, or left out to keep it as it is.
+export type ArenaImageChanges = Partial<Record<'photo' | 'logo', Blob | null>>;
+
+const SLOT_NAMES = { photo: 'photo', logo: 'centre logo' } as const;
+
+/**
+ * The live copy of the team's linked arena, from your own list. Anything
+ * else (a built-in arena, someone else's from a remix, a deleted one) has
+ * none, so the builder never draws a court the save would drop.
+ */
+export const findLiveArena = (arena: BuilderArena | null, customArenas: CustomArena[]): CustomArena | null => {
+    const arenaUUID = arena && 'arenaUUID' in arena ? arena.arenaUUID : undefined;
+    return arenaUUID ? (customArenas.find((a) => a.arenaUUID === arenaUUID) ?? null) : null;
+};
 
 /**
  * The signed-in user's custom arenas. The list only loads signed in (the
  * route needs a session), so a signed-out builder makes no failing call.
- * The arena is saved first and the photo second, so a failed upload still
- * leaves the arena, and says so.
+ * The arena is saved first and its images second, so a failed upload still
+ * leaves the arena, and says so. TeamBuilder provides one instance under
+ * customArenasKey, so the drawer and the court behind the starters share a
+ * list and an edit shows on both without a refetch.
  */
 export function useCustomArenas() {
     const { currentUser } = useCurrentUser();
@@ -47,19 +62,21 @@ export function useCustomArenas() {
         { immediate: true },
     );
 
-    // Returns false, after telling the user, when the photo didn't go through.
-    const applyPhoto = async (arenaUUID: string, photo: ArenaPhotoChange): Promise<boolean> => {
-        if (photo === undefined) return true;
+    // Returns false, after telling the user, when the image didn't go through.
+    const applyImage = async (arenaUUID: string, slot: keyof ArenaImageChanges, image: Blob | null | undefined) => {
+        if (image === undefined) return true;
         try {
             const response =
-                photo === null
-                    ? await customArenaApi.deleteImage(arenaUUID, 'photo')
-                    : await customArenaApi.uploadImage(arenaUUID, 'photo', await blobToBase64(photo));
+                image === null
+                    ? await customArenaApi.deleteImage(arenaUUID, slot)
+                    : await customArenaApi.uploadImage(arenaUUID, slot, await blobToBase64(image));
             if (!response.success) throw new Error(response.error);
             return true;
         } catch (err) {
-            console.error('Error saving arena photo:', err);
-            toast.error(`The arena was saved, but its photo wasn't: ${getApiErrorMessage(err, 'please try again')}`);
+            console.error(`Error saving arena ${slot}:`, err);
+            toast.error(
+                `The arena was saved, but its ${SLOT_NAMES[slot]} wasn't: ${getApiErrorMessage(err, 'please try again')}`,
+            );
             return false;
         }
     };
@@ -67,7 +84,7 @@ export function useCustomArenas() {
     const saveArena = async (
         arenaUUID: string | null,
         data: CustomArenaPayload,
-        photo: ArenaPhotoChange,
+        images: ArenaImageChanges = {},
     ): Promise<CustomArena | null> => {
         loading.value = true;
         try {
@@ -78,9 +95,10 @@ export function useCustomArenas() {
                 toast.error(response.error || 'Failed to save the arena');
                 return null;
             }
-            const photoSaved = await applyPhoto(response.data.arenaUUID, photo);
+            const photoSaved = await applyImage(response.data.arenaUUID, 'photo', images.photo);
+            const logoSaved = await applyImage(response.data.arenaUUID, 'logo', images.logo);
             await fetchCustomArenas();
-            if (photoSaved) toast.success(`${arenaUUID ? 'Updated' : 'Created'} ${data.name}`);
+            if (photoSaved && logoSaved) toast.success(`${arenaUUID ? 'Updated' : 'Created'} ${data.name}`);
             return customArenas.value.find((a) => a.arenaUUID === response.data.arenaUUID) ?? response.data;
         } catch (err) {
             console.error('Error saving arena:', err);
@@ -113,3 +131,5 @@ export function useCustomArenas() {
 
     return { customArenas, loading, fetchCustomArenas, saveArena, deleteArena };
 }
+
+export const customArenasKey: InjectionKey<ReturnType<typeof useCustomArenas>> = Symbol('customArenas');

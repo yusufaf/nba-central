@@ -2,14 +2,27 @@ import { createApp, nextTick } from 'vue';
 import { toPng } from 'html-to-image';
 import ShareCard from '@/components/TeamBuilder/share/ShareCard.vue';
 import type { ShareCardPlayer, ShareCardProps } from '@/components/TeamBuilder/share/ShareCard.vue';
-import type { PublicTeam } from '@/models/api';
+import type { CourtDesign, PublicTeam } from '@/models/api';
+import { centreLogoUrl } from '@/utils/court';
 
 const STARTER_SLOTS = [1, 2, 3, 4, 5];
 
+// The arena fields the card reads: a resolved arena, or a custom arena from
+// the builder's live list.
+export interface ShareCardArena {
+    name: string;
+    court?: CourtDesign | null;
+    logoUrl?: string;
+    drawingUrl?: string;
+}
+
 // Builds card props from either a saved/public team or the builder's live
 // state serialised the same way (roster entries carry player snapshots).
+// An arena without a court adds nothing, so those cards look as they did.
 export const toShareCardProps = (
-    team: Pick<PublicTeam, 'title' | 'city' | 'country' | 'logoUrl' | 'jerseyUrl' | 'username' | 'roster'>,
+    team: Pick<PublicTeam, 'title' | 'city' | 'country' | 'logoUrl' | 'jerseyUrl' | 'username' | 'roster'> & {
+        arena?: ShareCardArena | null;
+    },
 ): ShareCardProps => {
     const bySlot = new Map((team.roster ?? []).map((entry) => [entry.slot, entry.player]));
     const starters: ShareCardPlayer[] = STARTER_SLOTS.flatMap((slot) => {
@@ -29,6 +42,17 @@ export const toShareCardProps = (
         jerseyUrl: team.jerseyUrl,
         username: team.username,
         starters,
+        ...courtProps(team.logoUrl, team.arena),
+    };
+};
+
+const courtProps = (teamLogo: string, arena: ShareCardArena | null | undefined): Partial<ShareCardProps> => {
+    if (!arena?.court) return {};
+    return {
+        court: arena.court,
+        courtLogoUrl: centreLogoUrl(arena.court, { teamLogo, uploadedLogo: arena.logoUrl }),
+        courtDrawingUrl: arena.drawingUrl,
+        arenaName: arena.name,
     };
 };
 
@@ -71,7 +95,17 @@ export const renderShareCard = async (props: ShareCardProps): Promise<string> =>
         const vm = app.mount(host);
         const el = vm.$el as HTMLElement;
         await waitForImages(el);
-        const dataUrl = await toPng(el, { width: 1200, height: 630, pixelRatio: 1, cacheBust: true });
+        const dataUrl = await toPng(el, {
+            width: 1200,
+            height: 630,
+            pixelRatio: 1,
+            cacheBust: true,
+            // By default one image that fails to load rejects the whole
+            // export. The court's centre logo is an SVG <image> with no
+            // @error fallback of its own, so a dead URL drops that image
+            // and the card still renders.
+            onImageErrorHandler: () => undefined,
+        });
         return dataUrl.replace(/^data:image\/png;base64,/, '');
     } finally {
         app.unmount();

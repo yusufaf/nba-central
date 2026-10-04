@@ -16,6 +16,17 @@ const props = {
     ],
 };
 
+const court = {
+    version: 1 as const,
+    wood: "maple" as const,
+    paint: "#4b2a7b",
+    apron: "#4b2a7b",
+    lines: "#ffffff",
+    centerLogo: "team" as const,
+    baselineText: "Harbor Pavilion",
+    sidelineText: "Seattle",
+};
+
 describe("ShareCard", () => {
     it("renders title, owner, starters and the average of rated starters", () => {
         const wrapper = mount(ShareCard, { props });
@@ -43,5 +54,24 @@ describe("ShareCard", () => {
         await wrapper.find("img").trigger("error");
         expect(wrapper.find("img").exists()).toBe(false);
         expect(wrapper.text()).toContain("S"); // first letter of the title
+    });
+
+    it("looks the same as before without a court", () => {
+        const wrapper = mount(ShareCard, { props: { ...props, arenaName: "United Center" } });
+        expect(wrapper.find("svg").exists()).toBe(false);
+        expect(wrapper.find('[data-testid="share-court"]').exists()).toBe(false);
+        expect(wrapper.text()).not.toContain("Home court");
+    });
+
+    it("draws the flat court under a scrim, names the home court, and stays dark", () => {
+        const wrapper = mount(ShareCard, {
+            props: { ...props, court, courtLogoUrl: "https://cdn.example/logo.png", arenaName: "Harbor Pavilion" },
+        });
+        const layer = wrapper.find('[data-testid="share-court"]');
+        expect(layer.find("svg").exists()).toBe(true);
+        expect(layer.find("image").attributes("href")).toBe("https://cdn.example/logo.png");
+        expect(wrapper.find('[data-testid="share-scrim"]').exists()).toBe(true);
+        expect(wrapper.text()).toContain("Home court: Harbor Pavilion");
+        expect(wrapper.classes()).toContain("dark");
     });
 });

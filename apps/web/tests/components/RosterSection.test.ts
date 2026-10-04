@@ -31,6 +31,17 @@ const player = (id: number) => ({
     team: { full_name: "Team", abbreviation: "TM" },
 });
 
+const court = {
+    version: 1 as const,
+    wood: "maple" as const,
+    paint: "#4b2a7b",
+    apron: "#4b2a7b",
+    lines: "#ffffff",
+    centerLogo: "upload" as const,
+    baselineText: "Harbor Pavilion",
+    sidelineText: "Seattle",
+};
+
 describe("RosterSection", () => {
     it("renders 0 counts for an empty roster", () => {
         const wrapper = mountRoster(new Map());
@@ -105,5 +116,21 @@ describe("RosterSection", () => {
         const wrapper = mountRoster(new Map([[6, player(6)]]));
         await wrapper.find(".roster-section").trigger("keydown", { key: "Escape" });
         expect(wrapper.emitted("cancelPickup")).toBeUndefined();
+    });
+
+    it("renders the starters exactly as before when the arena has no court", () => {
+        const wrapper = mountRoster(new Map(), { court: null });
+        expect(wrapper.find('[data-testid="court-stage"]').exists()).toBe(false);
+        expect(wrapper.find("svg").exists()).toBe(false);
+        expect(wrapper.find(".lineup-section > .starters-grid").exists()).toBe(true);
+    });
+
+    it("stands the starters, and only the starters, on the court", () => {
+        const wrapper = mountRoster(new Map(), { court, courtLogoUrl: "https://cdn.example/logo.png" });
+        const stage = wrapper.find('[data-testid="court-stage"]');
+        expect(stage.find(".starters-grid").findAll("player-slot-stub")).toHaveLength(5);
+        expect(stage.find("image").attributes("href")).toBe("https://cdn.example/logo.png");
+        expect(wrapper.findAll('[data-testid="court-stage"]')).toHaveLength(1);
+        expect(wrapper.find(".bench-grid").element.closest('[data-testid="court-stage"]')).toBeNull();
     });
 });

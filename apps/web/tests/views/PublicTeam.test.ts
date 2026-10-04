@@ -43,6 +43,17 @@ const team = {
     cardUrl: "https://cdn/x.png",
 };
 
+const court = {
+    version: 1 as const,
+    wood: "maple" as const,
+    paint: "#4b2a7b",
+    apron: "#4b2a7b",
+    lines: "#ffffff",
+    centerLogo: "upload" as const,
+    baselineText: "Harbor Pavilion",
+    sidelineText: "Seattle",
+};
+
 const mountView = () =>
     mount(PublicTeam, {
         props: { teamUUID: "t1" },
@@ -164,5 +175,37 @@ describe("PublicTeam", () => {
         await wrapper.find('[data-testid="download-card-button"]').trigger("click");
         await flushPromises();
         expect(toast.error).toHaveBeenCalledWith("Failed to download card");
+    });
+
+    it("shows no court anywhere for an arena without one", async () => {
+        vi.mocked(teamApi.getPublicTeam).mockResolvedValue({ success: true, data: team as any });
+        const wrapper = mountView();
+        await flushPromises();
+        expect(wrapper.find('[data-testid="court-stage"]').exists()).toBe(false);
+        expect(wrapper.find('[data-part="floor"]').exists()).toBe(false);
+    });
+
+    it("stands the starting five on the arena's court and puts it on the arena tile", async () => {
+        const arena = {
+            name: "Harbor Pavilion",
+            isCustom: true,
+            arenaUUID: "a1",
+            court: { ...court, centerLogo: "team" as const },
+            logoUrl: "https://cdn.example/arenas/a1/logo-1.png",
+        };
+        vi.mocked(teamApi.getPublicTeam).mockResolvedValue({
+            success: true,
+            data: { ...team, logoUrl: "https://cdn.example/team.png", arena } as any,
+        });
+        const wrapper = mountView();
+        await flushPromises();
+
+        const stage = wrapper.find('[data-testid="court-stage"]');
+        expect(stage.text()).toContain("Michael Jordan");
+        // "team" is the logo of the team being shown.
+        expect(stage.find("image").attributes("href")).toBe("https://cdn.example/team.png");
+        const tile = wrapper.find('[data-testid="public-arena"]');
+        expect(tile.find('[data-part="floor"]').exists()).toBe(true);
+        expect(tile.find("img").exists()).toBe(false);
     });
 });

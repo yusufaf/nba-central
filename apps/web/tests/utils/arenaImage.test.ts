@@ -1,8 +1,10 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi, afterEach } from 'vitest';
 import {
     ARENA_PHOTO_MAX_BYTES,
+    COURT_LOGO_EDGE,
     encodeUnderLimit,
     fitLongEdge,
+    resizeCourtLogo,
 } from '@/utils/arenaImage';
 
 describe('fitLongEdge', () => {
@@ -52,6 +54,43 @@ describe('encodeUnderLimit', () => {
     it("fails when the browser can't encode at all", async () => {
         await expect(encodeUnderLimit(async () => null)).rejects.toThrow(
             "Your browser couldn't resize the image.",
+        );
+    });
+});
+
+describe('resizeCourtLogo', () => {
+    const draw = (size: number) => {
+        vi.stubGlobal('createImageBitmap', vi.fn(async () => ({ width: 2000, height: 1000, close: vi.fn() })));
+        const context = { drawImage: vi.fn(), fillRect: vi.fn() };
+        vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue(context as never);
+        const toBlob = vi
+            .spyOn(HTMLCanvasElement.prototype, 'toBlob')
+            .mockImplementation((done, type) => done(new Blob([new Uint8Array(size)], { type })));
+        return { context, toBlob };
+    };
+
+    afterEach(() => {
+        vi.unstubAllGlobals();
+        vi.restoreAllMocks();
+    });
+
+    it('fits the long edge to 512px and stays a transparent PNG', async () => {
+        const { context, toBlob } = draw(40_000);
+
+        const blob = await resizeCourtLogo(new File(['x'], 'logo.png', { type: 'image/png' }));
+
+        expect(COURT_LOGO_EDGE).toBe(512);
+        expect(blob.type).toBe('image/png');
+        expect(toBlob.mock.calls[0][1]).toBe('image/png');
+        expect(context.drawImage).toHaveBeenCalledWith(expect.anything(), 0, 0, 512, 256);
+        // No background fill: the logo's transparency shows the paint behind it.
+        expect(context.fillRect).not.toHaveBeenCalled();
+    });
+
+    it('refuses a logo that would still be over the limit', async () => {
+        draw(ARENA_PHOTO_MAX_BYTES);
+        await expect(resizeCourtLogo(new File(['x'], 'logo.png', { type: 'image/png' }))).rejects.toThrow(
+            "That logo is too detailed to fit in 1 MB. Try a simpler image.",
         );
     });
 });

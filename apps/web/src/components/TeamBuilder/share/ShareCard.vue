@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue';
 import { averageRating, ratingTier } from '@/constants/ratings';
+import CourtFloor from '@/components/court/CourtFloor.vue';
+import type { CourtDesign } from '@/models/api';
 
 export interface ShareCardPlayer {
     fullName: string;
@@ -16,6 +18,12 @@ export interface ShareCardProps {
     jerseyUrl: string;
     username: string;
     starters: ShareCardPlayer[];
+    // From the team's resolved arena, only when it has a court
+    // (toShareCardProps). courtDrawingUrl is drawn once #118 lands.
+    court?: CourtDesign;
+    courtLogoUrl?: string;
+    courtDrawingUrl?: string;
+    arenaName?: string;
 }
 
 const props = defineProps<ShareCardProps>();
@@ -34,7 +42,7 @@ const location = computed(() => [props.city, props.country].filter(Boolean).join
 
 <template>
     <div
-        class="share-card dark flex flex-col justify-between overflow-hidden bg-background p-12 text-foreground"
+        class="share-card dark relative flex flex-col justify-between overflow-hidden bg-background p-12 text-foreground"
         style="width: 1200px; height: 630px; font-size: 16px"><!-- style-guard-allow: px-unit -->
         <!-- .dark: the card is a published image other people see, so it
              keeps one brand look whatever theme its author happens to use. -->
@@ -44,7 +52,24 @@ const location = computed(() => [props.city, props.country].filter(Boolean).join
              75rem/39.375rem away from 1200x630 and crop the export, so it
              is pinned in px instead. The Tailwind classes inside are rem
              too; the scoped style below pins the theme values they read. -->
-        <header class="flex items-center gap-8">
+        <!-- The flat court fills the card behind everything. It is SVG, so
+             html-to-image rasterises it with the rest of the card; its centre
+             logo is an SVG <image> that html-to-image fetches with CORS and
+             inlines; renderShareCard drops it if that fails. Cropped from
+             the top, so the sideline text along the bottom stays whole. -->
+        <template v-if="court">
+            <div class="absolute inset-0" data-testid="share-court">
+                <CourtFloor
+                    :court="court"
+                    :logo-url="courtLogoUrl"
+                    preserve-aspect-ratio="xMidYMax slice"
+                    decorative
+                />
+            </div>
+            <div class="share-scrim absolute inset-0" data-testid="share-scrim" />
+        </template>
+
+        <header class="relative flex items-center gap-8">
             <img
                 v-if="logoUrl && !logoFailed"
                 :src="logoUrl"
@@ -62,6 +87,7 @@ const location = computed(() => [props.city, props.country].filter(Boolean).join
             <div class="min-w-0 flex-1">
                 <h1 class="truncate text-6xl font-bold leading-tight">{{ title || 'Untitled team' }}</h1>
                 <p v-if="location" class="mt-2 text-3xl text-muted-foreground">{{ location }}</p>
+                <p v-if="court && arenaName" class="mt-1 truncate text-xl text-muted-foreground">Home court: {{ arenaName }}</p>
             </div>
             <img
                 v-if="jerseyUrl && !jerseyFailed"
@@ -73,7 +99,7 @@ const location = computed(() => [props.city, props.country].filter(Boolean).join
             />
         </header>
 
-        <ul class="grid grid-cols-5 gap-4">
+        <ul class="relative grid grid-cols-5 gap-4">
             <li
                 v-for="(player, i) in starters.slice(0, 5)"
                 :key="i"
@@ -87,7 +113,7 @@ const location = computed(() => [props.city, props.country].filter(Boolean).join
             </li>
         </ul>
 
-        <footer class="flex items-end justify-between">
+        <footer class="relative flex items-end justify-between">
             <div>
                 <span class="text-xl text-muted-foreground">Starting five</span>
                 <div v-if="average !== null" class="mt-1 text-5xl font-bold" :data-tier="tier">{{ average }}</div>
@@ -113,6 +139,19 @@ const location = computed(() => [props.city, props.country].filter(Boolean).join
     --text-3xl: 30px; /* style-guard-allow: px-unit */
     --text-5xl: 48px; /* style-guard-allow: px-unit */
     --text-6xl: 60px; /* style-guard-allow: px-unit */
+}
+
+/* Darkens the court so the header and footer read as they do on the plain
+   card; the player cards are opaque either way. --background is the dark
+   theme's, because the card carries .dark. */
+.share-scrim {
+    background: linear-gradient(
+        to bottom,
+        hsl(var(--background) / 0.85),
+        hsl(var(--background) / 0.55) 35%,
+        hsl(var(--background) / 0.55) 65%,
+        hsl(var(--background) / 0.85)
+    );
 }
 
 /* Rating colours follow the builder's tiers; tokens come from main.css. */
