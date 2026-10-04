@@ -19,7 +19,7 @@ export interface ShareCardProps {
     username: string;
     starters: ShareCardPlayer[];
     // From the team's resolved arena, only when it has a court
-    // (toShareCardProps). courtDrawingUrl is drawn once #118 lands.
+    // (toShareCardProps).
     court?: CourtDesign;
     courtLogoUrl?: string;
     courtDrawingUrl?: string;
@@ -55,13 +55,15 @@ const location = computed(() => [props.city, props.country].filter(Boolean).join
         <!-- The flat court fills the card behind everything. It is SVG, so
              html-to-image rasterises it with the rest of the card; its centre
              logo is an SVG <image> that html-to-image fetches with CORS and
-             inlines; renderShareCard drops it if that fails. Cropped from
+             inlines, as is the drawing over it; renderShareCard drops either
+             if it fails. Cropped from
              the top, so the sideline text along the bottom stays whole. -->
         <template v-if="court">
             <div class="absolute inset-0" data-testid="share-court">
                 <CourtFloor
                     :court="court"
                     :logo-url="courtLogoUrl"
+                    :drawing-url="courtDrawingUrl"
                     preserve-aspect-ratio="xMidYMax slice"
                     decorative
                 />

@@ -36,6 +36,15 @@ export const LINE_PRESETS = [
 export const BASELINE_TEXT_MAX = 20;
 export const SIDELINE_TEXT_MAX = 24;
 
+// CourtFloor's viewBox, in tenths of a foot.
+export const COURT_WIDTH = 1040;
+export const COURT_HEIGHT = 580;
+// The drawing is a PNG at twice the viewBox, so ink stays sharp on the
+// 1200px share card, and its brushes are twice the jersey's to match.
+export const COURT_DRAWING_SCALE = 2;
+// The image endpoint's limit (MAX_IMAGE_BYTES in apps/cdk).
+export const MAX_COURT_DRAWING_BYTES = 1024 * 1024;
+
 export const newCourt = (arenaName: string): CourtDesign => ({
     version: 1,
     wood: 'maple',

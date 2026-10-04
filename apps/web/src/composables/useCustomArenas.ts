@@ -9,9 +9,9 @@ import type { BuilderArena } from '@/composables/useTeamPersistence';
 
 // What the dialog hands back for each image: a new file to upload, null to
 // remove the current one, or left out to keep it as it is.
-export type ArenaImageChanges = Partial<Record<'photo' | 'logo', Blob | null>>;
+export type ArenaImageChanges = Partial<Record<'photo' | 'logo' | 'drawing', Blob | null>>;
 
-const SLOT_NAMES = { photo: 'photo', logo: 'centre logo' } as const;
+const SLOT_NAMES = { photo: 'photo', logo: 'centre logo', drawing: 'drawing' } as const;
 
 /**
  * The live copy of the team's linked arena, from your own list. Anything
@@ -97,8 +97,9 @@ export function useCustomArenas() {
             }
             const photoSaved = await applyImage(response.data.arenaUUID, 'photo', images.photo);
             const logoSaved = await applyImage(response.data.arenaUUID, 'logo', images.logo);
+            const drawingSaved = await applyImage(response.data.arenaUUID, 'drawing', images.drawing);
             await fetchCustomArenas();
-            if (photoSaved && logoSaved) toast.success(`${arenaUUID ? 'Updated' : 'Created'} ${data.name}`);
+            if (photoSaved && logoSaved && drawingSaved) toast.success(`${arenaUUID ? 'Updated' : 'Created'} ${data.name}`);
             return customArenas.value.find((a) => a.arenaUUID === response.data.arenaUUID) ?? response.data;
         } catch (err) {
             console.error('Error saving arena:', err);

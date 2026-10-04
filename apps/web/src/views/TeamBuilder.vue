@@ -804,6 +804,7 @@ watch(
                 :live-message="liveMessage"
                 :court="liveArena?.court"
                 :court-logo-url="courtLogoUrl"
+                :court-drawing-url="liveArena?.drawingUrl"
                 @add-player="addPlayer"
                 @remove-player="deletePlayer"
                 @flip-card="flipCard"

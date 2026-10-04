@@ -35,6 +35,7 @@ interface Props {
   /** The team's arena court, drawn behind the starters. */
   court?: CourtDesign | null;
   courtLogoUrl?: string;
+  courtDrawingUrl?: string;
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -45,6 +46,7 @@ const props = withDefaults(defineProps<Props>(), {
   liveMessage: '',
   court: null,
   courtLogoUrl: undefined,
+  courtDrawingUrl: undefined,
 });
 
 const emit = defineEmits<{
@@ -128,7 +130,7 @@ const onKeydown = (event: KeyboardEvent) => {
           <div class="starter-count">{{ starterCount }}/5</div>
         </div>
       </div>
-      <CourtStage :court="court" :logo-url="courtLogoUrl" :tilted="startersInOneRow">
+      <CourtStage :court="court" :logo-url="courtLogoUrl" :drawing-url="courtDrawingUrl" :tilted="startersInOneRow">
         <div class="starters-grid">
           <PlayerSlot
             v-for="(index, posIndex) in STARTER_INDICES"

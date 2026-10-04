@@ -89,6 +89,51 @@ describe('CourtFloor', () => {
         expect(a).not.toBe(b);
     });
 
+    it('adds nothing without a drawing, so a court without one looks as it did', () => {
+        const plain = render(court({ centerLogo: 'upload' }), 'https://cdn.example/logo.png');
+        expect(plain.find('[data-part="drawing"]').exists()).toBe(false);
+        const empty = mount(CourtFloor, { props: { court: court(), drawingUrl: '' } });
+        expect(empty.find('[data-part="drawing"]').exists()).toBe(false);
+    });
+
+    it('lays the drawing over the whole court, above the lines and below the text', () => {
+        const wrapper = mount(CourtFloor, {
+            props: { court: court(), drawingUrl: 'https://cdn.example/arenas/a1/drawing-1.png' },
+        });
+        const drawing = wrapper.get('image[data-part="drawing"]');
+        expect(drawing.attributes()).toMatchObject({
+            href: 'https://cdn.example/arenas/a1/drawing-1.png',
+            x: '0',
+            y: '0',
+            width: '1040',
+            height: '580',
+            preserveAspectRatio: 'none',
+        });
+
+        const layers = [...wrapper.element.children].map(
+            (el) => el.getAttribute('data-part') ?? el.tagName.toLowerCase(),
+        );
+        expect(layers.indexOf('drawing')).toBeGreaterThan(layers.indexOf('lines'));
+        expect(layers.indexOf('drawing')).toBeLessThan(layers.indexOf('text'));
+    });
+
+    it('can draw just the floor or just the text, for the layers around a drawing canvas', () => {
+        const props = { court: court({ centerLogo: 'upload' }), logoUrl: 'https://cdn.example/logo.png', drawingUrl: 'https://cdn.example/d.png' };
+
+        const floor = mount(CourtFloor, { props: { ...props, part: 'floor' } });
+        expect(floor.find('[data-part="lines"]').exists()).toBe(true);
+        expect(floor.find('[data-part="baseline-text"]').exists()).toBe(false);
+        expect(floor.find('[data-part="drawing"]').exists()).toBe(false);
+
+        const text = mount(CourtFloor, { props: { ...props, part: 'text' } });
+        expect(text.findAll('[data-part="baseline-text"]')).toHaveLength(2);
+        expect(text.find('[data-part="sideline-text"]').exists()).toBe(true);
+        for (const part of ['apron', 'floor', 'paint', 'lines', 'drawing']) {
+            expect(text.find(`[data-part="${part}"]`).exists()).toBe(false);
+        }
+        expect(text.find('image').exists()).toBe(false);
+    });
+
     it('is labelled for assistive tech unless decorative', () => {
         expect(render(court()).attributes('role')).toBe('img');
         const decorative = mount(CourtFloor, { props: { court: court(), decorative: true } });

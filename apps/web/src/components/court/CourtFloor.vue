@@ -8,6 +8,8 @@ const instances = { count: 0 };
 import { computed } from 'vue';
 import type { CourtDesign } from '@/models/api';
 import {
+    COURT_HEIGHT,
+    COURT_WIDTH,
     COURT_WOODS,
     apronColours,
     courtTextColour,
@@ -25,17 +27,30 @@ const props = withDefaults(
         court: CourtDesign;
         // Already resolved from court.centerLogo (see centreLogoUrl).
         logoUrl?: string;
+        // The freehand drawing (#118): strokes on a transparent PNG at 2x
+        // the viewBox, laid over the lines and under the text.
+        drawingUrl?: string;
+        // The drawing canvas sits between these two: the floor under the
+        // ink, the text over it, as on every other surface.
+        part?: 'all' | 'floor' | 'text';
         // How the court fills a box of another shape. The share card crops
         // from the top, so the sideline text along the bottom survives.
         preserveAspectRatio?: string;
         decorative?: boolean;
         label?: string;
     }>(),
-    { logoUrl: undefined, preserveAspectRatio: 'xMidYMid meet', decorative: false, label: 'Court design' },
+    {
+        logoUrl: undefined,
+        drawingUrl: undefined,
+        part: 'all',
+        preserveAspectRatio: 'xMidYMid meet',
+        decorative: false,
+        label: 'Court design',
+    },
 );
 
-const WIDTH = 1040;
-const HEIGHT = 580;
+const WIDTH = COURT_WIDTH;
+const HEIGHT = COURT_HEIGHT;
 const LEFT = 50;
 const RIGHT = 990;
 const TOP = 40;
@@ -114,55 +129,68 @@ const sidelineSize = computed(() => fitFontSize(sidelineText.value, RIGHT - LEFT
         :aria-label="decorative ? undefined : label"
         :aria-hidden="decorative ? 'true' : undefined"
     >
-        <defs>
-            <clipPath :id="clipId">
-                <circle :cx="MID_X" :cy="MID_Y" :r="CIRCLE_RADIUS - 4" />
-            </clipPath>
-        </defs>
+        <template v-if="part !== 'text'">
+            <defs>
+                <clipPath :id="clipId">
+                    <circle :cx="MID_X" :cy="MID_Y" :r="CIRCLE_RADIUS - 4" />
+                </clipPath>
+            </defs>
 
-        <rect v-if="court.apron" data-part="apron" x="0" y="0" :width="WIDTH" :height="HEIGHT" :fill="court.apron" />
-        <g v-else data-part="apron-planks">
-            <rect x="0" y="0" :width="WIDTH" :height="HEIGHT" :fill="apronSeam" />
-            <path v-for="(d, i) in apronPlanks" :key="i" :d="d" :fill="apronTones[i]" />
-        </g>
+            <rect v-if="court.apron" data-part="apron" x="0" y="0" :width="WIDTH" :height="HEIGHT" :fill="court.apron" />
+            <g v-else data-part="apron-planks">
+                <rect x="0" y="0" :width="WIDTH" :height="HEIGHT" :fill="apronSeam" />
+                <path v-for="(d, i) in apronPlanks" :key="i" :d="d" :fill="apronTones[i]" />
+            </g>
 
-        <rect :x="LEFT" :y="TOP" :width="RIGHT - LEFT" :height="BOTTOM - TOP" :fill="floorSeam" />
-        <g data-part="floor">
-            <path v-for="(d, i) in floorPlanks" :key="i" :d="d" :fill="floorTones[i]" />
-        </g>
+            <rect :x="LEFT" :y="TOP" :width="RIGHT - LEFT" :height="BOTTOM - TOP" :fill="floorSeam" />
+            <g data-part="floor">
+                <path v-for="(d, i) in floorPlanks" :key="i" :d="d" :fill="floorTones[i]" />
+            </g>
 
-        <g>
-            <rect v-for="(end, i) in ends" :key="i" data-part="paint" v-bind="end.key" :fill="paint" />
-            <circle data-part="paint" :cx="MID_X" :cy="MID_Y" :r="CIRCLE_RADIUS" :fill="paint" />
-        </g>
+            <g>
+                <rect v-for="(end, i) in ends" :key="i" data-part="paint" v-bind="end.key" :fill="paint" />
+                <circle data-part="paint" :cx="MID_X" :cy="MID_Y" :r="CIRCLE_RADIUS" :fill="paint" />
+            </g>
+
+            <image
+                v-if="logoUrl"
+                :href="logoUrl"
+                :x="MID_X - 50"
+                :y="MID_Y - 50"
+                width="100"
+                height="100"
+                preserveAspectRatio="xMidYMid meet"
+                :clip-path="`url(#${clipId})`"
+            />
+
+            <g data-part="lines" stroke-linecap="butt">
+                <rect :x="LEFT" :y="TOP" :width="RIGHT - LEFT" :height="BOTTOM - TOP" v-bind="line" />
+                <path :d="`M${MID_X} ${TOP}V${BOTTOM}`" v-bind="line" />
+                <circle :cx="MID_X" :cy="MID_Y" :r="CIRCLE_RADIUS" v-bind="line" />
+                <g v-for="(end, i) in ends" :key="i">
+                    <rect v-bind="{ ...end.key, ...line }" />
+                    <path :d="end.freeThrowOuter" v-bind="line" />
+                    <path :d="end.freeThrowInner" v-bind="line" stroke-dasharray="10 8" />
+                    <path :d="end.three" v-bind="line" />
+                    <path :d="end.restricted" v-bind="line" />
+                    <path :d="`M${end.backboard} ${MID_Y - 30}V${MID_Y + 30}`" v-bind="line" />
+                    <circle :cx="end.basket" :cy="MID_Y" r="7.5" v-bind="line" />
+                </g>
+            </g>
+        </template>
 
         <image
-            v-if="logoUrl"
-            :href="logoUrl"
-            :x="MID_X - 50"
-            :y="MID_Y - 50"
-            width="100"
-            height="100"
-            preserveAspectRatio="xMidYMid meet"
-            :clip-path="`url(#${clipId})`"
+            v-if="drawingUrl && part === 'all'"
+            data-part="drawing"
+            :href="drawingUrl"
+            x="0"
+            y="0"
+            :width="WIDTH"
+            :height="HEIGHT"
+            preserveAspectRatio="none"
         />
 
-        <g data-part="lines" stroke-linecap="butt">
-            <rect :x="LEFT" :y="TOP" :width="RIGHT - LEFT" :height="BOTTOM - TOP" v-bind="line" />
-            <path :d="`M${MID_X} ${TOP}V${BOTTOM}`" v-bind="line" />
-            <circle :cx="MID_X" :cy="MID_Y" :r="CIRCLE_RADIUS" v-bind="line" />
-            <g v-for="(end, i) in ends" :key="i">
-                <rect v-bind="{ ...end.key, ...line }" />
-                <path :d="end.freeThrowOuter" v-bind="line" />
-                <path :d="end.freeThrowInner" v-bind="line" stroke-dasharray="10 8" />
-                <path :d="end.three" v-bind="line" />
-                <path :d="end.restricted" v-bind="line" />
-                <path :d="`M${end.backboard} ${MID_Y - 30}V${MID_Y + 30}`" v-bind="line" />
-                <circle :cx="end.basket" :cy="MID_Y" r="7.5" v-bind="line" />
-            </g>
-        </g>
-
-        <g font-weight="800" letter-spacing="0.14em" text-anchor="middle" dominant-baseline="central">
+        <g v-if="part !== 'floor'" data-part="text" font-weight="800" letter-spacing="0.14em" text-anchor="middle" dominant-baseline="central">
             <template v-if="baselineText">
                 <text
                     data-part="baseline-text"

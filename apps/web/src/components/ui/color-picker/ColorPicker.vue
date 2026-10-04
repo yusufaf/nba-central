@@ -21,8 +21,8 @@ withDefaults(defineProps<{ selected?: boolean }>(), { selected: false });
 const modelValue = defineModel<string>({ required: true });
 
 // Reka's color primitives operate on a Color object, not a hex string - this
-// is the one place that boundary gets crossed, so every consumer (the jersey
-// canvas, useJerseyDrawing) keeps dealing in plain hex.
+// is the one place that boundary gets crossed, so every consumer (the
+// drawing canvas, useDrawing, the court designer) keeps dealing in plain hex.
 const colorObj = ref<Color>(normalizeColor(modelValue.value));
 
 // Only resync from the outside in. Comparing against the round-tripped hex,

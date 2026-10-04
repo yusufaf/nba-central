@@ -97,6 +97,45 @@ describe('useCustomArenas', () => {
         expect(api.deleteImage).not.toHaveBeenCalled();
     });
 
+    it('uploads the drawing after the arena, as a PNG, and reads it back', async () => {
+        const { saveArena, customArenas } = useCustomArenas();
+        await flushPromises();
+
+        const saved = await saveArena(null, payload, { drawing: png() });
+
+        expect(api.create.mock.invocationCallOrder[0]).toBeLessThan(api.uploadImage.mock.invocationCallOrder[0]);
+        expect(api.uploadImage).toHaveBeenCalledWith('a1', 'drawing', btoa('png'));
+        expect(saved?.drawingUrl).toBe('https://cdn.example/arenas/a1/drawing-1.png');
+        expect(customArenas.value[0].drawingUrl).toBe(saved?.drawingUrl);
+    });
+
+    it('deletes the drawing slot when the drawing is cleared, and leaves it alone when unchanged', async () => {
+        server.arenas.set('a1', { ...payload, arenaUUID: 'a1', drawingUrl: 'https://cdn.example/d.png', isCustom: true });
+        const { saveArena } = useCustomArenas();
+        await flushPromises();
+
+        const kept = await saveArena('a1', payload, { photo: undefined, logo: undefined, drawing: undefined });
+        expect(api.uploadImage).not.toHaveBeenCalled();
+        expect(api.deleteImage).not.toHaveBeenCalled();
+        expect(kept?.drawingUrl).toBe('https://cdn.example/d.png');
+
+        const cleared = await saveArena('a1', payload, { drawing: null });
+        expect(api.deleteImage).toHaveBeenCalledWith('a1', 'drawing');
+        expect(cleared?.drawingUrl).toBeUndefined();
+    });
+
+    it('keeps the arena and says so when the drawing upload fails', async () => {
+        api.uploadImage.mockResolvedValueOnce({ success: false, error: 'Drawing must be under 1 MB' } as never);
+        const { saveArena } = useCustomArenas();
+        await flushPromises();
+
+        const saved = await saveArena(null, payload, { drawing: png() });
+
+        expect(saved?.arenaUUID).toBe('a1');
+        expect(toast.error).toHaveBeenCalledWith("The arena was saved, but its drawing wasn't: Drawing must be under 1 MB");
+        expect(toast.success).not.toHaveBeenCalled();
+    });
+
     it('keeps the arena and says so when the logo upload fails', async () => {
         api.uploadImage.mockResolvedValueOnce({ success: false, error: 'Image must be under 1 MB' } as never);
         const { saveArena } = useCustomArenas();
