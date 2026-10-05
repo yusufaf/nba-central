@@ -1,6 +1,6 @@
 /**
- * Regenerates nba-central's checked-in execs.json using the same parser the
- * setExecsData Lambda runs.
+ * Regenerates nba-central's checked-in execs.json, the only writer of that
+ * file.
  *
  *   pnpm run refresh-execs
  *   pnpm run refresh-execs -- --check    # verify only, write nothing

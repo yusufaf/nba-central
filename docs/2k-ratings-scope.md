@@ -66,7 +66,7 @@ invoke permission, plus code-only updates to the Lambdas whose bundles changed.
   `ajv/lib/refs/json-schema-draft-04.json`. Root cause is the repo-root `package.json`
   `pnpm.overrides` pinning `"ajv": "8.20.0"`; ESLint 10 needs ajv 6's draft-04 refs.
 - `pnpm run build` in team-builder-cdk reports 6 pre-existing `tsc` errors in
-  `deleteCustom*`, `setCoachesData`, and `setExecsData`. (These don't block synth or
+  `deleteCustom*`, `setCoachesData`, and `setExecsData` (the last two were deleted in #60). (These don't block synth or
   deploy — CDK bundles with esbuild, which doesn't type-check.)
 
 ### Two bugs caught during deployment
@@ -197,7 +197,7 @@ normalized name:
 
 ### New: `team-builder-cdk/service/lambdas/setPlayerRatingsData/`
 
-Follows the existing `setPlayersData` / `setCoachesData` pattern exactly (EventBridge →
+Follows the existing `setPlayersData` pattern exactly (EventBridge →
 scrape → single JSON to the static-data bucket).
 
 1. Page `GET /api/public/players?limit=100&cursor=` until `meta.pagination.hasMore === false`,
