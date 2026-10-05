@@ -4,7 +4,7 @@
  * Each of nba-central's checked-in datasets (arenas, coaches, execs) is small
  * and rarely-changing, so the frontend imports the JSON directly rather than
  * fetching it. Regenerating one is therefore a deliberate, reviewable step:
- * fetch the source page, run the same parser the Lambda runs, validate every
+ * fetch the source page, run the dataset's parser, validate every
  * row, and refuse to write anything if a single row looks wrong.
  *
  *   pnpm run refresh-<dataset>

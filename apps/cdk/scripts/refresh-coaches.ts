@@ -1,6 +1,6 @@
 /**
- * Regenerates nba-central's checked-in coaches.json using the same parser the
- * setCoachesData Lambda runs.
+ * Regenerates nba-central's checked-in coaches.json, the only writer of that
+ * file.
  *
  *   pnpm run refresh-coaches
  *   pnpm run refresh-coaches -- --check    # verify only, write nothing

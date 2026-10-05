@@ -30,9 +30,6 @@ import {
 	DEFAULT_ALLOWED_ORIGINS,
 } from "../../constants";
 import apiAuthorizer from "../lambdas/apiAuthorizer/index";
-import setCoachesData from "../lambdas/setCoachesData";
-import setExecsData from "../lambdas/setExecsData";
-import setArenasData from "../lambdas/setArenasData";
 import setPlayersData from "../lambdas/setPlayersData";
 import setPlayerRatingsData from "../lambdas/setPlayerRatingsData";
 import fetchNewsCron from "../lambdas/fetchNewsCron";
@@ -161,9 +158,6 @@ export class TeamBuilderAPI extends Construct {
 			props,
 		};
 
-		setCoachesData({ ...lambdaProps });
-		setExecsData({ ...lambdaProps });
-		setArenasData({ ...lambdaProps });
 		setPlayersData({ ...lambdaProps });
 		setPlayerRatingsData({ ...lambdaProps });
 		fetchNewsCron({ ...lambdaProps });

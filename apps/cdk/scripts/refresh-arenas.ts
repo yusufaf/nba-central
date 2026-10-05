@@ -1,6 +1,6 @@
 /**
- * Regenerates nba-central's checked-in arenas.json using the same parser the
- * setArenasData Lambda runs, then verifies every image URL still resolves.
+ * Regenerates nba-central's checked-in arenas.json, the only writer of that
+ * file, then verifies every image URL still resolves.
  *
  *   pnpm run refresh-arenas
  *   pnpm run refresh-arenas -- --check    # verify only, write nothing
