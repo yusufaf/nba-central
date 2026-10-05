@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { parseCoaches } from "lambdas/setCoachesData/src/setCoachesData";
+import { parseCoaches } from "../../scripts/lib/coaches";
 
 // A trimmed copy of basketball-reference.com/coaches/NBA_stats.html: the
 // repeated header row, one plain coach and one Hall of Famer. `season_min` and

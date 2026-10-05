@@ -5,7 +5,7 @@
  *   pnpm run refresh-coaches
  *   pnpm run refresh-coaches -- --check    # verify only, write nothing
  */
-import { parseCoaches } from "../service/lambdas/setCoachesData/src/setCoachesData";
+import { parseCoaches } from "./lib/coaches";
 import {
 	dataPath,
 	fetchPage,

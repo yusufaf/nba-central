@@ -5,7 +5,7 @@
  *   pnpm run refresh-arenas
  *   pnpm run refresh-arenas -- --check    # verify only, write nothing
  */
-import { parseArenas } from "../service/lambdas/setArenasData/src/setArenasData";
+import { parseArenas } from "./lib/arenas";
 import {
 	dataPath,
 	fetchPage,

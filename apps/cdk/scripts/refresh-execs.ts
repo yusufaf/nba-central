@@ -5,7 +5,7 @@
  *   pnpm run refresh-execs
  *   pnpm run refresh-execs -- --check    # verify only, write nothing
  */
-import { parseExecs } from "../service/lambdas/setExecsData/src/setExecsData";
+import { parseExecs } from "./lib/execs";
 import {
 	dataPath,
 	fetchPage,

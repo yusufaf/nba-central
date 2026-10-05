@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { parseExecs } from "lambdas/setExecsData/src/setExecsData";
+import { parseExecs } from "../../scripts/lib/execs";
 
 // Basketball-Reference separates a team abbreviation from its year range with a
 // non-breaking space, which the parser has to normalise without touching the
