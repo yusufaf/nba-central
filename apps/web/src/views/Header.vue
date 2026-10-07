@@ -11,15 +11,22 @@ import {
     DropdownMenuContent,
     DropdownMenuItem,
     DropdownMenuLabel,
+    DropdownMenuRadioGroup,
+    DropdownMenuRadioItem,
     DropdownMenuSeparator,
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { ChevronDown, LogOut, Menu, Settings } from 'lucide-vue-next';
+import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
+import { ChevronDown, LogOut, Menu, Monitor, Moon, Settings, Sun } from 'lucide-vue-next';
 import UserAvatar from '@/components/UserAvatar.vue';
 import { useCurrentUser } from '@/composables/useCurrentUser';
+import { useThemeControl } from '@/composables/useThemeControl';
 
 const { isAuthenticated, signOut } = useLogto();
 const { currentUser } = useCurrentUser();
+const { theme, disabled: themeDisabled, setTheme, options: themeOptions } = useThemeControl();
+// A stale stored value is treated as System, as index.html does.
+const themeIcon = computed(() => ({ light: Sun, dark: Moon })[theme.value as 'light' | 'dark'] ?? Monitor);
 
 // The username comes from the access token's claims, which resolve a
 // moment after isAuthenticated flips.
@@ -58,6 +65,34 @@ function handleSignOut() {
                             {{ route.name }}
                         </RouterLink>
                     </template>
+                    <DropdownMenu v-if="!isAuthenticated">
+                        <DropdownMenuTrigger as-child>
+                            <button
+                                type="button"
+                                class="theme-trigger"
+                                aria-label="Theme"
+                                data-testid="theme-trigger"
+                            >
+                                <component :is="themeIcon" class="size-5" />
+                            </button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end" class="min-w-40">
+                            <DropdownMenuLabel>Theme</DropdownMenuLabel>
+                            <DropdownMenuRadioGroup
+                                :model-value="theme"
+                                @update:model-value="setTheme"
+                            >
+                                <DropdownMenuRadioItem
+                                    v-for="option in themeOptions"
+                                    :key="option.value"
+                                    :value="option.value"
+                                    :disabled="themeDisabled"
+                                >
+                                    {{ option.label }}
+                                </DropdownMenuRadioItem>
+                            </DropdownMenuRadioGroup>
+                        </DropdownMenuContent>
+                    </DropdownMenu>
                     <RouterLink v-if="!isAuthenticated" class="login" to="/login">
                         Login
                     </RouterLink>
@@ -87,6 +122,22 @@ function handleSignOut() {
                                     Settings
                                 </RouterLink>
                             </DropdownMenuItem>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuLabel>Theme</DropdownMenuLabel>
+                            <DropdownMenuRadioGroup
+                                :model-value="theme"
+                                @update:model-value="setTheme"
+                            >
+                                <DropdownMenuRadioItem
+                                    v-for="option in themeOptions"
+                                    :key="option.value"
+                                    :value="option.value"
+                                    :disabled="themeDisabled"
+                                >
+                                    {{ option.label }}
+                                </DropdownMenuRadioItem>
+                            </DropdownMenuRadioGroup>
+                            <DropdownMenuSeparator />
                             <DropdownMenuItem @select="handleSignOut">
                                 <LogOut class="size-4" />
                                 Logout
@@ -99,7 +150,7 @@ function handleSignOut() {
             <!-- Mobile Menu -->
             <Sheet>
                 <SheetTrigger as-child class="@min-[56rem]:hidden ml-auto">
-                    <Button variant="ghost" size="icon">
+                    <Button variant="ghost" size="icon" aria-label="Menu" data-testid="mobile-menu-trigger">
                         <Menu class="h-6 w-6" />
                     </Button>
                 </SheetTrigger>
@@ -140,6 +191,31 @@ function handleSignOut() {
                             </button>
                         </template>
                     </nav>
+                    <!-- Outside .mobile-nav so its link/button colour rule
+                         doesn't override the toggle's selected state. -->
+                    <div class="mt-6 flex flex-col gap-2" data-testid="mobile-theme">
+                        <span class="text-[0.6875rem] font-bold uppercase tracking-[0.06em] text-foreground/60">
+                            Theme
+                        </span>
+                        <ToggleGroup
+                            type="single"
+                            variant="outline"
+                            size="sm"
+                            class="flex-wrap justify-start"
+                            aria-label="Theme"
+                            :model-value="theme"
+                            :disabled="themeDisabled"
+                            @update:model-value="setTheme"
+                        >
+                            <ToggleGroupItem
+                                v-for="option in themeOptions"
+                                :key="option.value"
+                                :value="option.value"
+                            >
+                                {{ option.label }}
+                            </ToggleGroupItem>
+                        </ToggleGroup>
+                    </div>
                 </SheetContent>
             </Sheet>
         </div>
@@ -206,5 +282,18 @@ ul {
 .desktop-nav .login {
     margin-left: auto;
     margin-right: 1rem;
+}
+
+/* Signed out, the theme button takes the free space so it and Login sit
+   together at the right. */
+.desktop-nav .theme-trigger {
+    display: inline-flex;
+    align-items: center;
+    margin-left: auto;
+    margin-right: -1rem;
+}
+
+.desktop-nav .theme-trigger + .login {
+    margin-left: 0;
 }
 </style>
