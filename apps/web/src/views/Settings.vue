@@ -24,6 +24,7 @@ import { VIEW_OPTIONS } from '@/constants/constants';
 import type { SeasonFormat, StatDisplayMode } from '@/constants/playerStats';
 import {
     FONT_SCALES,
+    THEME_OPTIONS,
     type FontScale,
     type ReducedMotion,
     type Theme,
@@ -114,12 +115,6 @@ const timeFormatOptions: { value: TimeFormat; label: string }[] = [
     { value: 'auto', label: 'Automatic' },
     { value: '12h', label: '12-hour' },
     { value: '24h', label: '24-hour' },
-];
-
-const themeOptions: { value: Theme; label: string }[] = [
-    { value: 'system', label: 'System' },
-    { value: 'light', label: 'Light' },
-    { value: 'dark', label: 'Dark' },
 ];
 
 const reducedMotionOptions: { value: ReducedMotion; label: string }[] = [
@@ -512,7 +507,7 @@ const setTheme = choose<Theme>((v) => (display.value.theme = v));
                                     @update:model-value="setTheme"
                                 >
                                     <ToggleGroupItem
-                                        v-for="option in themeOptions"
+                                        v-for="option in THEME_OPTIONS"
                                         :key="option.value"
                                         :value="option.value"
                                     >

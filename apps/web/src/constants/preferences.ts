@@ -31,6 +31,11 @@ export type ReducedMotion = 'system' | 'reduce' | 'allow';
 export type FontScale = '87.5' | '100' | '112.5' | '125' | '137.5';
 export const FONT_SCALES: readonly FontScale[] = ['87.5', '100', '112.5', '125', '137.5'];
 export type Theme = 'system' | 'light' | 'dark';
+export const THEME_OPTIONS: { value: Theme; label: string }[] = [
+    { value: 'system', label: 'System' },
+    { value: 'light', label: 'Light' },
+    { value: 'dark', label: 'Dark' },
+];
 
 export interface DisplayPreferences {
     dateFormat: DateFormat;
