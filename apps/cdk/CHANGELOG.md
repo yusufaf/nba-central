@@ -1,5 +1,33 @@
 # Changelog
 
+## [0.2.0](https://github.com/yusufaf/nba-central/compare/cdk-v0.1.1...cdk-v0.2.0) (2026-10-08)
+
+
+### Features
+
+* **cdk:** accept display settings keys ([402edf4](https://github.com/yusufaf/nba-central/commit/402edf4d14d011b3503939abb34c4e165509a9fb)), closes [#124](https://github.com/yusufaf/nba-central/issues/124)
+* **cdk:** accept display.theme in user settings ([ca0687d](https://github.com/yusufaf/nba-central/commit/ca0687da8a8e712631a4a8916b794199f0333d06)), closes [#125](https://github.com/yusufaf/nba-central/issues/125)
+* **cdk:** accept team builder settings keys ([05b5d18](https://github.com/yusufaf/nba-central/commit/05b5d184fd05ccdd914e6054289d14e6e8bd0589))
+* **cdk:** add custom arenas and their image endpoint ([e79ffac](https://github.com/yusufaf/nba-central/commit/e79ffacb41b6e19257663db02c4e640d1e47bb24)), closes [#116](https://github.com/yusufaf/nba-central/issues/116)
+* **cdk:** add endpoints to export and delete a user's data ([b2e254a](https://github.com/yusufaf/nba-central/commit/b2e254a2b0bd4306334d1f3419d14f6bafb1f7af))
+* **cdk:** add profile stats, avatar upload and the avatar setting ([a1db254](https://github.com/yusufaf/nba-central/commit/a1db254a147d5eda2f829d66b3ac9c176cca9721))
+* **cdk:** add user settings API and remove the Clerk-era save-data route ([0d7d0e3](https://github.com/yusufaf/nba-central/commit/0d7d0e32e6c87d8bbaf95925b632ce178c714cf9)), closes [#122](https://github.com/yusufaf/nba-central/issues/122)
+* **cdk:** send feedback email via SES ([#83](https://github.com/yusufaf/nba-central/issues/83)) ([5ee5797](https://github.com/yusufaf/nba-central/commit/5ee5797d0bb2db5db1964233ee1e324facb66504)), closes [#54](https://github.com/yusufaf/nba-central/issues/54)
+* **cdk:** take only a PNG for an arena's court drawing ([343f3be](https://github.com/yusufaf/nba-central/commit/343f3beb4012cf76bd14c7ffc9632a5edb254678)), closes [#118](https://github.com/yusufaf/nba-central/issues/118)
+* serve historical logos from the assets CDN ([#96](https://github.com/yusufaf/nba-central/issues/96)) ([1ec96bc](https://github.com/yusufaf/nba-central/commit/1ec96bcf55ec1b341b1c6e429ee6e9d45ce5b2c5)), closes [#66](https://github.com/yusufaf/nba-central/issues/66)
+* share loop — public team pages, share cards, remix ([#106](https://github.com/yusufaf/nba-central/issues/106)) ([48337ec](https://github.com/yusufaf/nba-central/commit/48337ec388f3882caee3403e906df91f1afeef4c))
+* **web:** add settings page with server-synced preferences ([19552d3](https://github.com/yusufaf/nba-central/commit/19552d3113244e7dc1e2be322ad92eeac51e3d11)), closes [#122](https://github.com/yusufaf/nba-central/issues/122)
+
+
+### Bug Fixes
+
+* **cdk:** key news rows on URL so re-published stories overwrite themselves ([#93](https://github.com/yusufaf/nba-central/issues/93)) ([a12d7cf](https://github.com/yusufaf/nba-central/commit/a12d7cf38a9ea7975e61d3e2b8f71698c4288560)), closes [#92](https://github.com/yusufaf/nba-central/issues/92)
+* **cdk:** make the first settings upload create-only ([0dd72f3](https://github.com/yusufaf/nba-central/commit/0dd72f3bc02b89e571ae14e904a76d8de97ee14a))
+* **cdk:** three real-run bugs in refresh-historical-jerseys, upload real images ([#68](https://github.com/yusufaf/nba-central/issues/68)) ([c03e6f1](https://github.com/yusufaf/nba-central/commit/c03e6f1b9c5550171dc489cc1acac207b67bc3b8))
+* derive S3 file-lambda owner from authorizer sub, not the request body ([#61](https://github.com/yusufaf/nba-central/issues/61)) ([c64be7c](https://github.com/yusufaf/nba-central/commit/c64be7ce40cde4bc640d869d7919c608eee29694))
+* **web:** keep settings saves in order and never stall on a missing account ([eacbd95](https://github.com/yusufaf/nba-central/commit/eacbd955ad257b73fde7f3f7a70acfdd3ff3ef19))
+* **web:** serve the hero video from the assets CDN, not Git LFS ([#82](https://github.com/yusufaf/nba-central/issues/82)) ([779006f](https://github.com/yusufaf/nba-central/commit/779006f659859f7ef1591d77c13b4ba2786cb83e))
+
 ## [0.1.1](https://github.com/yusufaf/nba-central/compare/cdk-v0.1.0...cdk-v0.1.1) (2026-09-04)
 
 
