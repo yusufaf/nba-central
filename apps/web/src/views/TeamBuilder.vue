@@ -3,6 +3,10 @@ import { ref, computed, watch, toRaw, provide, type Ref } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { toast } from 'vue-sonner';
 import axios from 'axios';
+import { until } from "@vueuse/core";
+import { useLogto } from "@logto/vue";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { Button } from "@/components/ui/button";
 import PageTitle from "@/components/PageTitle.vue";
 import PageShell from "@/layouts/PageShell.vue";
 import TeamBuilderHeader from "@/components/TeamBuilder/TeamBuilderHeader.vue";
@@ -18,7 +22,18 @@ import {
     swapMapEntries,
     swapSetMembers,
 } from "@/composables/useRosterDragDrop";
-import { serializeTeam, hydrateTeam, remixTitle } from "@/composables/useTeamPersistence";
+import {
+    serializeTeam,
+    hydrateTeam,
+    remixTitle,
+    type HydratedTeam,
+} from "@/composables/useTeamPersistence";
+import {
+    RESUME_SAVE_QUERY,
+    discardPendingSave,
+    stashPendingSave,
+    readPendingSave,
+} from "@/composables/usePendingSave";
 import {
     useTeamHistory,
     snapshotBuilder,
@@ -45,6 +60,11 @@ import type { GetPlayerStatsResponse } from "@/models/api";
 const route = useRoute();
 const router = useRouter();
 const userTeamsStore = useUserTeamsStore();
+const { isAuthenticated, isLoading: authLoading } = useLogto();
+
+// Save needs an account. Signed out, it asks first rather than sending a
+// request the API would refuse.
+const showSignInToSave = ref(false);
 
 // Set once a team is loaded from /teams (route query `team`) or freshly
 // saved. Present means saveTeam() updates that team in place; absent means
@@ -502,8 +522,8 @@ const resetTeam = () => {
     showUndoToast("Team cleared successfully", entryId);
 };
 
-const saveTeam = () => {
-    const payload = serializeTeam({
+const buildSavePayload = () =>
+    serializeTeam({
         teamName: teamName.value,
         teamDescription: teamDescription.value || "Custom NBA Team",
         teamCity: teamCity.value,
@@ -516,6 +536,17 @@ const saveTeam = () => {
         teamGM: teamGM.value,
     });
 
+const saveTeam = async () => {
+    // Before the session has loaded, isAuthenticated is false for everyone.
+    if (authLoading.value) await until(authLoading).toBe(false);
+    if (!isAuthenticated.value) {
+        showSignInToSave.value = true;
+        track("save_sign_in_prompted", { playerCount: selectedPlayersData.value.size });
+        return;
+    }
+
+    const payload = buildSavePayload();
+
     const existingUUID = loadedTeamUUID.value;
 
     toast.promise(
@@ -524,6 +555,8 @@ const saveTeam = () => {
                 ? await userTeamsStore.update({ ...payload, teamUUID: existingUUID })
                 : await userTeamsStore.save(payload);
             loadedTeamUUID.value = saved.teamUUID;
+            // Saved: whatever was kept for a sign-in has done its job.
+            discardPendingSave();
             // Every snapshot predates the team existing; undoing to one
             // would detach the builder and the next Save would duplicate it.
             if (!existingUUID) forgetHistory();
@@ -533,7 +566,9 @@ const saveTeam = () => {
             // refresh still knows to update this team rather than create
             // a duplicate on the next save.
             if (!existingUUID) {
-                router.replace({ query: { ...route.query, remix: undefined, team: saved.teamUUID } });
+                router.replace({
+                    query: { ...route.query, remix: undefined, resume: undefined, team: saved.teamUUID },
+                });
             }
             if (isPublic.value) {
                 await setPublished(true, { silent: true });
@@ -652,6 +687,20 @@ const downloadCard = async () => {
 };
 
 // Loading an existing team via ?team=<uuid> (e.g. from /teams). Metadata
+// A hydrated team's details into the builder. Its roster is separate: each
+// slot streams its career stats in through loadPlayerIntoSlot.
+const applyHydratedTeam = (hydrated: HydratedTeam, name = hydrated.teamName) => {
+    teamName.value = name;
+    teamDescription.value = hydrated.teamDescription;
+    teamCity.value = hydrated.teamCity;
+    teamCountry.value = hydrated.teamCountry;
+    teamLogo.value = hydrated.teamLogo;
+    teamJersey.value = hydrated.teamJersey;
+    teamCoach.value = hydrated.teamCoach;
+    teamArena.value = hydrated.teamArena;
+    teamGM.value = hydrated.teamGM;
+};
+
 // restores synchronously; each roster slot then streams its career stats in
 // through loadPlayerIntoSlot, same as adding a player fresh.
 const loadTeamFromRoute = async (teamUUID: string) => {
@@ -670,15 +719,7 @@ const loadTeamFromRoute = async (teamUUID: string) => {
         isPublic.value = response.data.public ?? false;
         cardUrl.value = response.data.cardUrl ?? null;
         teamOwner.value = response.data.username ?? "";
-        teamName.value = hydrated.teamName;
-        teamDescription.value = hydrated.teamDescription;
-        teamCity.value = hydrated.teamCity;
-        teamCountry.value = hydrated.teamCountry;
-        teamLogo.value = hydrated.teamLogo;
-        teamJersey.value = hydrated.teamJersey;
-        teamCoach.value = hydrated.teamCoach;
-        teamArena.value = hydrated.teamArena;
-        teamGM.value = hydrated.teamGM;
+        applyHydratedTeam(hydrated);
 
         await Promise.all(
             Array.from(hydrated.players.entries()).map(([slot, player]) =>
@@ -693,8 +734,8 @@ const loadTeamFromRoute = async (teamUUID: string) => {
 
 // Remixing a public team (/teambuilder?remix=<uuid>): same hydration as
 // loading your own, but loadedTeamUUID stays null so the first Save
-// creates a new team under the remixer. Works signed out; Save prompts
-// login as it always has.
+// creates a new team under the remixer. Works signed out; Save asks the
+// visitor to sign in first and finishes the save when they are back.
 const loadRemixFromRoute = async (teamUUID: string) => {
     // Cleared before the fetch, not just on failure: the axios instance's
     // default validateStatus makes a 404 reject rather than resolve with
@@ -709,15 +750,7 @@ const loadRemixFromRoute = async (teamUUID: string) => {
         }
         const hydrated = hydrateTeam(response.data);
         forgetHistory();
-        teamName.value = remixTitle(hydrated.teamName);
-        teamDescription.value = hydrated.teamDescription;
-        teamCity.value = hydrated.teamCity;
-        teamCountry.value = hydrated.teamCountry;
-        teamLogo.value = hydrated.teamLogo;
-        teamJersey.value = hydrated.teamJersey;
-        teamCoach.value = hydrated.teamCoach;
-        teamArena.value = hydrated.teamArena;
-        teamGM.value = hydrated.teamGM;
+        applyHydratedTeam(hydrated, remixTitle(hydrated.teamName));
         await Promise.all(
             Array.from(hydrated.players.entries()).map(([slot, player]) =>
                 loadPlayerIntoSlot(slot, player).done,
@@ -734,6 +767,58 @@ const loadRemixFromRoute = async (teamUUID: string) => {
     }
 };
 
+// Sign-in is a full-page trip to Logto, which wipes the builder, so the team
+// is stashed first. If it can't be, say so rather than lose it silently.
+const signInToSave = (destination: "/login" | "/sign-up") => {
+    if (!stashPendingSave(buildSavePayload())) {
+        toast.error("Your browser is blocking storage, so the team can't be kept while you sign in.");
+        return;
+    }
+    showSignInToSave.value = false;
+    router.push(destination);
+};
+
+// The other half of signing in to save: Callback.vue sends the user back here
+// with ?resume=save. The team they were building is read from storage, put
+// into the builder and saved. The draft stays until the save succeeds, so a
+// failed save is one click, or one refresh, from another try.
+const resumePendingSave = async () => {
+    // The user can move on while the session or the players load; whatever
+    // they moved to has the builder now.
+    const stillResuming = () => route.query.resume === RESUME_SAVE_QUERY;
+    clearBuilderState();
+    if (authLoading.value) await until(authLoading).toBe(false);
+    if (!stillResuming()) return;
+    // Landed here signed out (a refreshed or shared link): drop the flag. The
+    // route change below clears the builder and discards the draft.
+    if (!isAuthenticated.value) {
+        router.replace({ query: { ...route.query, resume: undefined } });
+        return;
+    }
+    const draft = readPendingSave();
+    if (!draft) {
+        router.replace({ query: { ...route.query, resume: undefined } });
+        toast.info("That team is no longer waiting to be saved. Build it again and Save.");
+        return;
+    }
+    try {
+        const hydrated = hydrateTeam(draft);
+        applyHydratedTeam(hydrated);
+        await Promise.all(
+            Array.from(hydrated.players.entries()).map(([slot, player]) =>
+                loadPlayerIntoSlot(slot, player).done,
+            ),
+        );
+    } catch (err) {
+        console.error("Error restoring team after sign-in:", err);
+        toast.error("Signed in, but the team couldn't be restored. Build it again and Save.");
+        return;
+    }
+    if (!stillResuming()) return;
+    track("save_resumed", { playerCount: draft.roster.length });
+    void saveTeam();
+};
+
 // Watches route.query.team/remix rather than onMounted alone: navigating
 // between /teambuilder?team=A and a bare /teambuilder (e.g. the nav bar's
 // "Team Builder" link) matches the same route record, so Vue Router reuses
@@ -744,10 +829,18 @@ const loadRemixFromRoute = async (teamUUID: string) => {
 // independently - a single getter would return a new array identity on
 // every navigation and fire the callback even when neither param changed.
 watch(
-    [() => route.query.team, () => route.query.remix],
-    ([teamUUID, remixUUID]) => {
+    [() => route.query.team, () => route.query.remix, () => route.query.resume],
+    ([teamUUID, remixUUID, resume]) => {
+        // Leaving the builder changes the query too (to /login, say); that is
+        // not a visit to discard anything for.
+        if (route.name !== "teamBuilder") return;
+        // Anything but the way back from sign-in leaves a stashed draft stale: it
+        // must not be saved by a later, unrelated sign-in.
+        if (resume !== RESUME_SAVE_QUERY) discardPendingSave();
         if (typeof teamUUID === "string" && teamUUID) {
             loadTeamFromRoute(teamUUID);
+        } else if (resume === RESUME_SAVE_QUERY) {
+            resumePendingSave();
         } else if (typeof remixUUID === "string" && remixUUID) {
             loadRemixFromRoute(remixUUID);
         } else {
@@ -845,6 +938,26 @@ watch(
                 </div>
             </div>
         </PageShell>
+
+        <ConfirmDialog
+            v-model:open="showSignInToSave"
+            title="Sign in to save your team"
+            description="Saving needs an account. Your team is kept in this tab while you sign in, and saved as soon as you are back."
+            confirm-text="Sign in"
+            @confirm="signInToSave('/login')"
+        >
+            <p class="text-sm text-muted-foreground">
+                New here?
+                <Button
+                    variant="link"
+                    class="h-auto p-0"
+                    data-testid="sign-up-to-save"
+                    @click="signInToSave('/sign-up')"
+                >
+                    Create an account
+                </Button>
+            </p>
+        </ConfirmDialog>
 
         <!-- Add Player Dialog -->
         <AddPlayerDialog

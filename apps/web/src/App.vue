@@ -14,6 +14,7 @@ import {
 } from '@/composables/useSessionExpiry';
 import { useAccountSession } from '@/composables/useCurrentUser';
 import { consumeDataDeletedFlag } from '@/composables/useAccountData';
+import { discardAbandonedPendingSave } from '@/composables/usePendingSave';
 import { applyDisplayPreferences, useResolvedTheme } from '@/composables/useDisplayPreferences';
 
 const teamsStore = useTeamsStore();
@@ -24,6 +25,7 @@ const feedbackOpen = ref(false);
 const { getApiAccessToken } = useSessionExpiry();
 setAccessTokenGetter(getApiAccessToken);
 useAccountSession();
+discardAbandonedPendingSave(window.location);
 applyDisplayPreferences();
 const theme = useResolvedTheme();
 

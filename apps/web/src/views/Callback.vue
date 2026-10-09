@@ -1,13 +1,14 @@
 <script setup lang="ts">
 import { useHandleSignInCallback } from '@logto/vue';
 import { useRouter } from 'vue-router';
+import { signInReturnRoute } from '@/composables/usePendingSave';
 
 const router = useRouter();
 
-// Completes the OIDC authorization-code exchange, then returns the user to
-// where they started (or home, on first sign-in).
+// Completes the OIDC authorization-code exchange, then sends the user home,
+// or back to the builder to finish a Save they started signed out.
 const { isLoading } = useHandleSignInCallback(() => {
-    router.push('/');
+    router.push(signInReturnRoute());
 });
 </script>
 
