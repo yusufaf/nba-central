@@ -2,7 +2,7 @@ import { describe, it, expect } from "vitest";
 import { serializeTeam, hydrateTeam, remixTitle } from "@/composables/useTeamPersistence";
 import type { SavedTeam } from "@/models/api";
 import historicalLogosData from "@/assets/data/historicalLogos.json";
-import type { HistoricalLogo } from "@/models/types";
+import type { Arena, Coach, HistoricalLogo, Player } from "@/models/types";
 
 const apiPlayer = (overrides: Record<string, any> = {}) => ({
     id: "jamesle01",
@@ -414,5 +414,33 @@ describe("hydrateTeam from a public team", () => {
         });
         expect(hydrated.teamName).toBe("Sharers");
         expect(hydrated.players.get(1)?.fullName).toBe("LeBron James");
+    });
+});
+
+describe("hydrateTeam from a stashed save", () => {
+    // A signed-out Save keeps the payload in sessionStorage across sign-in, so
+    // it comes back through JSON, not as the object that went in.
+    it("restores a payload that went through JSON, so the builder ends up as it was", () => {
+        const payload = serializeTeam({
+            teamName: "Dream Team",
+            teamDescription: "Custom NBA Team",
+            teamCity: "Seattle",
+            teamCountry: "USA",
+            teamLogo: "https://example.com/logo.png",
+            teamJersey: "",
+            selectedPlayersData: new Map([[3, apiPlayer() as unknown as Player]]),
+            teamCoach: { name: "Steve Kerr", isCustom: false } as unknown as Coach,
+            teamArena: { name: "Chase Center", location: "San Francisco, California", capacity: "18,064", openedYear: 2019 } as unknown as Arena,
+            teamGM: null,
+        });
+
+        const hydrated = hydrateTeam(JSON.parse(JSON.stringify(payload)));
+
+        expect(hydrated.teamName).toBe("Dream Team");
+        expect(hydrated.teamCity).toBe("Seattle");
+        expect(hydrated.players.get(3)?.fullName).toBe("LeBron James");
+        expect(hydrated.teamCoach).toEqual({ name: "Steve Kerr", isCustom: false });
+        expect(hydrated.teamArena).toMatchObject({ name: "Chase Center", capacity: 18064, openedYear: 2019 });
+        expect(hydrated.teamGM).toBeNull();
     });
 });

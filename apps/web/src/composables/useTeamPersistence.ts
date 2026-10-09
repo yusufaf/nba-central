@@ -111,8 +111,12 @@ export interface HydratedTeam {
     teamGM: EntityRef | null;
 }
 
+// What hydrateTeam reads: a loaded team, or the payload a signed-out Save
+// stashed (its arena is the stored ref, which a resolved arena extends).
+export type HydrateSource = SaveTeamPayload | PublicTeam;
+
 /** Inverse of serializeTeam - tolerates a null coach/GM/arena and an empty roster. */
-export const hydrateTeam = (saved: PublicTeam): HydratedTeam => {
+export const hydrateTeam = (saved: HydrateSource): HydratedTeam => {
     const players = new Map<number, Player>();
     for (const entry of saved.roster ?? []) {
         players.set(entry.slot, entry.player);
