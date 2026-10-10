@@ -21,8 +21,9 @@
                         </div>
                         <div class="shrink-0 w-12 h-12">
                             <img
+                                v-if="getTeamLogo('away')"
                                 :src="getTeamLogo('away')"
-                                :alt="awayTeam.team.displayName"
+                                alt=""
                                 class="w-full h-full object-contain rounded-lg"
                             />
                         </div>
@@ -57,8 +58,9 @@
                     <div class="flex min-w-0 flex-col items-center gap-3 flex-[1_1_40%] sm:flex-1 sm:flex-row">
                         <div class="shrink-0 w-12 h-12">
                             <img
+                                v-if="getTeamLogo('home')"
                                 :src="getTeamLogo('home')"
-                                :alt="homeTeam.team.displayName"
+                                alt=""
                                 class="w-full h-full object-contain rounded-lg"
                             />
                         </div>
