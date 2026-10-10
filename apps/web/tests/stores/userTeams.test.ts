@@ -13,10 +13,60 @@ vi.mock("@/network/api", () => ({
 
 import { useUserTeamsStore } from "@/stores/userTeams";
 import { teamApi } from "@/network/api";
+import type {
+    SavedTeam,
+    SaveTeamPayload,
+    TeamSummary,
+    UpdateTeamPayload,
+} from "@/models/api";
 
-const sampleTeams = [
-    { teamUUID: "t1", title: "Team One", playerCount: 5 },
-    { teamUUID: "t2", title: "Team Two", playerCount: 3 },
+const savedTeam = (overrides: Partial<SavedTeam> = {}): SavedTeam => ({
+    teamUUID: "t1",
+    userUUID: "u1",
+    username: "someone",
+    title: "Team One",
+    description: "",
+    city: "",
+    country: "",
+    logoUrl: "",
+    jerseyUrl: "",
+    playerCount: 0,
+    roster: [],
+    coach: null,
+    gm: null,
+    arena: null,
+    favorited: false,
+    label: "",
+    public: false,
+    lastViewed: 1,
+    createdAt: 1,
+    updatedAt: 1,
+    ...overrides,
+});
+
+const teamSummary = (overrides: Partial<TeamSummary> = {}): TeamSummary => {
+    const {
+        roster: _roster,
+        coach: _coach,
+        gm: _gm,
+        arena: _arena,
+        ...summary
+    } = savedTeam(overrides);
+    return summary;
+};
+
+const savePayload: SaveTeamPayload = {
+    title: "Team One",
+    roster: [],
+    coach: null,
+    gm: null,
+    arena: null,
+};
+const updatePayload: UpdateTeamPayload = { ...savePayload, teamUUID: "t1" };
+
+const sampleTeams: TeamSummary[] = [
+    teamSummary({ teamUUID: "t1", title: "Team One", playerCount: 5 }),
+    teamSummary({ teamUUID: "t2", title: "Team Two", playerCount: 3 }),
 ];
 
 beforeEach(() => {
@@ -29,7 +79,7 @@ describe("useUserTeamsStore.fetch", () => {
         vi.mocked(teamApi.listTeams).mockResolvedValue({
             success: true,
             data: { teams: sampleTeams },
-        } as any);
+        });
 
         const store = useUserTeamsStore();
         await store.fetch();
@@ -43,7 +93,7 @@ describe("useUserTeamsStore.fetch", () => {
         vi.mocked(teamApi.listTeams).mockResolvedValue({
             success: false,
             error: "nope",
-        } as any);
+        });
 
         const store = useUserTeamsStore();
         await store.fetch();
@@ -65,14 +115,14 @@ describe("useUserTeamsStore.fetch", () => {
 
 describe("useUserTeamsStore.save", () => {
     it("returns the created team on success", async () => {
-        const created = { teamUUID: "t1" };
+        const created = savedTeam();
         vi.mocked(teamApi.createTeam).mockResolvedValue({
             success: true,
             data: created,
-        } as any);
+        });
 
         const store = useUserTeamsStore();
-        const result = await store.save({} as any);
+        const result = await store.save(savePayload);
 
         expect(result).toEqual(created);
     });
@@ -81,23 +131,23 @@ describe("useUserTeamsStore.save", () => {
         vi.mocked(teamApi.createTeam).mockResolvedValue({
             success: false,
             error: "invalid",
-        } as any);
+        });
 
         const store = useUserTeamsStore();
-        await expect(store.save({} as any)).rejects.toThrow("invalid");
+        await expect(store.save(savePayload)).rejects.toThrow("invalid");
     });
 });
 
 describe("useUserTeamsStore.update", () => {
     it("returns the updated team on success", async () => {
-        const updated = { teamUUID: "t1", title: "Renamed" };
+        const updated = savedTeam({ title: "Renamed" });
         vi.mocked(teamApi.updateTeam).mockResolvedValue({
             success: true,
             data: updated,
-        } as any);
+        });
 
         const store = useUserTeamsStore();
-        const result = await store.update({} as any);
+        const result = await store.update(updatePayload);
 
         expect(result).toEqual(updated);
     });
@@ -106,10 +156,10 @@ describe("useUserTeamsStore.update", () => {
         vi.mocked(teamApi.updateTeam).mockResolvedValue({
             success: false,
             error: "invalid",
-        } as any);
+        });
 
         const store = useUserTeamsStore();
-        await expect(store.update({} as any)).rejects.toThrow("invalid");
+        await expect(store.update(updatePayload)).rejects.toThrow("invalid");
     });
 });
 
@@ -117,10 +167,11 @@ describe("useUserTeamsStore.remove", () => {
     it("removes the team from state on success", async () => {
         vi.mocked(teamApi.deleteTeam).mockResolvedValue({
             success: true,
-        } as any);
+            data: undefined,
+        });
 
         const store = useUserTeamsStore();
-        store.teams = sampleTeams as any;
+        store.teams = sampleTeams;
         await store.remove("t1");
 
         expect(store.teams.map((t) => t.teamUUID)).toEqual(["t2"]);
@@ -130,10 +181,10 @@ describe("useUserTeamsStore.remove", () => {
         vi.mocked(teamApi.deleteTeam).mockResolvedValue({
             success: false,
             error: "nope",
-        } as any);
+        });
 
         const store = useUserTeamsStore();
-        store.teams = sampleTeams as any;
+        store.teams = sampleTeams;
 
         await expect(store.remove("t1")).rejects.toThrow("nope");
         expect(store.teams).toEqual(sampleTeams);
@@ -143,10 +194,10 @@ describe("useUserTeamsStore.remove", () => {
 describe("useUserTeamsStore.publish", () => {
     it("returns the updated team and patches the cached summary", async () => {
         const store = useUserTeamsStore();
-        store.teams = [{ teamUUID: "t1", title: "One", public: false } as any];
+        store.teams = [teamSummary({ teamUUID: "t1", title: "One", public: false })];
         vi.mocked(teamApi.publish).mockResolvedValue({
             success: true,
-            data: { teamUUID: "t1", public: true, cardUrl: "https://cdn/x.png" } as any,
+            data: savedTeam({ public: true, cardUrl: "https://cdn/x.png" }),
         });
 
         const saved = await store.publish({ teamUUID: "t1", public: true, cardPng: "abc" });
