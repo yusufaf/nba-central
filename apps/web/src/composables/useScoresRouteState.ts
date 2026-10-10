@@ -10,6 +10,7 @@ const VIEW_VALUES = [VIEWS.DEFAULT, VIEWS.LIST];
 export interface ScoresRouteStateBounds {
     minDate: Date;
     maxDate: Date;
+    defaultDate: Date;
 }
 
 /**
@@ -45,15 +46,15 @@ export const useScoresRouteState = (bounds: ScoresRouteStateBounds) => {
                     return parsed;
                 }
             }
-            return bounds.maxDate;
+            return bounds.defaultDate;
         },
         set: (value) => {
             // v-calendar's DatePicker emits null through v-model when a
             // day without `is-required` is re-clicked to deselect it -
-            // toIsoDate(null) throws, so fall back to today rather than
+            // toIsoDate(null) throws, so fall back to the default rather than
             // crashing the page on a second click of the selected date.
             if (!(value instanceof Date)) {
-                setQuery({ date: toIsoDate(bounds.maxDate) });
+                setQuery({ date: toIsoDate(bounds.defaultDate) });
                 return;
             }
             setQuery({ date: toIsoDate(value) });
@@ -73,7 +74,7 @@ export const useScoresRouteState = (bounds: ScoresRouteStateBounds) => {
                     return !!parsed && parsed >= bounds.minDate && parsed <= bounds.maxDate;
                 })();
             if (!valid) {
-                setQuery({ date: toIsoDate(bounds.maxDate) });
+                setQuery({ date: toIsoDate(bounds.defaultDate) });
             }
         },
         { immediate: true },
