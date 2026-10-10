@@ -9,8 +9,9 @@ vi.mock("@/network/api", () => ({
 
 import { useTeamsStore } from "@/stores/teams";
 import { dataApi } from "@/network/api";
+import type { TeamData } from "@/models/api";
 
-const sampleTeams = [
+const sampleTeams: TeamData[] = [
     { abbreviation: "LAL", displayName: "Lakers", logos: [] },
     { abbreviation: "BOS", displayName: "Celtics", logos: [] },
 ];
@@ -22,7 +23,7 @@ beforeEach(() => {
 
 describe("useTeamsStore.fetchTeamLogos", () => {
     it("populates teams and clears loading on success", async () => {
-        vi.mocked(dataApi.getTeamLogos).mockResolvedValue(sampleTeams as any);
+        vi.mocked(dataApi.getTeamLogos).mockResolvedValue(sampleTeams);
 
         const store = useTeamsStore();
         await store.fetchTeamLogos();
@@ -46,7 +47,7 @@ describe("useTeamsStore.fetchTeamLogos", () => {
 describe("useTeamsStore getters", () => {
     it("sortedTeams sorts by abbreviation", () => {
         const store = useTeamsStore();
-        store.teams = sampleTeams as any;
+        store.teams = sampleTeams;
         expect(store.sortedTeams.map((t) => t.abbreviation)).toEqual([
             "BOS",
             "LAL",
@@ -55,7 +56,7 @@ describe("useTeamsStore getters", () => {
 
     it("getTeamByAbbreviation finds a team", () => {
         const store = useTeamsStore();
-        store.teams = sampleTeams as any;
+        store.teams = sampleTeams;
         expect(store.getTeamByAbbreviation("BOS")?.displayName).toBe("Celtics");
         expect(store.getTeamByAbbreviation("XXX")).toBeUndefined();
     });
