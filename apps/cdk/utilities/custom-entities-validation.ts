@@ -1,6 +1,11 @@
 import { COURT_CENTER_LOGOS, COURT_WOODS, CourtDesign } from "../models/custom-entities";
+import { isOneOf, isRecord } from "./type-guards";
 
-export const validateGMData = (data: any): { valid: boolean; error?: string } => {
+export const validateGMData = (data: unknown): { valid: boolean; error?: string } => {
+	if (!isRecord(data)) {
+		return { valid: false, error: "Invalid request body" };
+	}
+
 	if (!data.name || typeof data.name !== "string") {
 		return { valid: false, error: "Name is required and must be a string" };
 	}
@@ -15,7 +20,7 @@ export const validateGMData = (data: any): { valid: boolean; error?: string } =>
 	}
 
 	if (data.teams) {
-		for (const team of data.teams) {
+		for (const team of data.teams as unknown[]) {
 			if (typeof team !== "string" || team.length < 2 || team.length > 4) {
 				return { valid: false, error: "Each team code must be 2-4 characters" };
 			}
@@ -28,7 +33,11 @@ export const validateGMData = (data: any): { valid: boolean; error?: string } =>
 	return { valid: true };
 };
 
-export const validateCoachData = (data: any): { valid: boolean; error?: string } => {
+export const validateCoachData = (data: unknown): { valid: boolean; error?: string } => {
+	if (!isRecord(data)) {
+		return { valid: false, error: "Invalid request body" };
+	}
+
 	if (!data.name || typeof data.name !== "string") {
 		return { valid: false, error: "Name is required and must be a string" };
 	}
@@ -58,7 +67,11 @@ export const validateCoachData = (data: any): { valid: boolean; error?: string }
 	return { valid: true };
 };
 
-export const validatePlayerData = (data: any): { valid: boolean; error?: string } => {
+export const validatePlayerData = (data: unknown): { valid: boolean; error?: string } => {
+	if (!isRecord(data)) {
+		return { valid: false, error: "Invalid request body" };
+	}
+
 	if (!data.name || typeof data.name !== "string") {
 		return { valid: false, error: "Name is required and must be a string" };
 	}
@@ -117,21 +130,22 @@ const HEX_COLOUR = /^#[0-9a-fA-F]{6}$/;
 const isWholeNumberIn = (value: unknown, min: number, max: number) =>
 	Number.isInteger(value) && (value as number) >= min && (value as number) <= max;
 
-const courtError = (court: any): string | null => {
-	if (typeof court !== "object" || court === null || Array.isArray(court)) {
+const courtError = (court: unknown): string | null => {
+	if (!isRecord(court)) {
 		return "Court must be an object or null";
 	}
 	if (court.version !== 1) return "Court version must be 1";
-	if (!COURT_WOODS.includes(court.wood)) {
+	if (!isOneOf(COURT_WOODS, court.wood)) {
 		return `Court wood must be one of ${COURT_WOODS.join(", ")}`;
 	}
 	for (const field of ["paint", "apron"]) {
-		if (court[field] !== null && !HEX_COLOUR.test(court[field])) {
+		const value = court[field];
+		if (value !== null && (typeof value !== "string" || !HEX_COLOUR.test(value))) {
 			return `Court ${field} must be a #rrggbb colour or null`;
 		}
 	}
-	if (!HEX_COLOUR.test(court.lines)) return "Court lines must be a #rrggbb colour";
-	if (!COURT_CENTER_LOGOS.includes(court.centerLogo)) {
+	if (typeof court.lines !== "string" || !HEX_COLOUR.test(court.lines)) return "Court lines must be a #rrggbb colour";
+	if (!isOneOf(COURT_CENTER_LOGOS, court.centerLogo)) {
 		return `Court centre logo must be one of ${COURT_CENTER_LOGOS.join(", ")}`;
 	}
 	if (typeof court.baselineText !== "string" || court.baselineText.length > 20) {
@@ -143,8 +157,8 @@ const courtError = (court: any): string | null => {
 	return null;
 };
 
-export const validateArenaData = (data: any): { valid: boolean; error?: string } => {
-	if (typeof data !== "object" || data === null || Array.isArray(data)) {
+export const validateArenaData = (data: unknown): { valid: boolean; error?: string } => {
+	if (!isRecord(data)) {
 		return { valid: false, error: "Invalid request body" };
 	}
 
@@ -183,22 +197,25 @@ export const validateArenaData = (data: any): { valid: boolean; error?: string }
  * The stored fields of a payload that passed validateArenaData. Only known
  * keys are copied, so nothing else a client sends lands on the item.
  */
-export const toArenaFields = (data: any) => ({
-	name: (data.name as string).trim(),
-	location: ((data.location as string | undefined) ?? "").trim(),
-	capacity: (data.capacity as number | null | undefined) ?? null,
-	openedYear: (data.openedYear as number | null | undefined) ?? null,
-	court:
-		data.court == null
-			? null
-			: ({
-					version: 1,
-					wood: data.court.wood,
-					paint: data.court.paint,
-					apron: data.court.apron,
-					lines: data.court.lines,
-					centerLogo: data.court.centerLogo,
-					baselineText: data.court.baselineText,
-					sidelineText: data.court.sidelineText,
-				} satisfies CourtDesign),
-});
+export const toArenaFields = (data: Record<string, unknown>) => {
+	const court = data.court as CourtDesign | null | undefined;
+	return {
+		name: (data.name as string).trim(),
+		location: ((data.location as string | undefined) ?? "").trim(),
+		capacity: (data.capacity as number | null | undefined) ?? null,
+		openedYear: (data.openedYear as number | null | undefined) ?? null,
+		court:
+			court == null
+				? null
+				: ({
+						version: 1,
+						wood: court.wood,
+						paint: court.paint,
+						apron: court.apron,
+						lines: court.lines,
+						centerLogo: court.centerLogo,
+						baselineText: court.baselineText,
+						sidelineText: court.sidelineText,
+					} satisfies CourtDesign),
+	};
+};
