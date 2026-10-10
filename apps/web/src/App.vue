@@ -50,7 +50,7 @@ onMounted(() => {
         </main>
         <footer class="app-footer">
             <button type="button" class="footer-link" @click="feedbackOpen = true">
-                Send feedback
+                Report a bug or suggest an idea
             </button>
             <a
                 class="github-logo"

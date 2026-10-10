@@ -103,7 +103,7 @@ function handleSignOut() {
                                 class="login user-menu-trigger"
                                 data-testid="user-menu-trigger"
                             >
-                                <UserAvatar class="size-6" />
+                                <UserAvatar class="size-6 text-inherit" />
                                 <span class="max-w-40 truncate">{{ displayName }}</span>
                                 <ChevronDown class="size-4" />
                             </button>
@@ -174,7 +174,7 @@ function handleSignOut() {
                         </RouterLink>
                         <template v-else>
                             <div class="flex min-w-0 items-center gap-3">
-                                <UserAvatar class="size-10" />
+                                <UserAvatar class="size-10 text-inherit" />
                                 <div class="flex min-w-0 flex-col gap-0.5">
                                     <span class="text-[0.6875rem] font-bold uppercase tracking-[0.06em] opacity-60">
                                         Signed in as
