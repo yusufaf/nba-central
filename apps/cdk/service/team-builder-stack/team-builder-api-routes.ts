@@ -124,11 +124,6 @@ export const PAGE_ROUTES: ApiRoute[] = [
 
 export const DATA_ROUTES: ApiRoute[] = [
 	{
-		route: `${DATA_PREFIX}/get-team-logos`,
-		lambdaName: "getTeamLogos",
-		methods: [HttpMethod.GET],
-	},
-	{
 		route: `${DATA_PREFIX}/get-players`,
 		lambdaName: "getPlayers",
 		methods: [HttpMethod.GET],
