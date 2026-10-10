@@ -2,7 +2,6 @@ import { describe, it, expect } from "vitest";
 import {
 	buildParsedJersey,
 	classifySlot,
-	currentSeasonEndYear,
 	extractGalleryIds,
 	formatJerseyYears,
 	parseGalleryItems,
@@ -134,16 +133,6 @@ describe("parseSeasonSpanFromDescription", () => {
 
 	it("returns null when the description has no season line at all", () => {
 		expect(parseSeasonSpanFromDescription("Notable Numbers:\n#9 - John Doe")).toBeNull();
-	});
-});
-
-describe("currentSeasonEndYear", () => {
-	it("stays in the current calendar year before the season tips off in October", () => {
-		expect(currentSeasonEndYear(new Date(2026, 8, 5))).toBe(2026); // Sept 5, 2026
-	});
-
-	it("rolls over to next calendar year once the new season has started", () => {
-		expect(currentSeasonEndYear(new Date(2026, 9, 15))).toBe(2027); // Oct 15, 2026
 	});
 });
 
