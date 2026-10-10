@@ -46,12 +46,18 @@ describe("validateTeamData", () => {
         ["a null entry", null],
         ["a string slot", { slot: "0", player }],
         ["an empty fullName", { slot: 0, player: { fullName: "" } }],
+        ["a NaN slot", { slot: NaN, player }],
+        ["an array player", { slot: 0, player: [] }],
     ])("rejects a roster with %s", ([, entry]) => {
         expect(validateTeamData({ ...valid, roster: [entry] }).valid).toBe(false);
     });
 
     it("rejects a coach without isCustom", () => {
         expect(validateTeamData({ ...valid, coach: { name: "Phil" } }).valid).toBe(false);
+    });
+
+    it.for(["coach", "gm", "arena"])("rejects an array %s", (field) => {
+        expect(validateTeamData({ ...valid, [field]: [] }).valid).toBe(false);
     });
 
     it("rejects an arena with a non-numeric capacity", () => {
