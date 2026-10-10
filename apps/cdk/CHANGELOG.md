@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.2.1](https://github.com/yusufaf/nba-central/compare/cdk-v0.2.0...cdk-v0.2.1) (2026-10-10)
+
+
+### Bug Fixes
+
+* **cdk:** mark players active by NBA season, not calendar year ([0354223](https://github.com/yusufaf/nba-central/commit/03542239f569acb8d903873885f099a7c4d8bf11)), closes [#163](https://github.com/yusufaf/nba-central/issues/163)
+* **cdk:** remove the unused getTeamLogos Lambda and route ([5836743](https://github.com/yusufaf/nba-central/commit/58367436db3eb46ba189a8c43139aa0808332bb2))
+
 ## [0.2.0](https://github.com/yusufaf/nba-central/compare/cdk-v0.1.1...cdk-v0.2.0) (2026-10-08)
 
 
