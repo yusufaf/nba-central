@@ -480,6 +480,12 @@ h2 {
 .date {
     color: hsl(var(--primary-strong));
     font-weight: 600;
+    /* A fixed-width slot, centered text: the calendar button (and the popover
+       anchored to it) stays put as the date changes. 16.2em fits the widest
+       long date ("Wednesday, September 30, 2026" = 16.15em). The viewport cap (button +
+       gap + margin) lets it wrap on a phone instead of overflowing. */
+    width: min(16.2em, calc(100vw - 4rem));
+    text-align: center;
 }
 
 .scores-container {
