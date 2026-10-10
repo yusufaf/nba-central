@@ -21,6 +21,16 @@ describe("validateGMData", () => {
         expect(validateGMData({}).valid).toBe(false);
     });
 
+    it.for([null, 42, "Pat", []].map((body) => ({ body })))(
+        "rejects a non-object body ($body)",
+        ({ body }) => {
+            expect(validateGMData(body)).toEqual({
+                valid: false,
+                error: "Invalid request body",
+            });
+        },
+    );
+
     it("rejects a name over 100 chars", () => {
         expect(validateGMData({ name: "x".repeat(101) }).valid).toBe(false);
     });
@@ -44,6 +54,16 @@ describe("validateCoachData", () => {
     it("accepts a valid coach", () => {
         expect(validateCoachData(valid)).toEqual({ valid: true });
     });
+
+    it.for([null, 42, "Phil", []].map((body) => ({ body })))(
+        "rejects a non-object body ($body)",
+        ({ body }) => {
+            expect(validateCoachData(body)).toEqual({
+                valid: false,
+                error: "Invalid request body",
+            });
+        },
+    );
 
     it("rejects a non-number rating", () => {
         expect(validateCoachData({ ...valid, overallRating: "90" }).valid).toBe(
@@ -77,6 +97,16 @@ describe("validatePlayerData", () => {
     it("accepts a valid player", () => {
         expect(validatePlayerData(valid)).toEqual({ valid: true });
     });
+
+    it.for([null, 42, "LeBron", []].map((body) => ({ body })))(
+        "rejects a non-object body ($body)",
+        ({ body }) => {
+            expect(validatePlayerData(body)).toEqual({
+                valid: false,
+                error: "Invalid request body",
+            });
+        },
+    );
 
     it("rejects an invalid position", () => {
         expect(validatePlayerData({ ...valid, position: "QB" }).valid).toBe(false);
@@ -177,6 +207,8 @@ describe("validateArenaData", () => {
             { baselineText: "x".repeat(21) },
             { sidelineText: "x".repeat(25) },
             { sidelineText: 4 },
+            { paint: ["#5a2d82"] },
+            { lines: ["#ffffff"] },
         ];
         for (const override of bad) {
             expect(validateArenaData({ ...valid, court: { ...court, ...override } }).valid).toBe(

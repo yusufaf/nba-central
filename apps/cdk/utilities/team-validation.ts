@@ -1,6 +1,8 @@
-const isEntityRef = (value: any): boolean => {
+import { isRecord } from "./type-guards";
+
+const isEntityRef = (value: unknown): boolean => {
 	if (value === null) return true;
-	if (typeof value !== "object") return false;
+	if (!isRecord(value)) return false;
 	if (typeof value.name !== "string" || value.name.trim().length === 0) return false;
 	if (typeof value.isCustom !== "boolean") return false;
 	if (value.uuid !== undefined && typeof value.uuid !== "string") return false;
@@ -14,9 +16,9 @@ const isOptional = (value: unknown, type: "string" | "number" | "boolean") =>
 
 // Type checks only: the text of a linked custom arena is replaced from the
 // arena item on save, and resolved fields are dropped there too.
-const isArenaRef = (value: any): boolean => {
+const isArenaRef = (value: unknown): boolean => {
 	if (value === null) return true;
-	if (typeof value !== "object" || Array.isArray(value)) return false;
+	if (!isRecord(value)) return false;
 	if (typeof value.name !== "string" || value.name.trim().length === 0) return false;
 	return (
 		isOptional(value.location, "string") &&
@@ -31,12 +33,16 @@ const isArenaRef = (value: any): boolean => {
 // API and custom players carry different field sets (see PlayerSnapshot),
 // so `fullName` - always set on a player before it reaches the roster - is
 // the only field checked here.
-const isPlayerSnapshot = (value: any): boolean => {
-	if (typeof value !== "object" || value === null) return false;
+const isPlayerSnapshot = (value: unknown): boolean => {
+	if (!isRecord(value)) return false;
 	return typeof value.fullName === "string" && value.fullName.trim().length > 0;
 };
 
-export const validateTeamData = (data: any): { valid: boolean; error?: string } => {
+export const validateTeamData = (data: unknown): { valid: boolean; error?: string } => {
+	if (!isRecord(data)) {
+		return { valid: false, error: "Invalid request body" };
+	}
+
 	if (!data.title || typeof data.title !== "string") {
 		return { valid: false, error: "Title is required and must be a string" };
 	}
@@ -70,8 +76,8 @@ export const validateTeamData = (data: any): { valid: boolean; error?: string } 
 		return { valid: false, error: "Roster must be an array" };
 	}
 
-	for (const entry of data.roster) {
-		if (typeof entry !== "object" || entry === null || !Number.isFinite(entry.slot)) {
+	for (const entry of data.roster as unknown[]) {
+		if (!isRecord(entry) || !Number.isFinite(entry.slot)) {
 			return { valid: false, error: "Each roster entry must have a numeric slot" };
 		}
 		if (!isPlayerSnapshot(entry.player)) {

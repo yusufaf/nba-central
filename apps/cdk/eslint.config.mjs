@@ -39,4 +39,11 @@ export default defineConfig([
       ],
     },
   },
+  {
+    // #43's ratchet: utilities/ is at zero, so keep it there. Everything
+    // else stays "warn" until its own slice lands - see cdk/rule-tuning.
+    name: "cdk/no-explicit-any-ratchet",
+    files: ["utilities/**/*.ts"],
+    rules: { "@typescript-eslint/no-explicit-any": "error" },
+  },
 ]);
