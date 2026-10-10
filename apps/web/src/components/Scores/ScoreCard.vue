@@ -74,24 +74,33 @@ const gameTeamsSorted = computed(() => {
     });
 });
 
-const getRecordString = (teamRecords: any[], homeAway: string): string => {
-    if (!teamRecords) {
-        return "";
+/* Two short lines, not one "(1-1, 1-0 Away)" string: that wrapped at a
+   different point per row depending on digit widths, so records didn't line
+   up between rows or cards. */
+const getRecordParts = (
+    teamRecords: any[] | undefined,
+    homeAway: string,
+): { overall: string; split: string } | null => {
+    // By type, not position: ESPN labels the away split "road".
+    const overallRecord = teamRecords?.find((r) => r.type === "total");
+    if (!overallRecord) {
+        return null;
     }
-    const [overallRecord, homeRecord, awayRecord] = teamRecords;
-    let recordString = `(${overallRecord.summary}`;
-    switch (homeAway) {
-        case HOME: {
-            recordString += `, ${homeRecord.summary} Home)`;
-            break;
-        }
-        case AWAY: {
-            recordString += `, ${awayRecord.summary} Away)`;
-            break;
-        }
-    }
-    return recordString;
+    const splitRecord = teamRecords?.find(
+        (r) => r.type === (homeAway === HOME ? "home" : homeAway === AWAY ? "road" : ""),
+    );
+    return {
+        overall: overallRecord.summary,
+        split: splitRecord ? `${splitRecord.summary} ${homeAway === HOME ? "Home" : "Away"}` : "",
+    };
 };
+
+const recordsById = computed(
+    () =>
+        new Map(
+            gameTeamsSorted.value.map((c) => [c.id, getRecordParts(c.records, c.homeAway)]),
+        ),
+);
 
 const timePeriodLabels = computed(() => {
     const headerVals: string[] = [...Array(4).keys()].map((i) => `${i + 1}`);
@@ -222,12 +231,18 @@ const toggleGameNotification = (): void => {
                             :competitor-id="competitor.id"
                             :homeAway="competitor.homeAway"
                         >
-                            <span class="cursor-help">{{
-                                getRecordString(
-                                    competitor.records,
-                                    competitor.homeAway,
-                                )
-                            }}</span>
+                            <span
+                                v-if="recordsById.get(competitor.id)"
+                                class="record cursor-help"
+                            >
+                                <span class="record-overall">{{
+                                    recordsById.get(competitor.id)?.overall
+                                }}</span>
+                                <span
+                                    v-if="recordsById.get(competitor.id)?.split"
+                                    class="record-split"
+                                >{{ recordsById.get(competitor.id)?.split }}</span>
+                            </span>
                         </TeamDetailsTooltip>
                     </div>
                 </div>
@@ -515,6 +530,18 @@ const toggleGameNotification = (): void => {
 .team-info {
     display: flex;
     flex-direction: column;
+    min-width: 0;
+}
+
+.record {
+    display: flex;
+    flex-direction: column;
+    white-space: nowrap;
+}
+
+.record-split {
+    font-size: 0.8125rem;
+    color: hsl(var(--foreground) / 0.6);
 }
 
 .game-status {

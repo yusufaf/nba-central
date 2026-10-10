@@ -19,7 +19,7 @@ const mountCard = (event: unknown) => {
             gameTeams: [competition.competitors],
             customizationState: new Map(),
         },
-        global: { stubs: { TeamDetailsTooltip: true } },
+        global: { stubs: { TeamDetailsTooltip: { template: "<div><slot /></div>" } } },
     });
 };
 
@@ -58,5 +58,36 @@ describe("ScoreCard", () => {
         expect(slots).toHaveLength(2);
         expect(slots[0].text()).toBe("");
         expect(slots[1].text()).toContain("T. Maxey - G");
+    });
+
+    // "(45-37, 23-18 Home)" used to be one string that wrapped at a different
+    // point in each row, so records didn't line up. Now two fixed lines.
+    it("shows each record as an overall line and a home/away line", () => {
+        const rows = mountCard(finalEvent).findAll(".team-info");
+
+        expect(rows.map((r) => r.find(".record-overall").text())).toEqual(["45-37", "45-37"]);
+        expect(rows.map((r) => r.find(".record-split").text())).toEqual(["19-20 Away", "23-18 Home"]);
+    });
+
+    it("finds records by type and omits the split line when it is missing", () => {
+        const e = finalEvent as unknown as { competitions: { competitors: ESPNCompetitor[] }[] };
+        const [home, away] = e.competitions[0].competitors;
+        const reordered = {
+            ...e,
+            competitions: [
+                {
+                    ...e.competitions[0],
+                    competitors: [
+                        { ...home, records: [...home.records!].reverse() },
+                        { ...away, records: home.records!.slice(0, 1) },
+                    ],
+                },
+            ],
+        };
+        const rows = mountCard(reordered).findAll(".team-info");
+
+        expect(rows[0].find(".record-split").exists()).toBe(false);
+        expect(rows[0].find(".record-overall").text()).toBe("45-37");
+        expect(rows[1].find(".record-split").text()).toBe("23-18 Home");
     });
 });

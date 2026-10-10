@@ -221,6 +221,8 @@ export type ESPNTeamInfo = {
     venue: ESPNVenue;
     links: ESPNLink[];
     logo: string;
+    // The summary endpoint's header competitors send `logo: null` and this instead.
+    logos?: { href: string; rel: string[] }[];
 };
 
 export type ESPNPosition = {
