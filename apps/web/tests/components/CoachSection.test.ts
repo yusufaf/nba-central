@@ -1,8 +1,7 @@
-import { describe, it, expect, afterEach } from "vitest";
+import { describe, it, expect, afterEach, vi } from "vitest";
 import { mount } from "@vue/test-utils";
 import { nextTick } from "vue";
 import CoachSection from "@/components/TeamBuilder/CoachSection.vue";
-import { CURRENT_SEASON_START_YEAR } from "@/constants/constants";
 import coachesData from "@/assets/data/coaches.json";
 
 // Sheet and DropdownMenu both portal their content to document.body via
@@ -38,16 +37,20 @@ const coachNames = () =>
 describe("CoachSection filters", () => {
     afterEach(() => {
         document.body.innerHTML = "";
+        vi.useRealTimers();
     });
 
-    it("narrows the list when 'Current Season Only' is ticked, instead of doing nothing", async () => {
+    it("narrows the list to the season that started Oct 1 when 'Current Season Only' is ticked, instead of doing nothing", async () => {
         // Regression test: fixing the dead :checked/@update:checked binding
         // made this checkbox tick and count, but filteredCoachesData's
         // predicate only ever branched on 'Hall of Famer' - 'Current
         // Season Only' was listed in COACH_FILTERS yet had no matching
         // branch, so ticking it silently changed nothing.
+        const latestTo = Math.max(...(coachesData as { to: number }[]).map((c) => c.to));
+        vi.useFakeTimers({ toFake: ["Date"] });
+        vi.setSystemTime(new Date(latestTo - 1, 9, 1)); // Oct 1 of the latest season's start
         const expectedCount = (coachesData as { to: number }[]).filter(
-            (c) => c.to === CURRENT_SEASON_START_YEAR + 1,
+            (c) => c.to === latestTo,
         ).length;
         expect(expectedCount).toBeGreaterThan(0);
 
