@@ -23,7 +23,6 @@ import {
 // (which paths are public vs. authenticated) is fully decidable without
 // touching that async path.
 const PUBLIC_ROUTE_PATHS = [
-	"/api/data/get-team-logos",
 	"/api/data/get-players",
 	"/api/data/get-player-stats",
 	"/api/news/get",
@@ -72,8 +71,9 @@ describe("team-builder-api-routes", () => {
 		// gave way to the two settings routes (get, update): 31. The profile
 		// card's stats and avatar upload routes make 33, and the data export
 		// and delete routes 35. Custom arenas (#116) add CRUD plus the image
-		// upload and delete routes: 41.
-		expect(publicPaths.size + privatePaths.size).toBe(41);
+		// upload and delete routes: 41. Removing the unused get-team-logos
+		// route (#165) leaves 40.
+		expect(publicPaths.size + privatePaths.size).toBe(40);
 	});
 
 	it("the user routes are private, with GET for reads, PUT for writes and DELETE for the delete", () => {

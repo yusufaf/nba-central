@@ -92,7 +92,6 @@ Entry point: `bin/team-builder-cdk.ts` loads env vars from dotenv.
   settings, share cards, avatar, arena images). Keyed only by the authorizer's sub; the
   Logto account is never touched
 - S3 multipart upload flow: `initiateMultipartUpload`, `getMultipartSignedUploadUrls`, `completeMultipartUpload`, `deleteFile`
-- `getTeamLogos`: fetch ESPN API for NBA team logos
 - `getPlayers`, `getPlayerStats`: player data + 2K ratings, merged from `players.json` and `player-ratings.json`
 - `getNews`: reads news articles fetched by `fetchNewsCron`
 - `sendFeedback`: emails the site owner via SES (sending identity is in

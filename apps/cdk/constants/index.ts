@@ -9,7 +9,6 @@ export const SITE_URL = `https://${WEB_DOMAIN_NAME}`;
 
 export const ESPN_API_BASE_URL = "https://site.api.espn.com/apis/site/v2/sports/basketball/nba";
 
-export const ESPN_TEAMS_URL = `${ESPN_API_BASE_URL}/teams/`;
 export const ESPN_NEWS_URL = `${ESPN_API_BASE_URL}/news`;
 
 // Basketball-Reference — free, complete all-time history for both the player
