@@ -286,24 +286,6 @@ export type SendFeedbackResponse = ApiResult<{ messageId: string }>;
 // #endregion
 
 //#region Data API Types
-export interface TeamLogo {
-    alt: string;
-    height: number;
-    href: string;
-    lastUpdated: string;
-    rel: string[];
-    width: number;
-}
-
-export interface TeamData {
-    abbreviation: string;
-    displayName: string;
-    logos: TeamLogo[];
-}
-
-// The Lambda returns a bare array, not { teams: [...] }.
-export type GetTeamLogosResponse = TeamData[];
-
 export interface GetPlayersParams {
     search?: string;
     position?: string;

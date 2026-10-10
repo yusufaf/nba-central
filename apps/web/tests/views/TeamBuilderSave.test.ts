@@ -26,7 +26,6 @@ vi.mock('vue-sonner', () => ({
 vi.mock('@/network/api', () => ({
     dataApi: {
         getPlayerStats: vi.fn(async () => ({ success: true, data: [], ratingHistory: [] })),
-        getTeamLogos: vi.fn(async () => []),
     },
     teamApi: {
         createTeam: vi.fn(),

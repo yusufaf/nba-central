@@ -13,9 +13,7 @@ interface UserTeamsState {
     error: string | null;
 }
 
-// Separate from `stores/teams.ts`, which owns the 30 NBA franchises' logos
-// and is fetched by every visitor, signed in or not. This store is the
-// signed-in user's own saved teams - a different "teams" entirely.
+// The signed-in user's own saved teams.
 export const useUserTeamsStore = defineStore("userTeams", {
     state: (): UserTeamsState => ({
         teams: [],

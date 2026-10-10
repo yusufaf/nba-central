@@ -130,7 +130,7 @@ and the constraints enforced by `pnpm --filter web check:styles`.
 - `src/components/ui/`: vendored shadcn-vue wrappers over reka-ui primitives
 - `src/components/TeamBuilder/`: Feature components (CoachSection, ArenaSection, etc.)
 - `src/network/api.ts`: Axios client with API methods (fileApi, settingsApi, teamApi, dataApi)
-- `src/stores/`: Pinia stores (teams.ts)
+- `src/stores/`: Pinia stores (userTeams.ts)
 - `src/models/`: TypeScript types (types.ts, api.ts)
 - `src/assets/data/`: Static JSON (coaches, arenas, execs, countries, historicalLogos, historicalJerseys)
 
@@ -193,7 +193,7 @@ shared identity provider also used by Quizaroni. No Cognito, no Clerk.
 
 A handful of read-only routes (`/api/data/*`, `/api/news/get`,
 `/api/teams/public/{teamUUID}`, `/t/{teamUUID}`) skip the authorizer entirely
-— `App.vue` calls the first two on every page load, signed in or not; the
+— the first two serve every visitor, signed in or not; the
 last two are how a published team is viewed and unfurled by anyone, including
 crawlers with no session at all.
 

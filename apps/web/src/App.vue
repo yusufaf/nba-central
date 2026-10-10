@@ -4,7 +4,6 @@ import { onMounted, ref } from 'vue';
 import { toast } from 'vue-sonner';
 import AppHeader from "./views/Header.vue";
 import FeedbackDialog from "@/components/FeedbackDialog.vue";
-import { useTeamsStore } from '@/stores/teams';
 import { Sonner } from "@/components/ui/sonner";
 import { setAccessTokenGetter } from '@/network/api';
 import {
@@ -17,7 +16,6 @@ import { consumeDataDeletedFlag } from '@/composables/useAccountData';
 import { discardAbandonedPendingSave } from '@/composables/usePendingSave';
 import { applyDisplayPreferences, useResolvedTheme } from '@/composables/useDisplayPreferences';
 
-const teamsStore = useTeamsStore();
 const feedbackOpen = ref(false);
 
 // useLogto() only works inside a component's setup context, so the api.ts
@@ -36,11 +34,10 @@ if (consumeDataDeletedFlag()) {
     void router.replace({ name: 'data-deleted' });
 }
 
-onMounted(async () => {
+onMounted(() => {
     if (consumeSessionExpiredFlag()) {
         toast.error(SESSION_EXPIRED_MESSAGE);
     }
-    await teamsStore.fetchTeamLogos();
 });
 </script>
 
