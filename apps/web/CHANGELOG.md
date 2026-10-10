@@ -1,5 +1,22 @@
 # Changelog
 
+## [0.5.0](https://github.com/yusufaf/nba-central/compare/web-v0.4.0...web-v0.5.0) (2026-10-10)
+
+
+### Features
+
+* **scores:** allow selecting scheduled future dates ([4da4295](https://github.com/yusufaf/nba-central/commit/4da4295946941a77ad91bd3bf81375079faeee9f))
+* **web:** keep a signed-out team through sign-in and save it on return ([caae699](https://github.com/yusufaf/nba-central/commit/caae69924522688c7e4a49c15545e5f172b10e0d))
+
+
+### Bug Fixes
+
+* **scores:** keep the date picker button from shifting between dates ([39333aa](https://github.com/yusufaf/nba-central/commit/39333aab5742e43bc8a7f1d4f2b0965bb70f8c8b))
+* **web:** align score card records and show game logos before tip-off ([c3f956e](https://github.com/yusufaf/nba-central/commit/c3f956e4c8f3488cf76628da5beb573fa1b443ee))
+* **web:** match the header avatar icon to the name, reword feedback link ([ffe3304](https://github.com/yusufaf/nba-central/commit/ffe3304a01da2218f311c10aee10e195c35a92c5))
+* **web:** roll the current season over on Oct 1, not Jan 1 ([60b7d46](https://github.com/yusufaf/nba-central/commit/60b7d469a89a287aae99b3e758e73f6e1a296708)), closes [#163](https://github.com/yusufaf/nba-central/issues/163)
+* **web:** stop fetching team logos on every page load ([f0d50c2](https://github.com/yusufaf/nba-central/commit/f0d50c2fc674ee7a1ee40b1c12d9ebbcccae1779))
+
 ## [0.4.0](https://github.com/yusufaf/nba-central/compare/web-v0.3.0...web-v0.4.0) (2026-10-08)
 
 
