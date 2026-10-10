@@ -2,7 +2,6 @@ import { EventBridgeEvent, Handler } from "aws-lambda";
 import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
 import fetch from "node-fetch";
 import * as cheerio from "cheerio";
-import { currentSeasonEndYear } from "utilities/season";
 
 const { BBREF_BASE_URL = "", staticDataBucket = "" } = process.env;
 
@@ -13,6 +12,17 @@ const REQUEST_DELAY_MS = 2800;
 const LETTERS = "abcdefghijklmnopqrstuvwxyz".split("");
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
+// BBRef bumps a player's year_max only after their first game of the season,
+// and opening night falls in mid-to-late October. Rolling over on Nov 1 rather
+// than the Oct 1 season rollover keeps last season's players active through
+// the preseason and the first week or so of games.
+const ACTIVE_ROLLOVER_MONTH = 10; // November, 0-based like Date#getMonth
+
+export const activeSeasonEndYear = (now: Date = new Date()): number =>
+	now.getMonth() >= ACTIVE_ROLLOVER_MONTH
+		? now.getFullYear() + 1
+		: now.getFullYear();
 
 interface NormalizedPlayer {
 	id: string;
@@ -82,7 +92,7 @@ export const handler: Handler = async (
 	console.log(JSON.stringify({ event, context }, null, 4));
 
 	try {
-		const seasonEndYear = currentSeasonEndYear();
+		const seasonEndYear = activeSeasonEndYear();
 		const byId = new Map<string, NormalizedPlayer>();
 
 		for (const letter of LETTERS) {
