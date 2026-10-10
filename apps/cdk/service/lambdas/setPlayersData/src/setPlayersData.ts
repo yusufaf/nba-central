@@ -2,6 +2,7 @@ import { EventBridgeEvent, Handler } from "aws-lambda";
 import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
 import fetch from "node-fetch";
 import * as cheerio from "cheerio";
+import { currentSeasonEndYear } from "utilities/season";
 
 const { BBREF_BASE_URL = "", staticDataBucket = "" } = process.env;
 
@@ -36,7 +37,7 @@ const parseHeight = (h: string): [number | null, number | null] => {
 	];
 };
 
-const parsePage = (html: string, currentYear: number): NormalizedPlayer[] => {
+export const parsePage = (html: string, seasonEndYear: number): NormalizedPlayer[] => {
 	const $ = cheerio.load(html);
 	const players: NormalizedPlayer[] = [];
 
@@ -67,7 +68,7 @@ const parsePage = (html: string, currentYear: number): NormalizedPlayer[] => {
 			height_feet,
 			height_inches,
 			weight_pounds: Number.isFinite(weight) ? weight : null,
-			active: Number.isFinite(yearMax) ? yearMax >= currentYear : false,
+			active: Number.isFinite(yearMax) ? yearMax >= seasonEndYear : false,
 		});
 	});
 
@@ -81,7 +82,7 @@ export const handler: Handler = async (
 	console.log(JSON.stringify({ event, context }, null, 4));
 
 	try {
-		const currentYear = new Date().getFullYear();
+		const seasonEndYear = currentSeasonEndYear();
 		const byId = new Map<string, NormalizedPlayer>();
 
 		for (const letter of LETTERS) {
@@ -99,7 +100,7 @@ export const handler: Handler = async (
 					console.error(`/players/${letter}/ -> ${res.status}`);
 				} else {
 					const html = await res.text();
-					for (const p of parsePage(html, currentYear)) {
+					for (const p of parsePage(html, seasonEndYear)) {
 						byId.set(p.id, p);
 					}
 				}

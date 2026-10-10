@@ -17,6 +17,7 @@
  * RawGalleryItem shape so every downstream parser is shared.
  */
 import * as cheerio from "cheerio";
+import { currentSeasonEndYear } from "../../utilities/season";
 
 export interface RawGalleryItem {
 	mediaUrl: string;
@@ -171,16 +172,6 @@ export const parseSeasonSpanFromDescription = (description: string): SeasonSpan 
 		endYear: seasonEndYear(seasons[seasons.length - 1]),
 	};
 };
-
-/**
- * The end year of whatever NBA season is current right now. The season
- * starts in October, so a calendar year only IS a season's end year once
- * that season has actually tipped off - from January through September, the
- * season in progress (or most recently finished) still ends in the current
- * calendar year, not next year's.
- */
-export const currentSeasonEndYear = (now: Date = new Date()): number =>
-	now.getMonth() >= 9 ? now.getFullYear() + 1 : now.getFullYear();
 
 /**
  * Falls back to the year range embedded in a title/de-slugged title itself,
