@@ -20,6 +20,7 @@ import { useScoresRouteState } from "@/composables/useScoresRouteState";
 import { useDateFormat } from "@/composables/useDateFormat";
 import { useResolvedTheme } from "@/composables/useDisplayPreferences";
 import { formatDateForEspn, isSameDay } from "@/utils/date";
+import { latestScheduleDate } from "@/utils/season";
 import OptionsMenu from "@/components/Scores/OptionsMenu.vue";
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -35,10 +36,12 @@ const scoreData = ref<ESPNScoreboardResponse | null>(null);
 /* ==== Dates === */
 const today = new Date();
 const minDate = new Date("2000/01/01");
+const maxDate = latestScheduleDate(today);
 
 const { selectedDate, conferenceFilter, selectedView } = useScoresRouteState({
     minDate,
-    maxDate: today,
+    maxDate,
+    defaultDate: today,
 });
 
 const gameCounts = ref<Map<string, number>>(new Map());
@@ -356,7 +359,7 @@ onMounted(async () => {
                         <PopoverContent class="date-picker-popover w-auto p-0">
                             <DatePicker
                                 v-model="selectedDate"
-                                :max-date="today"
+                                :max-date="maxDate"
                                 :min-date="minDate"
                                 mode="date"
                                 color="orange"

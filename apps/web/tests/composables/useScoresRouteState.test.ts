@@ -7,6 +7,8 @@ import { useScoresRouteState } from "@/composables/useScoresRouteState";
 // Fixed "today" so assertions don't depend on when the suite runs.
 const TODAY = new Date(2026, 5, 8);
 const MIN_DATE = new Date(2000, 0, 1);
+// Latest selectable day: well after TODAY so default and max are distinct.
+const MAX_DATE = new Date(2027, 5, 30);
 
 const mountWithRoute = async (initialQuery: Record<string, string> = {}) => {
     const router = createRouter({
@@ -17,7 +19,7 @@ const mountWithRoute = async (initialQuery: Record<string, string> = {}) => {
     let state!: ReturnType<typeof useScoresRouteState>;
     const TestComponent = defineComponent({
         setup() {
-            state = useScoresRouteState({ minDate: MIN_DATE, maxDate: TODAY });
+            state = useScoresRouteState({ minDate: MIN_DATE, maxDate: MAX_DATE, defaultDate: TODAY });
             return () => null;
         },
     });
@@ -36,7 +38,7 @@ describe("useScoresRouteState", () => {
         localStorage.clear();
     });
 
-    it("defaults to maxDate and writes it into the URL when ?date is absent", async () => {
+    it("defaults to defaultDate and writes it into the URL when ?date is absent", async () => {
         const { router, state } = await mountWithRoute();
         await flushPromises();
 
@@ -54,7 +56,7 @@ describe("useScoresRouteState", () => {
         expect(state.selectedDate.value.getDate()).toBe(20);
     });
 
-    it("falls back to maxDate and rewrites the URL for an unparseable date", async () => {
+    it("falls back to defaultDate and rewrites the URL for an unparseable date", async () => {
         const { state, router } = await mountWithRoute({ date: "not-a-date" });
         await flushPromises();
 
@@ -62,7 +64,16 @@ describe("useScoresRouteState", () => {
         expect(state.selectedDate.value.getDate()).toBe(8);
     });
 
-    it("clamps a date past maxDate back to maxDate", async () => {
+    it("accepts a future date up to maxDate", async () => {
+        const { state, router } = await mountWithRoute({ date: "2026-11-15" });
+        await flushPromises();
+
+        expect(router.currentRoute.value.query.date).toBe("2026-11-15");
+        expect(state.selectedDate.value.getMonth()).toBe(10);
+        expect(state.selectedDate.value.getDate()).toBe(15);
+    });
+
+    it("falls back to defaultDate for a date past maxDate", async () => {
         const { state, router } = await mountWithRoute({ date: "2030-01-01" });
         await flushPromises();
 
@@ -70,7 +81,7 @@ describe("useScoresRouteState", () => {
         expect(state.selectedDate.value.getDate()).toBe(8);
     });
 
-    it("clamps a date before minDate back to maxDate", async () => {
+    it("falls back to defaultDate for a date before minDate", async () => {
         const { state, router } = await mountWithRoute({ date: "1990-01-01" });
         await flushPromises();
 
@@ -88,7 +99,7 @@ describe("useScoresRouteState", () => {
         expect(router.currentRoute.value.query.date).toBe("2026-06-01");
     });
 
-    it("falls back to maxDate instead of throwing when the date picker emits null", async () => {
+    it("falls back to defaultDate instead of throwing when the date picker emits null", async () => {
         // v-calendar's DatePicker emits null through v-model when a day is
         // re-clicked to deselect it, since Scores.vue doesn't set
         // is-required - the setter has to tolerate that even though the
