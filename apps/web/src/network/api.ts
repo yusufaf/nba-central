@@ -26,7 +26,6 @@ import type {
     GetPublicTeamResponse,
     SendFeedbackPayload,
     SendFeedbackResponse,
-    GetTeamLogosResponse,
     GetNewsResponse,
     GetPlayersParams,
     GetPlayersResponse,
@@ -212,10 +211,6 @@ export const feedbackApi = {
 
 // Data API - matches DATA_ROUTES in CDK
 export const dataApi = {
-    getTeamLogos: async (): Promise<GetTeamLogosResponse> => {
-        const response = await api.get('/api/data/get-team-logos');
-        return response.data;
-    },
     getPlayers: async (
         params: GetPlayersParams = {},
     ): Promise<GetPlayersResponse> => {

@@ -129,6 +129,23 @@ test('no Tailwind class on a rendered page failed to compile', async ({ page }) 
     }
 });
 
+// #165: App.vue used to fetch team logos on every page load, invoking a
+// Lambda that makes 30 ESPN requests, and nothing read the result.
+test('no route requests the team-logos endpoint', async ({ page }) => {
+    test.setTimeout(90_000);
+    await stubNetwork(page);
+    const hits: string[] = [];
+    await page.route('**/api/data/get-team-logos', (route) => {
+        hits.push(route.request().url());
+        return route.fulfill({ status: 200, contentType: 'application/json', body: '[]' });
+    });
+    for (const { path } of ROUTES) {
+        await page.goto(path, { waitUntil: 'domcontentloaded' });
+        await page.waitForTimeout(500);
+    }
+    expect(hits).toEqual([]);
+});
+
 test('route boxscore', async ({ page }) => {
     // /game/:id was missing from ROUTES entirely - the box score's line
     // score, DNP rows and stat-tab typography all shipped unreviewed
