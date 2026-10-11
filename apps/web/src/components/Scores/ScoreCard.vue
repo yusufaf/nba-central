@@ -130,12 +130,6 @@ const isGameDone = computed(() => {
     return statusInfo.completed;
 });
 
-const showCard = computed(() => {
-    const hideFinishedGames = props.customizationState.get("hideFinishedGames");
-    // Hide the entire card if the game is finished and hideFinishedGames is toggled
-    return !isGameDone.value || !hideFinishedGames;
-});
-
 const showScoresSection = computed(() => {
     const customizationState = props.customizationState;
     const hideScores = customizationState.get("hideScores");
@@ -183,7 +177,6 @@ const toggleGameNotification = (): void => {
 
 <template>
     <div
-        v-if="showCard"
         class="score-card-wrapper"
         :class="{
             'east': props.conferenceType === 'EAST',
