@@ -150,17 +150,21 @@
                                             :alt="player.athlete.displayName"
                                             class="rounded-full object-cover shrink-0 w-6 h-6"
                                         />
-                                        <div class="flex flex-col min-w-0">
+                                        <div class="flex flex-col">
                                             <span class="leading-tight text-[0.8rem] font-semibold">{{ player.athlete.displayName }}</span>
-                                            <span class="leading-tight text-[0.65rem] text-foreground/40 truncate">
+                                            <span class="leading-tight text-[0.65rem] text-foreground/40">
                                                 {{ player.athlete.position?.abbreviation }}
-                                                <span v-if="player.reason"> — {{ player.reason }}</span>
                                             </span>
                                         </div>
                                     </div>
                                 </TableCell>
                                 <TableCell :colspan="statistics.names.length" class="text-center italic text-xs text-foreground/40 opacity-50">
-                                    DNP
+                                    <!-- Sticky keeps the centred label on screen when the stat columns scroll
+                                         sideways. left-[10rem] must match the name column's w-[10rem] (header);
+                                         max-w wraps a long reason inside the visible width of a phone. -->
+                                    <div class="sticky left-[10rem] right-2 mx-auto w-fit max-w-[12rem]">
+                                        DNP<template v-if="player.reason"> — {{ player.reason }}</template>
+                                    </div>
                                 </TableCell>
                             </TableRow>
                         </template>
