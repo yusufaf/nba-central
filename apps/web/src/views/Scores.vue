@@ -13,6 +13,8 @@ import ScoreCard from "@/components/Scores/ScoreCard.vue";
 import PageTitle from "@/components/PageTitle.vue";
 import PageShell from "@/layouts/PageShell.vue";
 import GameReplaysWarning from "@/components/Scores/GameReplaysWarning.vue";
+import ScoresEmptyState from "@/components/Scores/ScoresEmptyState.vue";
+import { getScoresEmptyReason } from "@/utils/scoresEmptyState";
 import ManageNotifications from "@/components/Scores/ManageNotifications.vue";
 import { useGameNotifications } from "@/composables/useGameNotifications";
 import { useScoresPreferences } from "@/composables/useScoresPreferences";
@@ -32,6 +34,8 @@ import { DatePicker } from "v-calendar";
 
 const numGames = ref<number>(0);
 const scoreData = ref<ESPNScoreboardResponse | null>(null);
+/* Only "ready" may claim a day is empty: while loading or after a failure, gameData belongs to another date. */
+const fetchStatus = ref<"loading" | "ready" | "error">("loading");
 
 /* ==== Dates === */
 const today = new Date();
@@ -120,6 +124,7 @@ const notificationsMenuOpen = ref<boolean>(false);
 const { notifyScoreChanges } = useGameNotifications();
 
 const fetchCurrentScores = async (forDate?: Date) => {
+    fetchStatus.value = "loading";
     try {
         const url = forDate
             ? `${ESPN_SCORES_URL}?dates=${formatDateForEspn(forDate)}`
@@ -148,9 +153,11 @@ const fetchCurrentScores = async (forDate?: Date) => {
 
         games.value = eventCompetitions;
         gameTeams.value = eventCompetitors;
+        fetchStatus.value = "ready";
 
         return data;
     } catch (err) {
+        fetchStatus.value = "error";
         console.error(err);
         throw err; // Rethrow the error to be caught by the caller
     }
@@ -220,7 +227,6 @@ const customizationState = computed(() => {
     const customizationMap: Map<CustomizationKey, any> = new Map();
     customizationMap.set("shortNames", useShortNames.value);
     customizationMap.set("hideScores", hideScores.value);
-    customizationMap.set("hideFinishedGames", hideFinishedGames.value);
     return customizationMap;
 });
 
@@ -308,6 +314,22 @@ const sortedGameData = computed(() => {
 });
 
 const displayedGamesCount = computed(() => filteredGameData.value.length);
+
+const visibleGameData = computed(() =>
+    hideFinishedGames.value
+        ? sortedGameData.value.filter(({ game }) => !game.status?.type.completed)
+        : sortedGameData.value,
+);
+
+const emptyReason = computed(() =>
+    fetchStatus.value !== "ready"
+        ? "none"
+        : getScoresEmptyReason({
+              totalGames: gameData.value.length,
+              filteredGames: filteredGameData.value.length,
+              visibleGames: visibleGameData.value.length,
+          }),
+);
 
 let pollIntervalId: ReturnType<typeof setInterval> | null = null;
 
@@ -425,12 +447,21 @@ onMounted(async () => {
                 </Button>
             </div>
         </div>
+        <ScoresEmptyState
+            v-if="emptyReason !== 'none'"
+            :reason="emptyReason"
+            :conference-filter="conferenceFilter"
+            :date-label="primaryDateString"
+            @show-finished="hideFinishedGames = false"
+            @show-all-conferences="conferenceFilter = 'ALL'"
+        />
         <div
+            v-else
             class="scores-container"
             :class="{ list: selectedView === VIEWS.LIST }"
         >
             <ScoreCard
-                v-for="{ game, competitors, conferenceType } in sortedGameData"
+                v-for="{ game, competitors, conferenceType } in visibleGameData"
                 :key="game.uid"
                 :game="game"
                 :index="0"

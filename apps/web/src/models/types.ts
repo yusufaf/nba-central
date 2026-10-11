@@ -1,7 +1,6 @@
 export type CustomizationKey =
     | "shortNames"
-    | "hideScores"
-    | "hideFinishedGames";
+    | "hideScores";
 
 export type CustomizationState = Map<CustomizationKey, boolean>;
 
