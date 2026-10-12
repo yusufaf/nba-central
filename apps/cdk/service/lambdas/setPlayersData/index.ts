@@ -15,6 +15,9 @@ export default ({ props, construct }: LambdaProps) => {
 			staticDataBucket: `${props.appName}-${props.deploymentType}-static-data`,
 		},
 		layers: ["node-fetch_cheerio"],
+		// A failed run throws now; Lambda's default 2 async retries would
+		// re-hit BBRef 26 times each, minutes after it blocked us.
+		functionProps: { retryAttempts: 0 },
 		schedule: {
 			enabled: true,
 			description:

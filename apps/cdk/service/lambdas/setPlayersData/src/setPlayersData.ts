@@ -1,5 +1,5 @@
 import { EventBridgeEvent, Handler } from "aws-lambda";
-import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
+import { S3Client, GetObjectCommand, PutObjectCommand } from "@aws-sdk/client-s3";
 import fetch from "node-fetch";
 import * as cheerio from "cheerio";
 
@@ -10,6 +10,11 @@ const s3Client = new S3Client();
 // BBRef allows ~20 req/min; pace the 26 index pages well under that.
 const REQUEST_DELAY_MS = 2800;
 const LETTERS = "abcdefghijklmnopqrstuvwxyz".split("");
+
+const PLAYERS_KEY = "players.json";
+// A BBRef block silently drops whole letters, so a scrape that shrinks the
+// list by more than this is treated as damaged rather than as a real change.
+const MIN_RETAINED_FRACTION = 0.95;
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
@@ -85,69 +90,99 @@ export const parsePage = (html: string, seasonEndYear: number): NormalizedPlayer
 	return players;
 };
 
+// A block or captcha page can come back as a 200 with no table at all, while
+// /players/x/ legitimately has a table with no rows.
+export const hasPlayersTable = (html: string): boolean =>
+	cheerio.load(html)("table#players").length > 0;
+
+export const refusalReason = (
+	scrapedCount: number,
+	currentCount: number | null,
+): string | null => {
+	if (currentCount !== null && scrapedCount < currentCount * MIN_RETAINED_FRACTION) {
+		return `scraped ${scrapedCount} players, below 95% of the current ${currentCount}`;
+	}
+	if (scrapedCount === 0) return "scraped no players";
+	return null;
+};
+
+// null means there is no players.json yet, so there is nothing to protect.
+const loadCurrentCount = async (): Promise<number | null> => {
+	try {
+		const res = await s3Client.send(
+			new GetObjectCommand({ Bucket: staticDataBucket, Key: PLAYERS_KEY }),
+		);
+		const parsed = JSON.parse(await res.Body!.transformToString());
+		// Fail closed: counting a malformed file as empty would switch the
+		// shrink guard off for exactly the file that most needs it.
+		if (!Array.isArray(parsed?.data)) throw new Error(`${PLAYERS_KEY} has no data array`);
+		return parsed.data.length;
+	} catch (err) {
+		if ((err as Error)?.name === "NoSuchKey") return null;
+		throw err;
+	}
+};
+
+const fetchLetter = async (
+	letter: string,
+	seasonEndYear: number,
+): Promise<NormalizedPlayer[]> => {
+	const res = await fetch(`${BBREF_BASE_URL}/players/${letter}/`, {
+		headers: { "User-Agent": "Mozilla/5.0 (compatible; TeamBuilder/1.0)" },
+	});
+	if (!res.ok) throw new Error(`HTTP ${res.status}`);
+	const html = await res.text();
+	if (!hasPlayersTable(html)) throw new Error("no players table on page");
+	return parsePage(html, seasonEndYear);
+};
+
 export const handler: Handler = async (
 	event: EventBridgeEvent<any, any>,
 	context,
 ): Promise<any> => {
 	console.log(JSON.stringify({ event, context }, null, 4));
 
-	try {
-		const seasonEndYear = activeSeasonEndYear();
-		const byId = new Map<string, NormalizedPlayer>();
+	const currentCount = await loadCurrentCount();
+	const seasonEndYear = activeSeasonEndYear();
+	const byId = new Map<string, NormalizedPlayer>();
 
-		for (const letter of LETTERS) {
-			try {
-				const res = await fetch(
-					`${BBREF_BASE_URL}/players/${letter}/`,
-					{
-						headers: {
-							"User-Agent":
-								"Mozilla/5.0 (compatible; TeamBuilder/1.0)",
-						},
-					},
-				);
-				if (!res.ok) {
-					console.error(`/players/${letter}/ -> ${res.status}`);
-				} else {
-					const html = await res.text();
-					for (const p of parsePage(html, seasonEndYear)) {
-						byId.set(p.id, p);
-					}
-				}
-			} catch (e) {
-				console.error(`Failed letter ${letter}`, e);
-			}
-			await sleep(REQUEST_DELAY_MS);
+	for (const letter of LETTERS) {
+		const found = await fetchLetter(letter, seasonEndYear).catch((e) => {
+			console.error(`Failed letter ${letter}`, e);
+			throw new Error(
+				`Refusing to overwrite ${PLAYERS_KEY}: /players/${letter}/ failed (${e instanceof Error ? e.message : String(e)})`,
+			);
+		});
+		for (const p of found) {
+			byId.set(p.id, p);
 		}
-
-		const players = Array.from(byId.values()).sort((a, b) =>
-			`${a.first_name} ${a.last_name}`.localeCompare(
-				`${b.first_name} ${b.last_name}`,
-			),
-		);
-
-		await s3Client.send(
-			new PutObjectCommand({
-				Bucket: staticDataBucket,
-				Key: "players.json",
-				Body: JSON.stringify({ data: players }),
-				ContentType: "application/json",
-			}),
-		);
-
-		console.log(
-			`Saved ${players.length} players to ${staticDataBucket}/players.json`,
-		);
-
-		return {
-			statusCode: 200,
-			body: JSON.stringify({ message: "Players saved", count: players.length }),
-		};
-	} catch (err) {
-		console.error(err);
-		return {
-			statusCode: 500,
-			body: JSON.stringify({ error: "Failed to fetch players" }),
-		};
+		await sleep(REQUEST_DELAY_MS);
 	}
+
+	const players = Array.from(byId.values()).sort((a, b) =>
+		`${a.first_name} ${a.last_name}`.localeCompare(
+			`${b.first_name} ${b.last_name}`,
+		),
+	);
+
+	const reason = refusalReason(players.length, currentCount);
+	if (reason) throw new Error(`Refusing to overwrite ${PLAYERS_KEY}: ${reason}`);
+
+	await s3Client.send(
+		new PutObjectCommand({
+			Bucket: staticDataBucket,
+			Key: PLAYERS_KEY,
+			Body: JSON.stringify({ data: players }),
+			ContentType: "application/json",
+		}),
+	);
+
+	console.log(
+		`Saved ${players.length} players to ${staticDataBucket}/${PLAYERS_KEY} (was ${currentCount ?? "none"})`,
+	);
+
+	return {
+		statusCode: 200,
+		body: JSON.stringify({ message: "Players saved", count: players.length }),
+	};
 };

@@ -1,5 +1,20 @@
-import { describe, it, expect } from "vitest";
-import { parsePage, activeSeasonEndYear } from "lambdas/setPlayersData/src/setPlayersData";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+
+const s3Send = vi.fn();
+vi.mock("@aws-sdk/client-s3", async (importOriginal) => {
+	const actual = await importOriginal<typeof import("@aws-sdk/client-s3")>();
+	// A plain function expression, not an arrow: vitest's mock functions can't
+	// be called with `new` otherwise (see publicTeams.test.ts).
+	return { ...actual, S3Client: vi.fn(function () { return { send: s3Send }; }) };
+});
+
+const fetchMock = vi.fn();
+vi.mock("node-fetch", () => ({ default: fetchMock }));
+
+const { GetObjectCommand, PutObjectCommand, NoSuchKey } = await import("@aws-sdk/client-s3");
+const { parsePage, activeSeasonEndYear, handler, refusalReason, hasPlayersTable } = await import(
+	"lambdas/setPlayersData/src/setPlayersData"
+);
 
 const row = (id: string, name: string, yearMax: string) =>
 	`<tr><th data-stat="player" data-append-csv="${id}"><a>${name}</a></th>` +
@@ -62,5 +77,185 @@ describe("parsePage active flag", () => {
 
 	it("treats a missing year_max as inactive", () => {
 		expect(activeOn(html, new Date(2026, 10, 1)).nomax01).toBe(false);
+	});
+});
+
+describe("refusalReason", () => {
+	it.each([
+		["a scrape just under the current size", 75, 78, false],
+		["exactly 95% of the current size", 95, 100, false],
+		["just below 95% of the current size", 94, 100, true],
+		["a scrape below 95% of 79", 75, 79, true],
+		["a scrape with no existing file", 75, null, false],
+		["an empty scrape with no existing file", 0, null, true],
+		["an empty scrape over an existing file", 0, 78, true],
+	])("%s (%i vs %s)", (_label, scraped, current, refused) => {
+		const reason = refusalReason(scraped, current);
+		if (!refused) {
+			expect(reason).toBeNull();
+			return;
+		}
+		expect(reason).toEqual(expect.any(String));
+		if (current !== null) {
+			expect(reason).toContain(String(scraped));
+			expect(reason).toContain(String(current));
+		}
+	});
+
+	it("names both counts for an empty scrape over an existing file", () => {
+		expect(refusalReason(0, 78)).toBe("scraped 0 players, below 95% of the current 78");
+	});
+});
+
+describe("hasPlayersTable", () => {
+	it("accepts the empty table BBRef serves for /players/x/", () => {
+		expect(hasPlayersTable(page())).toBe(true);
+	});
+
+	it("accepts a table with rows", () => {
+		expect(hasPlayersTable(page(row("curryst01", "Stephen Curry", "2027")))).toBe(true);
+	});
+
+	it("rejects a block page served as a 200", () => {
+		expect(hasPlayersTable("<html>Rate limited</html>")).toBe(false);
+	});
+
+	it("leaves parsePage returning [] for a page with no table", () => {
+		expect(parsePage("<html>Rate limited</html>", 2027)).toEqual([]);
+	});
+});
+
+describe("handler guard (#168)", () => {
+	const LETTERS = "abcdefghijklmnopqrstuvwxyz".split("");
+
+	// Three players per letter; BBRef really serves /players/x/ with an empty
+	// table, so a full scrape is 25 x 3 = 75.
+	const letterPage = (letter: string) =>
+		letter === "x"
+			? page()
+			: page(...[0, 1, 2].map((i) => row(`${letter}${i}`, `Player ${letter}${i}`, "2027")));
+	const FULL_SCRAPE = (LETTERS.length - 1) * 3;
+
+	const currentFile = (n: number) => ({
+		Body: {
+			transformToString: async () =>
+				JSON.stringify({ data: Array.from({ length: n }, (_, i) => ({ id: `old${i}` })) }),
+		},
+	});
+
+	const stubS3 = (current: () => unknown) =>
+		s3Send.mockImplementation(async (cmd: unknown) =>
+			cmd instanceof GetObjectCommand ? current() : {},
+		);
+
+	const stubBBRef = (override?: (letter: string) => unknown) =>
+		fetchMock.mockImplementation(async (url: string) => {
+			const letter = url.split("/").slice(-2)[0];
+			return (
+				(override && (await override(letter))) ?? {
+					ok: true,
+					status: 200,
+					text: async () => letterPage(letter),
+				}
+			);
+		});
+
+	const puts = () =>
+		s3Send.mock.calls.map(([cmd]) => cmd).filter((cmd) => cmd instanceof PutObjectCommand);
+
+	const run = async () => {
+		const p = handler({} as any, {} as any, () => {}) as Promise<any>;
+		p.catch(() => {});
+		await vi.runAllTimersAsync();
+		return p;
+	};
+
+	beforeEach(() => {
+		vi.useFakeTimers();
+		s3Send.mockReset();
+		fetchMock.mockReset();
+		vi.spyOn(console, "log").mockImplementation(() => {});
+		vi.spyOn(console, "error").mockImplementation(() => {});
+	});
+
+	afterEach(() => {
+		vi.useRealTimers();
+		vi.restoreAllMocks();
+	});
+
+	it.each([
+		["a non-2xx response", async () => ({ ok: false, status: 429, text: async () => "" })],
+		["a network error", async () => { throw new Error("ECONNRESET"); }],
+		[
+			"a 200 page without the players table",
+			async () => ({ ok: true, status: 200, text: async () => "<html>Rate limited</html>" }),
+		],
+	])("rejects and leaves players.json alone on %s", async (_label, failQ) => {
+		stubS3(() => currentFile(78));
+		stubBBRef((letter) => (letter === "q" ? failQ() : undefined));
+
+		await expect(run()).rejects.toThrow(/players\/q\//);
+
+		expect(puts()).toHaveLength(0);
+		// Stops at the first failure instead of hammering a server that is
+		// probably rate-limiting us.
+		expect(fetchMock.mock.calls.some(([u]) => String(u).includes("/players/r/"))).toBe(false);
+	});
+
+	it("refuses a scrape below 95% of the current list", async () => {
+		stubS3(() => currentFile(79));
+		stubBBRef();
+
+		await expect(run()).rejects.toThrow(/75.*79/);
+
+		expect(puts()).toHaveLength(0);
+	});
+
+	it("writes a full scrape over the current list", async () => {
+		stubS3(() => currentFile(78));
+		stubBBRef();
+
+		await expect(run()).resolves.toMatchObject({ statusCode: 200 });
+
+		const [put] = puts() as any[];
+		expect(puts()).toHaveLength(1);
+		expect(put.input.Key).toBe("players.json");
+		expect(JSON.parse(put.input.Body).data).toHaveLength(FULL_SCRAPE);
+	});
+
+	it("writes when there is no current file", async () => {
+		stubS3(() => {
+			throw new NoSuchKey({ message: "no key", $metadata: {} });
+		});
+		stubBBRef();
+
+		await expect(run()).resolves.toMatchObject({ statusCode: 200 });
+
+		expect(puts()).toHaveLength(1);
+	});
+
+	it.each([
+		["invalid JSON", "{not json"],
+		["no data array", JSON.stringify({ data: null })],
+	])("fails before scraping when the current file has %s", async (_label, body) => {
+		stubS3(() => ({ Body: { transformToString: async () => body } }));
+		stubBBRef();
+
+		await expect(run()).rejects.toThrow();
+
+		expect(fetchMock).not.toHaveBeenCalled();
+		expect(puts()).toHaveLength(0);
+	});
+
+	it("fails before scraping when the current file can't be read", async () => {
+		stubS3(() => {
+			throw Object.assign(new Error("Access Denied"), { name: "AccessDenied" });
+		});
+		stubBBRef();
+
+		await expect(run()).rejects.toThrow(/Access Denied/);
+
+		expect(fetchMock).not.toHaveBeenCalled();
+		expect(puts()).toHaveLength(0);
 	});
 });
