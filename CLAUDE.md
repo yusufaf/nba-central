@@ -103,7 +103,9 @@ Entry point: `bin/team-builder-cdk.ts` loads env vars from dotenv.
   the SPA shell for crawlers, ahead of the CloudFront `/t/*` behavior
 
 **Data ETL Lambdas** (EventBridge triggers):
-- `setPlayersData`, `setPlayerRatingsData`: scrape Basketball-Reference / api.nba2kapi.com
+- `setPlayersData`, `setPlayerRatingsData`: scrape Basketball-Reference / api.nba2kapi.com;
+  `setPlayersData` also adds the latest draft class (same BBRef ids, no bio
+  fields) so rookies are searchable before their first game
 - `fetchNewsCron`: pulls ESPN, Bluesky, CBS Sports, and RealGM into the news table
 
 Arenas, coaches, execs and the historical logos/jerseys have no Lambda: the

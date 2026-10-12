@@ -11,6 +11,10 @@ const s3Client = new S3Client();
 const REQUEST_DELAY_MS = 2800;
 const LETTERS = "abcdefghijklmnopqrstuvwxyz".split("");
 
+// The draft page runs after ~80s of letters in a 300s Lambda with no retries,
+// so a stalled supplement must not cost the week's write.
+const DRAFT_FETCH_TIMEOUT_MS = 20_000;
+
 const PLAYERS_KEY = "players.json";
 // A BBRef block silently drops whole letters, so a scrape that shrinks the
 // list by more than this is treated as damaged rather than as a real change.
@@ -28,6 +32,14 @@ export const activeSeasonEndYear = (now: Date = new Date()): number =>
 	now.getMonth() >= ACTIVE_ROLLOVER_MONTH
 		? now.getFullYear() + 1
 		: now.getFullYear();
+
+// The draft is in late June, so before July the latest class is last year's.
+const DRAFT_ROLLOVER_MONTH = 6; // July, 0-based like Date#getMonth
+
+export const latestDraftYear = (now: Date = new Date()): number =>
+	now.getMonth() >= DRAFT_ROLLOVER_MONTH
+		? now.getFullYear()
+		: now.getFullYear() - 1;
 
 interface NormalizedPlayer {
 	id: string;
@@ -52,6 +64,13 @@ const parseHeight = (h: string): [number | null, number | null] => {
 	];
 };
 
+const splitName = (fullName: string): [string, string] => {
+	const spaceIdx = fullName.indexOf(" ");
+	return spaceIdx === -1
+		? [fullName, ""]
+		: [fullName.slice(0, spaceIdx), fullName.slice(spaceIdx + 1)];
+};
+
 export const parsePage = (html: string, seasonEndYear: number): NormalizedPlayer[] => {
 	const $ = cheerio.load(html);
 	const players: NormalizedPlayer[] = [];
@@ -63,9 +82,7 @@ export const parsePage = (html: string, seasonEndYear: number): NormalizedPlayer
 		if (!id) return; // skip class="thead" separator rows
 
 		const fullName = ($th.find("a").text() || $th.text()).trim();
-		const spaceIdx = fullName.indexOf(" ");
-		const first_name = spaceIdx === -1 ? fullName : fullName.slice(0, spaceIdx);
-		const last_name = spaceIdx === -1 ? "" : fullName.slice(spaceIdx + 1);
+		const [first_name, last_name] = splitName(fullName);
 
 		const td = (stat: string) =>
 			$tr.find(`td[data-stat="${stat}"]`).text().trim();
@@ -94,6 +111,40 @@ export const parsePage = (html: string, seasonEndYear: number): NormalizedPlayer
 // /players/x/ legitimately has a table with no rows.
 export const hasPlayersTable = (html: string): boolean =>
 	cheerio.load(html)("table#players").length > 0;
+
+const PLAYER_HREF = /^\/players\/[a-z]\/([a-z0-9]+)\.html$/;
+
+// The draft page links each pick to the same id the /players/ index uses once
+// the player has played, but carries no position, height or weight. Those
+// fill in the week the index lists them.
+export const parseDraftPage = (html: string): NormalizedPlayer[] => {
+	const $ = cheerio.load(html);
+	const players: NormalizedPlayer[] = [];
+
+	$("table#stats tbody tr").each((_, tr) => {
+		const $a = $(tr).find('td[data-stat="player"] a');
+		const id = $a.attr("href")?.match(PLAYER_HREF)?.[1];
+		if (!id) return; // separator rows, or a pick with no player page
+
+		const [first_name, last_name] = splitName($a.text().trim());
+		players.push({
+			id,
+			first_name,
+			last_name,
+			position: "",
+			team: { full_name: "", abbreviation: "" },
+			height_feet: null,
+			height_inches: null,
+			weight_pounds: null,
+			active: true,
+		});
+	});
+
+	return players;
+};
+
+export const hasDraftTable = (html: string): boolean =>
+	cheerio.load(html)("table#stats").length > 0;
 
 export const refusalReason = (
 	scrapedCount: number,
@@ -136,6 +187,17 @@ const fetchLetter = async (
 	return parsePage(html, seasonEndYear);
 };
 
+const fetchDraftClass = async (year: number): Promise<NormalizedPlayer[]> => {
+	const res = await fetch(`${BBREF_BASE_URL}/draft/NBA_${year}.html`, {
+		headers: { "User-Agent": "Mozilla/5.0 (compatible; TeamBuilder/1.0)" },
+		signal: AbortSignal.timeout(DRAFT_FETCH_TIMEOUT_MS),
+	});
+	if (!res.ok) throw new Error(`HTTP ${res.status}`);
+	const html = await res.text();
+	if (!hasDraftTable(html)) throw new Error("no draft table on page");
+	return parseDraftPage(html);
+};
+
 export const handler: Handler = async (
 	event: EventBridgeEvent<any, any>,
 	context,
@@ -159,6 +221,21 @@ export const handler: Handler = async (
 		await sleep(REQUEST_DELAY_MS);
 	}
 
+	const draftYear = latestDraftYear();
+	// Draftees aren't in the index until they play. Same BBRef ids, so the
+	// index row replaces this one the week it appears. A failure here only
+	// costs the rookies, never the scrape.
+	const draftees = await fetchDraftClass(draftYear).catch((e) => {
+		console.error(`Skipping the ${draftYear} draft class`, e);
+		return [] as NormalizedPlayer[];
+	});
+	let addedDraftees = 0;
+	for (const p of draftees) {
+		if (byId.has(p.id)) continue;
+		byId.set(p.id, p);
+		addedDraftees++;
+	}
+
 	const players = Array.from(byId.values()).sort((a, b) =>
 		`${a.first_name} ${a.last_name}`.localeCompare(
 			`${b.first_name} ${b.last_name}`,
@@ -178,11 +255,15 @@ export const handler: Handler = async (
 	);
 
 	console.log(
-		`Saved ${players.length} players to ${staticDataBucket}/${PLAYERS_KEY} (was ${currentCount ?? "none"})`,
+		`Saved ${players.length} players to ${staticDataBucket}/${PLAYERS_KEY} (was ${currentCount ?? "none"}), incl. ${addedDraftees} from the ${draftYear} draft`,
 	);
 
 	return {
 		statusCode: 200,
-		body: JSON.stringify({ message: "Players saved", count: players.length }),
+		body: JSON.stringify({
+			message: "Players saved",
+			count: players.length,
+			draftees: addedDraftees,
+		}),
 	};
 };

@@ -12,9 +12,16 @@ const fetchMock = vi.fn();
 vi.mock("node-fetch", () => ({ default: fetchMock }));
 
 const { GetObjectCommand, PutObjectCommand, NoSuchKey } = await import("@aws-sdk/client-s3");
-const { parsePage, activeSeasonEndYear, handler, refusalReason, hasPlayersTable } = await import(
-	"lambdas/setPlayersData/src/setPlayersData"
-);
+const {
+	parsePage,
+	activeSeasonEndYear,
+	latestDraftYear,
+	parseDraftPage,
+	hasDraftTable,
+	handler,
+	refusalReason,
+	hasPlayersTable,
+} = await import("lambdas/setPlayersData/src/setPlayersData");
 
 const row = (id: string, name: string, yearMax: string) =>
 	`<tr><th data-stat="player" data-append-csv="${id}"><a>${name}</a></th>` +
@@ -24,6 +31,19 @@ const row = (id: string, name: string, yearMax: string) =>
 const page = (...rows: string[]) =>
 	`<table id="players"><tbody>` +
 	`<tr class="thead"><th>Player</th></tr>${rows.join("")}</tbody></table>`;
+
+// Copies the real /draft/NBA_YYYY.html markup: the id lives only in the player
+// link's href, there is no data-append-csv.
+const draftRow = (pick: number, id: string, name: string) =>
+	`<tr><th data-stat="ranker">${pick}</th>` +
+	`<td data-stat="pick_overall" csk="${pick}"><a>${pick}</a></td>` +
+	`<td data-stat="team_id"><a href="/teams/WAS/draft.html">WAS</a></td>` +
+	`<td data-stat="player" csk="x"><a href='/players/${id[0]}/${id}.html'>${name}</a></td></tr>`;
+
+const draftPage = (...rows: string[]) =>
+	`<table id="stats"><thead><tr><th>Rk</th></tr></thead><tbody>` +
+	`<tr class="over_header thead"><th colspan="3">Round 1</th></tr>` +
+	`<tr class="thead"><th>Rk</th></tr>${rows.join("")}</tbody></table>`;
 
 const activeOn = (html: string, now: Date) =>
 	Object.fromEntries(
@@ -41,6 +61,82 @@ describe("activeSeasonEndYear", () => {
 		["next Sep 30", new Date(2027, 8, 30), 2027],
 	])("%s gives %i", (_label, now, expected) => {
 		expect(activeSeasonEndYear(now)).toBe(expected);
+	});
+});
+
+describe("latestDraftYear", () => {
+	it.each([
+		["Jun 30 2026 23:59:59", new Date(2026, 5, 30, 23, 59, 59), 2025],
+		["Jul 1 2026", new Date(2026, 6, 1), 2026],
+		["Oct 11 2026", new Date(2026, 9, 11), 2026],
+		["Jan 1 2027", new Date(2027, 0, 1), 2026],
+		["Jun 30 2027", new Date(2027, 5, 30), 2026],
+		["Jul 1 2027", new Date(2027, 6, 1), 2027],
+	])("%s gives %i", (_label, now, expected) => {
+		expect(latestDraftYear(now)).toBe(expected);
+	});
+});
+
+describe("parseDraftPage", () => {
+	const html = draftPage(
+		draftRow(1, "dybanaj01", "AJ Dybantsa"),
+		draftRow(2, "peterda02", "Darryn Peterson"),
+		draftRow(3, "brownmi02", "Mikel Brown Jr."),
+		draftRow(4, "lopezka01", "Karim López"),
+	);
+
+	it("parses picks in page order with the BBRef id from the href", () => {
+		const players = parseDraftPage(html);
+		expect(players.map((p) => p.id)).toEqual([
+			"dybanaj01",
+			"peterda02",
+			"brownmi02",
+			"lopezka01",
+		]);
+		expect(players[0]).toMatchObject({ first_name: "AJ", last_name: "Dybantsa" });
+	});
+
+	it("keeps a suffix in the last name, as the index does", () => {
+		expect(parseDraftPage(html)[2]).toMatchObject({ first_name: "Mikel", last_name: "Brown Jr." });
+	});
+
+	it("keeps diacritics", () => {
+		expect(parseDraftPage(html)[3]).toMatchObject({ first_name: "Karim", last_name: "López" });
+	});
+
+	it("marks every draftee active with no bio fields", () => {
+		for (const p of parseDraftPage(html)) {
+			expect(p).toMatchObject({
+				active: true,
+				position: "",
+				team: { full_name: "", abbreviation: "" },
+				height_feet: null,
+				height_inches: null,
+				weight_pounds: null,
+			});
+		}
+	});
+
+	it("skips separator rows and a pick whose player cell has no link", () => {
+		const unlinked = `<tr><th data-stat="ranker">9</th><td data-stat="player">Unknown</td></tr>`;
+		const players = parseDraftPage(
+			draftPage(draftRow(1, "dybanaj01", "AJ Dybantsa"), unlinked),
+		);
+		expect(players.map((p) => p.id)).toEqual(["dybanaj01"]);
+	});
+});
+
+describe("hasDraftTable", () => {
+	it("accepts a draft page", () => {
+		expect(hasDraftTable(draftPage())).toBe(true);
+	});
+
+	it("rejects a block page served as a 200", () => {
+		expect(hasDraftTable("<html>Rate limited</html>")).toBe(false);
+	});
+
+	it("leaves parseDraftPage returning [] for a page with no table", () => {
+		expect(parseDraftPage("<html>Rate limited</html>")).toEqual([]);
 	});
 });
 
@@ -148,8 +244,18 @@ describe("handler guard (#168)", () => {
 			cmd instanceof GetObjectCommand ? current() : {},
 		);
 
-	const stubBBRef = (override?: (letter: string) => unknown) =>
+	// The draft page is a supplement to the index, so by default it serves an
+	// empty draft table and the letter counts below stay unchanged.
+	const stubBBRef = (
+		override?: (letter: string) => unknown,
+		draft: () => unknown = async () => ({
+			ok: true,
+			status: 200,
+			text: async () => draftPage(),
+		}),
+	) =>
 		fetchMock.mockImplementation(async (url: string) => {
+			if (url.includes("/draft/")) return draft();
 			const letter = url.split("/").slice(-2)[0];
 			return (
 				(override && (await override(letter))) ?? {
@@ -200,6 +306,8 @@ describe("handler guard (#168)", () => {
 		// Stops at the first failure instead of hammering a server that is
 		// probably rate-limiting us.
 		expect(fetchMock.mock.calls.some(([u]) => String(u).includes("/players/r/"))).toBe(false);
+		// The draft page is only worth a request once the index is complete.
+		expect(fetchMock.mock.calls.some(([u]) => String(u).includes("/draft/"))).toBe(false);
 	});
 
 	it("refuses a scrape below 95% of the current list", async () => {
@@ -221,6 +329,85 @@ describe("handler guard (#168)", () => {
 		expect(puts()).toHaveLength(1);
 		expect(put.input.Key).toBe("players.json");
 		expect(JSON.parse(put.input.Body).data).toHaveLength(FULL_SCRAPE);
+	});
+
+	const draftResponse = (...rows: string[]) => async () => ({
+		ok: true,
+		status: 200,
+		text: async () => draftPage(...rows),
+	});
+
+	it("adds draftees the index doesn't list yet", async () => {
+		stubS3(() => currentFile(78));
+		stubBBRef(undefined, draftResponse(
+			draftRow(1, "dybanaj01", "AJ Dybantsa"),
+			draftRow(2, "peterda02", "Darryn Peterson"),
+		));
+
+		await expect(run()).resolves.toMatchObject({ statusCode: 200 });
+
+		const [put] = puts() as any[];
+		const data = JSON.parse(put.input.Body).data;
+		expect(data).toHaveLength(FULL_SCRAPE + 2);
+		expect(data.find((p: any) => p.id === "dybanaj01")).toMatchObject({
+			first_name: "AJ",
+			last_name: "Dybantsa",
+			active: true,
+		});
+	});
+
+	it("keeps the index row when a draftee is already indexed", async () => {
+		stubS3(() => currentFile(78));
+		stubBBRef(undefined, draftResponse(draftRow(1, "a0", "Draft Name")));
+
+		await expect(run()).resolves.toMatchObject({ statusCode: 200 });
+
+		const [put] = puts() as any[];
+		const data = JSON.parse(put.input.Body).data;
+		expect(data).toHaveLength(FULL_SCRAPE);
+		expect(data.find((p: any) => p.id === "a0")).toMatchObject({
+			first_name: "Player",
+			position: "F",
+		});
+	});
+
+	it("fetches the latest draft class after the index, with a timeout", async () => {
+		vi.setSystemTime(new Date(2026, 9, 11));
+		stubS3(() => currentFile(78));
+		stubBBRef();
+
+		await run();
+
+		const urls = fetchMock.mock.calls.map(([u]) => String(u));
+		const draftCall = urls.findIndex((u) => u.endsWith("/draft/NBA_2026.html"));
+		expect(draftCall).toBeGreaterThan(urls.findIndex((u) => u.includes("/players/z/")));
+		expect(fetchMock.mock.calls[draftCall][1]).toMatchObject({
+			signal: expect.any(AbortSignal),
+		});
+	});
+
+	it.each([
+		["a non-2xx response", async () => ({ ok: false, status: 429, text: async () => "" })],
+		["a network error", async () => { throw new Error("ECONNRESET"); }],
+		[
+			"the draft fetch timing out",
+			async () => {
+				throw Object.assign(new Error("The operation was aborted."), { name: "AbortError" });
+			},
+		],
+		[
+			"a 200 page without the draft table",
+			async () => ({ ok: true, status: 200, text: async () => "<html>Rate limited</html>" }),
+		],
+	])("still writes the index when the draft page has %s", async (_label, failDraft) => {
+		stubS3(() => currentFile(78));
+		stubBBRef(undefined, failDraft);
+
+		await expect(run()).resolves.toMatchObject({ statusCode: 200 });
+
+		expect(puts()).toHaveLength(1);
+		expect(JSON.parse((puts()[0] as any).input.Body).data).toHaveLength(FULL_SCRAPE);
+		expect(console.error).toHaveBeenCalled();
 	});
 
 	it("writes when there is no current file", async () => {
