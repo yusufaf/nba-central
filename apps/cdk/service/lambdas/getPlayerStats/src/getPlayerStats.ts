@@ -3,6 +3,7 @@ import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
 import {
 	GetCommand,
 	PutCommand,
+	PutCommandInput,
 	DynamoDBDocumentClient,
 } from "@aws-sdk/lib-dynamodb";
 import { S3Client, GetObjectCommand } from "@aws-sdk/client-s3";
@@ -19,8 +20,65 @@ const client = new DynamoDBClient({});
 const docClient = DynamoDBDocumentClient.from(client);
 const s3Client = new S3Client();
 
-// Cache career stats for 7 days (refreshes in-season without going stale forever).
-const CACHE_TTL_SECONDS = 7 * 24 * 60 * 60;
+// An entry has two clocks. `freshUntil` is when we next refresh it; `ttl` is
+// when DynamoDB may delete it. Entries with stats outlive their freshness so a
+// failed refresh still has the last good career to serve.
+// A career with at least one season.
+export const STATS_FRESH_SECONDS = 7 * 24 * 60 * 60;
+// A player page with no seasons yet (a rookie), or a 404.
+export const EMPTY_FRESH_SECONDS = 6 * 60 * 60;
+// After an upstream failure: how long a failure marker lasts, or how long a
+// stale entry is served before we try again.
+export const FAILURE_BACKOFF_SECONDS = 15 * 60;
+// How long past `freshUntil` an entry with stats is kept as the stale fallback.
+export const RETAIN_SECONDS = 90 * 24 * 60 * 60;
+export const FETCH_TIMEOUT_MS = 8_000;
+
+interface CacheItem {
+	PK: string;
+	SK: string;
+	stats: any[];
+	// Legacy items have no `freshUntil` and are fresh until their `ttl`.
+	freshUntil?: number;
+	ttl: number;
+	failed?: boolean;
+}
+
+const freshUntilOf = (item: CacheItem) => item.freshUntil ?? item.ttl;
+
+type WriteCondition = Pick<
+	PutCommandInput,
+	"ConditionExpression" | "ExpressionAttributeNames" | "ExpressionAttributeValues"
+>;
+
+// Only write if the item is still the one we read, so a failure never clobbers
+// a refresh that another request completed in the meantime.
+const unchangedSince = (seen: CacheItem | undefined): WriteCondition =>
+	seen
+		? {
+				ConditionExpression: "#ttl = :seenTtl",
+				ExpressionAttributeNames: { "#ttl": "ttl" },
+				ExpressionAttributeValues: { ":seenTtl": seen.ttl },
+			}
+		: { ConditionExpression: "attribute_not_exists(PK)" };
+
+// Best effort: a cache write failure must not turn good stats into an error,
+// and a lost condition just means a concurrent request already wrote newer data.
+const writeCache = async (item: CacheItem, condition: WriteCondition = {}) => {
+	try {
+		await docClient.send(
+			new PutCommand({ TableName: MAIN_TABLE_NAME, Item: item, ...condition }),
+		);
+	} catch (err) {
+		if ((err as Error).name === "ConditionalCheckFailedException") return;
+		console.error("Failed to cache player stats", err);
+	}
+};
+
+const upstreamFailure = () => ({
+	statusCode: 502,
+	body: JSON.stringify({ error: "Failed to fetch player stats" }),
+});
 
 // The ratings file is rewritten weekly; hold it in the warm container rather
 // than re-reading it for every player the user opens.
@@ -90,8 +148,11 @@ const num = (v: string): number => {
 
 // Parse the per_game_stats table into the BALLDONTLIE season_averages shape the
 // frontend already consumes. BBRef percentages are already fractions (0.515).
-const parseCareer = (html: string) => {
+// null means the page isn't a player page at all (a rate-limit or interstitial
+// served as a 200), which is a failure rather than an empty career.
+export const parseCareer = (html: string): any[] | null => {
 	const $ = cheerio.load(html);
+	if ($("#meta").length === 0) return null;
 	const seenSeasons = new Set<number>();
 	const out: any[] = [];
 
@@ -137,6 +198,24 @@ const parseCareer = (html: string) => {
 	return out.sort((a, b) => b.season - a.season);
 };
 
+export const scrapeCareer = async (playerId: string): Promise<any[]> => {
+	const url = `${BBREF_BASE_URL}/players/${playerId[0]}/${playerId}.html`;
+	const response = await fetch(url, {
+		headers: {
+			"User-Agent": "Mozilla/5.0 (compatible; TeamBuilder/1.0)",
+		},
+		signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
+	});
+	if (response.status === 404) return []; // no such page: a miss, not a failure
+	if (!response.ok) {
+		throw new Error(`BBRef returned ${response.status} ${response.statusText}`);
+	}
+
+	const stats = parseCareer(await response.text());
+	if (stats === null) throw new Error("BBRef returned a page without player info");
+	return stats;
+};
+
 export const handler: Handler = async (event, context): Promise<any> => {
 	console.log(JSON.stringify({ event, context }, null, 4));
 
@@ -152,42 +231,53 @@ export const handler: Handler = async (event, context): Promise<any> => {
 		const PK = "PLAYERSTATS";
 		const SK = playerId;
 
-		// 1. Cache lookup.
-		const cached = await docClient.send(
-			new GetCommand({ TableName: MAIN_TABLE_NAME, Key: { PK, SK } }),
-		);
-		if (cached.Item?.stats) {
-			return respond(playerId, cached.Item.stats);
+		const now = Math.floor(Date.now() / 1000);
+
+		// 1. Cache lookup: a fresh entry (or a fresh failure marker) answers.
+		const cached = (
+			await docClient.send(
+				new GetCommand({ TableName: MAIN_TABLE_NAME, Key: { PK, SK } }),
+			)
+		).Item as CacheItem | undefined;
+		if (cached && freshUntilOf(cached) > now) {
+			return cached.failed
+				? upstreamFailure()
+				: respond(playerId, cached.stats ?? []);
 		}
 
-		// 2. Cache miss — one BBRef page scrape for the full career.
-		const url = `${BBREF_BASE_URL}/players/${playerId[0]}/${playerId}.html`;
-		const response = await fetch(url, {
-			headers: {
-				"User-Agent": "Mozilla/5.0 (compatible; TeamBuilder/1.0)",
-			},
-		});
-		if (!response.ok) {
-			throw new Error(
-				`BBRef returned ${response.status} ${response.statusText}`,
+		// 2. Missing or due for a refresh: one BBRef page scrape for the full career.
+		let stats: any[];
+		try {
+			stats = await scrapeCareer(playerId);
+			// Careers never shrink: no seasons for a player we have seasons for
+			// means BBRef moved or hid the table (or the page 404s), so keep the
+			// old copy.
+			if (stats.length === 0 && cached && !cached.failed && cached.stats?.length) {
+				throw new Error("BBRef returned no seasons for a player with cached stats");
+			}
+		} catch (err) {
+			console.error(`Refreshing ${playerId} failed`, err);
+			const retryAt = now + FAILURE_BACKOFF_SECONDS;
+			const stale =
+				cached && !cached.failed && Array.isArray(cached.stats) ? cached : undefined;
+			if (stale) {
+				await writeCache(
+					{ ...stale, freshUntil: retryAt, ttl: retryAt + RETAIN_SECONDS },
+					unchangedSince(cached),
+				);
+				return respond(playerId, stale.stats);
+			}
+			await writeCache(
+				{ PK, SK, stats: [], failed: true, freshUntil: retryAt, ttl: retryAt },
+				unchangedSince(cached),
 			);
+			return upstreamFailure();
 		}
 
-		const html = await response.text();
-		const stats = parseCareer(html);
-
-		// 3. Write-through cache.
-		await docClient.send(
-			new PutCommand({
-				TableName: MAIN_TABLE_NAME,
-				Item: {
-					PK,
-					SK,
-					stats,
-					ttl: Math.floor(Date.now() / 1000) + CACHE_TTL_SECONDS,
-				},
-			}),
-		);
+		// 3. Write-through cache. Unconditional: fresh data always wins.
+		const freshUntil =
+			now + (stats.length ? STATS_FRESH_SECONDS : EMPTY_FRESH_SECONDS);
+		await writeCache({ PK, SK, stats, freshUntil, ttl: freshUntil + RETAIN_SECONDS });
 
 		return respond(playerId, stats);
 	} catch (err) {
