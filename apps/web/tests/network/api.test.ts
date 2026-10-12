@@ -29,6 +29,7 @@ import {
     customPlayerApi,
     feedbackApi,
     PLAYER_STATS_CONCURRENCY,
+    PLAYER_STATS_TIMEOUT_MS,
 } from "@/network/api";
 
 beforeEach(() => {
@@ -154,7 +155,7 @@ describe("dataApi.getPlayerStats", () => {
 
         expect(mockInstance.get).toHaveBeenCalledWith(
             "/api/data/get-player-stats",
-            { params: { playerId: "jamesle01" } },
+            { params: { playerId: "jamesle01" }, timeout: PLAYER_STATS_TIMEOUT_MS },
         );
         expect(result).toEqual(body);
     });

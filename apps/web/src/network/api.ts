@@ -213,6 +213,9 @@ export const feedbackApi = {
 // A remix or loaded team fetches every slot's stats at once; each cache miss
 // is a Basketball-Reference scrape, which allows ~20 requests a minute.
 export const PLAYER_STATS_CONCURRENCY = 3;
+// A request that never settles would hold one of those slots for good, so cap
+// it. The Lambda gives up on Basketball-Reference after 8s.
+export const PLAYER_STATS_TIMEOUT_MS = 20_000;
 const limitPlayerStats = createLimiter(PLAYER_STATS_CONCURRENCY);
 
 // Data API - matches DATA_ROUTES in CDK
@@ -230,7 +233,7 @@ export const dataApi = {
         limitPlayerStats(async () => {
             const response = await api.get<GetPlayerStatsResponse>(
                 '/api/data/get-player-stats',
-                { params: { playerId } },
+                { params: { playerId }, timeout: PLAYER_STATS_TIMEOUT_MS },
             );
             return response.data;
         }),
