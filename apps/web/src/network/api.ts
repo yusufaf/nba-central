@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { createLimiter } from '@/utils/limit';
 import type {
     InitiateMultipartUploadPayload,
     InitiateMultipartUploadResponse,
@@ -209,6 +210,11 @@ export const feedbackApi = {
     },
 };
 
+// A remix or loaded team fetches every slot's stats at once; each cache miss
+// is a Basketball-Reference scrape, which allows ~20 requests a minute.
+export const PLAYER_STATS_CONCURRENCY = 3;
+const limitPlayerStats = createLimiter(PLAYER_STATS_CONCURRENCY);
+
 // Data API - matches DATA_ROUTES in CDK
 export const dataApi = {
     getPlayers: async (
@@ -220,15 +226,14 @@ export const dataApi = {
         );
         return response.data;
     },
-    getPlayerStats: async (
-        playerId: string,
-    ): Promise<GetPlayerStatsResponse> => {
-        const response = await api.get<GetPlayerStatsResponse>(
-            '/api/data/get-player-stats',
-            { params: { playerId } },
-        );
-        return response.data;
-    },
+    getPlayerStats: (playerId: string): Promise<GetPlayerStatsResponse> =>
+        limitPlayerStats(async () => {
+            const response = await api.get<GetPlayerStatsResponse>(
+                '/api/data/get-player-stats',
+                { params: { playerId } },
+            );
+            return response.data;
+        }),
 };
 
 // News API

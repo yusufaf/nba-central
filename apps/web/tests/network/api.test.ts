@@ -23,7 +23,13 @@ vi.mock("axios", () => ({
     },
 }));
 
-import { teamApi, dataApi, customPlayerApi, feedbackApi } from "@/network/api";
+import {
+    teamApi,
+    dataApi,
+    customPlayerApi,
+    feedbackApi,
+    PLAYER_STATS_CONCURRENCY,
+} from "@/network/api";
 
 beforeEach(() => {
     vi.clearAllMocks();
@@ -151,6 +157,76 @@ describe("dataApi.getPlayerStats", () => {
             { params: { playerId: "jamesle01" } },
         );
         expect(result).toEqual(body);
+    });
+
+    // The limiter is module state shared by every test in this file, so each
+    // test below settles all of its requests before it ends.
+    const flush = () => new Promise<void>((resolve) => setTimeout(resolve, 0));
+
+    it("keeps at most PLAYER_STATS_CONCURRENCY requests in flight for a 13-player team", async () => {
+        const pending: Array<(value: unknown) => void> = [];
+        let inFlight = 0;
+        let peak = 0;
+        mockInstance.get.mockImplementation(() => {
+            inFlight++;
+            peak = Math.max(peak, inFlight);
+            return new Promise((resolve) => {
+                pending.push((value) => {
+                    inFlight--;
+                    resolve(value);
+                });
+            });
+        });
+
+        const ids = Array.from({ length: 13 }, (_, i) => `player${i}`);
+        const results = ids.map((id) => dataApi.getPlayerStats(id));
+
+        await flush();
+        expect(mockInstance.get).toHaveBeenCalledTimes(PLAYER_STATS_CONCURRENCY);
+
+        pending.shift()!({ data: { data: [], rating: 0 } });
+        await flush();
+        expect(mockInstance.get).toHaveBeenCalledTimes(PLAYER_STATS_CONCURRENCY + 1);
+
+        while (pending.length) {
+            pending.shift()!({ data: { data: [], rating: 0 } });
+            await flush();
+        }
+
+        expect(await Promise.all(results)).toHaveLength(13);
+        expect(mockInstance.get).toHaveBeenCalledTimes(13);
+        expect(peak).toBe(PLAYER_STATS_CONCURRENCY);
+    });
+
+    it("a failed request frees its slot", async () => {
+        const pending: Array<{
+            resolve: (value: unknown) => void;
+            reject: (reason: unknown) => void;
+        }> = [];
+        mockInstance.get.mockImplementation(
+            () =>
+                new Promise((resolve, reject) => {
+                    pending.push({ resolve, reject });
+                }),
+        );
+
+        const results = Array.from({ length: PLAYER_STATS_CONCURRENCY + 1 }, (_, i) =>
+            dataApi.getPlayerStats(`player${i}`),
+        );
+        const outcomes = results.map((r) => r.then(() => "ok", () => "failed"));
+
+        await flush();
+        expect(mockInstance.get).toHaveBeenCalledTimes(PLAYER_STATS_CONCURRENCY);
+
+        pending[0].reject(new Error("502"));
+        await flush();
+        expect(mockInstance.get).toHaveBeenCalledTimes(PLAYER_STATS_CONCURRENCY + 1);
+
+        pending.slice(1).forEach((p) => p.resolve({ data: { data: [] } }));
+        await flush();
+        pending.slice(PLAYER_STATS_CONCURRENCY).forEach((p) => p.resolve({ data: { data: [] } }));
+
+        expect(await Promise.all(outcomes)).toEqual(["failed", "ok", "ok", "ok"]);
     });
 });
 
