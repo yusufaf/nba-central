@@ -1,4 +1,6 @@
 import { describe, it, expect } from "vitest";
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
 import { buildOgTags, escapeHtml, injectOgTags } from "../../utilities/og-html";
 import type { PublicTeam } from "../../models/api/teams-api";
 
@@ -71,6 +73,40 @@ describe("injectOgTags", () => {
 		expect(out).toContain("<title>Bulls &lt;&quot;96&quot;&gt; — NBA Team Builder</title>");
 		expect(out.indexOf('property="og:title"')).toBeLessThan(out.indexOf("</head>"));
 		expect(out).not.toContain("<title>NBA Team Builder</title>");
+	});
+
+	it("replaces the shell's default description, canonical, and share tags with the team's", () => {
+		const shell = [
+			"<html><head>",
+			'<meta name="viewport" content="width=device-width">',
+			"<title>nba-central</title>",
+			'<meta name="description" content="Site description">',
+			'<link rel="canonical" href="https://nba.example/">',
+			'<meta property="og:title" content="Site title">',
+			'<meta property="og:image" content="https://nba.example/og-image.jpg">',
+			'<meta property="og:image:width" content="1200">',
+			'<meta name="twitter:card" content="summary_large_image">',
+			"</head><body></body></html>",
+		].join("\n");
+		const out = injectOgTags(shell, team, "https://nba.example");
+		for (const tag of ['name="description"', 'rel="canonical"', 'property="og:title"', 'property="og:image"', 'property="og:image:width"', 'name="twitter:card"']) {
+			expect(out.split(tag)).toHaveLength(2);
+		}
+		expect(out).not.toContain("Site description");
+		expect(out).not.toContain("Site title");
+		expect(out).not.toContain("og-image.jpg");
+		expect(out).toContain('<link rel="canonical" href="https://nba.example/t/t1">');
+		expect(out).toContain('<meta name="viewport" content="width=device-width">');
+	});
+
+	it("leaves exactly one of each tag when given the web app's real index.html", () => {
+		const shell = readFileSync(resolve(__dirname, "../../../web/index.html"), "utf8");
+		const out = injectOgTags(shell, team, "https://nba.example");
+		for (const tag of ['name="description"', 'rel="canonical"', 'property="og:title"', 'property="og:url"', 'property="og:image"', 'name="twitter:card"', 'name="twitter:image"']) {
+			expect(out.split(tag)).toHaveLength(2);
+		}
+		expect(out).toContain('<link rel="canonical" href="https://nba.example/t/t1">');
+		expect(out).toContain('<meta property="og:url" content="https://nba.example/t/t1">');
 	});
 
 	it("inserts titles containing $-patterns literally instead of expanding them", () => {

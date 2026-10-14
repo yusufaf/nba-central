@@ -35,6 +35,8 @@ export const buildOgTags = (team: PublicTeam, siteUrl: string): string => {
 	const image = escapeHtml(team.cardUrl || `${siteUrl}/hero/hero-poster.jpg`);
 	const url = escapeHtml(`${siteUrl}/t/${team.teamUUID}`);
 	return [
+		`<meta name="description" content="${description}">`,
+		`<link rel="canonical" href="${url}">`,
 		`<meta property="og:type" content="website">`,
 		`<meta property="og:title" content="${title}">`,
 		`<meta property="og:description" content="${description}">`,
@@ -53,11 +55,19 @@ export const buildOgTags = (team: PublicTeam, siteUrl: string): string => {
 	].join("\n");
 };
 
+// The site-wide description, canonical, and OG/Twitter tags index.html ships
+// for every route. A team's own tags replace them: left in, the page would
+// carry two of each and the canonical would claim the team page is the home
+// page.
+const SHELL_DEFAULT_TAGS =
+	/<(?:meta\s+(?:property="og:[^"]*"|name="(?:twitter:[^"]*|description)")|link\s+rel="canonical")[^>]*>\s*/g;
+
 // The SPA shell is index.html as deployed — hashed asset URLs and all. Only
-// the <title> and the <head> tail change; the body boots Vue as usual.
+// the <title> and the <head> tags change; the body boots Vue as usual.
 export const injectOgTags = (shell: string, team: PublicTeam, siteUrl: string): string => {
 	const title = `<title>${escapeHtml(team.title || "Untitled team")} — NBA Team Builder</title>`;
 	return shell
+		.replace(SHELL_DEFAULT_TAGS, "")
 		.replace(/<title>[\s\S]*?<\/title>/, () => title)
 		.replace("</head>", () => `${buildOgTags(team, siteUrl)}\n</head>`);
 };
