@@ -18,6 +18,7 @@
         "refresh-execs": "ts-node -r tsconfig-paths/register scripts/refresh-execs.ts",
         "refresh-historical-logos": "ts-node -r tsconfig-paths/register scripts/refresh-historical-logos.ts",
         "refresh-historical-jerseys": "ts-node -r tsconfig-paths/register scripts/refresh-historical-jerseys.ts",
+        "refresh-current-logos": "ts-node -r tsconfig-paths/register scripts/refresh-current-logos.ts",
         "upload-hero-video": "ts-node -r tsconfig-paths/register scripts/upload-hero-video.ts",
         "cdk": "cdk"
     },

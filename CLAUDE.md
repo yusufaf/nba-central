@@ -38,6 +38,7 @@ pnpm --filter cdk refresh-coaches           # rewrite coaches.json from Basketba
 pnpm --filter cdk refresh-execs             # rewrite execs.json from Basketball-Reference
 pnpm --filter cdk refresh-historical-logos  # rewrite historicalLogos.json, upload images to S3
 pnpm --filter cdk refresh-historical-jerseys  # rewrite historicalJerseys.json, upload images to S3
+pnpm --filter cdk refresh-current-logos     # rewrite currentTeamLogos.json from ESPN's teams endpoint
 pnpm --filter cdk run refresh-<name> -- --check  # validate against the live source, write nothing
 pnpm --filter cdk upload-hero-video             # upload apps/web's hero clip, rewrite heroMedia.json
 pnpm --filter cdk run upload-hero-video -- --check  # validate the local file, upload nothing
