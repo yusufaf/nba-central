@@ -22,6 +22,7 @@ pnpm refresh-coaches           # rewrite coaches.json from Basketball-Reference
 pnpm refresh-execs             # rewrite execs.json from Basketball-Reference
 pnpm refresh-historical-logos  # rewrite historicalLogos.json, upload images to S3/CloudFront
 pnpm refresh-historical-jerseys  # rewrite historicalJerseys.json, upload images to S3/CloudFront
+pnpm refresh-current-logos     # rewrite currentTeamLogos.json from ESPN's teams endpoint
 pnpm run refresh-<name> -- --check  # validate against the live source, write nothing
 pnpm upload-hero-video          # upload apps/web's hero clip, rewrite heroMedia.json
 pnpm run upload-hero-video -- --check  # validate the local file, upload nothing
