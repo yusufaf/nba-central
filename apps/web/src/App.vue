@@ -49,9 +49,14 @@ onMounted(() => {
             <RouterView />
         </main>
         <footer class="app-footer">
-            <button type="button" class="footer-link" @click="feedbackOpen = true">
-                Report a bug or suggest an idea
-            </button>
+            <div class="footer-text">
+                <button type="button" class="footer-link" @click="feedbackOpen = true">
+                    Report a bug or suggest an idea
+                </button>
+                <p class="footer-note">
+                    Fan-made project. Not affiliated with or endorsed by the NBA.
+                </p>
+            </div>
             <a
                 class="github-logo"
                 href="https://github.com/yusufaf/nba-central"
@@ -88,6 +93,19 @@ onMounted(() => {
     padding: 0.75rem 1rem;
     background-color: hsl(var(--primary));
     color: hsl(var(--primary-foreground));
+}
+
+.footer-text {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 0.25rem 1rem;
+}
+
+.footer-note {
+    font-size: 0.8125rem;
+    color: hsl(var(--primary-foreground) / 0.85);
+    text-wrap: balance;
 }
 
 .footer-link {
