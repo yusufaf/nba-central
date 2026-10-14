@@ -1,6 +1,6 @@
 [
     {
-        "imgLink": "https://upload.wikimedia.org/wikipedia/commons/thumb/b/bc/American_Airlines_Center_August_2015.jpg/500px-American_Airlines_Center_August_2015.jpg",
+        "imgLink": "https://thumb.wikimedia.org/wikipedia/commons/thumb/b/bc/American_Airlines_Center_August_2015.jpg/500px-American_Airlines_Center_August_2015.jpg",
         "name": "American Airlines Center",
         "location": "Dallas, Texas",
         "team": "Dallas Mavericks",
@@ -8,7 +8,7 @@
         "openedYear": 2001
     },
     {
-        "imgLink": "https://upload.wikimedia.org/wikipedia/commons/thumb/6/6c/Ball_Arena_exterior_2022.jpg/500px-Ball_Arena_exterior_2022.jpg",
+        "imgLink": "https://thumb.wikimedia.org/wikipedia/commons/thumb/6/6c/Ball_Arena_exterior_2022.jpg/500px-Ball_Arena_exterior_2022.jpg",
         "name": "Ball Arena",
         "location": "Denver, Colorado",
         "team": "Denver Nuggets",
@@ -16,7 +16,7 @@
         "openedYear": 1999
     },
     {
-        "imgLink": "https://upload.wikimedia.org/wikipedia/commons/thumb/c/c8/Barclays_Center_-_2026_%2855268559424%29.jpg/500px-Barclays_Center_-_2026_%2855268559424%29.jpg",
+        "imgLink": "https://thumb.wikimedia.org/wikipedia/commons/thumb/c/c8/Barclays_Center_-_2026_%2855268559424%29.jpg/500px-Barclays_Center_-_2026_%2855268559424%29.jpg",
         "name": "Barclays Center",
         "location": "Brooklyn, New York",
         "team": "Brooklyn Nets",
@@ -24,7 +24,7 @@
         "openedYear": 2012
     },
     {
-        "imgLink": "https://upload.wikimedia.org/wikipedia/commons/thumb/2/2f/Capital_One_Arena_-_Washington%2C_D.C.jpg/500px-Capital_One_Arena_-_Washington%2C_D.C.jpg",
+        "imgLink": "https://thumb.wikimedia.org/wikipedia/commons/thumb/2/2f/Capital_One_Arena_-_Washington%2C_D.C.jpg/500px-Capital_One_Arena_-_Washington%2C_D.C.jpg",
         "name": "Capital One Arena",
         "location": "Washington, D.C.",
         "team": "Washington Wizards",
@@ -32,7 +32,7 @@
         "openedYear": 1997
     },
     {
-        "imgLink": "https://upload.wikimedia.org/wikipedia/commons/thumb/0/07/Chase_Center.jpg/500px-Chase_Center.jpg",
+        "imgLink": "https://thumb.wikimedia.org/wikipedia/commons/thumb/0/07/Chase_Center.jpg/500px-Chase_Center.jpg",
         "name": "Chase Center",
         "location": "San Francisco, California",
         "team": "Golden State Warriors",
@@ -40,7 +40,7 @@
         "openedYear": 2019
     },
     {
-        "imgLink": "https://upload.wikimedia.org/wikipedia/commons/thumb/f/fd/Crypto.com_Arena_exterior_2023.jpg/500px-Crypto.com_Arena_exterior_2023.jpg",
+        "imgLink": "https://thumb.wikimedia.org/wikipedia/commons/thumb/f/fd/Crypto.com_Arena_exterior_2023.jpg/500px-Crypto.com_Arena_exterior_2023.jpg",
         "name": "Crypto.com Arena",
         "location": "Los Angeles, California",
         "team": "Los Angeles Lakers",
@@ -48,7 +48,7 @@
         "openedYear": 1999
     },
     {
-        "imgLink": "https://upload.wikimedia.org/wikipedia/commons/thumb/e/ec/Delta_Center_2023.jpg/500px-Delta_Center_2023.jpg",
+        "imgLink": "https://thumb.wikimedia.org/wikipedia/commons/thumb/e/ec/Delta_Center_2023.jpg/500px-Delta_Center_2023.jpg",
         "name": "Delta Center",
         "location": "Salt Lake City, Utah",
         "team": "Utah Jazz",
@@ -56,7 +56,7 @@
         "openedYear": 1991
     },
     {
-        "imgLink": "https://upload.wikimedia.org/wikipedia/commons/thumb/b/ba/FedExForum_at_night.jpg/500px-FedExForum_at_night.jpg",
+        "imgLink": "https://thumb.wikimedia.org/wikipedia/commons/thumb/b/ba/FedExForum_at_night.jpg/500px-FedExForum_at_night.jpg",
         "name": "FedExForum",
         "location": "Memphis, Tennessee",
         "team": "Memphis Grizzlies",
@@ -64,7 +64,7 @@
         "openedYear": 2004
     },
     {
-        "imgLink": "https://upload.wikimedia.org/wikipedia/commons/thumb/2/2c/Milwaukee_July_2022_022_%28Fiserv_Forum%29.jpg/500px-Milwaukee_July_2022_022_%28Fiserv_Forum%29.jpg",
+        "imgLink": "https://thumb.wikimedia.org/wikipedia/commons/thumb/2/2c/Milwaukee_July_2022_022_%28Fiserv_Forum%29.jpg/500px-Milwaukee_July_2022_022_%28Fiserv_Forum%29.jpg",
         "name": "Fiserv Forum",
         "location": "Milwaukee, Wisconsin",
         "team": "Milwaukee Bucks",
@@ -72,7 +72,7 @@
         "openedYear": 2018
     },
     {
-        "imgLink": "https://upload.wikimedia.org/wikipedia/commons/thumb/5/50/Texasdd.JPG/500px-Texasdd.JPG",
+        "imgLink": "https://thumb.wikimedia.org/wikipedia/commons/thumb/5/50/Texasdd.JPG/500px-Texasdd.JPG",
         "name": "Frost Bank Center",
         "location": "San Antonio, Texas",
         "team": "San Antonio Spurs",
@@ -80,7 +80,7 @@
         "openedYear": 2002
     },
     {
-        "imgLink": "https://upload.wikimedia.org/wikipedia/commons/thumb/6/67/Bankers_Life_Fieldhouse%2C_Indian%C3%A1polis%2C_Estados_Unidos%2C_2012-10-22%2C_DD_02.jpg/500px-Bankers_Life_Fieldhouse%2C_Indian%C3%A1polis%2C_Estados_Unidos%2C_2012-10-22%2C_DD_02.jpg",
+        "imgLink": "https://thumb.wikimedia.org/wikipedia/commons/thumb/6/67/Bankers_Life_Fieldhouse%2C_Indian%C3%A1polis%2C_Estados_Unidos%2C_2012-10-22%2C_DD_02.jpg/500px-Bankers_Life_Fieldhouse%2C_Indian%C3%A1polis%2C_Estados_Unidos%2C_2012-10-22%2C_DD_02.jpg",
         "name": "Gainbridge Fieldhouse",
         "location": "Indianapolis, Indiana",
         "team": "Indiana Pacers",
@@ -88,7 +88,7 @@
         "openedYear": 1999
     },
     {
-        "imgLink": "https://upload.wikimedia.org/wikipedia/commons/thumb/3/32/Golden_1_Center_aerial_view.jpg/500px-Golden_1_Center_aerial_view.jpg",
+        "imgLink": "https://thumb.wikimedia.org/wikipedia/commons/thumb/3/32/Golden_1_Center_aerial_view.jpg/500px-Golden_1_Center_aerial_view.jpg",
         "name": "Golden 1 Center",
         "location": "Sacramento, California",
         "team": "Sacramento Kings",
@@ -96,7 +96,7 @@
         "openedYear": 2016
     },
     {
-        "imgLink": "https://upload.wikimedia.org/wikipedia/commons/thumb/a/ac/Intuit_Dome_Fa%C3%A7ade.jpg/500px-Intuit_Dome_Fa%C3%A7ade.jpg",
+        "imgLink": "https://thumb.wikimedia.org/wikipedia/commons/thumb/a/ac/Intuit_Dome_Fa%C3%A7ade.jpg/500px-Intuit_Dome_Fa%C3%A7ade.jpg",
         "name": "Intuit Dome",
         "location": "Inglewood, California",
         "team": "Los Angeles Clippers",
@@ -104,7 +104,7 @@
         "openedYear": 2024
     },
     {
-        "imgLink": "https://upload.wikimedia.org/wikipedia/commons/thumb/5/50/Kaseya_Center_Downtown_Miami_FL%2C_5_April_2024.jpg/500px-Kaseya_Center_Downtown_Miami_FL%2C_5_April_2024.jpg",
+        "imgLink": "https://thumb.wikimedia.org/wikipedia/commons/thumb/5/50/Kaseya_Center_Downtown_Miami_FL%2C_5_April_2024.jpg/500px-Kaseya_Center_Downtown_Miami_FL%2C_5_April_2024.jpg",
         "name": "Kaseya Center",
         "location": "Miami, Florida",
         "team": "Miami Heat",
@@ -112,7 +112,7 @@
         "openedYear": 1999
     },
     {
-        "imgLink": "https://upload.wikimedia.org/wikipedia/commons/thumb/8/83/Kia_Center_12-22-24.jpg/500px-Kia_Center_12-22-24.jpg",
+        "imgLink": "https://thumb.wikimedia.org/wikipedia/commons/thumb/8/83/Kia_Center_12-22-24.jpg/500px-Kia_Center_12-22-24.jpg",
         "name": "Kia Center",
         "location": "Orlando, Florida",
         "team": "Orlando Magic",
@@ -120,7 +120,7 @@
         "openedYear": 2010
     },
     {
-        "imgLink": "https://upload.wikimedia.org/wikipedia/commons/thumb/c/c6/Detroit_August_2025_07_%28Little_Caesars_Arena%29.jpg/500px-Detroit_August_2025_07_%28Little_Caesars_Arena%29.jpg",
+        "imgLink": "https://thumb.wikimedia.org/wikipedia/commons/thumb/c/c6/Detroit_August_2025_07_%28Little_Caesars_Arena%29.jpg/500px-Detroit_August_2025_07_%28Little_Caesars_Arena%29.jpg",
         "name": "Little Caesars Arena",
         "location": "Detroit, Michigan",
         "team": "Detroit Pistons",
@@ -128,7 +128,7 @@
         "openedYear": 2017
     },
     {
-        "imgLink": "https://upload.wikimedia.org/wikipedia/commons/thumb/4/4b/Madison_Square_Garden_%28MSG%29_-_Full_%2848124330357%29.jpg/500px-Madison_Square_Garden_%28MSG%29_-_Full_%2848124330357%29.jpg",
+        "imgLink": "https://thumb.wikimedia.org/wikipedia/commons/thumb/4/4b/Madison_Square_Garden_%28MSG%29_-_Full_%2848124330357%29.jpg/500px-Madison_Square_Garden_%28MSG%29_-_Full_%2848124330357%29.jpg",
         "name": "Madison Square Garden",
         "location": "New York, New York",
         "team": "New York Knicks",
@@ -136,7 +136,7 @@
         "openedYear": 1968
     },
     {
-        "imgLink": "https://upload.wikimedia.org/wikipedia/commons/thumb/9/97/Modacenter2019.jpg/500px-Modacenter2019.jpg",
+        "imgLink": "https://thumb.wikimedia.org/wikipedia/commons/thumb/9/97/Modacenter2019.jpg/500px-Modacenter2019.jpg",
         "name": "Moda Center",
         "location": "Portland, Oregon",
         "team": "Portland Trail Blazers",
@@ -144,7 +144,7 @@
         "openedYear": 1995
     },
     {
-        "imgLink": "https://upload.wikimedia.org/wikipedia/commons/thumb/b/b9/Mortgage_Matchup_Center.webp/500px-Mortgage_Matchup_Center.webp",
+        "imgLink": "https://thumb.wikimedia.org/wikipedia/commons/thumb/b/b9/Mortgage_Matchup_Center.webp/500px-Mortgage_Matchup_Center.webp",
         "name": "Mortgage Matchup Center",
         "location": "Phoenix, Arizona",
         "team": "Phoenix Suns",
@@ -152,7 +152,7 @@
         "openedYear": 1992
     },
     {
-        "imgLink": "https://upload.wikimedia.org/wikipedia/commons/thumb/4/49/Paycom_Center_exterior_aerial_view.jpg/500px-Paycom_Center_exterior_aerial_view.jpg",
+        "imgLink": "https://thumb.wikimedia.org/wikipedia/commons/thumb/4/49/Paycom_Center_exterior_aerial_view.jpg/500px-Paycom_Center_exterior_aerial_view.jpg",
         "name": "Paycom Center",
         "location": "Oklahoma City, Oklahoma",
         "team": "Oklahoma City Thunder",
@@ -160,7 +160,7 @@
         "openedYear": 2002
     },
     {
-        "imgLink": "https://upload.wikimedia.org/wikipedia/commons/thumb/3/35/Rocket_Mortgage_FieldHouse_2022_%28cropped%29.png/500px-Rocket_Mortgage_FieldHouse_2022_%28cropped%29.png",
+        "imgLink": "https://thumb.wikimedia.org/wikipedia/commons/thumb/3/35/Rocket_Mortgage_FieldHouse_2022_%28cropped%29.png/500px-Rocket_Mortgage_FieldHouse_2022_%28cropped%29.png",
         "name": "Rocket Arena",
         "location": "Cleveland, Ohio",
         "team": "Cleveland Cavaliers",
@@ -168,7 +168,7 @@
         "openedYear": 1994
     },
     {
-        "imgLink": "https://upload.wikimedia.org/wikipedia/commons/thumb/5/57/Scotiabank_Arena_-_2018_%28cropped%29.jpg/500px-Scotiabank_Arena_-_2018_%28cropped%29.jpg",
+        "imgLink": "https://thumb.wikimedia.org/wikipedia/commons/thumb/5/57/Scotiabank_Arena_-_2018_%28cropped%29.jpg/500px-Scotiabank_Arena_-_2018_%28cropped%29.jpg",
         "name": "Scotiabank Arena",
         "location": "Toronto, Ontario",
         "team": "Toronto Raptors",
@@ -176,7 +176,7 @@
         "openedYear": 1999
     },
     {
-        "imgLink": "https://upload.wikimedia.org/wikipedia/commons/thumb/d/d6/New_Orleans_Arena%2C_exterior_view%2C_10_January_2022_%28cropped%29.jpg/500px-New_Orleans_Arena%2C_exterior_view%2C_10_January_2022_%28cropped%29.jpg",
+        "imgLink": "https://thumb.wikimedia.org/wikipedia/commons/thumb/d/d6/New_Orleans_Arena%2C_exterior_view%2C_10_January_2022_%28cropped%29.jpg/500px-New_Orleans_Arena%2C_exterior_view%2C_10_January_2022_%28cropped%29.jpg",
         "name": "Smoothie King Center",
         "location": "New Orleans, Louisiana",
         "team": "New Orleans Pelicans",
@@ -184,7 +184,7 @@
         "openedYear": 1999
     },
     {
-        "imgLink": "https://upload.wikimedia.org/wikipedia/commons/thumb/6/6e/Spectrum_Center_2018.jpg/500px-Spectrum_Center_2018.jpg",
+        "imgLink": "https://thumb.wikimedia.org/wikipedia/commons/thumb/6/6e/Spectrum_Center_2018.jpg/500px-Spectrum_Center_2018.jpg",
         "name": "Spectrum Center",
         "location": "Charlotte, North Carolina",
         "team": "Charlotte Hornets",
@@ -192,7 +192,7 @@
         "openedYear": 2005
     },
     {
-        "imgLink": "https://upload.wikimedia.org/wikipedia/commons/thumb/6/6a/State_Farm_%28Philips%29_Arena%2C_Atlanta%2C_GA_%2846558861525%29_-_2019.jpg/500px-State_Farm_%28Philips%29_Arena%2C_Atlanta%2C_GA_%2846558861525%29_-_2019.jpg",
+        "imgLink": "https://thumb.wikimedia.org/wikipedia/commons/thumb/6/6a/State_Farm_%28Philips%29_Arena%2C_Atlanta%2C_GA_%2846558861525%29_-_2019.jpg/500px-State_Farm_%28Philips%29_Arena%2C_Atlanta%2C_GA_%2846558861525%29_-_2019.jpg",
         "name": "State Farm Arena",
         "location": "Atlanta, Georgia",
         "team": "Atlanta Hawks",
@@ -200,7 +200,7 @@
         "openedYear": 1999
     },
     {
-        "imgLink": "https://upload.wikimedia.org/wikipedia/commons/thumb/a/a7/TargetCenter.jpg/500px-TargetCenter.jpg",
+        "imgLink": "https://thumb.wikimedia.org/wikipedia/commons/thumb/a/a7/TargetCenter.jpg/500px-TargetCenter.jpg",
         "name": "Target Center",
         "location": "Minneapolis, Minnesota",
         "team": "Minnesota Timberwolves",
@@ -208,7 +208,7 @@
         "openedYear": 1990
     },
     {
-        "imgLink": "https://upload.wikimedia.org/wikipedia/commons/thumb/c/c6/TD_Garden_%2854960947755%29.jpg/500px-TD_Garden_%2854960947755%29.jpg",
+        "imgLink": "https://thumb.wikimedia.org/wikipedia/commons/thumb/c/c6/TD_Garden_%2854960947755%29.jpg/500px-TD_Garden_%2854960947755%29.jpg",
         "name": "TD Garden",
         "location": "Boston, Massachusetts",
         "team": "Boston Celtics",
@@ -216,7 +216,7 @@
         "openedYear": 1995
     },
     {
-        "imgLink": "https://upload.wikimedia.org/wikipedia/commons/thumb/d/db/Toyota_Center_entr.jpg/500px-Toyota_Center_entr.jpg",
+        "imgLink": "https://thumb.wikimedia.org/wikipedia/commons/thumb/d/db/Toyota_Center_entr.jpg/500px-Toyota_Center_entr.jpg",
         "name": "Toyota Center",
         "location": "Houston, Texas",
         "team": "Houston Rockets",
@@ -224,7 +224,7 @@
         "openedYear": 2003
     },
     {
-        "imgLink": "https://upload.wikimedia.org/wikipedia/commons/thumb/2/22/United_Center_1.jpg/500px-United_Center_1.jpg",
+        "imgLink": "https://thumb.wikimedia.org/wikipedia/commons/thumb/2/22/United_Center_1.jpg/500px-United_Center_1.jpg",
         "name": "United Center",
         "location": "Chicago, Illinois",
         "team": "Chicago Bulls",
@@ -232,7 +232,7 @@
         "openedYear": 1994
     },
     {
-        "imgLink": "https://upload.wikimedia.org/wikipedia/commons/thumb/5/50/Wells_Fargo_Center_-_2019_OWL_Grand_Finals.jpg/500px-Wells_Fargo_Center_-_2019_OWL_Grand_Finals.jpg",
+        "imgLink": "https://thumb.wikimedia.org/wikipedia/commons/thumb/5/50/Wells_Fargo_Center_-_2019_OWL_Grand_Finals.jpg/500px-Wells_Fargo_Center_-_2019_OWL_Grand_Finals.jpg",
         "name": "Xfinity Mobile Arena",
         "location": "Philadelphia, Pennsylvania",
         "team": "Philadelphia 76ers",
