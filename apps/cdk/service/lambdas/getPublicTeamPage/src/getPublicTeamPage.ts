@@ -7,7 +7,7 @@ import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
 import { DynamoDBDocumentClient } from "@aws-sdk/lib-dynamodb";
 import { GetObjectCommand, S3Client } from "@aws-sdk/client-s3";
 import { queryPublicTeam } from "resources/dynamo/teams";
-import { injectOgTags } from "utilities/og-html";
+import { injectOgTags, markNoindex } from "utilities/og-html";
 
 const { mainTable = "", webBucket = "", siteUrl = "" } = process.env;
 
@@ -94,7 +94,7 @@ export const handler: Handler = async (
 	try {
 		const team = teamUUID ? await queryPublicTeam(docClient, mainTable, teamUUID) : null;
 		// Unknown or private: plain shell, and the SPA shows its own 404.
-		if (!team) return html(shell);
+		if (!team) return html(markNoindex(shell));
 		return html(injectOgTags(shell, team, siteUrl));
 	} catch (err) {
 		console.error("Error building public team page:", err);

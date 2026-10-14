@@ -102,7 +102,7 @@ describe("injectOgTags", () => {
 	it("leaves exactly one of each tag when given the web app's real index.html", () => {
 		const shell = readFileSync(resolve(__dirname, "../../../web/index.html"), "utf8");
 		const out = injectOgTags(shell, team, "https://nba.example");
-		for (const tag of ['name="description"', 'rel="canonical"', 'property="og:title"', 'property="og:url"', 'property="og:image"', 'name="twitter:card"', 'name="twitter:image"']) {
+		for (const tag of ['name="description"', 'rel="canonical"', 'property="og:site_name"', 'property="og:title"', 'property="og:url"', 'property="og:image"', 'name="twitter:card"', 'name="twitter:image"']) {
 			expect(out.split(tag)).toHaveLength(2);
 		}
 		expect(out).toContain('<link rel="canonical" href="https://nba.example/t/t1">');

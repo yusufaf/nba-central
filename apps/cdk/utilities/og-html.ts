@@ -58,9 +58,15 @@ export const buildOgTags = (team: PublicTeam, siteUrl: string): string => {
 // The site-wide description, canonical, and OG/Twitter tags index.html ships
 // for every route. A team's own tags replace them: left in, the page would
 // carry two of each and the canonical would claim the team page is the home
-// page.
+// page. og:site_name is the same on every page, so it stays.
 const SHELL_DEFAULT_TAGS =
-	/<(?:meta\s+(?:property="og:[^"]*"|name="(?:twitter:[^"]*|description)")|link\s+rel="canonical")[^>]*>\s*/g;
+	/<(?:meta\s+(?:property="og:(?!site_name")[^"]*"|name="(?:twitter:[^"]*|description)")|link\s+rel="canonical")[^>]*>\s*/g;
+
+// An unknown or private team still gets the shell (the SPA shows its own
+// not-found view), but the route can't answer 404 through CloudFront, so
+// this keeps crawlers from indexing every made-up /t/ URL.
+export const markNoindex = (shell: string): string =>
+	shell.replace("</head>", () => `<meta name="robots" content="noindex">\n</head>`);
 
 // The SPA shell is index.html as deployed — hashed asset URLs and all. Only
 // the <title> and the <head> tags change; the body boots Vue as usual.
