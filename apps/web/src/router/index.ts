@@ -13,6 +13,7 @@ import Settings from '@/views/Settings.vue';
 import DataDeleted from '@/views/DataDeleted.vue';
 import { useLogto } from '@logto/vue';
 import { requireSignedIn } from './guards';
+import { syncCanonical } from './canonical';
 
 const router = createRouter({
     history: createWebHistory(import.meta.env.BASE_URL),
@@ -86,5 +87,6 @@ const router = createRouter({
 
 // Guards run inside the app's injection context, so useLogto() works here.
 router.beforeEach((to) => (to.meta.requiresAuth ? requireSignedIn(useLogto()) : true));
+router.afterEach((to) => syncCanonical(to.path));
 
 export default router;
