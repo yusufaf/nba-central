@@ -7,8 +7,10 @@
     <title>nba-central — build all-time NBA rosters</title>
     <meta name="description" content="Draft your own NBA team from every player in league history, then add a coach, GM, and arena. Plus live scores, box scores, and news.">
     <!-- Default share/search tags. getPublicTeamPage (apps/cdk) swaps these
-         for a published team's own on /t/:teamUUID, and the router points
-         the canonical at the current route once the app loads. -->
+         for a published team's own on /t/:teamUUID; a tag added here needs
+         handling in apps/cdk/utilities/og-html.ts too. Once the app loads,
+         src/router/indexing.ts points the canonical and og:url at public
+         routes and marks the rest noindex. -->
     <link rel="canonical" href="https://nba.yusufaf.dev/">
     <meta property="og:site_name" content="nba-central">
     <meta property="og:type" content="website">

@@ -1,4 +1,4 @@
-import { createRouter, createWebHistory } from 'vue-router';
+import { createRouter, createWebHistory, START_LOCATION } from 'vue-router';
 import Home from '../views/Home.vue';
 import TeamBuilder from '@/views/TeamBuilder.vue';
 import Scores from '@/views/Scores.vue';
@@ -13,7 +13,7 @@ import Settings from '@/views/Settings.vue';
 import DataDeleted from '@/views/DataDeleted.vue';
 import { useLogto } from '@logto/vue';
 import { requireSignedIn } from './guards';
-import { syncCanonical } from './canonical';
+import { syncIndexing } from './indexing';
 
 const router = createRouter({
     history: createWebHistory(import.meta.env.BASE_URL),
@@ -21,16 +21,19 @@ const router = createRouter({
         {
             path: '/',
             name: 'home',
+            meta: { indexable: true },
             component: Home,
         },
         {
             path: '/teambuilder',
             name: 'teamBuilder',
+            meta: { indexable: true },
             component: TeamBuilder,
         },
         {
             path: '/scores',
             name: 'scores',
+            meta: { indexable: true },
             component: Scores,
         },
         {
@@ -42,6 +45,7 @@ const router = createRouter({
         {
             path: '/news',
             name: 'news',
+            meta: { indexable: true },
             component: News,
         },
         {
@@ -52,6 +56,7 @@ const router = createRouter({
         {
             path: '/t/:teamUUID',
             name: 'publicTeam',
+            meta: { indexable: true, headFromServer: true },
             component: PublicTeam,
             props: true,
         },
@@ -87,6 +92,13 @@ const router = createRouter({
 
 // Guards run inside the app's injection context, so useLogto() works here.
 router.beforeEach((to) => (to.meta.requiresAuth ? requireSignedIn(useLogto()) : true));
-router.afterEach((to) => syncCanonical(to.path));
+// `indexable` routes are the public pages in public/sitemap.xml, plus
+// published teams. On a first load of /t/:teamUUID, getPublicTeamPage has
+// already written the right tags, including noindex for an unknown team, so
+// only later in-app navigations touch them.
+router.afterEach((to, from) => {
+    if (from === START_LOCATION && to.meta.headFromServer) return;
+    syncIndexing(to.path, to.meta.indexable === true);
+});
 
 export default router;
