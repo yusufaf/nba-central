@@ -146,6 +146,20 @@ test('no route requests the team-logos endpoint', async ({ page }) => {
     expect(hits).toEqual([]);
 });
 
+// #188: TeamBuilderHeader fetched all 30 team logos from ESPN's API on every
+// mount. The Current logo tab now reads a bundled JSON instead.
+test('/teambuilder requests nothing from ESPN', async ({ page }) => {
+    await stubNetwork(page);
+    const espn: string[] = [];
+    page.on('request', (request) => {
+        const { hostname } = new URL(request.url());
+        if (/(^|\.)espn(cdn)?\.com$/.test(hostname)) espn.push(request.url());
+    });
+    await page.goto('/teambuilder', { waitUntil: 'domcontentloaded' });
+    await page.waitForTimeout(500);
+    expect(espn).toEqual([]);
+});
+
 test('route boxscore', async ({ page }) => {
     // /game/:id was missing from ROUTES entirely - the box score's line
     // score, DNP rows and stat-tab typography all shipped unreviewed

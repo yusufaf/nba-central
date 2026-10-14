@@ -1,11 +1,6 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue';
-import {
-    VIEW_OPTIONS,
-    DRAWER_OPTIONS,
-    ESPN_TEAM_URL,
-} from '@/constants/constants';
-import axios from 'axios';
+import { ref } from 'vue';
+import { VIEW_OPTIONS, DRAWER_OPTIONS } from '@/constants/constants';
 import TeamCustomizationDialog from './TeamCustomizationDialog.vue';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -64,8 +59,6 @@ const { shouldConfirm } = useTeamBuilderPreferences();
 const showConfirm = ref<boolean>(false);
 const showTeamCustomizationDialog = ref<boolean>(false);
 
-const nbaTeamLogos = ref<any[]>([]);
-
 const canShareNatively = typeof navigator !== 'undefined' && typeof navigator.share === 'function';
 
 // A reset can be undone (toast and Ctrl+Z), so with confirmations off in
@@ -92,38 +85,6 @@ const saveClick = () => {
 const toggleCustomizationDialog = () => {
     showTeamCustomizationDialog.value = !showTeamCustomizationDialog.value;
 };
-
-const fetchAllTeamLogos = async () => {
-    const tempLogos: any[] = [];
-    for (let i = 1; i < 31; i++) {
-        const url = `${ESPN_TEAM_URL}${i}`;
-        const response = await axios.get(url);
-        const { team } = response.data;
-        console.log({ team });
-
-        const logos = team.logos;
-
-        /* Take the first logo for now */
-        const logo = logos[0];
-        tempLogos.push(logo);
-    }
-    console.log('Fetched team logos:', tempLogos);
-
-    /* Sort the logos alphabetically */
-    nbaTeamLogos.value = tempLogos.sort((a, b) => {
-        const hrefSplitA = a.href.split('/');
-        const teamAbbrA = a.href.split('/')[hrefSplitA.length - 1];
-
-        const hrefSplitB = b.href.split('/');
-        const teamAbbrB = b.href.split('/')[hrefSplitB.length - 1];
-
-        return teamAbbrA.localeCompare(teamAbbrB);
-    });
-};
-
-onMounted(() => {
-    fetchAllTeamLogos();
-});
 </script>
 
 <template>
@@ -279,7 +240,6 @@ onMounted(() => {
         />
     </div>
     <TeamCustomizationDialog
-        :nbaTeamLogos
         v-model:showTeamCustomizationDialog="showTeamCustomizationDialog"
         v-model:teamDescription="teamDescription"
         v-model:teamCity="teamCity"

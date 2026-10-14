@@ -14,6 +14,8 @@ import HistoricalTeamCombobox from './HistoricalTeamCombobox.vue';
 import HistoricalLogoPicker from './HistoricalLogoPicker.vue';
 import HistoricalJerseyPicker from './HistoricalJerseyPicker.vue';
 import JerseyDrawingCanvas from './JerseyDrawingCanvas.vue';
+import type { CurrentTeamLogo } from '@/models/types';
+import currentTeamLogosData from '@/assets/data/currentTeamLogos.json';
 
 interface HistoricalTeam {
     name: string;
@@ -21,9 +23,7 @@ interface HistoricalTeam {
     country: string;
 }
 
-const props = defineProps<{
-    nbaTeamLogos: any[];
-}>();
+const currentTeamLogos = currentTeamLogosData as CurrentTeamLogo[];
 
 const showTeamCustomizationDialog = defineModel<boolean>(
     'showTeamCustomizationDialog',
@@ -152,13 +152,13 @@ const handleFileChange = (event: Event) => {
                         </TabsList>
                         <TabsContent value="current" class="mt-4">
                             <div class="team-logos">
-                                <template v-for="logo in props.nbaTeamLogos" :key="logo.href">
+                                <template v-for="team in currentTeamLogos" :key="team.logo">
                                     <img
-                                        :src="logo.href"
-                                        :alt="logo.alt || 'Team logo'"
+                                        :src="team.logo"
+                                        :alt="team.name"
                                         class="team-logo"
-                                        :class="{ selected: logo.href === teamLogo }"
-                                        @click="() => handleLogoClick(logo.href)"
+                                        :class="{ selected: team.logo === teamLogo }"
+                                        @click="() => handleLogoClick(team.logo)"
                                     />
                                 </template>
                             </div>
