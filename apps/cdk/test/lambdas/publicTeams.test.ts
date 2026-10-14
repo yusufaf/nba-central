@@ -139,7 +139,7 @@ describe("getPublicTeamPage", () => {
 		expect(result.statusCode).toBe(200);
 		expect(result.headers["content-type"]).toBe("text/html; charset=utf-8");
 		expect(result.body).toContain('property="og:title" content="Sharers"');
-		expect(result.body).toContain("<title>Sharers — NBA Team Builder</title>");
+		expect(result.body).toContain("<title>Sharers — nba-central</title>");
 		expect(s3Send.mock.calls[0][0].input).toEqual({ Bucket: "team-builder-test-web", Key: "index.html" });
 	});
 

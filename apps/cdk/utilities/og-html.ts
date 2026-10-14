@@ -77,7 +77,7 @@ export const notFoundPage = (shell: string): string =>
 // The SPA shell is index.html as deployed — hashed asset URLs and all. Only
 // the <title> and the <head> tags change; the body boots Vue as usual.
 export const injectOgTags = (shell: string, team: PublicTeam, siteUrl: string): string => {
-	const title = `<title>${escapeHtml(team.title || "Untitled team")} — NBA Team Builder</title>`;
+	const title = `<title>${escapeHtml(team.title || "Untitled team")} — nba-central</title>`;
 	return stripShellDefaults(shell)
 		.replace(/<title>[\s\S]*?<\/title>/, () => title)
 		.replace("</head>", () => `${buildOgTags(team, siteUrl)}\n</head>`);
