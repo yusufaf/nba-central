@@ -25,6 +25,12 @@ describe('syncCanonical', () => {
         expect(canonicalOf(doc)).toBe('https://nba.yusufaf.dev/');
     });
 
+    it('keeps a protocol-relative-looking path on the site origin', () => {
+        const doc = shell();
+        syncCanonical('//evil.example/', doc);
+        expect(canonicalOf(doc)).toBe('https://nba.yusufaf.dev//evil.example/');
+    });
+
     it('does nothing when the page has no canonical', () => {
         const doc = document.implementation.createHTMLDocument();
         syncCanonical('/scores', doc);
