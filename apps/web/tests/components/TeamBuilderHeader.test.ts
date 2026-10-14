@@ -1,6 +1,7 @@
-import { describe, it, expect, beforeEach } from "vitest";
+import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { nextTick } from "vue";
-import { mount } from "@vue/test-utils";
+import { flushPromises, mount } from "@vue/test-utils";
+import axios from "axios";
 import TeamBuilderHeader from "@/components/TeamBuilder/TeamBuilderHeader.vue";
 import { useTeamBuilderPreferences } from "@/composables/useTeamBuilderPreferences";
 import { settingsSync } from "@/composables/useSettingsSync";
@@ -66,5 +67,22 @@ describe("TeamBuilderHeader reset", () => {
         await wrapper.find('[data-testid="reset-button"]').trigger("click");
 
         expect(wrapper.emitted("reset")).toHaveLength(1);
+    });
+});
+
+describe("TeamBuilderHeader team logos", () => {
+    afterEach(() => {
+        vi.restoreAllMocks();
+    });
+
+    it("does not request ESPN on mount (#188)", async () => {
+        const get = vi.spyOn(axios, "get").mockResolvedValue({
+            data: { team: { logos: [{ href: "https://a.espncdn.com/i/teamlogos/nba/500/atl.png" }] } },
+        });
+
+        mountHeader({});
+        await flushPromises();
+
+        expect(get.mock.calls.filter(([url]) => String(url).includes("espn"))).toEqual([]);
     });
 });
