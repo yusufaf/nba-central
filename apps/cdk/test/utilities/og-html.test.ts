@@ -99,14 +99,33 @@ describe("injectOgTags", () => {
 		expect(out).toContain('<meta name="viewport" content="width=device-width">');
 	});
 
-	it("leaves exactly one of each tag when given the web app's real index.html", () => {
+	it("leaves exactly one of every head tag in the web app's real index.html", () => {
+		// The tag list comes from the file itself, so a tag added there later is
+		// covered too: one the team page should override but SHELL_DEFAULT_TAGS
+		// doesn't strip shows up twice, and one it strips without the team page
+		// re-emitting it shows up zero times.
 		const shell = readFileSync(resolve(__dirname, "../../../web/index.html"), "utf8");
-		const out = injectOgTags(shell, team, "https://nba.example");
-		for (const tag of ['name="description"', 'rel="canonical"', 'property="og:site_name"', 'property="og:title"', 'property="og:url"', 'property="og:image"', 'name="twitter:card"', 'name="twitter:image"']) {
-			expect(out.split(tag)).toHaveLength(2);
+		const head = shell.slice(0, shell.indexOf("</head>"));
+		const keys = [...head.matchAll(/<(?:meta|link)\b[^>]*>/g)].map(([tag]) => {
+			const key = /\b(?:property|name|rel|charset)="[^"]*"/.exec(tag);
+			expect(key, `no identifying attribute on ${tag}`).not.toBeNull();
+			return key![0];
+		});
+		for (const key of ['name="description"', 'rel="canonical"', 'property="og:image:alt"', 'property="og:description"', 'name="twitter:title"']) {
+			expect(keys).toContain(key);
 		}
+
+		const out = injectOgTags(shell, team, "https://nba.example");
+		for (const key of keys) {
+			expect(out.split(key).length - 1, key).toBe(1);
+		}
+
 		expect(out).toContain('<link rel="canonical" href="https://nba.example/t/t1">');
 		expect(out).toContain('<meta property="og:url" content="https://nba.example/t/t1">');
+		expect(out).toContain('<meta name="twitter:title" content="Bulls &lt;&quot;96&quot;&gt;">');
+		expect(out).toContain('<meta property="og:image:alt" content="Bulls &lt;&quot;96&quot;&gt; team card">');
+		expect(out).toContain('<meta property="og:description" content="Starting five: Michael Jordan, Scottie Pippen · Coach Phil Jackson · by yusuf">');
+		expect(out).not.toContain("https://nba.yusufaf.dev/");
 	});
 
 	it("inserts titles containing $-patterns literally instead of expanding them", () => {

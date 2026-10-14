@@ -1,5 +1,4 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { markNoindex } from "../../utilities/og-html";
 
 const send = vi.fn();
 
@@ -116,9 +115,13 @@ const { handler: pageHandler, __resetShellCache } = await import(
 	"lambdas/getPublicTeamPage/src/getPublicTeamPage"
 );
 
-const SHELL = "<html><head><title>NBA Team Builder</title></head><body><div id=app></div></body></html>";
-// An unknown or private team is served the shell marked noindex.
-const notFoundPage = (shell: string) => markNoindex(shell);
+// The deployed shell's site-wide tags, which a team page must not inherit.
+const SHELL =
+	'<html><head><title>nba-central</title>\n<link rel="canonical" href="https://nba.example/">\n' +
+	'<meta property="og:title" content="nba-central">\n</head><body><div id=app></div></body></html>';
+const NOT_FOUND_PAGE =
+	'<html><head><title>nba-central</title>\n<meta name="robots" content="noindex">\n</head>' +
+	"<body><div id=app></div></body></html>";
 const shellObject = (etag = '"v1"') => ({
 	Body: { transformToString: async () => SHELL },
 	ETag: etag,
@@ -140,19 +143,34 @@ describe("getPublicTeamPage", () => {
 		expect(s3Send.mock.calls[0][0].input).toEqual({ Bucket: "team-builder-test-web", Key: "index.html" });
 	});
 
-	it("serves the shell marked noindex when the team is not public", async () => {
+	it("serves the shell without its site-wide tags, marked noindex, when the team is not public", async () => {
 		send.mockResolvedValueOnce({ Items: [] });
 		s3Send.mockResolvedValueOnce(shellObject());
 		const result: any = await pageHandler(anonymousEvent("nope"), {} as any, {} as any);
 		expect(result.statusCode).toBe(200);
-		expect(result.body).toBe(SHELL.replace("</head>", '<meta name="robots" content="noindex">\n</head>'));
+		expect(result.body).toBe(NOT_FOUND_PAGE);
+	});
+
+	it("503s, uncached and without the home page's tags, when the team lookup fails", async () => {
+		send.mockRejectedValueOnce(new Error("ProvisionedThroughputExceededException"));
+		s3Send.mockResolvedValueOnce(shellObject());
+		const result: any = await pageHandler(anonymousEvent("t1"), {} as any, {} as any);
+		expect(result.statusCode).toBe(503);
+		expect(result.headers).toEqual({
+			"content-type": "text/html; charset=utf-8",
+			"cache-control": "no-store",
+			"retry-after": "60",
+		});
+		expect(result.body).toBe(
+			"<html><head><title>nba-central</title>\n</head><body><div id=app></div></body></html>",
+		);
 	});
 
 	it("reuses the cached shell across invocations", async () => {
 		send.mockResolvedValue({ Items: [] });
 		s3Send.mockResolvedValueOnce(shellObject('"v1"'));
 		const first: any = await pageHandler(anonymousEvent("a"), {} as any, {} as any);
-		expect(first.body).toBe(notFoundPage(SHELL));
+		expect(first.body).toBe(NOT_FOUND_PAGE);
 
 		s3Send.mockRejectedValueOnce(notModifiedError());
 		const second: any = await pageHandler(anonymousEvent("b"), {} as any, {} as any);
@@ -163,7 +181,7 @@ describe("getPublicTeamPage", () => {
 			Key: "index.html",
 			IfNoneMatch: '"v1"',
 		});
-		expect(second.body).toBe(notFoundPage(SHELL));
+		expect(second.body).toBe(NOT_FOUND_PAGE);
 	});
 
 	it("replaces the cached shell when S3 returns a new body and ETag", async () => {
@@ -180,12 +198,16 @@ describe("getPublicTeamPage", () => {
 		const result: any = await pageHandler(anonymousEvent("b"), {} as any, {} as any);
 
 		expect(s3Send.mock.calls[1][0].input.IfNoneMatch).toBe('"v1"');
-		expect(result.body).toBe(notFoundPage(NEW_SHELL));
+		expect(result.body).toBe(
+			'<html><head><title>Rebuilt</title><meta name="robots" content="noindex">\n</head><body><div id=app></div></body></html>',
+		);
 
 		s3Send.mockRejectedValueOnce(notModifiedError());
 		const third: any = await pageHandler(anonymousEvent("c"), {} as any, {} as any);
 		expect(s3Send.mock.calls[2][0].input.IfNoneMatch).toBe('"v2"');
-		expect(third.body).toBe(notFoundPage(NEW_SHELL));
+		expect(third.body).toBe(
+			'<html><head><title>Rebuilt</title><meta name="robots" content="noindex">\n</head><body><div id=app></div></body></html>',
+		);
 	});
 
 	it("500s plainly when the shell cannot be read", async () => {

@@ -45,6 +45,7 @@ export const buildOgTags = (team: PublicTeam, siteUrl: string): string => {
 			? [
 				`<meta property="og:image:width" content="1200">`,
 				`<meta property="og:image:height" content="630">`,
+				`<meta property="og:image:alt" content="${title} team card">`,
 			]
 			: []),
 		`<meta property="og:url" content="${url}">`,
@@ -58,22 +59,26 @@ export const buildOgTags = (team: PublicTeam, siteUrl: string): string => {
 // The site-wide description, canonical, and OG/Twitter tags index.html ships
 // for every route. A team's own tags replace them: left in, the page would
 // carry two of each and the canonical would claim the team page is the home
-// page. og:site_name is the same on every page, so it stays.
+// page. og:site_name is the same on every page, so it stays. A tag added to
+// index.html's head needs handling here too — og-html.test.ts checks every
+// one of them against the real file.
 const SHELL_DEFAULT_TAGS =
 	/<(?:meta\s+(?:property="og:(?!site_name")[^"]*"|name="(?:twitter:[^"]*|description)")|link\s+rel="canonical")[^>]*>\s*/g;
 
+export const stripShellDefaults = (shell: string): string => shell.replace(SHELL_DEFAULT_TAGS, "");
+
 // An unknown or private team still gets the shell (the SPA shows its own
 // not-found view), but the route can't answer 404 through CloudFront, so
-// this keeps crawlers from indexing every made-up /t/ URL.
-export const markNoindex = (shell: string): string =>
-	shell.replace("</head>", () => `<meta name="robots" content="noindex">\n</head>`);
+// this keeps crawlers from indexing every made-up /t/ URL. No canonical or
+// share tags: the home page's would misdescribe it.
+export const notFoundPage = (shell: string): string =>
+	stripShellDefaults(shell).replace("</head>", () => `<meta name="robots" content="noindex">\n</head>`);
 
 // The SPA shell is index.html as deployed — hashed asset URLs and all. Only
 // the <title> and the <head> tags change; the body boots Vue as usual.
 export const injectOgTags = (shell: string, team: PublicTeam, siteUrl: string): string => {
 	const title = `<title>${escapeHtml(team.title || "Untitled team")} — NBA Team Builder</title>`;
-	return shell
-		.replace(SHELL_DEFAULT_TAGS, "")
+	return stripShellDefaults(shell)
 		.replace(/<title>[\s\S]*?<\/title>/, () => title)
 		.replace("</head>", () => `${buildOgTags(team, siteUrl)}\n</head>`);
 };
