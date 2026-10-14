@@ -75,4 +75,6 @@ Each package tags and releases independently via
 
 ## License
 
-[MIT](./LICENSE) © 2026 Yusuf Afzal
+The source code is [MIT](./LICENSE) © 2026 Yusuf Afzal. NBA team names,
+logos, player data, and game footage belong to their respective owners and
+are not covered by that license.
