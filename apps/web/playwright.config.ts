@@ -10,7 +10,9 @@ import { defineConfig, devices } from '@playwright/test';
  * Baselines are platform-specific because font rasterisation differs, so they
  * are generated and compared in a container. See `pnpm test:visual`.
  */
-const PORT = 3101;
+// Outside 3100-3199: Windows reserves that range on some machines, and vite
+// then fails with `listen EACCES` under --strictPort.
+const PORT = 5301;
 
 export default defineConfig({
     testDir: './tests/visual',
