@@ -68,7 +68,7 @@ onMounted(() => {
                     src="@/assets/github.png"
                     width="32"
                     height="32"
-                    title="Team Builder GitHub"
+                    title="nba-central on GitHub"
                 />
             </a>
         </footer>
