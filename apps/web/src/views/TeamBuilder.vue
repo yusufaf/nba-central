@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, watch, toRaw, provide, type Ref } from "vue";
+import { ref, computed, watch, toRaw, provide, onMounted, type Ref } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { toast } from 'vue-sonner';
 import axios from 'axios';
@@ -54,6 +54,7 @@ import { centreLogoUrl } from "@/utils/court";
 import { shareUrlFor } from "@/utils/shareUrl";
 import { downloadUrlAsFile, slugFilename } from "@/utils/downloadFile";
 import { track } from "@/lib/analytics";
+import { landingSource } from "@/lib/attribution";
 import type { DrawerSide, NBA2KRating, Player } from "@/models/types";
 import type { GetPlayerStatsResponse } from "@/models/api";
 
@@ -237,6 +238,10 @@ const addPlayerFromDialog = (player: any) => {
         redoLabel: `Added ${playerName} to ${where}`,
     });
     const { player: added, done } = loadPlayerIntoSlot(playerIndex, player);
+    track("player_added", {
+        from: player.isCustom ? "custom" : "search",
+        slot: playerIndex <= 5 ? "starter" : "bench",
+    });
     // Only a player added here, not every card of a team being opened.
     cardsFlipped.value.set(playerIndex, teamBuilderPreferences.value.flipNewCards);
 
@@ -348,6 +353,17 @@ const { edit: editDetail } = useDetailEdits({
     record: recordChange,
     baseFor: (mergeKey) => history.mergeTarget(mergeKey)?.snapshot.details,
 });
+
+// Typing and drawing emit on every keystroke or stroke, so a field is
+// reported once per builder visit - and only its name, never the value.
+const customizedFields = new Set<DetailField>();
+const customize = (field: DetailField, value: unknown) => {
+    if (Object.is(detailRefs[field].value, value)) return;
+    editDetail(field, value);
+    if (customizedFields.has(field)) return;
+    customizedFields.add(field);
+    track("team_customized", { field });
+};
 
 const deletePlayer = (index: number) => {
     const player = selectedPlayersData.value.get(index);
@@ -756,7 +772,7 @@ const loadRemixFromRoute = async (teamUUID: string) => {
                 loadPlayerIntoSlot(slot, player).done,
             ),
         );
-        track("remix_loaded", { sourceTeamUUID: teamUUID });
+        track("remix_loaded", { sourceTeamUUID: teamUUID, source: landingSource() });
     } catch (err) {
         console.error("Error remixing team:", err);
         if (axios.isAxiosError(err) && err.response?.status === 404) {
@@ -828,6 +844,18 @@ const resumePendingSave = async () => {
 // getters (not a single getter returning a tuple) so Vue diffs each source
 // independently - a single getter would return a new array identity on
 // every navigation and fire the callback even when neither param changed.
+// Mirrors the precedence of the watcher below, which decides what the builder loads.
+const builderEntry = (): "team" | "resume" | "remix" | "new" => {
+    const { team, remix, resume } = route.query;
+    if (typeof team === "string" && team) return "team";
+    if (resume === RESUME_SAVE_QUERY) return "resume";
+    if (typeof remix === "string" && remix) return "remix";
+    return "new";
+};
+
+// The instance is reused across query changes, so this is a visit, not a load.
+onMounted(() => track("builder_opened", { entry: builderEntry() }));
+
 watch(
     [() => route.query.team, () => route.query.remix, () => route.query.resume],
     ([teamUUID, remixUUID, resume]) => {
@@ -861,17 +889,17 @@ watch(
                 <TeamBuilderHeader
                     v-model:headerExpanded="headerExpanded"
                     :teamName="teamName"
-                    @update:teamName="editDetail('name', $event)"
+                    @update:teamName="customize('name', $event)"
                     :teamDescription="teamDescription"
-                    @update:teamDescription="editDetail('description', $event)"
+                    @update:teamDescription="customize('description', $event)"
                     :teamCity="teamCity"
-                    @update:teamCity="editDetail('city', $event)"
+                    @update:teamCity="customize('city', $event)"
                     :teamCountry="teamCountry"
-                    @update:teamCountry="editDetail('country', $event)"
+                    @update:teamCountry="customize('country', $event)"
                     :teamLogo="teamLogo"
-                    @update:teamLogo="editDetail('logo', $event)"
+                    @update:teamLogo="customize('logo', $event)"
                     :teamJersey="teamJersey"
-                    @update:teamJersey="editDetail('jersey', $event)"
+                    @update:teamJersey="customize('jersey', $event)"
                     v-model:drawerSide="selectedDrawerSide"
                     v-model:selectedView="selectedView"
                     :team-uuid="loadedTeamUUID"
@@ -918,20 +946,20 @@ watch(
                 <div class="staff-grid">
                     <CoachSection
                         :teamCoach="teamCoach"
-                        @update:teamCoach="editDetail('coach', $event)"
+                        @update:teamCoach="customize('coach', $event)"
                         v-model:showCoachDrawer="showCoachDrawer"
                         :selectedDrawerSide="selectedDrawerSide"
                     />
                     <ArenaSection
                         :teamArena="teamArena"
-                        @update:teamArena="editDetail('arena', $event)"
+                        @update:teamArena="customize('arena', $event)"
                         :teamLogo="teamLogo"
                         v-model:showArenaDrawer="showArenaDrawer"
                         :selectedDrawerSide="selectedDrawerSide"
                     />
                     <GMSection
                         :teamGM="teamGM"
-                        @update:teamGM="editDetail('gm', $event)"
+                        @update:teamGM="customize('gm', $event)"
                         v-model:showGMDrawer="showGMDrawer"
                         :selectedDrawerSide="selectedDrawerSide"
                     />
