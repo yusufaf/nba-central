@@ -98,3 +98,28 @@ describe('indexable routes', () => {
         }
     });
 });
+
+describe('unmatched paths', () => {
+    it('render the not-found view at the URL that was asked for', () => {
+        for (const path of ['/no-such-page', '/a/b/c', '/t', '/t/abc/extra', '/game']) {
+            const resolved = router.resolve(path);
+            expect(resolved.name, path).toBe('not-found');
+            expect(resolved.fullPath, path).toBe(path);
+        }
+    });
+
+    it('leave every defined route to its own view', () => {
+        for (const path of ['/', '/scores', '/t/abc', '/game/1', '/settings', '/data-deleted']) {
+            expect(router.resolve(path).name, path).not.toBe('not-found');
+        }
+    });
+
+    it('are marked noindex after an in-app navigation', async () => {
+        document.head.innerHTML = `<link rel="canonical" href="${SITE_ORIGIN}/">`;
+        await router.push('/scores');
+        await router.push('/no-such-page');
+        expect(router.currentRoute.value.name).toBe('not-found');
+        expect(robotsOf(document)).toBe('noindex');
+        expect(canonicalOf(document)).toBeUndefined();
+    });
+});

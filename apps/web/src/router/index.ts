@@ -11,6 +11,7 @@ import SignUp from '@/views/SignUp.vue';
 import Callback from '@/views/Callback.vue';
 import Settings from '@/views/Settings.vue';
 import DataDeleted from '@/views/DataDeleted.vue';
+import NotFound from '@/views/NotFound.vue';
 import { useLogto } from '@logto/vue';
 import { requireSignedIn } from './guards';
 import { syncIndexing } from './indexing';
@@ -86,6 +87,13 @@ const router = createRouter({
             path: '/callback',
             name: 'callback',
             component: Callback,
+        },
+        // Anything no route above matches. Rendered in place, not redirected,
+        // so the URL stays what was asked for. No `indexable`, so noindex.
+        {
+            path: '/:pathMatch(.*)*',
+            name: 'not-found',
+            component: NotFound,
         },
     ],
 });
