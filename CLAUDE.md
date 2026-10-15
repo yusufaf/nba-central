@@ -100,8 +100,13 @@ Entry point: `bin/team-builder-cdk.ts` loads env vars from dotenv.
 - `getPublicTeam`: anonymous reader for a published team, keyed off the PK2 GSI
 - `publishTeam`: flips a team's visibility, uploads the rendered share card to
   the assets bucket, and stamps `cardUrl`/`publishedAt`
-- `getPublicTeamPage`: serves `/t/{teamUUID}` — injects OG/Twitter tags into
-  the SPA shell for crawlers, ahead of the CloudFront `/t/*` behavior
+- `getPublicTeamPage`: serves `/t/{teamUUID}` — the SPA shell with the
+  team's description, canonical and OG/Twitter tags for crawlers, behind the
+  CloudFront `/t/*` behavior. It strips the shell's site-wide defaults first
+  (`apps/cdk/utilities/og-html.ts`); an unknown or private team gets the
+  stripped shell marked `noindex`, and a failed lookup a no-store 503. A new
+  default tag in `apps/web/index.html`'s head has to be handled in
+  `og-html.ts` too — `og-html.test.ts` checks every head tag of the real file
 
 **Data ETL Lambdas** (EventBridge triggers):
 - `setPlayersData`, `setPlayerRatingsData`: scrape Basketball-Reference / api.nba2kapi.com;

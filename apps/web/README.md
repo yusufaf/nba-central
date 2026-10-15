@@ -3,7 +3,7 @@
 Vue 3 + Vite + TypeScript frontend. See [`CLAUDE.md`](./CLAUDE.md) for stack
 details and [`DESIGN.md`](./DESIGN.md) before touching any UI.
 
-Part of the [TeamBuilder](../../README.md) monorepo — run commands from the
+Part of the [nba-central](../../README.md) monorepo — run commands from the
 repo root with `pnpm --filter web <script>`, or `cd` here and drop the filter.
 
 ```bash

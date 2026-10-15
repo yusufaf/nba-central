@@ -7,7 +7,7 @@ import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
 import { DynamoDBDocumentClient } from "@aws-sdk/lib-dynamodb";
 import { GetObjectCommand, S3Client } from "@aws-sdk/client-s3";
 import { queryPublicTeam } from "resources/dynamo/teams";
-import { injectOgTags } from "utilities/og-html";
+import { injectOgTags, notFoundPage, stripShellDefaults } from "utilities/og-html";
 
 const { mainTable = "", webBucket = "", siteUrl = "" } = process.env;
 
@@ -93,11 +93,24 @@ export const handler: Handler = async (
 
 	try {
 		const team = teamUUID ? await queryPublicTeam(docClient, mainTable, teamUUID) : null;
-		// Unknown or private: plain shell, and the SPA shows its own 404.
-		if (!team) return html(shell);
+		// Unknown or private: the shell marked noindex, and the SPA shows its own 404.
+		if (!team) return html(notFoundPage(shell));
 		return html(injectOgTags(shell, team, siteUrl));
 	} catch (err) {
 		console.error("Error building public team page:", err);
-		return html(shell);
+		// Transient: a 503 asks crawlers to come back rather than index (or
+		// drop) the page, and the body still boots the SPA for a browser,
+		// which fetches the team itself. CloudFront passes it through as-is:
+		// its errorResponses only remap 403/404, and the /t/* behavior's
+		// CachingDisabled policy caches no error responses.
+		return {
+			statusCode: 503,
+			headers: {
+				"content-type": "text/html; charset=utf-8",
+				"cache-control": "no-store",
+				"retry-after": "60",
+			},
+			body: stripShellDefaults(shell),
+		};
 	}
 };
