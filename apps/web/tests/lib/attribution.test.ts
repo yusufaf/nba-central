@@ -79,6 +79,15 @@ describe("captureLandingSource", () => {
         expect(second.captureLandingSource({ search: "?utm_source=reddit", origin: ORIGIN }, "")).toBe("reddit");
     });
 
+    it("keeps a known source when a later landing carries only a malformed tag", async () => {
+        const first = await load();
+        expect(first.captureLandingSource({ search: "?utm_source=reddit", origin: ORIGIN }, "")).toBe("reddit");
+
+        vi.resetModules();
+        const second = await load();
+        expect(second.captureLandingSource({ search: "?utm_source=Some%20Newsletter", origin: ORIGIN }, "")).toBe("reddit");
+    });
+
     it("still resolves when storage is blocked", async () => {
         vi.spyOn(Storage.prototype, "getItem").mockImplementation(() => {
             throw new Error("blocked");

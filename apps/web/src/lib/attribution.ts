@@ -43,9 +43,11 @@ export const captureLandingSource = (
     referrer: string = document.referrer,
 ): string => {
     if (captured) return captured;
-    // First touch wins, except that a link carrying an explicit tag is a
-    // deliberate new campaign touch and replaces an earlier untagged one.
-    if (!taggedSource(location.search)) {
+    // First touch wins, except that a link carrying a well-formed tag is a
+    // deliberate new campaign touch and replaces an earlier one. A malformed
+    // tag ("other") never displaces a source we already know.
+    const tag = taggedSource(location.search);
+    if (!tag || tag === "other") {
         try {
             const stored = sessionStorage.getItem(STORAGE_KEY);
             if (stored) return (captured = stored);

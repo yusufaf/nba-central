@@ -43,9 +43,10 @@ const claimFirstAction = (): boolean => {
 
 export const track = (event: string, data?: Record<string, unknown>): void => {
     try {
-        window.umami?.track(event, data);
-        if (ACTION_EVENTS.has(event) && window.umami && claimFirstAction()) {
-            window.umami?.track("first_action", { action: event });
+        const umami = window.umami;
+        umami?.track(event, data);
+        if (umami && ACTION_EVENTS.has(event) && claimFirstAction()) {
+            umami.track("first_action", { action: event });
         }
     } catch (err) {
         console.error("analytics.track failed:", err);
