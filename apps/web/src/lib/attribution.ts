@@ -13,13 +13,20 @@ const cleanToken = (raw: string | null): string | null => {
     return TOKEN.test(value) ? value : "other";
 };
 
+// utm_source, then ref. A malformed value only counts as "other" when no
+// well-formed one is present, so it can't shadow a good ref.
+const taggedSource = (search: string): string | null => {
+    const params = new URLSearchParams(search);
+    const tags = [cleanToken(params.get("utm_source")), cleanToken(params.get("ref"))];
+    return tags.find((t) => t && t !== "other") ?? tags.find(Boolean) ?? null;
+};
+
 export const resolveSource = (input: {
     search: string;
     referrer: string;
     origin: string;
 }): string => {
-    const params = new URLSearchParams(input.search);
-    const tagged = cleanToken(params.get("utm_source")) ?? cleanToken(params.get("ref"));
+    const tagged = taggedSource(input.search);
     if (tagged) return tagged;
 
     try {
@@ -36,11 +43,15 @@ export const captureLandingSource = (
     referrer: string = document.referrer,
 ): string => {
     if (captured) return captured;
-    try {
-        const stored = sessionStorage.getItem(STORAGE_KEY);
-        if (stored) return (captured = stored);
-    } catch {
-        // storage blocked: fall through and keep the value in memory only
+    // First touch wins, except that a link carrying an explicit tag is a
+    // deliberate new campaign touch and replaces an earlier untagged one.
+    if (!taggedSource(location.search)) {
+        try {
+            const stored = sessionStorage.getItem(STORAGE_KEY);
+            if (stored) return (captured = stored);
+        } catch {
+            // storage blocked: fall through and keep the value in memory only
+        }
     }
     captured = resolveSource({ search: location.search, referrer, origin: location.origin });
     try {

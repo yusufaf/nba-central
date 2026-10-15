@@ -45,6 +45,11 @@ describe("resolveSource", () => {
         ).toBe("reddit.com");
     });
 
+    it("does not let a malformed utm_source shadow a valid ref", async () => {
+        const { resolveSource } = await load();
+        expect(resolveSource({ search: "?utm_source=Some%20Newsletter&ref=twitter", referrer: "", origin: ORIGIN })).toBe("twitter");
+    });
+
     it("treats same-origin, empty and unparseable referrers as direct", async () => {
         const { resolveSource } = await load();
         for (const referrer of [`${ORIGIN}/teams`, "", "not a url"]) {
@@ -63,6 +68,15 @@ describe("captureLandingSource", () => {
         expect(
             second.captureLandingSource({ search: "", origin: ORIGIN }, "https://auth.yusufaf.dev/"),
         ).toBe("x");
+    });
+
+    it("lets a newly tagged landing replace an earlier untagged one", async () => {
+        const first = await load();
+        expect(first.captureLandingSource({ search: "", origin: ORIGIN }, "")).toBe("direct");
+
+        vi.resetModules();
+        const second = await load();
+        expect(second.captureLandingSource({ search: "?utm_source=reddit", origin: ORIGIN }, "")).toBe("reddit");
     });
 
     it("still resolves when storage is blocked", async () => {

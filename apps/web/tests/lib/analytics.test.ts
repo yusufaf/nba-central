@@ -55,6 +55,15 @@ describe("first_action", () => {
         expect(umamiTrack).toHaveBeenCalledWith("first_action", { action: "player_added" });
     });
 
+    it("does not spend the claim while the tracker is missing", async () => {
+        const { track } = await load();
+        track("team_saved");
+        const umamiTrack = vi.fn();
+        (window as any).umami = { track: umamiTrack };
+        track("share_clicked");
+        expect(umamiTrack).toHaveBeenCalledWith("first_action", { action: "share_clicked" });
+    });
+
     it("is sent once per tab session, across a reload", async () => {
         const umamiTrack = vi.fn();
         (window as any).umami = { track: umamiTrack };
