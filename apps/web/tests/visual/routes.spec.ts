@@ -76,6 +76,7 @@ const ROUTES = [
     { path: '/sign-up', name: 'sign-up' },
     { path: '/t/visual-team', name: 'public-team' },
     { path: '/data-deleted', name: 'data-deleted' },
+    { path: '/no-such-page', name: 'not-found' },
 ];
 
 for (const { path, name } of ROUTES) {
