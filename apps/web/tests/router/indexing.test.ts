@@ -122,4 +122,14 @@ describe('unmatched paths', () => {
         expect(robotsOf(document)).toBe('noindex');
         expect(canonicalOf(document)).toBeUndefined();
     });
+
+    it('are marked noindex on a first load, which is what a crawler sees', async () => {
+        vi.resetModules();
+        const { default: fresh } = await import('@/router');
+        document.head.innerHTML = `<link rel="canonical" href="${SITE_ORIGIN}/">`;
+        await fresh.push('/no-such-page');
+        expect(fresh.currentRoute.value.name).toBe('not-found');
+        expect(robotsOf(document)).toBe('noindex');
+        expect(canonicalOf(document)).toBeUndefined();
+    });
 });
