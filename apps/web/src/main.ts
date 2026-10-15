@@ -12,9 +12,13 @@ import 'v-calendar/style.css';
 
 import App from './App.vue';
 import router from './router';
+import { captureLandingSource } from './lib/attribution';
 
 import './assets/main.css';
 import './assets/vendor-overrides.css';
+
+// Before the router can redirect, so the true landing URL and referrer are read.
+captureLandingSource();
 
 const app = createApp(App);
 
