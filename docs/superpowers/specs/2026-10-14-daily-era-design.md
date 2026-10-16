@@ -101,7 +101,8 @@ come from downloading and classifying all 792 pool images.
    - Each group becomes one puzzle. Its answer set is the union of the
      `seasons` lists of every row in the group, falling back to
      `startYear..endYear` for a row whose `seasons` list is empty.
-   - The puzzle shows the group's earliest row.
+   - The puzzle shows the group's earliest row whose crop passed
+     validation (decision 5).
 
 3. **A guess is a season, with four attempts and hints.**
    - **The picker** shows season labels ("1995-96") from 1946-47 to the
@@ -114,12 +115,17 @@ come from downloading and classifying all 792 pool images.
      answer season: `close` within 3 seasons, `near` within 10, and `far`
      beyond that.
    - **The game ends** on a hit or after the fourth guess.
-   - **Why four guesses.** With a direction and three bands, a fixed search
-     that knows nothing about jerseys can always find a one-season answer in
-     up to 47 contiguous seasons in four guesses, but in up to 115 in five.
-     Five guesses would make every puzzle solvable by search alone across
-     the 81-season range. Four keep knowledge decisive. If the bands or the
-     guess count change, redo this check.
+   - **Skill shows in guesses used, not in winning.** The team is visible,
+     so a player's real search space is that team's lifetime, and often only
+     the era its wordmark names (the "Vancouver Grizzlies" were six
+     seasons). With a direction and three bands, a fixed search that knows
+     nothing about jerseys can find a one-season answer in up to 47
+     contiguous seasons in four guesses. That covers most teams. No hint
+     scheme fixes this for short-lived teams, so the game doesn't try to
+     make winning hard. A player who knows jerseys wins in 1 or 2, a
+     searcher in 3 or 4, and the share row shows which. Four guesses (not
+     five, which would cover 115 seasons) keep the long-lived franchises
+     from being a guaranteed search win.
 
 4. **The share row shows the path, not the answer.**
    - Each guess becomes one emoji: 🟩 for a hit, and 🟨, 🟧 or ⬛ for a
@@ -141,17 +147,21 @@ come from downloading and classifying all 792 pool images.
       shorts. Everything above and below is cut, which removes the labels,
       the watermark, the caption and the handle. **Both jerseys are kept**,
       so the answer set matches what is shown;
-   4. adds a small uneven margin and re-encodes the crop as WebP at a
-      different size, so its framing and bytes never match the original;
-   5. groups identical jerseys (decision 2);
-   6. **validates before uploading.** Any image whose crop looks wrong (the
-      crop height is out of range, or text pixels are left in the cut
-      bands) is dropped, not uploaded;
+   4. **validates the crop.** Any image whose crop looks wrong (the crop
+      height is out of range, or text pixels are left in the cut bands) is
+      dropped;
+   5. **groups identical jerseys** (decision 2), comparing the validated
+      crops from step 3 before any random framing, so twins still match. A
+      group whose earliest row was dropped uses its earliest valid row. A
+      group in which any row matches `/present/i` is excluded whole
+      (decision 7);
+   6. adds a small uneven margin and re-encodes the group's image as WebP at
+      a different size, so its framing and bytes never match the original;
    7. uploads to the assets bucket under a **random** key
       (`daily-era/<random id>.webp`), so nothing links it to the bundled
-      list;
-   8. writes a contact sheet of every crop, so a person can review the batch
-      before the list is published.
+      list. Only images that passed every step are uploaded;
+   8. writes a contact sheet of every crop and group, so a person can review
+      the batch before the list is published.
 
    No colour change, mirroring or warping is applied: colour is the main
    clue, and mirroring flips the wordmark and numbers. A determined player can
@@ -173,22 +183,33 @@ come from downloading and classifying all 792 pool images.
      - the answer set;
      - the run label for the reveal;
      - the franchise and the era's team name;
-     - the source `jersey` URL, for the builder link;
-     - a stable identity (`franchise` + `name` + `startYear`), because
-       `jersey` URLs are content hashes that change when an image is
-       re-processed.
+     - the stable identity of every row in the group (`franchise` + `name`
+       + `startYear`). `jersey` URLs are content hashes that change when an
+       image is re-processed, so they are never stored. The reveal's full
+       image and builder link resolve the identity against the bundled
+       `historicalJerseys.json` at reveal time. If the row is gone, the
+       reveal shows the daily crop and no builder link.
    - **Order:** the first batch is shuffled once with a fixed seed. Later
-     runs shuffle only the new identities and append them, so a published day
-     never moves or changes, and appended batches don't come in franchise
-     order.
+     runs append only groups none of whose identities is already in the
+     list, shuffled among themselves, so a published day never moves or
+     changes, and appended batches don't come in franchise order.
+   - **A new row that is a twin of a published group** (for example a
+     sibling variant added by a data refresh) is not appended. The script
+     reports it, and the published entry stays as it is. A frozen day's
+     answer is never changed after the fact.
    - **Running out:** when fewer than 90 unplayed days remain, the script
-     appends a reshuffled second cycle of the pool and warns. The API returns
-     404 for a date past the end of the list, rather than throwing.
+     appends a reshuffled second cycle of the pool and warns. Each cycle-2
+     entry gets a **new** `puzzleId`, so every id maps to exactly one day.
+     The identity check that prevents duplicates applies within a cycle,
+     not across cycles. The API returns 404 for a date past the end of the
+     list, rather than throwing.
    - This replaces #173's "deterministic hash of the UTC date".
 
 7. **Excluded from the pool:**
-   - every row whose `name` matches `/present/i` (32 rows), because its
-     answer set is still growing;
+   - every group containing a row whose `name` matches `/present/i` (32
+     rows), because its answer set is still growing. The exclusion applies
+     to the whole group, so a still-worn jersey's older twin doesn't stay in
+     with an incomplete answer set;
    - the 10 frame-template images;
    - any image that fails validation in decision 5.
 
@@ -200,7 +221,11 @@ come from downloading and classifying all 792 pool images.
    - **Today's window:** the server accepts, as "today", any date from
      `date(now − 12h)` to `date(now + 14h)` in UTC, which is exactly the
      range of dates in effect somewhere on Earth.
-   - **Archive:** dates in the 30-day archive are also accepted. Anything
+   - **Archive:** the 30 dates before the **earliest** date in today's
+     window are also accepted, so a player in the furthest-west time zone
+     still gets their full 30 days. The client lists its own local
+     date − 1 to date − 30, which always falls inside this range.
+   - **The playable window** is today's window plus the archive. Anything
      else, including dates before puzzle #1, returns 404.
    - **Launch:** puzzle #1 is dated 30 days **before** go-live, so the
      archive is full on launch day (#177's goal). The puzzle number is days
@@ -211,8 +236,14 @@ come from downloading and classifying all 792 pool images.
      - #173 adds a CloudFront behavior for `/api/daily/era/*`, listed before
        `/api/*`, with a cache policy that honours the origin's
        `Cache-Control`.
-     - A successful GET sends a public `max-age` (the response for a date
-       never changes).
+     - Because the behavior also matches `POST /api/daily/era/guess`, it
+       must copy `/api/*`'s `AllowedMethods.ALLOW_ALL` and its
+       `ALL_VIEWER_EXCEPT_HOST_HEADER` origin request policy. Only the cache
+       policy differs.
+     - A successful GET sends a public `max-age` of at most 1 hour. The
+       puzzle for a date never changes, but whether the date is still
+       playable does, and a long cache would keep serving a date after it
+       has left the archive.
      - A 4xx or 5xx sends `no-store`, so a refusal for a date that becomes
        valid later is never cached.
      - POST is never cached.
@@ -222,8 +253,10 @@ come from downloading and classifying all 792 pool images.
      imageUrl }` and nothing else.
    - **`POST /api/daily/era/guess`** takes `{ puzzleId, season, attempt }`.
      - The server looks up which day that `puzzleId` belongs to and refuses
-       it if that day is outside the window in decision 8. Tomorrow's answer
-       can't be fetched early, even though the id is opaque.
+       it if that day is outside the **playable window** in decision 8
+       (today's window plus the archive). Archive puzzles can be played, and
+       a later day's answer can't be fetched early, even though the id is
+       opaque.
      - It returns `{ hit, direction, band }`.
      - It adds the answer (run label, team name, franchise, builder link)
        only when `hit` is true or `attempt` is 4.
@@ -240,7 +273,8 @@ come from downloading and classifying all 792 pool images.
 10. **The reveal sends players into the site.**
     - After the game the page shows the run label, the team's name in that
       era, the original full image, and a link that opens the builder with
-      that jersey selected.
+      that jersey selected. The image and link are found by the entry's
+      stable identity at reveal time (decision 6).
     - It also shows a countdown to the next local midnight.
     - The builder reads only `team`, `remix` and `resume` from its query
       today. The link needs a new query parameter that preselects a
@@ -274,7 +308,7 @@ come from downloading and classifying all 792 pool images.
 
 | Issue | Change from the issue text |
 |---|---|
-| #173 | **Pool and lookup:** jerseys only. The day's puzzle is a position in the frozen list (decision 6), keyed by the player's local date (decision 8), not a UTC-date hash. **Guess route:** takes an opaque `puzzleId`, refuses days outside the window, and returns `hit`/`direction`/`band` with no team result. It reveals the answer on a hit or the 4th attempt. **Infra:** a new CloudFront behavior for `/api/daily/era/*`, `no-store` on errors, and a 404 past the end of the list. Read the list with the `getPlayers` pattern. |
+| #173 | **Pool and lookup:** jerseys only. The day's puzzle is a position in the frozen list (decision 6), keyed by the player's local date (decision 8), not a UTC-date hash. **Guess route:** takes an opaque `puzzleId`, refuses days outside the playable window (today plus archive), and returns `hit`/`direction`/`band` with no team result. It reveals the answer on a hit or the 4th attempt. **Infra:** a new CloudFront behavior for `/api/daily/era/*` with `ALLOW_ALL` and `/api/*`'s origin request policy, a GET `max-age` of at most 1 hour, `no-store` on errors, and a 404 past the end of the list. Read the list with the `getPlayers` pattern. |
 | #174 | **Jerseys only.** The per-image crop, template detection, validate-before-upload, identical-jersey grouping, contact sheet and random keys from decision 5. **Both jerseys are kept.** Gallery assets are unchanged. |
 | #175 | **Era-only:** a season picker, 4 attempts, and the hit/direction/band feedback from decision 3. **Reveal and credit:** the reveal and builder link from decision 10, including the new builder query parameter, and the art credit. The Umami events stay as written. |
 | #176 | The share text from decision 4, with day number, guesses out of 4, streak and emoji path, and no team result. The card carries the art credit. |
