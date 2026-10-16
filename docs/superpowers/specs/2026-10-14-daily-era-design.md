@@ -186,15 +186,20 @@ come from downloading and classifying all 792 pool images.
      - the run label for the reveal;
      - the franchise and the era's team name;
      - the stable identity of every row in the group, plus `shownIdentity`
-       for the row whose image is shown. An identity is `franchise` +
-       `name` + `startYear` among `home-road` rows. The script refuses to
-       publish if two home-road rows share an identity.
-     - `jersey` URLs are content hashes that change when an image is
-       re-processed, so they are never stored. The client resolves
-       `shownIdentity` against the bundled `historicalJerseys.json` (`slot:
-       "home-road"` only) at reveal time, for the full image and the
-       builder link. If the row is gone, the reveal shows the daily crop
-       and no builder link.
+       for the row whose image is shown. An identity is the jersey's
+       **Wix media id**, the `31d308_…` stem of its image URL, which is
+       unique across all rows and survives a `refresh-historical-jerseys`
+       re-run. `franchise`, `name` and `startYear` are stored alongside for
+       people reading the list, but they are not the key: that triple is
+       shared by 21 home-road rows today (10 triples, for example LAL
+       1972-73 and NYK 1946-53), 4 of them visibly different designs. The
+       script refuses to publish if a row's media id is missing or shared.
+     - `jersey` URLs themselves are never stored: the stem is a stable
+       upstream id, but the CDN domain and file extension can change. The
+       client resolves `shownIdentity.mediaId` against the bundled
+       `historicalJerseys.json` (`slot: "home-road"` only) at reveal time,
+       for the full image and the builder link. If the row is gone, the
+       reveal shows the daily crop and no builder link.
    - **Order:** the first batch is shuffled once with a fixed seed. Later
      runs append only groups none of whose identities is already in the
      list, shuffled among themselves, so a published day never moves or
@@ -204,7 +209,9 @@ come from downloading and classifying all 792 pool images.
      reports it. A day already played is never changed. A person may
      extend the answer set of an entry whose day hasn't come yet. Played
      days keep the stale answer set, which is a known limitation.
-   - **Running out:** when fewer than 90 unplayed days remain, the script
+   - **Running out** (deferred: #174 ships only the first cycle, about 470
+     puzzles or 15 months; the second cycle needs puzzle #1's launch date,
+     which #173 sets): when fewer than 90 unplayed days remain, the script
      appends a reshuffled second cycle of the pool and warns. Each cycle-2
      entry gets a **new** `puzzleId`, so every id maps to exactly one day.
      The identity check that prevents duplicates applies within a cycle,
