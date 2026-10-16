@@ -20,3 +20,6 @@ cdk.out
 /dist
 dist-ssr
 *.local
+
+# refresh-daily-era contact sheet, rebuilt every run
+/daily-era-review/
