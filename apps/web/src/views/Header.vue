@@ -37,6 +37,10 @@ const displayName = computed(() => currentUser.value?.username ?? 'Account');
 // isAuthenticated flips — the plain route loop has no notion of auth state.
 const navRoutes = computed(() => ROUTES.filter((route) => route.path !== '/login'));
 
+// A full load, not a RouterLink, so the logo still resets the app as it
+// always has; BASE_URL keeps a PR preview's logo inside that preview.
+const homeHref = import.meta.env.BASE_URL;
+
 function handleSignOut() {
     signOut(window.location.origin);
 }
@@ -49,13 +53,13 @@ function handleSignOut() {
     <header class="@container bg-primary text-black shadow-lg sticky top-0 z-50">
         <div class="flex items-center px-4 h-16">
             <div class="shrink-0">
-                <RouterLink to="/">
+                <a :href="homeHref">
                     <img
                         src="@/assets/TeamBuilderLogo1_Transparent2.png"
                         alt="NBA Team Builder Logo"
                         class="h-12"
                     />
-                </RouterLink>
+                </a>
             </div>
 
             <!-- Desktop Nav -->

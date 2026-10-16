@@ -14,9 +14,12 @@ const previewHtml = (): Plugin => ({
     name: "preview-html",
     apply: "build",
     transformIndexHtml(html) {
-        return html
-            .replace(/\s*<!-- Umami[^>]*-->\s*<script[^>]*analytics\.yusufaf\.dev[^>]*><\/script>/, "")
-            .replace("</head>", '    <meta name="robots" content="noindex">\n  </head>');
+        // Fail the build rather than ship a preview that counts as production traffic.
+        const withoutUmami = html.replace(/<script[^>]*analytics\.yusufaf\.dev[^>]*><\/script>/, "");
+        if (withoutUmami.includes("analytics.yusufaf.dev/")) {
+            throw new Error("preview-html: couldn't remove the Umami script from index.html");
+        }
+        return withoutUmami.replace("</head>", '    <meta name="robots" content="noindex">\n  </head>');
     },
 });
 

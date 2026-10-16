@@ -2,7 +2,6 @@ import { ref } from 'vue';
 import { useLogto } from '@logto/vue';
 import { useRouter } from 'vue-router';
 import { getApiErrorMessage } from '@/composables/useApiErrorMessage';
-import { IS_PREVIEW } from '@/utils/preview';
 
 interface SignInOptions {
     redirectUri: string;
@@ -22,13 +21,6 @@ export function useLogtoSignIn(buildOptions: () => SignInOptions) {
 
     async function startSignIn() {
         if (isSigningIn.value) {
-            return;
-        }
-
-        // A preview's /callback isn't a registered Logto redirect URI, and a
-        // session there would share yusufaf.dev's storage with other sites.
-        if (IS_PREVIEW) {
-            error.value = 'Sign-in is turned off in PR previews.';
             return;
         }
 
