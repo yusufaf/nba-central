@@ -101,8 +101,8 @@ come from downloading and classifying all 792 pool images.
    - Each group becomes one puzzle. Its answer set is the union of the
      `seasons` lists of every row in the group, falling back to
      `startYear..endYear` for a row whose `seasons` list is empty.
-   - The puzzle shows the group's earliest row whose crop passed
-     validation (decision 5).
+   - The puzzle shows the group's earliest row. Every row in a published
+     group passed validation (decision 5, step 5).
 
 3. **A guess is a season, with four attempts and hints.**
    - **The picker** shows season labels ("1995-96") from 1946-47 to the
@@ -120,12 +120,12 @@ come from downloading and classifying all 792 pool images.
      the era its wordmark names (the "Vancouver Grizzlies" were six
      seasons). With a direction and three bands, a fixed search that knows
      nothing about jerseys can find a one-season answer in up to 47
-     contiguous seasons in four guesses. That covers most teams. No hint
-     scheme fixes this for short-lived teams, so the game doesn't try to
-     make winning hard. A player who knows jerseys wins in 1 or 2, a
-     searcher in 3 or 4, and the share row shows which. Four guesses (not
-     five, which would cover 115 seasons) keep the long-lived franchises
-     from being a guaranteed search win.
+     contiguous seasons in four guesses, and a multi-season answer is
+     easier still. That covers most teams. No hint scheme fixes this for
+     short-lived teams, so the game doesn't try to make winning hard. A
+     player who knows jerseys wins in 1 or 2, a searcher in 3 or 4, and the
+     share row shows which. Four guesses rather than five keep a careless
+     search from always winning.
 
 4. **The share row shows the path, not the answer.**
    - Each guess becomes one emoji: 🟩 for a hit, and 🟨, 🟧 or ⬛ for a
@@ -151,10 +151,12 @@ come from downloading and classifying all 792 pool images.
       height is out of range, or text pixels are left in the cut bands) is
       dropped;
    5. **groups identical jerseys** (decision 2), comparing the validated
-      crops from step 3 before any random framing, so twins still match. A
-      group whose earliest row was dropped uses its earliest valid row. A
-      group in which any row matches `/present/i` is excluded whole
-      (decision 7);
+      crops from step 3 before any random framing, so twins still match.
+      A row dropped in step 2 or 4 can't be compared, so it might have been
+      a twin. To stay safe, a group is **excluded** when a same-franchise
+      row that was dropped, or whose name matches `/present/i`, has a season
+      within 3 seasons of the group's answer set. Leaving a puzzle out is
+      better than publishing one with an incomplete answer set;
    6. adds a small uneven margin and re-encodes the group's image as WebP at
       a different size, so its framing and bytes never match the original;
    7. uploads to the assets bucket under a **random** key
@@ -183,20 +185,25 @@ come from downloading and classifying all 792 pool images.
      - the answer set;
      - the run label for the reveal;
      - the franchise and the era's team name;
-     - the stable identity of every row in the group (`franchise` + `name`
-       + `startYear`). `jersey` URLs are content hashes that change when an
-       image is re-processed, so they are never stored. The reveal's full
-       image and builder link resolve the identity against the bundled
-       `historicalJerseys.json` at reveal time. If the row is gone, the
-       reveal shows the daily crop and no builder link.
+     - the stable identity of every row in the group, plus `shownIdentity`
+       for the row whose image is shown. An identity is `franchise` +
+       `name` + `startYear` among `home-road` rows. The script refuses to
+       publish if two home-road rows share an identity.
+     - `jersey` URLs are content hashes that change when an image is
+       re-processed, so they are never stored. The client resolves
+       `shownIdentity` against the bundled `historicalJerseys.json` (`slot:
+       "home-road"` only) at reveal time, for the full image and the
+       builder link. If the row is gone, the reveal shows the daily crop
+       and no builder link.
    - **Order:** the first batch is shuffled once with a fixed seed. Later
      runs append only groups none of whose identities is already in the
      list, shuffled among themselves, so a published day never moves or
      changes, and appended batches don't come in franchise order.
    - **A new row that is a twin of a published group** (for example a
      sibling variant added by a data refresh) is not appended. The script
-     reports it, and the published entry stays as it is. A frozen day's
-     answer is never changed after the fact.
+     reports it. A day already played is never changed. A person may
+     extend the answer set of an entry whose day hasn't come yet. Played
+     days keep the stale answer set, which is a known limitation.
    - **Running out:** when fewer than 90 unplayed days remain, the script
      appends a reshuffled second cycle of the pool and warns. Each cycle-2
      entry gets a **new** `puzzleId`, so every id maps to exactly one day.
@@ -206,10 +213,9 @@ come from downloading and classifying all 792 pool images.
    - This replaces #173's "deterministic hash of the UTC date".
 
 7. **Excluded from the pool:**
-   - every group containing a row whose `name` matches `/present/i` (32
-     rows), because its answer set is still growing. The exclusion applies
-     to the whole group, so a still-worn jersey's older twin doesn't stay in
-     with an incomplete answer set;
+   - every group containing, or adjacent to, a row whose `name` matches
+     `/present/i` (32 rows), because its answer set is still growing (see
+     decision 5, step 5);
    - the 10 frame-template images;
    - any image that fails validation in decision 5.
 
@@ -227,8 +233,8 @@ come from downloading and classifying all 792 pool images.
      date − 1 to date − 30, which always falls inside this range.
    - **The playable window** is today's window plus the archive. Anything
      else, including dates before puzzle #1, returns 404.
-   - **Launch:** puzzle #1 is dated 30 days **before** go-live, so the
-     archive is full on launch day (#177's goal). The puzzle number is days
+   - **Launch:** puzzle #1 is dated 32 days **before** go-live (in UTC), so
+     every time zone has a full 30-day archive on launch day (#177's goal). The puzzle number is days
      since puzzle #1's date plus 1, and the day's puzzle is the entry at that
      position.
    - **Caching:** today every `/api/*` request is uncached
@@ -240,10 +246,13 @@ come from downloading and classifying all 792 pool images.
        must copy `/api/*`'s `AllowedMethods.ALLOW_ALL` and its
        `ALL_VIEWER_EXCEPT_HOST_HEADER` origin request policy. Only the cache
        policy differs.
-     - A successful GET sends a public `max-age` of at most 1 hour. The
-       puzzle for a date never changes, but whether the date is still
-       playable does, and a long cache would keep serving a date after it
-       has left the archive.
+     - A successful GET sends a public `max-age` of at most 1 hour, and
+       never longer than the time left before the date leaves the playable
+       window. The puzzle for a date never changes, but whether it is still
+       playable does.
+     - If a guess is refused because the date has just left the window, the
+       client shows "This puzzle is no longer playable" rather than an
+       error.
      - A 4xx or 5xx sends `no-store`, so a refusal for a date that becomes
        valid later is never cached.
      - POST is never cached.
@@ -255,11 +264,14 @@ come from downloading and classifying all 792 pool images.
      - The server looks up which day that `puzzleId` belongs to and refuses
        it if that day is outside the **playable window** in decision 8
        (today's window plus the archive). Archive puzzles can be played, and
-       a later day's answer can't be fetched early, even though the id is
-       opaque.
+       nothing past the window can be fetched. Serving every time zone means
+       the window is up to a day ahead of some players' local date. Reading
+       that day's answer early takes deliberate URL editing, and it
+       spoils only a day that has already started somewhere else.
      - It returns `{ hit, direction, band }`.
-     - It adds the answer (run label, team name, franchise, builder link)
-       only when `hit` is true or `attempt` is 4.
+     - It adds the answer (run label, team name, franchise and
+       `shownIdentity`) only when `hit` is true or `attempt` is 4. The
+       server never builds the builder link; the client does (decision 6).
    - **No stored state.** A player could send `attempt: 4`, or every season,
      for a playable day and read off the answer. That spoils only their own
      game, because there is no leaderboard. Tracking guesses per player would
@@ -273,8 +285,8 @@ come from downloading and classifying all 792 pool images.
 10. **The reveal sends players into the site.**
     - After the game the page shows the run label, the team's name in that
       era, the original full image, and a link that opens the builder with
-      that jersey selected. The image and link are found by the entry's
-      stable identity at reveal time (decision 6).
+      that jersey selected. The client finds the image and link from
+      `shownIdentity` at reveal time (decision 6).
     - It also shows a countdown to the next local midnight.
     - The builder reads only `team`, `remix` and `resume` from its query
       today. The link needs a new query parameter that preselects a
@@ -312,7 +324,7 @@ come from downloading and classifying all 792 pool images.
 | #174 | **Jerseys only.** The per-image crop, template detection, validate-before-upload, identical-jersey grouping, contact sheet and random keys from decision 5. **Both jerseys are kept.** Gallery assets are unchanged. |
 | #175 | **Era-only:** a season picker, 4 attempts, and the hit/direction/band feedback from decision 3. **Reveal and credit:** the reveal and builder link from decision 10, including the new builder query parameter, and the art credit. The Umami events stay as written. |
 | #176 | The share text from decision 4, with day number, guesses out of 4, streak and emoji path, and no team result. The card carries the art credit. |
-| #177 | Streaks count consecutive local days won, with one stored result per date. Archive games never affect the streak and can't be replayed. Puzzle #1 is dated 30 days before launch, so the archive is full on day one. |
+| #177 | Streaks count consecutive local days won, with one stored result per date. Archive games never affect the streak and can't be replayed. Puzzle #1 is dated 32 days before launch, so every time zone has a full archive on day one. |
 
 ## Out of scope
 
