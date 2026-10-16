@@ -275,6 +275,28 @@ repo name (`githubRepo` in `team-builder-deploy-role.ts`, currently
 redeploying the production stack *before* the rename, or CI deploys break in
 the gap.
 
+### PR previews
+
+`.github/workflows/preview.yml` builds `apps/web` for every same-repo PR that
+touches it and publishes it with `rossjrw/pr-preview-action` to the `gh-pages`
+branch, served by GitHub Pages at
+`https://yusufaf.dev/nba-central/pr-preview/pr-<N>/` (project Pages ride on the
+user site's custom domain). Closing the PR removes the folder. A preview build
+(`VITE_PREVIEW=1`, `src/utils/preview.ts`):
+
+- routes with hash history (`.../pr-<N>/#/teambuilder`): Pages has no SPA
+  fallback inside a subfolder
+- calls the **development** API, whose CORS allows `PREVIEW_ORIGIN`
+  (`apps/cdk/constants`); production's API keeps no CORS
+- is `noindex` on every route and drops Umami (`vite.config.ts`)
+- turns sign-in off. Keep it that way: a preview shares the `yusufaf.dev`
+  origin, and its storage, with the user site and other project pages, and
+  its `/callback` isn't a registered Logto redirect URI
+
+The `gh-pages` root holds only `.nojekyll` and an `index.html` that redirects
+to nba.yusufaf.dev. The apex site (yusufaf.github.io) must never add a
+`/nba-central` route, or it shadows the previews.
+
 ## Release process
 
 Each package releases independently via
