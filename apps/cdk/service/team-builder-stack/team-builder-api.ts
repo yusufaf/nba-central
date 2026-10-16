@@ -28,6 +28,7 @@ import { NodejsFunction } from "aws-cdk-lib/aws-lambda-nodejs";
 import { LogGroup } from "aws-cdk-lib/aws-logs";
 import {
 	DEFAULT_ALLOWED_ORIGINS,
+	PREVIEW_ORIGIN,
 } from "../../constants";
 import apiAuthorizer from "../lambdas/apiAuthorizer/index";
 import setPlayersData from "../lambdas/setPlayersData";
@@ -97,7 +98,7 @@ export class TeamBuilderAPI extends Construct {
 						CorsHttpMethod.DELETE,
 					],
 					allowCredentials: true,
-					allowOrigins: DEFAULT_ALLOWED_ORIGINS,
+					allowOrigins: [...DEFAULT_ALLOWED_ORIGINS, PREVIEW_ORIGIN],
 				},
 			}),
 		});
