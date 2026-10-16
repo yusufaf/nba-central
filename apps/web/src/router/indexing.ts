@@ -1,3 +1,5 @@
+import { IS_PREVIEW } from '@/utils/preview';
+
 export const SITE_ORIGIN = 'https://nba.yusufaf.dev';
 
 const headTag = (doc: Document, tag: 'link' | 'meta', key: string, value: string): Element => {
@@ -15,8 +17,13 @@ const headTag = (doc: Document, tag: 'link' | 'meta', key: string, value: string
 // settings, unmatched paths) drops them and asks not to be indexed.
 // Concatenated, not resolved with new URL(path, origin): a path like
 // //evil.example would resolve off-site.
-export const syncIndexing = (path: string, indexable: boolean, doc: Document = document): void => {
-    if (!indexable) {
+export const syncIndexing = (
+    path: string,
+    indexable: boolean,
+    doc: Document = document,
+    preview: boolean = IS_PREVIEW,
+): void => {
+    if (!indexable || preview) {
         doc.head.querySelector('link[rel="canonical"]')?.remove();
         doc.head.querySelector('meta[property="og:url"]')?.remove();
         headTag(doc, 'meta', 'name', 'robots').setAttribute('content', 'noindex');

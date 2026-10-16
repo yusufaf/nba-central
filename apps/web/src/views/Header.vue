@@ -21,6 +21,7 @@ import { ChevronDown, LogOut, Menu, Monitor, Moon, Settings, Sun } from 'lucide-
 import UserAvatar from '@/components/UserAvatar.vue';
 import { useCurrentUser } from '@/composables/useCurrentUser';
 import { useThemeControl } from '@/composables/useThemeControl';
+import { IS_PREVIEW } from '@/utils/preview';
 
 const { isAuthenticated, signOut } = useLogto();
 const { currentUser } = useCurrentUser();
@@ -48,13 +49,13 @@ function handleSignOut() {
     <header class="@container bg-primary text-black shadow-lg sticky top-0 z-50">
         <div class="flex items-center px-4 h-16">
             <div class="shrink-0">
-                <a href="/">
+                <RouterLink to="/">
                     <img
                         src="@/assets/TeamBuilderLogo1_Transparent2.png"
                         alt="NBA Team Builder Logo"
                         class="h-12"
                     />
-                </a>
+                </RouterLink>
             </div>
 
             <!-- Desktop Nav -->
@@ -93,10 +94,10 @@ function handleSignOut() {
                             </DropdownMenuRadioGroup>
                         </DropdownMenuContent>
                     </DropdownMenu>
-                    <RouterLink v-if="!isAuthenticated" class="login" to="/login">
+                    <RouterLink v-if="!isAuthenticated && !IS_PREVIEW" class="login" to="/login">
                         Login
                     </RouterLink>
-                    <DropdownMenu v-else>
+                    <DropdownMenu v-else-if="isAuthenticated">
                         <DropdownMenuTrigger as-child>
                             <button
                                 type="button"
@@ -166,13 +167,13 @@ function handleSignOut() {
                             <Separator />
                         </template>
                         <RouterLink
-                            v-if="!isAuthenticated"
+                            v-if="!isAuthenticated && !IS_PREVIEW"
                             class="text-lg font-semibold login"
                             to="/login"
                         >
                             Login
                         </RouterLink>
-                        <template v-else>
+                        <template v-else-if="isAuthenticated">
                             <div class="flex min-w-0 items-center gap-3">
                                 <UserAvatar class="size-10 text-inherit" />
                                 <div class="flex min-w-0 flex-col gap-0.5">

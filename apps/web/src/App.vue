@@ -15,6 +15,7 @@ import { useAccountSession } from '@/composables/useCurrentUser';
 import { consumeDataDeletedFlag } from '@/composables/useAccountData';
 import { discardAbandonedPendingSave } from '@/composables/usePendingSave';
 import { applyDisplayPreferences, useResolvedTheme } from '@/composables/useDisplayPreferences';
+import { IS_PREVIEW } from '@/utils/preview';
 
 const feedbackOpen = ref(false);
 
@@ -44,6 +45,9 @@ onMounted(() => {
 <template>
     <Sonner position="bottom-right" :theme="theme" rich-colors />
     <div class="app-shell">
+        <p v-if="IS_PREVIEW" class="preview-banner" role="status">
+            PR preview build: uses the development API, and sign-in is turned off.
+        </p>
         <AppHeader />
         <main class="app-main">
             <RouterView />
@@ -81,6 +85,14 @@ onMounted(() => {
     display: flex;
     flex-direction: column;
     min-height: 100vh;
+}
+
+.preview-banner {
+    padding: 0.375rem 1rem;
+    text-align: center;
+    font-size: 0.875rem;
+    background-color: hsl(var(--muted));
+    color: hsl(var(--muted-foreground));
 }
 
 .app-main {

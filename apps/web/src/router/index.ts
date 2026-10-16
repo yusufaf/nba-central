@@ -1,4 +1,4 @@
-import { createRouter, createWebHistory, START_LOCATION } from 'vue-router';
+import { createRouter, createWebHashHistory, createWebHistory, START_LOCATION } from 'vue-router';
 import Home from '../views/Home.vue';
 import TeamBuilder from '@/views/TeamBuilder.vue';
 import Scores from '@/views/Scores.vue';
@@ -15,9 +15,14 @@ import NotFound from '@/views/NotFound.vue';
 import { useLogto } from '@logto/vue';
 import { requireSignedIn } from './guards';
 import { syncIndexing } from './indexing';
+import { IS_PREVIEW } from '@/utils/preview';
 
 const router = createRouter({
-    history: createWebHistory(import.meta.env.BASE_URL),
+    // GitHub Pages has no SPA fallback for a preview's subfolder, so a reload
+    // of /teambuilder would 404 there; hash URLs never leave index.html.
+    history: IS_PREVIEW
+        ? createWebHashHistory(import.meta.env.BASE_URL)
+        : createWebHistory(import.meta.env.BASE_URL),
     routes: [
         {
             path: '/',
