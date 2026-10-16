@@ -1,0 +1,59 @@
+name: PR preview
+
+# Builds apps/web for each same-repo PR and publishes it to the gh-pages branch,
+# served by GitHub Pages at https://yusufaf.dev/nba-central/pr-preview/pr-<N>/.
+# Previews use hash routing (Pages has no SPA fallback in a subfolder), the
+# development API, and no sign-in. preview-cleanup.yml removes the folder when
+# the PR closes; it lives apart because this file's paths filter would skip a
+# close whose final diff no longer touches apps/web.
+on:
+  pull_request:
+    types: [opened, reopened, synchronize]
+    paths:
+      - 'apps/web/**'
+      - 'pnpm-lock.yaml'
+      - 'pnpm-workspace.yaml'
+      - 'package.json'
+      - '.npmrc'
+      - '.github/workflows/preview.yml'
+
+concurrency: preview-${{ github.event.number }}
+
+jobs:
+  # Not named changes/web/cdk: those are the required checks on main.
+  preview:
+    # Fork and Dependabot PRs get a read-only token and can't push to gh-pages.
+    if: github.event.pull_request.head.repo.full_name == github.repository && github.actor != 'dependabot[bot]'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+      pages: read
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: pnpm/action-setup@v6
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - run: pnpm --filter web build
+        env:
+          VITE_BASE: /${{ github.event.repository.name }}/pr-preview/pr-${{ github.event.number }}/
+          VITE_PREVIEW: '1'
+          VITE_API_BASE_URL: ${{ vars.PREVIEW_API_BASE_URL }}
+          VITE_LOGTO_ENDPOINT: ${{ vars.VITE_LOGTO_ENDPOINT }}
+          VITE_LOGTO_APP_ID: ${{ vars.VITE_LOGTO_APP_ID }}
+          VITE_LOGTO_API_RESOURCE: ${{ vars.VITE_LOGTO_API_RESOURCE }}
+
+      - uses: rossjrw/pr-preview-action@ffa7509e91a3ec8dfc2e5536c4d5c1acdf7a6de9 # v1.8.1
+        with:
+          action: deploy
+          source-dir: apps/web/dist
+          pages-base-url: yusufaf.dev/${{ github.event.repository.name }}
+          qr-code: false
+          wait-for-pages-deployment: true

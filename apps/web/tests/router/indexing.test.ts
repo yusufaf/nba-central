@@ -60,6 +60,14 @@ describe('syncIndexing', () => {
         expect(canonicalOf(doc)).toBe('https://nba.yusufaf.dev//evil.example/');
     });
 
+    it('marks even an indexable page noindex in a PR preview build', () => {
+        const doc = shell();
+        syncIndexing('/scores', true, doc, true);
+        expect(canonicalOf(doc)).toBeUndefined();
+        expect(ogUrlOf(doc)).toBeUndefined();
+        expect(robotsOf(doc)).toBe('noindex');
+    });
+
     it('starts from the same origin index.html ships', () => {
         const html = readFileSync(resolve(__dirname, '../../index.html'), 'utf8');
         expect(html).toContain(`<link rel="canonical" href="${SITE_ORIGIN}/">`);

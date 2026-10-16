@@ -1,5 +1,10 @@
 export const DEFAULT_ALLOWED_ORIGINS = ["http://localhost:3000"];
 
+// Per-PR previews are built against the development API and served from
+// GitHub Pages under the user site's domain (.github/workflows/preview.yml).
+// Added to the non-production API's CORS only.
+export const PREVIEW_ORIGIN = "https://yusufaf.dev";
+
 // Public hostname for the production frontend (S3 + CloudFront). Stated once
 // here and reused by team-builder-cert-stack.ts (ACM cert) and
 // team-builder-web.ts (CloudFront domainNames + Route 53 record) so the two

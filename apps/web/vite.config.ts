@@ -1,11 +1,31 @@
 import { fileURLToPath, URL } from "node:url";
 
-import { defineConfig } from "vite";
+import { defineConfig, type Plugin } from "vite";
 import vue from "@vitejs/plugin-vue";
 import tailwindcss from "@tailwindcss/vite";
 
+const isPreview = process.env.VITE_PREVIEW === "1";
+
+// PR previews (.github/workflows/preview.yml) are throwaway copies on GitHub
+// Pages: keep them out of search results and out of the production analytics.
+// Only the built HTML changes; the committed index.html stays as production
+// serves it, which getPublicTeamPage's tag stripping depends on.
+const previewHtml = (): Plugin => ({
+    name: "preview-html",
+    apply: "build",
+    transformIndexHtml(html) {
+        // Fail the build rather than ship a preview that counts as production traffic.
+        const withoutUmami = html.replace(/<script[^>]*analytics\.yusufaf\.dev[^>]*><\/script>/, "");
+        if (withoutUmami.includes("analytics.yusufaf.dev/")) {
+            throw new Error("preview-html: couldn't remove the Umami script from index.html");
+        }
+        return withoutUmami.replace("</head>", '    <meta name="robots" content="noindex">\n  </head>');
+    },
+});
+
 // https://vitejs.dev/config/
 export default defineConfig({
+    base: process.env.VITE_BASE ?? "/",
     build: {
         // lib: {
         //   entry: `src/network/api.ts`,
@@ -20,7 +40,7 @@ export default defineConfig({
         //   }
         // }
     },
-    plugins: [vue(), tailwindcss()],
+    plugins: [vue(), tailwindcss(), ...(isPreview ? [previewHtml()] : [])],
     resolve: {
         alias: {
             "@": fileURLToPath(new URL("./src", import.meta.url)),

@@ -21,6 +21,7 @@ import { ChevronDown, LogOut, Menu, Monitor, Moon, Settings, Sun } from 'lucide-
 import UserAvatar from '@/components/UserAvatar.vue';
 import { useCurrentUser } from '@/composables/useCurrentUser';
 import { useThemeControl } from '@/composables/useThemeControl';
+import { IS_PREVIEW } from '@/utils/preview';
 
 const { isAuthenticated, signOut } = useLogto();
 const { currentUser } = useCurrentUser();
@@ -36,6 +37,10 @@ const displayName = computed(() => currentUser.value?.username ?? 'Account');
 // isAuthenticated flips — the plain route loop has no notion of auth state.
 const navRoutes = computed(() => ROUTES.filter((route) => route.path !== '/login'));
 
+// A full load, not a RouterLink, so the logo still resets the app as it
+// always has; BASE_URL keeps a PR preview's logo inside that preview.
+const homeHref = import.meta.env.BASE_URL;
+
 function handleSignOut() {
     signOut(window.location.origin);
 }
@@ -48,7 +53,7 @@ function handleSignOut() {
     <header class="@container bg-primary text-black shadow-lg sticky top-0 z-50">
         <div class="flex items-center px-4 h-16">
             <div class="shrink-0">
-                <a href="/">
+                <a :href="homeHref">
                     <img
                         src="@/assets/TeamBuilderLogo1_Transparent2.png"
                         alt="NBA Team Builder Logo"
@@ -93,10 +98,10 @@ function handleSignOut() {
                             </DropdownMenuRadioGroup>
                         </DropdownMenuContent>
                     </DropdownMenu>
-                    <RouterLink v-if="!isAuthenticated" class="login" to="/login">
+                    <RouterLink v-if="!isAuthenticated && !IS_PREVIEW" class="login" to="/login">
                         Login
                     </RouterLink>
-                    <DropdownMenu v-else>
+                    <DropdownMenu v-else-if="isAuthenticated">
                         <DropdownMenuTrigger as-child>
                             <button
                                 type="button"
@@ -166,13 +171,13 @@ function handleSignOut() {
                             <Separator />
                         </template>
                         <RouterLink
-                            v-if="!isAuthenticated"
+                            v-if="!isAuthenticated && !IS_PREVIEW"
                             class="text-lg font-semibold login"
                             to="/login"
                         >
                             Login
                         </RouterLink>
-                        <template v-else>
+                        <template v-else-if="isAuthenticated">
                             <div class="flex min-w-0 items-center gap-3">
                                 <UserAvatar class="size-10 text-inherit" />
                                 <div class="flex min-w-0 flex-col gap-0.5">

@@ -1,0 +1,36 @@
+name: PR preview cleanup
+
+# Removes a closed PR's preview from gh-pages. No paths filter: a PR can stop
+# touching apps/web after its preview was published (see preview.yml).
+on:
+  pull_request:
+    types: [closed]
+
+concurrency: preview-${{ github.event.number }}
+
+jobs:
+  cleanup:
+    if: github.event.pull_request.head.repo.full_name == github.repository && github.actor != 'dependabot[bot]'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      # Most PRs never had a preview; skip them rather than comment on each.
+      - id: published
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if gh api "repos/${{ github.repository }}/contents/pr-preview/pr-${{ github.event.number }}?ref=gh-pages" --silent 2>/dev/null; then
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - if: steps.published.outputs.exists == 'true'
+        uses: actions/checkout@v7
+
+      - if: steps.published.outputs.exists == 'true'
+        uses: rossjrw/pr-preview-action@ffa7509e91a3ec8dfc2e5536c4d5c1acdf7a6de9 # v1.8.1
+        with:
+          action: remove
+          pages-base-url: yusufaf.dev/${{ github.event.repository.name }}
+          qr-code: false

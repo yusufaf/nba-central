@@ -9,6 +9,12 @@ vi.mock('@/network/api', () => ({
 }));
 vi.mock('vue-sonner', () => ({ toast: { error: vi.fn() } }));
 const auth = vi.hoisted(() => ({ signedIn: false }));
+const build = vi.hoisted(() => ({ preview: false }));
+vi.mock('@/utils/preview', () => ({
+    get IS_PREVIEW() {
+        return build.preview;
+    },
+}));
 vi.mock('@logto/vue', () => ({
     useLogto: () => ({ isAuthenticated: auth.signedIn, signOut: vi.fn() }),
 }));
@@ -86,6 +92,7 @@ const settingsChoice = (settings: VueWrapper, label: string) =>
 
 beforeEach(() => {
     auth.signedIn = false;
+    build.preview = false;
     settingsSync.stop();
     localStorage.clear();
     root.classList.remove('dark');
@@ -215,5 +222,21 @@ describe('Header theme control while settings load', () => {
 
         expect(storedTheme()).not.toBe('dark');
         expect(settingsApi.update).not.toHaveBeenCalled();
+    });
+});
+
+describe('Header in a PR preview build', () => {
+    it('shows neither Login nor the account menu, on desktop or mobile', async () => {
+        build.preview = true;
+        const header = await mountHeader();
+
+        expect(header.find('.desktop-nav .login').exists()).toBe(false);
+        expect(header.find('[data-testid="user-menu-trigger"]').exists()).toBe(false);
+        expect(header.find('[data-testid="theme-trigger"]').exists()).toBe(true);
+
+        header.find<HTMLElement>('[data-testid="mobile-menu-trigger"]').element.click();
+        await flushPromises();
+        expect(document.body.querySelector('.mobile-nav .login')).toBeNull();
+        expect(body().byText('.mobile-nav span', 'Signed in as')).toBeUndefined();
     });
 });

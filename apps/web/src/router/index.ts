@@ -1,4 +1,4 @@
-import { createRouter, createWebHistory, START_LOCATION } from 'vue-router';
+import { createRouter, createWebHashHistory, createWebHistory, START_LOCATION } from 'vue-router';
 import Home from '../views/Home.vue';
 import TeamBuilder from '@/views/TeamBuilder.vue';
 import Scores from '@/views/Scores.vue';
@@ -12,12 +12,18 @@ import Callback from '@/views/Callback.vue';
 import Settings from '@/views/Settings.vue';
 import DataDeleted from '@/views/DataDeleted.vue';
 import NotFound from '@/views/NotFound.vue';
+import SignInOff from '@/views/SignInOff.vue';
 import { useLogto } from '@logto/vue';
 import { requireSignedIn } from './guards';
 import { syncIndexing } from './indexing';
+import { IS_PREVIEW } from '@/utils/preview';
 
 const router = createRouter({
-    history: createWebHistory(import.meta.env.BASE_URL),
+    // GitHub Pages has no SPA fallback for a preview's subfolder, so a reload
+    // of /teambuilder would 404 there; hash URLs never leave index.html.
+    history: IS_PREVIEW
+        ? createWebHashHistory(import.meta.env.BASE_URL)
+        : createWebHistory(import.meta.env.BASE_URL),
     routes: [
         {
             path: '/',
@@ -88,6 +94,7 @@ const router = createRouter({
             name: 'callback',
             component: Callback,
         },
+        ...(IS_PREVIEW ? [{ path: '/sign-in-off', name: 'sign-in-off', component: SignInOff }] : []),
         // Anything no route above matches. Rendered in place, not redirected,
         // so the URL stays what was asked for. No `indexable`, so noindex.
         {
@@ -98,14 +105,25 @@ const router = createRouter({
     ],
 });
 
+// A preview's /callback isn't a registered Logto redirect URI, and a session
+// there would share yusufaf.dev's storage with other sites, so every way into
+// sign-in (links, the save dialog, guarded routes) ends on one page saying so.
+const SIGN_IN_ROUTES = new Set(['login', 'sign-up', 'callback']);
+
 // Guards run inside the app's injection context, so useLogto() works here.
-router.beforeEach((to) => (to.meta.requiresAuth ? requireSignedIn(useLogto()) : true));
+router.beforeEach((to) => {
+    if (IS_PREVIEW && (SIGN_IN_ROUTES.has(String(to.name)) || to.meta.requiresAuth)) {
+        return { name: 'sign-in-off' };
+    }
+    return to.meta.requiresAuth ? requireSignedIn(useLogto()) : true;
+});
 // `indexable` routes are the public pages in public/sitemap.xml, plus
 // published teams. On a first load of /t/:teamUUID, getPublicTeamPage has
 // already written the right tags, including noindex for an unknown team, so
-// only later in-app navigations touch them.
+// only later in-app navigations touch them. A preview has no server, so it
+// always syncs.
 router.afterEach((to, from) => {
-    if (from === START_LOCATION && to.meta.headFromServer) return;
+    if (!IS_PREVIEW && from === START_LOCATION && to.meta.headFromServer) return;
     syncIndexing(to.path, to.meta.indexable === true);
 });
 
