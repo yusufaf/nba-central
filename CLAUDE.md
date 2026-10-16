@@ -281,17 +281,23 @@ the gap.
 touches it and publishes it with `rossjrw/pr-preview-action` to the `gh-pages`
 branch, served by GitHub Pages at
 `https://yusufaf.dev/nba-central/pr-preview/pr-<N>/` (project Pages ride on the
-user site's custom domain). Closing the PR removes the folder. A preview build
-(`VITE_PREVIEW=1`, `src/utils/preview.ts`):
+user site's custom domain). `preview-cleanup.yml` removes the folder when the
+PR closes. A preview build (`VITE_PREVIEW=1`, `src/utils/preview.ts`):
 
 - routes with hash history (`.../pr-<N>/#/teambuilder`): Pages has no SPA
   fallback inside a subfolder
-- calls the **development** API, whose CORS allows `PREVIEW_ORIGIN`
-  (`apps/cdk/constants`); production's API keeps no CORS
-- is `noindex` on every route and drops Umami (`vite.config.ts`)
-- turns sign-in off. Keep it that way: a preview shares the `yusufaf.dev`
-  origin, and its storage, with the user site and other project pages, and
-  its `/callback` isn't a registered Logto redirect URI
+- calls the **development** API (repo variable `PREVIEW_API_BASE_URL`), whose
+  CORS allows `PREVIEW_ORIGIN` (`apps/cdk/constants`); production's API keeps
+  no CORS. CORS can't be scoped by path, so that is every page on
+  `yusufaf.dev`, not only previews. It's acceptable because the API takes
+  bearer tokens, not cookies, and nothing on that origin holds a dev token
+- is `noindex` on every route and drops Umami (`vite.config.ts`, which fails
+  the build if it can't find the Umami script)
+- turns sign-in off: the router sends `/login`, `/sign-up`, `/callback` and
+  every `requiresAuth` route to a `sign-in-off` page. Keep it that way: a
+  preview shares the `yusufaf.dev` origin, and its storage, with the user site
+  and other project pages, and its `/callback` isn't a registered Logto
+  redirect URI
 
 The `gh-pages` root holds only `.nojekyll` and an `index.html` that redirects
 to nba.yusufaf.dev. The apex site (yusufaf.github.io) must never add a
