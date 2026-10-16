@@ -1,6 +1,6 @@
 # Daily Era: design decisions
 
-**Date:** 2026-10-14
+**Date:** 2026-10-14 (revised 2026-10-15 after review)
 **Status:** approved design, not yet implemented
 **Issue:** #172 (build slices #173, #174, #175, #176, #177; milestone "Daily Era")
 
@@ -17,162 +17,268 @@ streaks.
 
 ## What the data looks like
 
-Measured on `origin/main` on 2026-10-14:
+Measured on `origin/main` on 2026-10-14 and 2026-10-15. The image figures
+come from downloading and classifying all 792 pool images.
 
-- `historicalJerseys.json` has 1,236 rows. Of these, 792 are `slot:
-  "home-road"` with a `franchise`, covering 44 franchises (749 NBA, 43 ABA).
-- A design's run (`endYear - startYear + 1`) has a median of 2 seasons, a
-  90th percentile of 5, and a maximum of 18. 379 designs lasted one season.
-  Start years run from 1947 to 2025. Every decade has between 22 and 154
-  designs, and the 1970s have the most.
-- Each jersey image is an illustration by the Basketball Jersey Database
-  (bballjerseys.com). It shows the home and road jerseys side by side, the
-  team wordmark on the chest, the years printed above the jerseys (for
-  example "1995/2000"), a `bballjerseys.com` watermark at the top and an
-  `@nba.jersey.database` handle at the bottom.
-- The image URLs are already opaque
-  (`jerseys/historical/31d308_<hash>.avif`), but the builder bundles
-  `historicalJerseys.json` into every page load, and it maps each URL to its
-  years. Showing a bundled URL in the game would give the answer away.
+**Rows**
+
+- `historicalJerseys.json` has 1,236 rows. 805 are `slot: "home-road"`. Of
+  those, 792 have a `franchise`, covering 44 franchises. The other 13 are
+  defunct teams such as the Detroit Falcons.
+- By the `league` tag, 749 are NBA and 43 are ABA. Another 22 ABA-era designs
+  (Nets, Spurs, Pacers, Nuggets) are tagged NBA.
+
+**Season convention**
+
+- Every year field uses the **season's ending year**: `startYear: 1996` means
+  1995-96.
+- `seasons` lists the seasons a design was actually worn, as strings like
+  `"1995-96"`.
+
+**Runs**
+
+- A run (`endYear - startYear + 1`) has a median of 2 seasons, a 90th
+  percentile of 5 and a maximum of 18. 379 designs lasted one season.
+- **112 rows have gaps** in their `seasons` list. For example, the Vancouver
+  Grizzlies row runs 1996–1999 but skips 1996-97, which belongs to a sibling
+  variant row. So `startYear..endYear` is not the set of seasons a design was
+  worn.
+- **Some rows are the same jersey.** 116 rows have a near-identical twin
+  from the same franchise with a different run (fewer than 0.1% of
+  jersey-area pixels differ). 46 names appear on more than one row.
+- **32 rows are still being worn**, with "Present" in the name. Only 4 of
+  them have `endYear` 2026. The other 28 stop at 2023–2025, and all 32 will
+  keep going after the data was built.
+
+**Images**
+
+- All 792 images are 400×400 illustrations by the Basketball Jersey Database
+  (bballjerseys.com).
+- 782 use one template:
+  - the home and road jerseys side by side, split at x≈200;
+  - a year label above **each** jersey, for the pair's run (for example
+    "1995/2000");
+  - a `bballjerseys.com` watermark at the top centre;
+  - on about 18% of images, a caption line near y≈372 that names an occasion
+    such as "NBA 50th Anniversary" or "911 Commemorative Patches", which
+    gives the era away;
+  - an `@nba.jersey.database` handle at the bottom.
+- The year label sits at one of three heights depending on the era: y≈48
+  (mostly 1940s–80s), y≈32 (mid-90s) and y≈22 (2000s on). The jerseys start
+  just below it.
+- The home and road jerseys **often have different printed runs**, because a
+  row's run covers the pair. For example, a Celtics row reads 1954/1967 above
+  the home jersey and 1965/1967 above the road.
+- 10 OKC/BOS images from 2014 on use a second template: a white frame, the
+  team name in a top bar, vertical watermarks, and "ICON"/"ASSOCIATION"
+  printed at the bottom.
+
+**URLs**
+
+- Image URLs are already opaque (`jerseys/historical/31d308_<hash>.avif`).
+  But the builder imports `historicalJerseys.json` eagerly, so every page load
+  ships a map from each URL to its years. Showing a bundled URL in the game
+  would give the answer away.
 
 ## Decisions
 
-1. **Jerseys only at launch.** The pool is the `home-road` rows with a
-   `franchise`. That is about two years of daily puzzles without repeats.
-   Logos are left out: most of them spell out the team name, and their file
-   names contain the team and year (`TRI-1950.<hash>.png`). They can come
-   back later as a variant (for example a weekly logo day) once the jersey
-   format is proven.
+1. **Jerseys only at launch.** The pool is the home-road rows with a
+   `franchise`, with the exclusions in decision 7 and the grouping in
+   decision 2.
+   - Logos are left out: most spell out the team name, and their file names
+     contain the team and year (`TRI-1950.<hash>.png`).
+   - They can come back later as a variant once the jersey format is proven.
 
-2. **Players guess the era only, and the team stays visible.** Every jersey
-   has its wordmark on the chest, in a different place and style each time,
-   so hiding it would mean hand-masking each image or detecting text
-   automatically, which fails on script fonts. The challenge is "which Spurs
-   era is this", which matches the game's name. There is no team guess, so
-   #175 does not use the team combobox.
+2. **Players guess the era, and the team stays visible.** Every jersey has
+   its wordmark on the chest, so the challenge is "which Spurs era is this".
+   There is no team guess. #175 does not use the team combobox.
 
-3. **A guess is a season, with five attempts and hints.**
-   - The input is a season picker from 1946-47 to the current season.
-   - A guess is a **hit** if the season falls anywhere in the design's run
-     (`startYear` to `endYear`, inclusive).
-   - A miss returns a **direction** (`earlier` or `later`) and a **band** for
-     the distance to the nearest end of the run: `close` within 3 seasons,
-     `near` within 10, and `far` beyond that.
-   - The game ends on a hit or after the fifth guess.
-   - Five guesses is fewer than a blind binary search needs to pin down a
-     one-season design over 80 seasons (about 7), so knowing jerseys matters
-     more than search strategy, and the bands still help a near miss.
+   The **answer set** for a puzzle is the set of seasons, by ending year, in
+   which the jersey shown was worn:
+   - Rows that show the same jersey are grouped. A group is rows of the same
+     franchise whose cropped jersey images are near-identical (the threshold
+     is set by the script and checked on its contact sheet).
+   - Each group becomes one puzzle. Its answer set is the union of the
+     `seasons` lists of every row in the group, falling back to
+     `startYear..endYear` for a row whose `seasons` list is empty.
+   - The puzzle shows the group's earliest row.
 
-4. **The share row shows the path, not the answer.** Each guess becomes one
-   emoji: 🟩 for a hit; 🟨, 🟧 or ⬛ for a `close`, `near` or `far` miss,
-   followed by ⬆️ or ⬇️ for the direction. Example:
-   `Which Era? #12 4/5 ⬛⬆️ 🟧⬇️ 🟨⬆️ 🟩`. It includes the day number and
-   the site link and never includes the seasons or the franchise (#176).
+3. **A guess is a season, with four attempts and hints.**
+   - **The picker** shows season labels ("1995-96") from 1946-47 to the
+     current season, which is 81 seasons in 2026-27. It submits the ending
+     year.
+   - **A hit** is a guess that is in the answer set.
+   - **A miss** returns a **direction**, which is `later` if the nearest
+     answer season is after the guess and `earlier` if it is before.
+   - **A miss** also returns a **band** for the distance to the nearest
+     answer season: `close` within 3 seasons, `near` within 10, and `far`
+     beyond that.
+   - **The game ends** on a hit or after the fourth guess.
+   - **Why four guesses.** With a direction and three bands, a fixed search
+     that knows nothing about jerseys can always find a one-season answer in
+     up to 47 contiguous seasons in four guesses, but in up to 115 in five.
+     Five guesses would make every puzzle solvable by search alone across
+     the 81-season range. Four keep knowledge decisive. If the bands or the
+     guess count change, redo this check.
+
+4. **The share row shows the path, not the answer.**
+   - Each guess becomes one emoji: 🟩 for a hit, and 🟨, 🟧 or ⬛ for a
+     `close`, `near` or `far` miss.
+   - A miss is followed by ⬆️ for `later` or ⬇️ for `earlier`.
+   - The text includes the day number, guesses used, the current streak and
+     the site link, for example
+     `Which Era? #12 3/4 🔥5 ⬛⬆️ 🟨⬇️ 🟩 nba.yusufaf.dev/daily`.
+   - It never includes the seasons or the franchise (#176).
 
 5. **The game uses its own images, built offline under random keys.** A new
    script, `refresh-daily-era` in `apps/cdk`, is run deliberately like the
-   other `refresh-*` scripts. For each jersey in the pool it:
-   - downloads the source image;
-   - crops off the top band (the years and the watermark);
-   - keeps **one** of the two jerseys, home or road, chosen when the list is
-     built and kept fixed;
-   - adds a small uneven margin and re-encodes it at a different size, so the
-     framing and bytes never match the original;
-   - uploads it to the assets bucket under a **random** key
-     (`daily-era/<random id>.webp`), not a hash of the source, so nothing
-     links it to the bundled list;
-   - checks that the image matches the expected template (dimensions and
-     where the band sits) and drops any jersey that doesn't, rather than
-     guessing at the crop.
+   other `refresh-*` scripts. For each pool row it:
+   1. downloads the source image;
+   2. **detects the template.** The OKC/BOS frame template is excluded, along
+      with anything else that doesn't match the standard layout;
+   3. **crops per image.** It finds the first jersey row below the year
+      labels (the label height varies by era) and the last row of the
+      shorts. Everything above and below is cut, which removes the labels,
+      the watermark, the caption and the handle. **Both jerseys are kept**,
+      so the answer set matches what is shown;
+   4. adds a small uneven margin and re-encodes the crop as WebP at a
+      different size, so its framing and bytes never match the original;
+   5. groups identical jerseys (decision 2);
+   6. **validates before uploading.** Any image whose crop looks wrong (the
+      crop height is out of range, or text pixels are left in the cut
+      bands) is dropped, not uploaded;
+   7. uploads to the assets bucket under a **random** key
+      (`daily-era/<random id>.webp`), so nothing links it to the bundled
+      list;
+   8. writes a contact sheet of every crop, so a person can review the batch
+      before the list is published.
 
    No colour change, mirroring or warping is applied: colour is the main
-   clue, and mirroring flips the wordmark and numbers. A determined player
-   can still reverse-search an image. With no leaderboard, they only spoil
-   their own game, so lighter changes are enough to stop casual lookups
-   without hurting honest players.
+   clue, and mirroring flips the wordmark and numbers. A determined player can
+   still reverse-search an image. With no leaderboard, they only spoil their
+   own game.
 
    Decoding AVIF and re-encoding needs an image library, which the scripts
-   have avoided so far (`pngAlpha.ts` uses only `zlib`). The script may add
-   one as a dev dependency of `apps/cdk`, used only by the script and never
-   bundled into a Lambda. Check the package and version against the
-   registry when implementing.
+   have avoided so far (`pngAlpha.ts` uses only `zlib`). The script may add one
+   as a dev dependency of `apps/cdk`, used only by the script and never
+   bundled into a Lambda. Check the package and version against the registry
+   when implementing.
 
 6. **The puzzle list is private and frozen.** The script writes
    `daily-era-puzzles.json` to the static-data bucket. It is never bundled
-   into the web app. Each entry has a puzzle id, the image key, `startYear`,
-   `endYear`, the franchise and the era's team name (for the reveal), and
-   the source `jersey` URL (for the builder link). The order is shuffled
-   once with a fixed seed and stored. Re-running the script appends new
-   jerseys at the end and never reorders or edits published days, so a
-   refresh of the jersey data can't change an old puzzle. This replaces
-   #173's "deterministic hash of the UTC date".
+   into the web app.
+   - **Entry fields:**
+     - an opaque random `puzzleId`;
+     - the image key;
+     - the answer set;
+     - the run label for the reveal;
+     - the franchise and the era's team name;
+     - the source `jersey` URL, for the builder link;
+     - a stable identity (`franchise` + `name` + `startYear`), because
+       `jersey` URLs are content hashes that change when an image is
+       re-processed.
+   - **Order:** the first batch is shuffled once with a fixed seed. Later
+     runs shuffle only the new identities and append them, so a published day
+     never moves or changes, and appended batches don't come in franchise
+     order.
+   - **Running out:** when fewer than 90 unplayed days remain, the script
+     appends a reshuffled second cycle of the pool and warns. The API returns
+     404 for a date past the end of the list, rather than throwing.
+   - This replaces #173's "deterministic hash of the UTC date".
 
-7. **Excluded from the pool:** the four open-ended designs ("2019–Present"),
-   whose `endYear` moves each season, and any jersey whose crop failed the
-   template check. ABA designs stay in.
+7. **Excluded from the pool:**
+   - every row whose `name` matches `/present/i` (32 rows), because its
+     answer set is still growing;
+   - the 10 frame-template images;
+   - any image that fails validation in decision 5.
+
+   ABA designs stay in.
 
 8. **A day starts at the player's local midnight, like Wordle.**
-   - The client asks for its local date: `GET /api/daily/era/2026-11-06`.
-   - The server accepts any date between yesterday and tomorrow in UTC terms,
-     which covers every time zone, plus dates in the 30-day archive. It
-     refuses later dates and dates before launch.
-   - Puzzle number = days since launch + 1, and the day's puzzle is the entry
-     at that position in the frozen list.
-   - Because the date is part of the URL, CloudFront can cache each day's
-     response with no special handling at the day boundary.
+   - **Request:** the client asks for its local date:
+     `GET /api/daily/era/2026-11-06`.
+   - **Today's window:** the server accepts, as "today", any date from
+     `date(now − 12h)` to `date(now + 14h)` in UTC, which is exactly the
+     range of dates in effect somewhere on Earth.
+   - **Archive:** dates in the 30-day archive are also accepted. Anything
+     else, including dates before puzzle #1, returns 404.
+   - **Launch:** puzzle #1 is dated 30 days **before** go-live, so the
+     archive is full on launch day (#177's goal). The puzzle number is days
+     since puzzle #1's date plus 1, and the day's puzzle is the entry at that
+     position.
+   - **Caching:** today every `/api/*` request is uncached
+     (`team-builder-web.ts` sets `CachePolicy.CACHING_DISABLED`).
+     - #173 adds a CloudFront behavior for `/api/daily/era/*`, listed before
+       `/api/*`, with a cache policy that honours the origin's
+       `Cache-Control`.
+     - A successful GET sends a public `max-age` (the response for a date
+       never changes).
+     - A 4xx or 5xx sends `no-store`, so a refusal for a date that becomes
+       valid later is never cached.
+     - POST is never cached.
 
-9. **Guesses are checked on the server, and the server keeps no state.**
-   - `GET /api/daily/era/{date}` returns `{ puzzleNumber, puzzleId,
+9. **Guesses are checked on the server, which keeps no state.**
+   - **`GET /api/daily/era/{date}`** returns `{ puzzleNumber, puzzleId,
      imageUrl }` and nothing else.
-   - `POST /api/daily/era/guess` takes `{ puzzleId, season, attempt }`. It
-     returns `{ hit, direction, band }`, plus the answer (run, team name,
-     franchise, builder link) only when `hit` is true or `attempt` is 5.
-   - The server stores nothing. A player could send all 80 seasons to the
-     API and read off the answer, but they would only spoil their own streak.
-     Tracking guesses per player would mean a table, an id cookie and rate
-     limiting, which is too much for a game with no leaderboard.
-   - Both routes are public (no authorizer) and go in `PUBLIC_ROUTES`, using
-     `getPublicTeam` as the template.
+   - **`POST /api/daily/era/guess`** takes `{ puzzleId, season, attempt }`.
+     - The server looks up which day that `puzzleId` belongs to and refuses
+       it if that day is outside the window in decision 8. Tomorrow's answer
+       can't be fetched early, even though the id is opaque.
+     - It returns `{ hit, direction, band }`.
+     - It adds the answer (run label, team name, franchise, builder link)
+       only when `hit` is true or `attempt` is 4.
+   - **No stored state.** A player could send `attempt: 4`, or every season,
+     for a playable day and read off the answer. That spoils only their own
+     game, because there is no leaderboard. Tracking guesses per player would
+     need a table, an id cookie and rate limiting, which is too much here.
+   - **Templates:** both routes are public and go in `PUBLIC_ROUTES`
+     (`team-builder-api-routes.ts`). `getPublicTeam` is the template for a
+     public route. `getPlayers` is the template for reading a JSON file from
+     the static-data bucket, and the main Lambda role can already read that
+     bucket.
 
-10. **The reveal sends players into the site.** After the game the page shows
-    the season run, the team's name in that era, the full original image, and
-    a link that opens the builder with that jersey selected. It also shows a
-    countdown to the next local midnight. The builder reads only `team`,
-    `remix` and `resume` from its query today, so the link needs a new
-    query parameter that preselects a historical jersey on a blank team;
-    that work belongs to #175.
+10. **The reveal sends players into the site.**
+    - After the game the page shows the run label, the team's name in that
+      era, the original full image, and a link that opens the builder with
+      that jersey selected.
+    - It also shows a countdown to the next local midnight.
+    - The builder reads only `team`, `remix` and `resume` from its query
+      today. The link needs a new query parameter that preselects a
+      historical jersey on a blank team. That work belongs to #175.
 
-11. **The artwork is credited.** Cropping the top band removes the
-    `bballjerseys.com` watermark. The `@nba.jersey.database` handle at the
-    bottom stays, and the page shows "Jersey art: Basketball Jersey Database"
-    under the image, linked to bballjerseys.com, during the game and on the
+11. **The artwork is credited.** The crop removes the watermark and the
+    handle. So the page shows "Jersey art: Basketball Jersey Database",
+    linked to bballjerseys.com, under the image during the game and on the
     reveal. The share card (#176) carries the same credit in small text. It
     is worth asking the site owner directly whether they're happy with this
-    use; that is the owner's call and does not block the build.
+    use; that is the owner's call and doesn't block the build.
 
 12. **No sign-in, and streaks are kept in local storage.** Following #177:
-    - The current streak counts consecutive local days **won**. A loss or a
+    - The current streak counts consecutive local days won. A loss or a
       missed day resets it to zero, as in Wordle.
-    - Also stored: best streak, games played, win rate and the guess
-      distribution.
+    - Also stored: best streak, games played, win rate, the guess
+      distribution, and **one result per date**.
     - Every storage read and write is wrapped in try/catch. If storage is
       blocked, the game is still playable without a streak.
     - Syncing streaks to an account is a later decision, because
       `SETTINGS_SCHEMA` only allows boolean and enum keys.
 
-13. **The archive covers the last 30 days.** Archive games count as played
-    and appear in the distribution, but they never extend or break the
-    current streak.
+13. **The archive covers the last 30 days.**
+    - Archive games count as played and appear in the distribution, but they
+      never extend or break the current streak.
+    - Opening a date that already has a stored result shows that result
+      rather than a new game, so a lost day can't be replayed into a win and
+      no day is counted twice.
 
 ## Changes to the build issues
 
 | Issue | Change from the issue text |
 |---|---|
-| #173 | Jerseys only. Selection is by position in the frozen, shuffled list (decision 6), keyed by the player's local date (decision 8), not a UTC-date hash. The guess takes a season and returns `hit`/`direction`/`band`, with no team result. |
-| #174 | Jerseys only (logos dropped). The crop, one-jersey and re-encode steps from decision 5 go here. Keys are random, not content hashes. Gallery assets are unchanged. |
-| #175 | A season picker only, with no `HistoricalTeamCombobox`, five attempts, the reveal and builder link from decision 10 (including the new builder query parameter that preselects a jersey), and the art credit. The Umami events stay as written. |
-| #176 | The share row from decision 4, with no team result. The card carries the art credit. |
-| #177 | Streaks count consecutive local days won, and archive games don't affect them (decisions 12 and 13). |
+| #173 | **Pool and lookup:** jerseys only. The day's puzzle is a position in the frozen list (decision 6), keyed by the player's local date (decision 8), not a UTC-date hash. **Guess route:** takes an opaque `puzzleId`, refuses days outside the window, and returns `hit`/`direction`/`band` with no team result. It reveals the answer on a hit or the 4th attempt. **Infra:** a new CloudFront behavior for `/api/daily/era/*`, `no-store` on errors, and a 404 past the end of the list. Read the list with the `getPlayers` pattern. |
+| #174 | **Jerseys only.** The per-image crop, template detection, validate-before-upload, identical-jersey grouping, contact sheet and random keys from decision 5. **Both jerseys are kept.** Gallery assets are unchanged. |
+| #175 | **Era-only:** a season picker, 4 attempts, and the hit/direction/band feedback from decision 3. **Reveal and credit:** the reveal and builder link from decision 10, including the new builder query parameter, and the art credit. The Umami events stay as written. |
+| #176 | The share text from decision 4, with day number, guesses out of 4, streak and emoji path, and no team result. The card carries the art credit. |
+| #177 | Streaks count consecutive local days won, with one stored result per date. Archive games never affect the streak and can't be replayed. Puzzle #1 is dated 30 days before launch, so the archive is full on day one. |
 
 ## Out of scope
 
