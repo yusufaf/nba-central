@@ -28,6 +28,7 @@ import {
     dataApi,
     customPlayerApi,
     feedbackApi,
+    dailyEraApi,
     PLAYER_STATS_CONCURRENCY,
     PLAYER_STATS_TIMEOUT_MS,
 } from "@/network/api";
@@ -241,5 +242,28 @@ describe("customPlayerApi.delete", () => {
             "/api/custom-entities/player/delete/uuid-123",
         );
         expect(result).toEqual({ ok: true });
+    });
+});
+
+describe("dailyEraApi", () => {
+    it("GETs a date's puzzle and returns response.data", async () => {
+        const body = { success: true, data: { puzzleNumber: 32, puzzleId: "p1", imageUrl: "u" } };
+        mockInstance.get.mockResolvedValue({ data: body });
+
+        const result = await dailyEraApi.getPuzzle("2026-11-06");
+
+        expect(mockInstance.get).toHaveBeenCalledWith("/api/daily/era/2026-11-06");
+        expect(result).toEqual(body);
+    });
+
+    it("POSTs a guess to /api/daily/era/guess", async () => {
+        const payload = { puzzleId: "p1", season: 1996, attempt: 1 };
+        const body = { success: true, data: { hit: false, direction: "later", band: "near" } };
+        mockInstance.post.mockResolvedValue({ data: body });
+
+        const result = await dailyEraApi.guess(payload);
+
+        expect(mockInstance.post).toHaveBeenCalledWith("/api/daily/era/guess", payload);
+        expect(result).toEqual(body);
     });
 });

@@ -55,6 +55,14 @@ const router = createRouter({
             meta: { indexable: true },
             component: News,
         },
+        // Unlinked and noindex until the 2026-11-06 launch (#172). Lazy, unlike
+        // the rest: a standalone game nobody reaches from another page, so it
+        // stays out of the entry chunk and out of every router import.
+        {
+            path: '/daily',
+            name: 'dailyEra',
+            component: () => import('@/views/DailyEra.vue'),
+        },
         {
             path: '/teams',
             name: 'teams',

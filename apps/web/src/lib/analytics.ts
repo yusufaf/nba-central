@@ -22,6 +22,8 @@ export const ACTION_EVENTS: ReadonlySet<string> = new Set([
     "share_clicked",
     "card_downloaded",
     "remix_clicked",
+    "daily_era_guessed",
+    "daily_era_builder_clicked",
 ]);
 
 const FIRST_ACTION_KEY = "nba-central:first-action";

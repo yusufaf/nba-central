@@ -20,6 +20,26 @@ const GREY_PIXEL = Buffer.from(
     'base64',
 );
 
+const DAILY_ERA_HIT = {
+    success: true,
+    data: {
+        hit: true,
+        direction: null,
+        band: null,
+        answer: {
+            runLabel: '1995-96 – 1998-99',
+            teamName: 'Vancouver Grizzlies',
+            franchise: 'MEM',
+            shownIdentity: {
+                franchise: 'MEM',
+                name: 'Vancouver Grizzlies 1995-2000 Home and Road Jersey',
+                startYear: 1996,
+                mediaId: '31d308_d7be6e06a283493ea15be25ca7e6bd3a',
+            },
+        },
+    },
+};
+
 async function stubNetwork(page: Page) {
     await page.route(WIKIMEDIA, (route) =>
         route.fulfill({ status: 200, contentType: 'image/png', body: GREY_PIXEL }),
@@ -47,6 +67,28 @@ async function stubNetwork(page: Page) {
             body: JSON.stringify(publicTeamFixture),
         }),
     );
+    // Daily Era: a fixed puzzle, and every guess is a hit (DAILY_ERA_HIT).
+    await page.route('**/api/daily/era/**', (route) =>
+        route.fulfill({
+            status: 200,
+            contentType: 'application/json',
+            body: JSON.stringify(
+                route.request().method() === 'POST'
+                    ? DAILY_ERA_HIT
+                    : {
+                          success: true,
+                          data: {
+                              puzzleNumber: 32,
+                              puzzleId: 'visual',
+                              imageUrl: 'https://visual.invalid/daily-era/visual.webp',
+                          },
+                      },
+            ),
+        }),
+    );
+    await page.route('https://visual.invalid/**', (route) =>
+        route.fulfill({ status: 200, contentType: 'image/png', body: GREY_PIXEL }),
+    );
 }
 
 /** Hides anything whose content is inherently unstable, then waits for paint. */
@@ -71,6 +113,7 @@ const ROUTES = [
     { path: '/teambuilder', name: 'teambuilder' },
     { path: '/scores', name: 'scores' },
     { path: '/news', name: 'news' },
+    { path: '/daily', name: 'daily' },
     { path: '/teams', name: 'teams' },
     { path: '/login', name: 'login' },
     { path: '/sign-up', name: 'sign-up' },
@@ -87,6 +130,28 @@ for (const { path, name } of ROUTES) {
         await expect(page).toHaveScreenshot(`${name}.png`, { fullPage: true });
     });
 }
+
+test('daily reveal', async ({ page }) => {
+    // Before the reveal's countdown is rendered, so it reads the same every run.
+    await page.clock.setFixedTime(new Date('2026-11-06T20:00:00'));
+    await stubNetwork(page);
+    // The reveal shows the bundled jersey art from the assets CDN.
+    await page.route('https://d2s6ea2hcvgd9x.cloudfront.net/**', (route) =>
+        route.fulfill({ status: 200, contentType: 'image/png', body: GREY_PIXEL }),
+    );
+    await page.goto('/daily');
+    await page.getByTestId('guess-button').waitFor();
+    // Nine decades must wrap rather than scroll the page sideways on a phone.
+    expect(
+        await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth),
+    ).toBe(true);
+    await page.getByText('1990s', { exact: true }).click();
+    await page.getByRole('button', { name: '1995-96', exact: true }).click();
+    await page.getByTestId('guess-button').click();
+    await page.getByText('Got it in 1/4').waitFor();
+    await settle(page);
+    await expect(page).toHaveScreenshot('daily-reveal.png', { fullPage: true });
+});
 
 test('page shell width is consistent across routes', async ({ page }) => {
     // Visits every route in one test, so it needs more than the per-test default.
