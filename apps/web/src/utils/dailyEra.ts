@@ -73,7 +73,7 @@ interface StoredDailyEra {
 // Checks everything GuessList and DailyEraReveal read, so a hand-edited or
 // half-written record is dropped instead of breaking the page for the day.
 const isRecord = (value: unknown): value is Record<string, unknown> =>
-    typeof value === "object" && value !== null;
+    typeof value === "object" && value !== null && !Array.isArray(value);
 
 // Exhaustive records, so a new band or direction in models/api.ts fails to
 // compile here rather than silently rejecting every stored game using it.
@@ -107,30 +107,40 @@ const isGame = (value: unknown): value is StoredDailyEraGame =>
     value.guesses.every(isGuess) &&
     (value.answer === null || isReveal(value.answer));
 
-const readAll = (): StoredDailyEra | null => {
+// "newer" is a store written by a later version of the app (another tab on
+// a newer deploy). It may hold days this version can't read, so it is never
+// overwritten. Anything else unreadable (garbage, an older version) holds
+// nothing recoverable and is replaced on the next save.
+type StoreRead = { kind: "store"; store: StoredDailyEra } | { kind: "newer" } | { kind: "none" };
+
+const readStore = (): StoreRead => {
     try {
         const raw = localStorage.getItem(STORAGE_KEY);
-        if (!raw) return null;
-        const parsed = JSON.parse(raw) as Partial<StoredDailyEra>;
-        if (parsed?.version !== STORAGE_VERSION || typeof parsed.games !== "object" || !parsed.games) {
-            return null;
+        const parsed: unknown = raw ? JSON.parse(raw) : null;
+        if (!isRecord(parsed) || typeof parsed.version !== "number") return { kind: "none" };
+        if (parsed.version > STORAGE_VERSION) return { kind: "newer" };
+        if (parsed.version !== STORAGE_VERSION || !isRecord(parsed.games)) {
+            return { kind: "none" };
         }
-        return parsed as StoredDailyEra;
+        return { kind: "store", store: parsed as unknown as StoredDailyEra };
     } catch {
-        return null;
+        return { kind: "none" };
     }
 };
 
 export const readDailyEraGame = (day: string): StoredDailyEraGame | null => {
-    const game = readAll()?.games[day];
+    const read = readStore();
+    const game = read.kind === "store" ? read.store.games[day] : undefined;
     return isGame(game) ? game : null;
 };
 
 export const writeDailyEraGame = (day: string, game: StoredDailyEraGame): void => {
     try {
-        const all = readAll() ?? { version: STORAGE_VERSION, games: {} };
-        all.games[day] = game;
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(all));
+        const read = readStore();
+        if (read.kind === "newer") return;
+        const store = read.kind === "store" ? read.store : { version: STORAGE_VERSION, games: {} };
+        store.games[day] = game;
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(store));
     } catch {
         // Private mode or a full quota: the game still plays, it just won't
         // survive a reload.
