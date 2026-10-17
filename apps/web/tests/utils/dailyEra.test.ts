@@ -103,6 +103,25 @@ describe('daily era storage', () => {
         expect(readDailyEraGame('2026-10-16')).toBeNull();
     });
 
+    it("never overwrites a newer version's store", () => {
+        const newer = JSON.stringify({ version: 2, games: { '2026-10-15': { streak: 9 } } });
+        localStorage.setItem('nba-central:daily-era', newer);
+        writeDailyEraGame('2026-10-16', game);
+        expect(localStorage.getItem('nba-central:daily-era')).toBe(newer);
+    });
+
+    it.each([
+        ['garbage', '{not json'],
+        ['an empty string', ''],
+        ['null', 'null'],
+        ['an older version', JSON.stringify({ version: 0, games: {} })],
+        ['games as an array', JSON.stringify({ version: 1, games: [] })],
+    ])('replaces %s with a fresh store', (_, raw) => {
+        localStorage.setItem('nba-central:daily-era', raw);
+        writeDailyEraGame('2026-10-16', game);
+        expect(readDailyEraGame('2026-10-16')).toEqual(game);
+    });
+
     it('ignores a game the page could not render', () => {
         const store = (g: unknown) =>
             localStorage.setItem('nba-central:daily-era', JSON.stringify({ version: 1, games: { d: g } }));
