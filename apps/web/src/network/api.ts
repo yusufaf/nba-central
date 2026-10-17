@@ -39,6 +39,9 @@ import type {
     DeleteCustomArenaResponse,
     UploadArenaImageResponse,
     DeleteArenaImageResponse,
+    GetDailyEraResponse,
+    DailyEraGuessPayload,
+    GuessDailyEraResponse,
 } from '@/models/api';
 import type { SettingsMap } from '@/constants/settings';
 
@@ -243,6 +246,18 @@ export const dataApi = {
 export const newsApi = {
     getNews: async (): Promise<GetNewsResponse> => {
         const response = await api.get<GetNewsResponse>('/api/news/get');
+        return response.data;
+    },
+};
+
+// Daily Era API - matches DAILY_ERA_ROUTES in CDK. Anonymous.
+export const dailyEraApi = {
+    getPuzzle: async (date: string): Promise<GetDailyEraResponse> => {
+        const response = await api.get<GetDailyEraResponse>(`/api/daily/era/${date}`);
+        return response.data;
+    },
+    guess: async (payload: DailyEraGuessPayload): Promise<GuessDailyEraResponse> => {
+        const response = await api.post<GuessDailyEraResponse>('/api/daily/era/guess', payload);
         return response.data;
     },
 };
