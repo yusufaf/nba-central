@@ -1,5 +1,27 @@
 # Changelog
 
+## [0.3.0](https://github.com/yusufaf/nba-central/compare/cdk-v0.2.0...cdk-v0.3.0) (2026-10-17)
+
+
+### Features
+
+* **cdk:** add Daily Era puzzle and guess API ([#173](https://github.com/yusufaf/nba-central/issues/173)) ([1cbf20b](https://github.com/yusufaf/nba-central/commit/1cbf20bfa4922f4f690294a542e4490b12c4133a))
+* **cdk:** add refresh-current-logos script ([f0bda2d](https://github.com/yusufaf/nba-central/commit/f0bda2de41c740a2c9b9374ab0fa2e0ce459c16a))
+* **cdk:** add refresh-daily-era puzzle image pipeline ([#174](https://github.com/yusufaf/nba-central/issues/174)) ([50164e3](https://github.com/yusufaf/nba-central/commit/50164e34737b7a24c50b7ec5ae914cf1088297e7))
+* **cdk:** add the latest draft class to players.json ([03700e3](https://github.com/yusufaf/nba-central/commit/03700e30315d10e5013ca74e64ae60c444007c3d)), closes [#169](https://github.com/yusufaf/nba-central/issues/169)
+* per-PR previews on GitHub Pages ([#224](https://github.com/yusufaf/nba-central/issues/224)) ([38588a1](https://github.com/yusufaf/nba-central/commit/38588a18feebc40f49b562cada89fadfa4f29e24))
+* share/search metadata, robots.txt and sitemap, license, README ([#220](https://github.com/yusufaf/nba-central/issues/220)) ([dc97710](https://github.com/yusufaf/nba-central/commit/dc9771032ac2ed5f09ebe0ae62d82aa912492113))
+
+
+### Bug Fixes
+
+* **cdk:** keep last season's players active until November ([a7cc286](https://github.com/yusufaf/nba-central/commit/a7cc2863ba3b0d57f77a4d596aedef7c63bf8ac6)), closes [#193](https://github.com/yusufaf/nba-central/issues/193)
+* **cdk:** mark players active by NBA season, not calendar year ([0354223](https://github.com/yusufaf/nba-central/commit/03542239f569acb8d903873885f099a7c4d8bf11)), closes [#163](https://github.com/yusufaf/nba-central/issues/163)
+* **cdk:** refuse to overwrite players.json with a partial scrape ([4193788](https://github.com/yusufaf/nba-central/commit/41937886e59d25e3ec3c73ddf08f59cf22150758)), closes [#168](https://github.com/yusufaf/nba-central/issues/168)
+* **cdk:** remove the unused getTeamLogos Lambda and route ([5836743](https://github.com/yusufaf/nba-central/commit/58367436db3eb46ba189a8c43139aa0808332bb2))
+* **cdk:** serve stale player stats when Basketball-Reference fails ([caf2452](https://github.com/yusufaf/nba-central/commit/caf2452b0d02503c06fcf5faebb3accd26be224f)), closes [#166](https://github.com/yusufaf/nba-central/issues/166)
+* **web:** time out player stats requests ([cee6553](https://github.com/yusufaf/nba-central/commit/cee6553861b48f82c570732b071c64925120ad6a)), closes [#166](https://github.com/yusufaf/nba-central/issues/166)
+
 ## [0.2.0](https://github.com/yusufaf/nba-central/compare/cdk-v0.1.1...cdk-v0.2.0) (2026-10-08)
 
 
