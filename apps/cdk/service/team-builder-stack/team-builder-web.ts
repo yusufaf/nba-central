@@ -1,8 +1,11 @@
-import { RemovalPolicy } from "aws-cdk-lib";
+import { Duration, RemovalPolicy } from "aws-cdk-lib";
 import { Bucket, BlockPublicAccess } from "aws-cdk-lib/aws-s3";
 import {
 	AllowedMethods,
+	CacheCookieBehavior,
+	CacheHeaderBehavior,
 	CachePolicy,
+	CacheQueryStringBehavior,
 	Distribution,
 	OriginRequestPolicy,
 	PriceClass,
@@ -76,6 +79,23 @@ export class TeamBuilderWeb extends Construct {
 		// Origin path intentionally left empty — see apiDomainName doc above.
 		const apiOrigin = new HttpOrigin(apiDomainName);
 
+		// Honours the Daily Era Lambda's Cache-Control. defaultTtl must be 0
+		// (CDK's default is a day) so a response without one is never cached;
+		// maxTtl backs up the Lambda's own 1-hour cap. The date is in the path,
+		// so nothing else goes in the cache key.
+		const dailyEraCachePolicy = new CachePolicy(this, `${appName}-${deploymentType}-daily-era-cache`, {
+			cachePolicyName: `${appName}-${deploymentType}-daily-era`,
+			comment: "Honours the Daily Era Lambda's Cache-Control (max-age <= 1h); nothing cached without one",
+			defaultTtl: Duration.seconds(0),
+			minTtl: Duration.seconds(0),
+			maxTtl: Duration.hours(1),
+			cookieBehavior: CacheCookieBehavior.none(),
+			headerBehavior: CacheHeaderBehavior.none(),
+			queryStringBehavior: CacheQueryStringBehavior.none(),
+			enableAcceptEncodingGzip: true,
+			enableAcceptEncodingBrotli: true,
+		});
+
 		const certificateNameAndId = `${appName}-${deploymentType}-web-cert`;
 		const certificate = Certificate.fromCertificateArn(
 			this,
@@ -91,6 +111,18 @@ export class TeamBuilderWeb extends Construct {
 				cachePolicy: CachePolicy.CACHING_OPTIMIZED,
 			},
 			additionalBehaviors: {
+				// Must stay ahead of /api/*: CloudFront matches behaviors in
+				// order. Keeps ALLOW_ALL for the POST guess (CloudFront never
+				// caches a POST) and /api/*'s origin request policy. The
+				// Lambdas refuse with 400/410, never 403/404: errorResponses
+				// below would swap those for index.html and cache it for 300 s.
+				"/api/daily/era/*": {
+					origin: apiOrigin,
+					viewerProtocolPolicy: ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
+					allowedMethods: AllowedMethods.ALLOW_ALL,
+					cachePolicy: dailyEraCachePolicy,
+					originRequestPolicy: OriginRequestPolicy.ALL_VIEWER_EXCEPT_HOST_HEADER,
+				},
 				"/api/*": {
 					origin: apiOrigin,
 					viewerProtocolPolicy: ViewerProtocolPolicy.REDIRECT_TO_HTTPS,

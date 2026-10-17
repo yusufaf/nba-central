@@ -12,6 +12,7 @@ const TEAMS_PREFIX = `/api/teams`;
 const DATA_PREFIX = `/api/data`;
 const CUSTOM_ENTITIES_PREFIX = `/api/custom-entities`;
 const FEEDBACK_PREFIX = `/api/feedback`;
+const DAILY_ERA_PREFIX = `/api/daily/era`;
 
 export const FILES_ROUTES: ApiRoute[] = [
 	{
@@ -143,6 +144,24 @@ export const NEWS_ROUTES: ApiRoute[] = [
 	},
 ];
 
+// Public by design: the guess is checked server-side, and the answer only
+// leaves on a hit or the last attempt. CloudFront caches the GET (see
+// team-builder-web.ts), so refusals are 400/410, never 403/404.
+export const DAILY_ERA_ROUTES: ApiRoute[] = [
+	{
+		route: `${DAILY_ERA_PREFIX}/{date}`,
+		lambdaName: "getDailyEra",
+		// HEAD too: an unrouted HEAD would 404, and CloudFront would cache
+		// index.html under the key the GET uses.
+		methods: [HttpMethod.GET, HttpMethod.HEAD],
+	},
+	{
+		route: `${DAILY_ERA_PREFIX}/guess`,
+		lambdaName: "guessDailyEra",
+		methods: [HttpMethod.POST],
+	},
+];
+
 export const CUSTOM_ENTITIES_ROUTES: ApiRoute[] = [
 	// GM routes
 	{
@@ -251,13 +270,15 @@ export const FEEDBACK_ROUTES: ApiRoute[] = [
 
 // DATA_ROUTES, NEWS_ROUTES, PUBLIC_TEAM_ROUTES and PAGE_ROUTES are read-only
 // and reachable signed out — the first two are fetched on every page load,
-// the last two are how a published team is viewed and unfurled. Everything
-// that reads or writes user-owned data stays authenticated.
+// the last two are how a published team is viewed and unfurled. DAILY_ERA_ROUTES
+// are the daily game, which needs no account. Everything that reads or writes
+// user-owned data stays authenticated.
 export const PUBLIC_ROUTES: ApiRoute[] = [
 	...DATA_ROUTES,
 	...NEWS_ROUTES,
 	...PUBLIC_TEAM_ROUTES,
 	...PAGE_ROUTES,
+	...DAILY_ERA_ROUTES,
 ];
 export const PRIVATE_ROUTES: ApiRoute[] = [
 	...FILES_ROUTES,

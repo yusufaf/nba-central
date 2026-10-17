@@ -11,6 +11,7 @@ import {
 	FEEDBACK_ROUTES,
 	PUBLIC_TEAM_ROUTES,
 	PAGE_ROUTES,
+	DAILY_ERA_ROUTES,
 } from "../../service/team-builder-stack/team-builder-api-routes";
 
 // Locks in the public/private route split team-builder-api.ts uses to
@@ -28,14 +29,17 @@ const PUBLIC_ROUTE_PATHS = [
 	"/api/news/get",
 	"/api/teams/public/{teamUUID}",
 	"/t/{teamUUID}",
+	"/api/daily/era/{date}",
+	"/api/daily/era/guess",
 ];
 
 describe("team-builder-api-routes", () => {
-	it("PUBLIC_ROUTES is exactly DATA + NEWS + PUBLIC_TEAM + PAGE routes", () => {
+	it("PUBLIC_ROUTES is exactly DATA + NEWS + PUBLIC_TEAM + PAGE + DAILY_ERA routes", () => {
 		const publicPaths = PUBLIC_ROUTES.map((r) => r.route).sort();
 		expect(publicPaths).toEqual(PUBLIC_ROUTE_PATHS.sort());
 		expect(PUBLIC_ROUTES).toHaveLength(
-			DATA_ROUTES.length + NEWS_ROUTES.length + PUBLIC_TEAM_ROUTES.length + PAGE_ROUTES.length,
+			DATA_ROUTES.length + NEWS_ROUTES.length + PUBLIC_TEAM_ROUTES.length + PAGE_ROUTES.length +
+				DAILY_ERA_ROUTES.length,
 		);
 	});
 
@@ -72,8 +76,9 @@ describe("team-builder-api-routes", () => {
 		// card's stats and avatar upload routes make 33, and the data export
 		// and delete routes 35. Custom arenas (#116) add CRUD plus the image
 		// upload and delete routes: 41. Removing the unused get-team-logos
-		// route (#165) leaves 40.
-		expect(publicPaths.size + privatePaths.size).toBe(40);
+		// route (#165) leaves 40. Daily Era's puzzle and guess routes (#173)
+		// make 42.
+		expect(publicPaths.size + privatePaths.size).toBe(42);
 	});
 
 	it("the user routes are private, with GET for reads, PUT for writes and DELETE for the delete", () => {
@@ -198,6 +203,14 @@ describe("team-builder-api-routes", () => {
 	it("the /t/{teamUUID} page route accepts GET and HEAD", () => {
 		const pageRoute = PAGE_ROUTES.find((r) => r.route === "/t/{teamUUID}");
 		expect(pageRoute?.methods).toEqual(["GET", "HEAD"]);
+	});
+
+	it("serves the Daily Era puzzle (GET, HEAD) and guess (POST) without an authorizer", () => {
+		expect(DAILY_ERA_ROUTES.map((r) => [r.route, r.lambdaName, r.methods])).toEqual([
+			["/api/daily/era/{date}", "getDailyEra", ["GET", "HEAD"]],
+			["/api/daily/era/guess", "guessDailyEra", ["POST"]],
+		]);
+		for (const route of DAILY_ERA_ROUTES) expect(PUBLIC_ROUTES).toContain(route);
 	});
 
 	it("keeps publishTeam behind the authorizer", () => {
