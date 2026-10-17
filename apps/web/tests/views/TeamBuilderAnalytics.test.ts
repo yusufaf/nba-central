@@ -122,6 +122,7 @@ describe('builder_opened', () => {
         ['/teambuilder', 'new'],
         ['/teambuilder?remix=r1', 'remix'],
         ['/teambuilder?team=t1', 'team'],
+        ['/teambuilder?jersey=x', 'jersey'],
     ])('reports how %s was entered', async (url, entry) => {
         await mountAt(url);
         expect(callsTo('builder_opened')).toEqual([['builder_opened', { entry }]]);
