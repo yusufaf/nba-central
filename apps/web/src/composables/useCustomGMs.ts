@@ -1,10 +1,12 @@
-import { ref, onMounted } from 'vue';
+import { ref, watch } from 'vue';
 import { toast } from 'vue-sonner';
 import { customGMApi } from '@/network/api';
 import { getApiErrorMessage } from '@/composables/useApiErrorMessage';
+import { useCurrentUser } from '@/composables/useCurrentUser';
 import type { GM } from '@/models/types';
 
 export function useCustomGMs() {
+    const { currentUser } = useCurrentUser();
     const customGMs = ref<GM[]>([]);
     const loading = ref(false);
     const error = ref<string | null>(null);
@@ -108,9 +110,17 @@ export function useCustomGMs() {
         }
     };
 
-    onMounted(() => {
-        fetchCustomGMs();
-    });
+    // Only signed in: a visitor with no account would get a 401 and a toast.
+    // The session loads after mount, so this waits for it rather than
+    // checking once.
+    watch(
+        () => currentUser.value?.id,
+        (userId) => {
+            if (userId) void fetchCustomGMs();
+            else customGMs.value = [];
+        },
+        { immediate: true },
+    );
 
     return {
         customGMs,

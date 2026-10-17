@@ -1,10 +1,12 @@
-import { ref, onMounted } from 'vue';
+import { ref, watch } from 'vue';
 import { toast } from 'vue-sonner';
 import { customPlayerApi } from '@/network/api';
 import { getApiErrorMessage } from '@/composables/useApiErrorMessage';
+import { useCurrentUser } from '@/composables/useCurrentUser';
 import type { Player } from '@/models/types';
 
 export function useCustomPlayers() {
+    const { currentUser } = useCurrentUser();
     const customPlayers = ref<Player[]>([]);
     const loading = ref(false);
     const error = ref<string | null>(null);
@@ -122,9 +124,17 @@ export function useCustomPlayers() {
         }
     };
 
-    onMounted(() => {
-        fetchCustomPlayers();
-    });
+    // Only signed in: a visitor with no account would get a 401 and a toast.
+    // The session loads after mount, so this waits for it rather than
+    // checking once.
+    watch(
+        () => currentUser.value?.id,
+        (userId) => {
+            if (userId) void fetchCustomPlayers();
+            else customPlayers.value = [];
+        },
+        { immediate: true },
+    );
 
     return {
         customPlayers,
