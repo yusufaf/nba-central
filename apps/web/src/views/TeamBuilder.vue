@@ -53,6 +53,7 @@ import { customArenasKey, findLiveArena, useCustomArenas } from "@/composables/u
 import { centreLogoUrl } from "@/utils/court";
 import { shareUrlFor } from "@/utils/shareUrl";
 import { downloadUrlAsFile, slugFilename } from "@/utils/downloadFile";
+import { findHistoricalJersey } from "@/utils/historicalJersey";
 import { track } from "@/lib/analytics";
 import { landingSource } from "@/lib/attribution";
 import type { DrawerSide, NBA2KRating, Player } from "@/models/types";
@@ -583,7 +584,13 @@ const saveTeam = async () => {
             // a duplicate on the next save.
             if (!existingUUID) {
                 router.replace({
-                    query: { ...route.query, remix: undefined, resume: undefined, team: saved.teamUUID },
+                    query: {
+                        ...route.query,
+                        remix: undefined,
+                        resume: undefined,
+                        jersey: undefined,
+                        team: saved.teamUUID,
+                    },
                 });
             }
             if (isPublic.value) {
@@ -844,24 +851,59 @@ const resumePendingSave = async () => {
 // getters (not a single getter returning a tuple) so Vue diffs each source
 // independently - a single getter would return a new array identity on
 // every navigation and fire the callback even when neither param changed.
-// Mirrors the precedence of the watcher below, which decides what the builder loads.
-const builderEntry = (): "team" | "resume" | "remix" | "new" => {
-    const { team, remix, resume } = route.query;
+// Mirrors the precedence of the watcher below, which decides what the builder
+// loads: team > resume > remix > jersey > new.
+const builderEntry = (): "team" | "resume" | "remix" | "jersey" | "new" => {
+    const { team, remix, resume, jersey } = route.query;
     if (typeof team === "string" && team) return "team";
     if (resume === RESUME_SAVE_QUERY) return "resume";
     if (typeof remix === "string" && remix) return "remix";
+    if (typeof jersey === "string" && jersey) return "jersey";
     return "new";
+};
+
+// /teambuilder?jersey=<mediaId>: the Daily Era reveal's way in. A blank team
+// with that historical jersey; an unknown id is just a blank team. Set
+// directly rather than through customize(), so it is no undo step.
+// Kept even for an unknown id, so Back to the same ?jersey= (resolved or
+// not) is recognised as the visit that started the team on screen.
+let seededJerseyId: string | null = null;
+const applyJerseyFromRoute = (mediaId: unknown) => {
+    seededJerseyId = typeof mediaId === "string" && mediaId ? mediaId : null;
+    if (!seededJerseyId) return;
+    const row = findHistoricalJersey(seededJerseyId);
+    if (row) teamJersey.value = row.jersey;
 };
 
 // The instance is reused across query changes, so this is a visit, not a load.
 onMounted(() => track("builder_opened", { entry: builderEntry() }));
 
 watch(
-    [() => route.query.team, () => route.query.remix, () => route.query.resume],
-    ([teamUUID, remixUUID, resume]) => {
+    [
+        () => route.query.team,
+        () => route.query.remix,
+        () => route.query.resume,
+        () => route.query.jersey,
+    ],
+    ([teamUUID, remixUUID, resume, jerseyId], previous) => {
         // Leaving the builder changes the query too (to /login, say); that is
         // not a visit to discard anything for.
         if (route.name !== "teamBuilder") return;
+        // ?jersey= only seeds a new team, so with team/remix/resume unchanged
+        // only a *different* jersey on a plain builder is a new visit.
+        // Dropping it (the nav bar's bare link), Back to the same one, or
+        // adding it to a saved team's URL keeps the team on screen. The
+        // immediate first run gets [] as `previous`.
+        const [prevTeam, prevRemix, prevResume] = previous ?? [];
+        const sameEntry =
+            previous?.length &&
+            teamUUID === prevTeam &&
+            remixUUID === prevRemix &&
+            resume === prevResume;
+        // builderEntry() holds the precedence, so this agrees with the dispatch below.
+        if (sameEntry && (builderEntry() !== "jersey" || jerseyId === seededJerseyId)) {
+            return;
+        }
         // Anything but the way back from sign-in leaves a stashed draft stale: it
         // must not be saved by a later, unrelated sign-in.
         if (resume !== RESUME_SAVE_QUERY) discardPendingSave();
@@ -873,6 +915,7 @@ watch(
             loadRemixFromRoute(remixUUID);
         } else {
             clearBuilderState();
+            applyJerseyFromRoute(jerseyId);
         }
     },
     { immediate: true },
