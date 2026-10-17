@@ -52,12 +52,12 @@ const onBuilderClick = () => track('daily_era_builder_clicked', { puzzleNumber: 
     <section class="flex flex-col gap-4">
         <!-- Only the result is live: the countdown below ticks every second. -->
         <div class="flex flex-col gap-4" aria-live="polite" data-testid="reveal-result">
-            <h2 class="text-[1.25rem] font-bold">
+            <h2 class="text-[1.125rem] font-semibold">
                 {{ solved ? `Got it in ${attempts}/${DAILY_ERA_MAX_ATTEMPTS}` : 'Out of guesses' }}
             </h2>
             <div v-if="answer" class="flex flex-col gap-1">
-                <p class="text-[1.75rem] font-bold tabular-nums">{{ answer.runLabel }}</p>
-                <p class="text-foreground/70">{{ answer.teamName }}</p>
+                <p class="text-[1.5rem] font-bold tabular-nums">{{ answer.runLabel }}</p>
+                <p class="text-foreground/80">{{ answer.teamName }}</p>
             </div>
         </div>
         <div class="overflow-hidden rounded-md bg-foreground/5">
@@ -77,7 +77,7 @@ const onBuilderClick = () => track('daily_era_builder_clicked', { puzzleNumber: 
                 Build a team in this jersey
             </RouterLink>
         </Button>
-        <p v-if="msLeft > 0" class="text-sm text-foreground/70">
+        <p v-if="msLeft > 0" class="text-sm text-foreground/80">
             Next puzzle in
             <span class="font-bold tabular-nums">{{ formatCountdown(msLeft) }}</span>
         </p>

@@ -35,7 +35,7 @@ const emptySlots = computed(() => Math.max(0, props.maxAttempts - props.guesses.
             </span>
             <span
                 v-if="!guess.hit"
-                class="ml-auto flex items-center gap-1 text-sm text-foreground/70"
+                class="ml-auto flex items-center gap-1 text-sm text-foreground/80"
             >
                 <ArrowUp v-if="guess.direction === 'later'" class="size-4" aria-hidden="true" />
                 <ArrowDown v-else class="size-4" aria-hidden="true" />

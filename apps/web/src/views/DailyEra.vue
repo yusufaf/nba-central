@@ -44,7 +44,7 @@ onMounted(reload);
                 </p>
             </header>
 
-            <p v-if="status === 'loading'" class="text-foreground/70">Loading today's jersey…</p>
+            <p v-if="status === 'loading'" class="text-foreground/80">Loading today's jersey…</p>
 
             <p v-else-if="status === 'unavailable'">No puzzle today. Check back tomorrow.</p>
 
@@ -75,7 +75,7 @@ onMounted(reload);
                     >
                         {{ selected === null ? 'Pick a season' : `Guess ${seasonLabel(selected)}` }}
                     </Button>
-                    <p class="text-center text-sm text-foreground/70">
+                    <p class="text-center text-sm text-foreground/80">
                         {{ attemptsLeft }} of {{ DAILY_ERA_MAX_ATTEMPTS }} guesses left
                     </p>
                 </div>
