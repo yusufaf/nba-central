@@ -215,7 +215,7 @@ come from downloading and classifying all 792 pool images.
      appends a reshuffled second cycle of the pool and warns. Each cycle-2
      entry gets a **new** `puzzleId`, so every id maps to exactly one day.
      The identity check that prevents duplicates applies within a cycle,
-     not across cycles. The API returns 404 for a date past the end of the
+     not across cycles. The API returns 410 for a date past the end of the
      list, rather than throwing.
    - This replaces #173's "deterministic hash of the UTC date".
 
@@ -239,7 +239,13 @@ come from downloading and classifying all 792 pool images.
      still gets their full 30 days. The client lists its own local
      date − 1 to date − 30, which always falls inside this range.
    - **The playable window** is today's window plus the archive. Anything
-     else, including dates before puzzle #1, returns 404.
+     else, including dates before puzzle #1, returns 410 (400 for a
+     malformed date). Not 404: the distribution's SPA error pages turn any
+     403 or 404, `/api/*` included, into a 200 `index.html` and cache it
+     for 300 s.
+   - **Puzzle #1 is 2026-10-05** (`DAILY_ERA_FIRST_DATE` in
+     `apps/cdk/models/daily-era.ts`), 32 days before the 2026-11-06 go-live.
+     It must never change once anyone has played.
    - **Launch:** puzzle #1 is dated 32 days **before** go-live (in UTC), so
      every time zone has a full 30-day archive on launch day (#177's goal). The puzzle number is days
      since puzzle #1's date plus 1, and the day's puzzle is the entry at that
@@ -261,10 +267,14 @@ come from downloading and classifying all 792 pool images.
        client shows "This puzzle is no longer playable" rather than an
        error.
      - A 4xx or 5xx sends `no-store`, so a refusal for a date that becomes
-       valid later is never cached.
+       valid later is never cached. Refusals are 400 or 410, never 403 or
+       404, for the reason above.
      - POST is never cached.
 
 9. **Guesses are checked on the server, which keeps no state.**
+   - **Envelope:** both routes answer in the repo's `ApiResponse` shape,
+     `{ success: true, data }` or `{ success: false, error }`. The fields
+     listed below are exactly `data`'s keys.
    - **`GET /api/daily/era/{date}`** returns `{ puzzleNumber, puzzleId,
      imageUrl }` and nothing else.
    - **`POST /api/daily/era/guess`** takes `{ puzzleId, season, attempt }`.
@@ -275,7 +285,10 @@ come from downloading and classifying all 792 pool images.
        the window is up to a day ahead of some players' local date. Reading
        that day's answer early takes deliberate URL editing, and it
        spoils only a day that has already started somewhere else.
-     - It returns `{ hit, direction, band }`.
+     - It returns `{ hit, direction, band }`, with `direction` and `band`
+       `null` on a hit. A malformed body, an `attempt` outside 1-4 or a
+       season outside 1947 to the current season returns 400; an unknown
+       `puzzleId` or a day outside the window returns 410.
      - It adds the answer (run label, team name, franchise and
        `shownIdentity`) only when `hit` is true or `attempt` is 4. The
        server never builds the builder link; the client does (decision 6).
@@ -327,7 +340,7 @@ come from downloading and classifying all 792 pool images.
 
 | Issue | Change from the issue text |
 |---|---|
-| #173 | **Pool and lookup:** jerseys only. The day's puzzle is a position in the frozen list (decision 6), keyed by the player's local date (decision 8), not a UTC-date hash. **Guess route:** takes an opaque `puzzleId`, refuses days outside the playable window (today plus archive), and returns `hit`/`direction`/`band` with no team result. It reveals the answer on a hit or the 4th attempt. **Infra:** a new CloudFront behavior for `/api/daily/era/*` with `ALLOW_ALL` and `/api/*`'s origin request policy, a GET `max-age` of at most 1 hour, `no-store` on errors, and a 404 past the end of the list. Read the list with the `getPlayers` pattern. |
+| #173 | **Pool and lookup:** jerseys only. The day's puzzle is a position in the frozen list (decision 6), keyed by the player's local date (decision 8), not a UTC-date hash. **Guess route:** takes an opaque `puzzleId`, refuses days outside the playable window (today plus archive), and returns `hit`/`direction`/`band` with no team result. It reveals the answer on a hit or the 4th attempt. **Infra:** a new CloudFront behavior for `/api/daily/era/*` with `ALLOW_ALL` and `/api/*`'s origin request policy, a GET `max-age` of at most 1 hour, `no-store` on errors, and a 410 past the end of the list (400 for a malformed date; never 404, see decision 8). Read the list with the `getPlayers` pattern. |
 | #174 | **Jerseys only.** The per-image crop, template detection, validate-before-upload, identical-jersey grouping, contact sheet and random keys from decision 5. **Both jerseys are kept.** Gallery assets are unchanged. |
 | #175 | **Era-only:** a season picker, 4 attempts, and the hit/direction/band feedback from decision 3. **Reveal and credit:** the reveal and builder link from decision 10, including the new builder query parameter, and the art credit. The Umami events stay as written. |
 | #176 | The share text from decision 4, with day number, guesses out of 4, streak and emoji path, and no team result. The card carries the art credit. |

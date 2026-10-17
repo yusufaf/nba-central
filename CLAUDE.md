@@ -67,7 +67,11 @@ Production also gets **TeamBuilderWeb** (S3 + CloudFront for the SPA) and **Team
 TeamBuilderWeb's CloudFront distribution adds a `/t/*` behavior pointed at the
 API origin (`CACHING_DISABLED`, `ALL_VIEWER_EXCEPT_HOST_HEADER`) so a request
 for a published team's page reaches `getPublicTeamPage` — a shared team page
-Lambda, not Lambda@Edge — before the SPA shell ships. The assets CDN
+Lambda, not Lambda@Edge — before the SPA shell ships. A `/api/daily/era/*`
+behavior sits ahead of `/api/*` and honours the origin's `Cache-Control`
+(TTLs 0/0/1h) so the daily puzzle can be cached. API refusals must never use
+403 or 404: the distribution's error pages turn those into an edge-cached
+`index.html` 200, for `/api/*` too. The assets CDN
 (`TeamBuilderAssetsCdn`) attaches the managed CORS-with-preflight
 response-headers policy to every response, which every jersey/logo/share-card
 `<img>` needs to avoid tainting the `useShareCard` canvas render.
@@ -108,6 +112,11 @@ Entry point: `bin/team-builder-cdk.ts` loads env vars from dotenv.
   stripped shell marked `noindex`, and a failed lookup a no-store 503. A new
   default tag in `apps/web/index.html`'s head has to be handled in
   `og-html.ts` too — `og-html.test.ts` checks every head tag of the real file
+- `getDailyEra`, `guessDailyEra`: the Daily Era game. The first returns a
+  date's puzzle number, opaque id and image URL (never the answer); the
+  second scores a season guess and reveals the answer only on a hit or the
+  4th attempt. Both read `daily-era-puzzles.json` from static-data and keep
+  no state (spec: `docs/superpowers/specs/2026-10-14-daily-era-design.md`)
 
 **Data ETL Lambdas** (EventBridge triggers):
 - `setPlayersData`, `setPlayerRatingsData`: scrape Basketball-Reference / api.nba2kapi.com;
@@ -216,11 +225,12 @@ shared identity provider also used by Quizaroni. No Cognito, no Clerk.
 5. Downstream Lambdas receive that context via
    `event.requestContext.authorizer.lambda`
 
-A handful of read-only routes (`/api/data/*`, `/api/news/get`,
-`/api/teams/public/{teamUUID}`, `/t/{teamUUID}`) skip the authorizer entirely
-— the first two serve every visitor, signed in or not; the
-last two are how a published team is viewed and unfurled by anyone, including
-crawlers with no session at all.
+A handful of routes (`/api/data/*`, `/api/news/get`,
+`/api/teams/public/{teamUUID}`, `/t/{teamUUID}`, `/api/daily/era/*`) skip the
+authorizer entirely — the first two serve every visitor, signed in or not; the
+next two are how a published team is viewed and unfurled by anyone, including
+crawlers with no session at all; the last is the Daily Era game, which needs
+no account.
 
 ### Data Models
 
