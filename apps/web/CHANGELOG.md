@@ -1,5 +1,34 @@
 # Changelog
 
+## [0.5.0](https://github.com/yusufaf/nba-central/compare/web-v0.4.0...web-v0.5.0) (2026-10-17)
+
+
+### Features
+
+* per-PR previews on GitHub Pages ([#224](https://github.com/yusufaf/nba-central/issues/224)) ([38588a1](https://github.com/yusufaf/nba-central/commit/38588a18feebc40f49b562cada89fadfa4f29e24))
+* **scores:** allow selecting scheduled future dates ([4da4295](https://github.com/yusufaf/nba-central/commit/4da4295946941a77ad91bd3bf81375079faeee9f))
+* share/search metadata, robots.txt and sitemap, license, README ([#220](https://github.com/yusufaf/nba-central/issues/220)) ([dc97710](https://github.com/yusufaf/nba-central/commit/dc9771032ac2ed5f09ebe0ae62d82aa912492113))
+* **web:** add builder-engagement events and remix attribution ([#221](https://github.com/yusufaf/nba-central/issues/221)) ([ccf7b52](https://github.com/yusufaf/nba-central/commit/ccf7b5201de59de22c5657af6224fe389060dc9a)), closes [#170](https://github.com/yusufaf/nba-central/issues/170)
+* **web:** add the Daily Era game page ([#175](https://github.com/yusufaf/nba-central/issues/175)) ([7068605](https://github.com/yusufaf/nba-central/commit/7068605be5808aba3a5e356ee297b9cab30a2f07))
+* **web:** keep a signed-out team through sign-in and save it on return ([caae699](https://github.com/yusufaf/nba-central/commit/caae69924522688c7e4a49c15545e5f172b10e0d))
+* **web:** preselect a historical jersey from the builder's jersey query ([37b45a2](https://github.com/yusufaf/nba-central/commit/37b45a2fdda623889aad8d4c6548a4947aa8e0a2))
+* **web:** render a 404 view for unknown paths ([#222](https://github.com/yusufaf/nba-central/issues/222)) ([247cbfa](https://github.com/yusufaf/nba-central/commit/247cbfadcad997bf3da22e0b6483c672d80ded93)), closes [#167](https://github.com/yusufaf/nba-central/issues/167)
+* **web:** show empty states on scores page ([40ebf5d](https://github.com/yusufaf/nba-central/commit/40ebf5d04d0fec1f5b54d39818ee8fa81341ba71)), closes [#200](https://github.com/yusufaf/nba-central/issues/200)
+
+
+### Bug Fixes
+
+* **scores:** keep the date picker button from shifting between dates ([39333aa](https://github.com/yusufaf/nba-central/commit/39333aab5742e43bc8a7f1d4f2b0965bb70f8c8b))
+* **web:** align score card records and show game logos before tip-off ([c3f956e](https://github.com/yusufaf/nba-central/commit/c3f956e4c8f3488cf76628da5beb573fa1b443ee))
+* **web:** bundle current team logos instead of fetching ESPN on mount ([f01a24c](https://github.com/yusufaf/nba-central/commit/f01a24c5e5efbafeeee3866d5a7e67ee61279800)), closes [#188](https://github.com/yusufaf/nba-central/issues/188)
+* **web:** keep a newer Daily Era store instead of overwriting it ([32d8255](https://github.com/yusufaf/nba-central/commit/32d8255cb6562e59dc501237c62dd0e707c06321))
+* **web:** limit concurrent player stats requests ([f66ed52](https://github.com/yusufaf/nba-central/commit/f66ed5225524f015859bd673f48e75071ddc7116)), closes [#166](https://github.com/yusufaf/nba-central/issues/166)
+* **web:** match the header avatar icon to the name, reword feedback link ([ffe3304](https://github.com/yusufaf/nba-central/commit/ffe3304a01da2218f311c10aee10e195c35a92c5))
+* **web:** roll the current season over on Oct 1, not Jan 1 ([60b7d46](https://github.com/yusufaf/nba-central/commit/60b7d469a89a287aae99b3e758e73f6e1a296708)), closes [#163](https://github.com/yusufaf/nba-central/issues/163)
+* **web:** show DNP reason next to DNP in box score ([3457bdb](https://github.com/yusufaf/nba-central/commit/3457bdb389a64b3a06b5b6fb3bd1532fd33d2120))
+* **web:** stop fetching team logos on every page load ([f0d50c2](https://github.com/yusufaf/nba-central/commit/f0d50c2fc674ee7a1ee40b1c12d9ebbcccae1779))
+* **web:** time out player stats requests ([cee6553](https://github.com/yusufaf/nba-central/commit/cee6553861b48f82c570732b071c64925120ad6a)), closes [#166](https://github.com/yusufaf/nba-central/issues/166)
+
 ## [0.4.0](https://github.com/yusufaf/nba-central/compare/web-v0.3.0...web-v0.4.0) (2026-10-08)
 
 
