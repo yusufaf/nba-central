@@ -213,6 +213,19 @@ describe("parsePuzzleList", () => {
 	it("rejects anything but an array", () => {
 		expect(() => parsePuzzleList({})).toThrow();
 	});
+
+	it("rejects an entry with no answer seasons", () => {
+		expect(() => parsePuzzleList([{ ...entry, answerSeasons: [] }])).toThrow(/answerSeasons/);
+	});
+
+	it("rejects answer seasons out of order", () => {
+		expect(() => parsePuzzleList([{ ...entry, answerSeasons: [1998, 1996] }])).toThrow(/answerSeasons/);
+		expect(() => parsePuzzleList([{ ...entry, answerSeasons: [1996, 1996] }])).toThrow(/answerSeasons/);
+	});
+
+	it("rejects a puzzleId used twice", () => {
+		expect(() => parsePuzzleList([entry, { ...entry }])).toThrow(/entry 1.*abcdefghijkl/);
+	});
 });
 
 describe("planAppend", () => {

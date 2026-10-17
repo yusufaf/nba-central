@@ -29,3 +29,9 @@ export interface DailyEraPuzzle {
 
 export const DAILY_ERA_PUZZLES_KEY = "daily-era-puzzles.json";
 export const DAILY_ERA_IMAGE_PREFIX = "daily-era/";
+
+// Puzzle #1's date (UTC), 32 days before go-live on 2026-11-06, so every time
+// zone has a full 30-day archive on launch day. Never change it once live:
+// every date maps to a list position through it.
+export const DAILY_ERA_FIRST_DATE = "2026-10-05";
+export const DAILY_ERA_MAX_ATTEMPTS = 4;

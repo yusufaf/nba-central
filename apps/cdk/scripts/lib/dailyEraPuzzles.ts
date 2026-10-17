@@ -170,40 +170,7 @@ export const seededShuffle = <T>(items: T[], seed: number) => {
 	return out;
 };
 
-const fail = (message: string): never => {
-	throw new Error(`Invalid daily era puzzle list: ${message}`);
-};
-
-const isRecord = (value: unknown): value is Record<string, unknown> =>
-	typeof value === "object" && value !== null && !Array.isArray(value);
-
-const checkIdentity = (value: unknown, where: string): JerseyIdentity => {
-	if (!isRecord(value)) return fail(`${where} is not an object`);
-	for (const field of ["franchise", "name", "mediaId"]) {
-		if (typeof value[field] !== "string") fail(`${where}.${field} is not a string`);
-	}
-	if (!Number.isInteger(value.startYear)) fail(`${where}.startYear is not an integer`);
-	return value as unknown as JerseyIdentity;
-};
-
-/** Validates the published list read back from S3; throws on anything malformed. */
-export const parsePuzzleList = (json: unknown): DailyEraPuzzle[] => {
-	if (!Array.isArray(json)) return fail("not an array");
-	return json.map((entry, i) => {
-		const where = `entry ${i}`;
-		if (!isRecord(entry)) return fail(`${where} is not an object`);
-		for (const field of ["puzzleId", "imageKey", "runLabel", "franchise", "teamName"]) {
-			if (typeof entry[field] !== "string") fail(`${where}.${field} is not a string`);
-		}
-		if (!Array.isArray(entry.answerSeasons) || !entry.answerSeasons.every(Number.isInteger)) {
-			fail(`${where}.answerSeasons is not a list of years`);
-		}
-		if (!Array.isArray(entry.identities)) fail(`${where}.identities is not an array`);
-		(entry.identities as unknown[]).forEach((identity, j) => checkIdentity(identity, `${where}.identities[${j}]`));
-		checkIdentity(entry.shownIdentity, `${where}.shownIdentity`);
-		return entry as unknown as DailyEraPuzzle;
-	});
-};
+export { parsePuzzleList } from "../../utilities/daily-era";
 
 /**
  * Splits groups against the published list, matching by media id. A group

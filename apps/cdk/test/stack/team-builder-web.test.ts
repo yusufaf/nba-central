@@ -186,4 +186,28 @@ describe("TeamBuilderWeb", () => {
 		const apiBehavior = config.CacheBehaviors.find((b: any) => b.PathPattern === "/api/*");
 		expect(behavior.TargetOriginId).toBe(apiBehavior.TargetOriginId);
 	});
+
+	it("caches /api/daily/era/* per the origin's Cache-Control, ahead of /api/*", () => {
+		const template = buildTemplate();
+		const behaviors = getDistributionConfig(template).CacheBehaviors;
+		const index = (path: string) => behaviors.findIndex((b: { PathPattern: string }) => b.PathPattern === path);
+		expect(index("/api/daily/era/*")).toBeGreaterThanOrEqual(0);
+		expect(index("/api/daily/era/*")).toBeLessThan(index("/api/*"));
+
+		const behavior = behaviors[index("/api/daily/era/*")];
+		const apiBehavior = behaviors[index("/api/*")];
+		expect(behavior.TargetOriginId).toBe(apiBehavior.TargetOriginId);
+		// ALLOW_ALL, so the POST guess still reaches the API.
+		expect(behavior.AllowedMethods).toHaveLength(7);
+		expect(behavior.AllowedMethods).toContain("POST");
+		expect(behavior.OriginRequestPolicyId).toBe("b689b0a8-53d0-40ab-baf2-68738e2966ac");
+
+		const policies = template.findResources("AWS::CloudFront::CachePolicy");
+		expect(Object.keys(policies)).toHaveLength(1);
+		const [policyId] = Object.keys(policies);
+		expect(behavior.CachePolicyId).toEqual({ Ref: policyId });
+		template.hasResourceProperties("AWS::CloudFront::CachePolicy", {
+			CachePolicyConfig: { DefaultTTL: 0, MinTTL: 0, MaxTTL: 3600 },
+		});
+	});
 });
