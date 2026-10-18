@@ -19,6 +19,7 @@ import ManageNotifications from "@/components/Scores/ManageNotifications.vue";
 import { useGameNotifications } from "@/composables/useGameNotifications";
 import { useScoresPreferences } from "@/composables/useScoresPreferences";
 import { useScoresRouteState } from "@/composables/useScoresRouteState";
+import { useCalendarGameCounts } from "@/composables/useCalendarGameCounts";
 import { useDateFormat } from "@/composables/useDateFormat";
 import { useResolvedTheme } from "@/composables/useDisplayPreferences";
 import { formatDateForEspn, isSameDay } from "@/utils/date";
@@ -48,8 +49,7 @@ const { selectedDate, conferenceFilter, selectedView } = useScoresRouteState({
     defaultDate: today,
 });
 
-const gameCounts = ref<Map<string, number>>(new Map());
-const fetchedMonths = ref<Set<string>>(new Set());
+const { gameCounts, loadMonths } = useCalendarGameCounts();
 
 const calendarAttributes = computed(() => {
     const attrs: any[] = [];
@@ -160,57 +160,6 @@ const fetchCurrentScores = async (forDate?: Date) => {
         fetchStatus.value = "error";
         console.error(err);
         throw err; // Rethrow the error to be caught by the caller
-    }
-};
-
-const handleCalendarMove = async (event: any) => {
-    const pages = Array.isArray(event) ? event : (event ? [event] : []);
-    
-    for (const page of pages) {
-        if (!page.month || !page.year) continue;
-        
-        const year = page.year;
-        const month = page.month;
-        
-        // Start date of the month
-        const startDate = new Date(year, month - 1, 1);
-        // End date of the month (0th day of next month)
-        const endDate = new Date(year, month, 0);
-        
-        const startStr = formatDateForEspn(startDate);
-        const endStr = formatDateForEspn(endDate);
-        const monthKey = `${year}-${month}`;
-        
-        if (fetchedMonths.value.has(monthKey)) continue;
-        fetchedMonths.value.add(monthKey);
-        
-        try {
-            const url = `${ESPN_SCORES_URL}?dates=${startStr}-${endStr}&limit=1000`;
-            const response = await fetch(url);
-            if (!response.ok) continue;
-            
-            const data = await response.json();
-            const counts = new Map<string, number>();
-            
-            // Initialize all days in this month to 0
-            for (let d = 1; d <= endDate.getDate(); d++) {
-                const dayDate = new Date(year, month - 1, d);
-                counts.set(formatDateForEspn(dayDate), 0);
-            }
-            
-            data.events?.forEach((game: any) => {
-                const gameDate = new Date(game.date);
-                const dateKey = formatDateForEspn(gameDate);
-                counts.set(dateKey, (counts.get(dateKey) || 0) + 1);
-            });
-            
-            for (const [dateKey, count] of counts.entries()) {
-                gameCounts.value.set(dateKey, count);
-            }
-        } catch (err) {
-            console.error('Failed to fetch calendar game counts', err);
-            fetchedMonths.value.delete(monthKey);
-        }
     }
 };
 
@@ -388,7 +337,7 @@ onMounted(async () => {
                                 :is-dark="theme === 'dark'"
                                 borderless
                                 :attributes="calendarAttributes"
-                                @did-move="handleCalendarMove"
+                                @update:pages="loadMonths"
                             />
                         </PopoverContent>
                     </Popover>
