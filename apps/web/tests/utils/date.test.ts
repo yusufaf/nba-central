@@ -1,6 +1,7 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi, afterEach } from "vitest";
 import {
     formatDateForEspn,
+    espnGameDay,
     toIsoDate,
     parseIsoDate,
     isSameDay,
@@ -17,6 +18,46 @@ describe("formatDateForEspn", () => {
 
     it("pads single-digit months and days", () => {
         expect(formatDateForEspn(new Date(2026, 0, 5))).toBe("20260105");
+    });
+});
+
+describe("espnGameDay", () => {
+    it("keeps an 8:30pm ET game on its Eastern day", () => {
+        expect(espnGameDay("2026-02-01T01:30Z")).toBe("20260131");
+    });
+
+    it("returns the same day for an afternoon UTC tip-off", () => {
+        expect(espnGameDay("2026-01-15T19:00Z")).toBe("20260115");
+    });
+
+    it("uses the EST offset before the March DST switch", () => {
+        expect(espnGameDay("2026-03-08T04:30Z")).toBe("20260307");
+    });
+
+    it("uses the EDT offset in summer", () => {
+        expect(espnGameDay("2026-07-01T03:30Z")).toBe("20260630");
+    });
+
+    it("accepts a Date", () => {
+        expect(espnGameDay(new Date("2026-10-18T02:00Z"))).toBe("20261017");
+    });
+
+    it("returns an empty string for a missing or malformed date", () => {
+        expect(espnGameDay("")).toBe("");
+        expect(espnGameDay("TBD")).toBe("");
+    });
+
+    describe("when the formatter leaves out a date part", () => {
+        afterEach(() => vi.restoreAllMocks());
+
+        it("returns an empty string rather than a short key", () => {
+            vi.spyOn(Intl.DateTimeFormat.prototype, "formatToParts").mockReturnValue([
+                { type: "year", value: "2026" },
+                { type: "literal", value: "-" },
+                { type: "month", value: "10" },
+            ]);
+            expect(espnGameDay("2026-10-17T16:00Z")).toBe("");
+        });
     });
 });
 

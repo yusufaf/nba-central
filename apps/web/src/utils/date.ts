@@ -13,6 +13,26 @@ export const formatDateForEspn = (d: Date): string => {
     return `${year}${month}${day}`;
 };
 
+const ESPN_DAY_FORMAT = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "America/New_York",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+});
+
+/**
+ * The YYYYMMDD day ESPN files a game under: its US Eastern calendar date.
+ * Empty for a date that doesn't parse.
+ */
+export const espnGameDay = (date: string | Date): string => {
+    const d = new Date(date);
+    if (Number.isNaN(d.getTime())) return "";
+    const { year, month, day }: Partial<Record<Intl.DateTimeFormatPartTypes, string>> =
+        Object.fromEntries(ESPN_DAY_FORMAT.formatToParts(d).map((p) => [p.type, p.value]));
+    if (!year || !month || !day) return "";
+    return `${year}${month}${day}`;
+};
+
 /** ISO 8601 calendar date (YYYY-MM-DD), for the ?date= query param. */
 export const toIsoDate = (d: Date): string => {
     const year = d.getFullYear();
