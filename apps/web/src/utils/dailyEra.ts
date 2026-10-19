@@ -1,9 +1,13 @@
 import type { DailyEraBand, DailyEraDirection, DailyEraReveal, DailyEraScore } from "@/models/api";
-import { parseIsoDate } from "@/utils/date";
+import {
+    DAILY_ERA_ARCHIVE_DAYS,
+    DAILY_ERA_FIRST_DATE,
+    DAILY_ERA_MAX_ATTEMPTS,
+} from "@/constants/dailyEra";
+import { addDays, daysBetween, parseIsoDate } from "@/utils/date";
 import { currentSeasonEndYear } from "@/utils/season";
 
-// Mirrors DAILY_ERA_MAX_ATTEMPTS in apps/cdk/models/daily-era.ts.
-export const DAILY_ERA_MAX_ATTEMPTS = 4;
+export { DAILY_ERA_MAX_ATTEMPTS };
 // 1946-47, the BAA's first season; the API refuses anything earlier.
 export const FIRST_SEASON = 1947;
 
@@ -58,10 +62,18 @@ export interface StoredDailyEraGame {
     puzzleNumber: number;
     guesses: DailyEraGuess[];
     answer: DailyEraReveal | null;
+    /**
+     * True once any guess in the game was made after its own local day, and
+     * never set back. Absent on records from before the archive existed,
+     * which were all played on a page that only loaded today, so absent
+     * means daily.
+     */
+    archive?: boolean;
 }
 
 // One record per local date, so a reload resumes the day's game rather than
-// replaying it. #177 builds streaks and stats on these records.
+// replaying it. Streaks and stats are worked out from these records on read,
+// never stored as counters, so reopening a finished game can't count it twice.
 const STORAGE_KEY = "nba-central:daily-era";
 const STORAGE_VERSION = 1;
 
@@ -104,8 +116,10 @@ const isGame = (value: unknown): value is StoredDailyEraGame =>
     isRecord(value) &&
     typeof value.puzzleId === "string" &&
     Array.isArray(value.guesses) &&
+    value.guesses.length <= DAILY_ERA_MAX_ATTEMPTS &&
     value.guesses.every(isGuess) &&
-    (value.answer === null || isReveal(value.answer));
+    (value.answer === null || isReveal(value.answer)) &&
+    (value.archive === undefined || typeof value.archive === "boolean");
 
 // "newer" is a store written by a later version of the app (another tab on
 // a newer deploy). It may hold days this version can't read, so it is never
@@ -146,3 +160,96 @@ export const writeDailyEraGame = (day: string, game: StoredDailyEraGame): void =
         // survive a reload.
     }
 };
+
+/** Every readable game, by date. A key that isn't a date is dropped too. */
+export const readDailyEraGames = (): Record<string, StoredDailyEraGame> => {
+    const read = readStore();
+    if (read.kind !== "store") return {};
+    return Object.fromEntries(
+        Object.entries(read.store.games).filter(
+            ([day, game]) => parseIsoDate(day) !== null && isGame(game),
+        ),
+    );
+};
+
+export type DailyEraOutcome = "won" | "lost" | "playing";
+
+export const gameOutcome = (guesses: DailyEraGuess[]): DailyEraOutcome => {
+    if (guesses.at(-1)?.hit) return "won";
+    if (guesses.length >= DAILY_ERA_MAX_ATTEMPTS) return "lost";
+    return "playing";
+};
+
+export interface DailyEraStats {
+    /** Finished games, archive ones included. */
+    played: number;
+    wins: number;
+    /** Consecutive local days won on their own day. */
+    currentStreak: number;
+    bestStreak: number;
+    /** distribution[i] is the number of wins in i + 1 guesses. */
+    distribution: number[];
+}
+
+export const dailyEraStats = (
+    games: Record<string, StoredDailyEraGame>,
+    today: string,
+): DailyEraStats => {
+    const stats: DailyEraStats = {
+        played: 0,
+        wins: 0,
+        currentStreak: 0,
+        bestStreak: 0,
+        distribution: Array<number>(DAILY_ERA_MAX_ATTEMPTS).fill(0),
+    };
+    if (!parseIsoDate(today)) return stats;
+
+    const dailyWins = new Set<string>();
+    for (const [day, game] of Object.entries(games)) {
+        if (!parseIsoDate(day)) continue;
+        const outcome = gameOutcome(game.guesses);
+        if (outcome === "playing") continue;
+        stats.played++;
+        if (outcome !== "won") continue;
+        stats.wins++;
+        stats.distribution[game.guesses.length - 1]++;
+        if (!game.archive) dailyWins.add(day);
+    }
+
+    // An unplayed or unfinished today doesn't break the streak yet; a loss does.
+    const todayGame = games[today];
+    const lostToday = !!todayGame && !todayGame.archive && gameOutcome(todayGame.guesses) === "lost";
+    if (!lostToday) {
+        let day = dailyWins.has(today) ? today : addDays(today, -1);
+        while (dailyWins.has(day)) {
+            stats.currentStreak++;
+            day = addDays(day, -1);
+        }
+    }
+
+    let run = 0;
+    let prev = "";
+    for (const day of [...dailyWins].sort()) {
+        run = prev && addDays(prev, 1) === day ? run + 1 : 1;
+        stats.bestStreak = Math.max(stats.bestStreak, run);
+        prev = day;
+    }
+    return stats;
+};
+
+export const dailyEraPuzzleNumber = (day: string): number =>
+    daysBetween(DAILY_ERA_FIRST_DATE, day) + 1;
+
+/** The playable days before today, newest first, never before puzzle #1. */
+export const archiveDays = (today: string): string[] => {
+    const days: string[] = [];
+    for (let i = 1; i <= DAILY_ERA_ARCHIVE_DAYS; i++) {
+        const day = addDays(today, -i);
+        if (day < DAILY_ERA_FIRST_DATE) break;
+        days.push(day);
+    }
+    return days;
+};
+
+export const isArchiveDay = (day: string, today: string): boolean =>
+    archiveDays(today).includes(day);

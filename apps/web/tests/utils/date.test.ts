@@ -4,6 +4,8 @@ import {
     espnGameDay,
     toIsoDate,
     parseIsoDate,
+    addDays,
+    daysBetween,
     isSameDay,
     formatNumericDate,
     formatDate,
@@ -97,6 +99,30 @@ describe("parseIsoDate", () => {
         // Date silently rolls Feb 30 into March - reject rather than
         // silently accepting the wrong day.
         expect(parseIsoDate("2026-02-30")).toBeNull();
+    });
+});
+
+describe("addDays", () => {
+    it("steps across month, year and leap-day boundaries", () => {
+        expect(addDays("2026-11-01", -1)).toBe("2026-10-31");
+        expect(addDays("2026-12-31", 1)).toBe("2027-01-01");
+        expect(addDays("2028-02-28", 1)).toBe("2028-02-29");
+    });
+
+    it("throws on a malformed day", () => {
+        expect(() => addDays("junk", 1)).toThrow();
+    });
+});
+
+describe("daysBetween", () => {
+    it("counts whole calendar days, signed", () => {
+        expect(daysBetween("2026-10-05", "2026-11-06")).toBe(32);
+        expect(daysBetween("2026-11-06", "2026-10-05")).toBe(-32);
+        expect(daysBetween("2026-11-06", "2026-11-06")).toBe(0);
+    });
+
+    it("throws on a malformed day", () => {
+        expect(() => daysBetween("junk", "2026-11-06")).toThrow();
     });
 });
 

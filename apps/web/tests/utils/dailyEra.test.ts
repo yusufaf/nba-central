@@ -1,11 +1,18 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import {
+    archiveDays,
+    dailyEraPuzzleNumber,
+    dailyEraStats,
     formatCountdown,
+    gameOutcome,
+    isArchiveDay,
     nextPuzzleAt,
     readDailyEraGame,
+    readDailyEraGames,
     seasonDecades,
     seasonLabel,
     writeDailyEraGame,
+    type DailyEraGuess,
     type StoredDailyEraGame,
 } from '@/utils/dailyEra';
 
@@ -143,5 +150,200 @@ describe('daily era storage', () => {
         };
         store({ ...game, guesses: [{ season: 1996, hit: true, direction: null, band: null }], answer });
         expect(readDailyEraGame('d')?.answer).toEqual(answer);
+    });
+
+    it('round-trips the archive flag and drops a malformed one', () => {
+        writeDailyEraGame('2026-10-16', { ...game, archive: true });
+        expect(readDailyEraGame('2026-10-16')?.archive).toBe(true);
+
+        localStorage.setItem(
+            'nba-central:daily-era',
+            JSON.stringify({ version: 1, games: { '2026-10-16': { ...game, archive: 'yes' } } }),
+        );
+        expect(readDailyEraGame('2026-10-16')).toBeNull();
+    });
+});
+
+const miss: DailyEraGuess = { season: 1990, hit: false, direction: 'later', band: 'far' };
+const hitGuess: DailyEraGuess = { season: 1996, hit: true, direction: null, band: null };
+
+const record = (guesses: DailyEraGuess[], opts: { archive?: boolean } = {}): StoredDailyEraGame => ({
+    puzzleId: 'p',
+    puzzleNumber: 1,
+    guesses,
+    answer: null,
+    ...opts,
+});
+const won = (attempts = 1, opts: { archive?: boolean } = {}) =>
+    record([...Array.from({ length: attempts - 1 }, (_, i) => ({ ...miss, season: 1980 + i })), hitGuess], opts);
+const lost = (opts: { archive?: boolean } = {}) =>
+    record(Array.from({ length: 4 }, (_, i) => ({ ...miss, season: 1980 + i })), opts);
+const inProgress = () => record([miss]);
+
+describe('gameOutcome', () => {
+    it('is won on a hit, lost after 4 misses, playing otherwise', () => {
+        expect(gameOutcome([])).toBe('playing');
+        expect(gameOutcome([miss])).toBe('playing');
+        expect(gameOutcome([miss, hitGuess])).toBe('won');
+        expect(gameOutcome(lost().guesses)).toBe('lost');
+    });
+});
+
+describe('dailyEraStats', () => {
+    const today = '2026-11-06';
+
+    it('is all zeros with no games', () => {
+        expect(dailyEraStats({}, today)).toEqual({
+            played: 0,
+            wins: 0,
+            currentStreak: 0,
+            bestStreak: 0,
+            distribution: [0, 0, 0, 0],
+        });
+    });
+
+    it('counts consecutive days won up to today', () => {
+        const stats = dailyEraStats({ '2026-11-04': won(), '2026-11-05': won(), '2026-11-06': won() }, today);
+        expect(stats.currentStreak).toBe(3);
+        expect(stats.bestStreak).toBe(3);
+    });
+
+    it("doesn't break the streak before today is played", () => {
+        expect(dailyEraStats({ '2026-11-04': won(), '2026-11-05': won() }, today).currentStreak).toBe(2);
+
+        const stats = dailyEraStats({ '2026-11-05': won(), '2026-11-06': inProgress() }, today);
+        expect(stats.currentStreak).toBe(1);
+        expect(stats.played).toBe(1);
+    });
+
+    it('resets on a loss today', () => {
+        expect(dailyEraStats({ '2026-11-05': won(), '2026-11-06': lost() }, today)).toMatchObject({
+            currentStreak: 0,
+            bestStreak: 1,
+            played: 2,
+            wins: 1,
+        });
+    });
+
+    it('resets after a missed day', () => {
+        expect(dailyEraStats({ '2026-11-04': won(), '2026-11-06': won() }, today)).toMatchObject({
+            currentStreak: 1,
+            bestStreak: 1,
+        });
+    });
+
+    it("never lets an archive game extend the streak or fill a gap", () => {
+        const stats = dailyEraStats(
+            { '2026-11-04': won(), '2026-11-05': won(2, { archive: true }), '2026-11-06': won() },
+            today,
+        );
+        expect(stats).toMatchObject({ currentStreak: 1, bestStreak: 1, played: 3, wins: 3 });
+        expect(stats.distribution).toEqual([2, 1, 0, 0]);
+    });
+
+    it("never lets an archive loss break the streak", () => {
+        const stats = dailyEraStats({ '2026-11-05': lost({ archive: true }), '2026-11-06': won() }, today);
+        expect(stats.currentStreak).toBe(1);
+        expect(stats.played).toBe(2);
+    });
+
+    it('counts a record without the archive flag as daily', () => {
+        const legacy = won();
+        delete legacy.archive;
+        expect(dailyEraStats({ '2026-11-05': legacy, '2026-11-06': won() }, today).currentStreak).toBe(2);
+    });
+
+    it('keeps an older, longer run as the best streak', () => {
+        const games: Record<string, StoredDailyEraGame> = {
+            '2026-11-01': lost(),
+            '2026-11-05': won(),
+            '2026-11-06': won(),
+        };
+        for (let d = 27; d <= 31; d++) games[`2026-10-${d}`] = won();
+        expect(dailyEraStats(games, today)).toMatchObject({ currentStreak: 2, bestStreak: 5 });
+    });
+
+    it('carries a streak across a year boundary', () => {
+        expect(dailyEraStats({ '2026-12-31': won(), '2027-01-01': won() }, '2027-01-01').currentStreak).toBe(2);
+    });
+
+    it('counts wins by the number of guesses they took', () => {
+        const stats = dailyEraStats(
+            { '2026-11-03': won(1), '2026-11-04': won(1), '2026-11-05': won(3), '2026-11-06': lost() },
+            today,
+        );
+        expect(stats.distribution).toEqual([2, 0, 1, 0]);
+        expect(stats.played).toBe(4);
+        expect(stats.wins).toBe(3);
+    });
+
+    it("skips a key that isn't a date and an invalid today", () => {
+        const games = { d: won(), '2026-11-05': won(), '2026-11-06': won() };
+        expect(dailyEraStats(games, today)).toMatchObject({ currentStreak: 2, bestStreak: 2 });
+        expect(dailyEraStats(games, '')).toEqual(dailyEraStats({}, today));
+    });
+});
+
+describe('readDailyEraGames', () => {
+    beforeEach(() => localStorage.clear());
+    afterEach(() => vi.restoreAllMocks());
+
+    it('returns only valid games under date keys', () => {
+        localStorage.setItem(
+            'nba-central:daily-era',
+            JSON.stringify({
+                version: 1,
+                games: { d: won(), '2026-11-05': won(), '2026-11-06': { puzzleId: 'p', guesses: 'x' } },
+            }),
+        );
+        expect(Object.keys(readDailyEraGames())).toEqual(['2026-11-05']);
+    });
+
+    it('drops a game with more guesses than a game allows', () => {
+        writeDailyEraGame('2026-11-05', won(5));
+        writeDailyEraGame('2026-11-06', won(4));
+        expect(Object.keys(readDailyEraGames())).toEqual(['2026-11-06']);
+        expect(readDailyEraGame('2026-11-05')).toBeNull();
+    });
+
+    it('is empty when storage throws or a newer version wrote it', () => {
+        localStorage.setItem('nba-central:daily-era', JSON.stringify({ version: 2, games: { '2026-11-05': won() } }));
+        expect(readDailyEraGames()).toEqual({});
+
+        vi.spyOn(Storage.prototype, 'getItem').mockImplementation(() => {
+            throw new Error('denied');
+        });
+        expect(readDailyEraGames()).toEqual({});
+    });
+});
+
+describe('dailyEraPuzzleNumber', () => {
+    it('numbers puzzles from the first date', () => {
+        expect(dailyEraPuzzleNumber('2026-10-05')).toBe(1);
+        expect(dailyEraPuzzleNumber('2026-11-06')).toBe(33);
+    });
+});
+
+describe('archiveDays', () => {
+    it('lists the 30 days before today, newest first', () => {
+        const days = archiveDays('2026-11-06');
+        expect(days).toHaveLength(30);
+        expect(days[0]).toBe('2026-11-05');
+        expect(days.at(-1)).toBe('2026-10-07');
+    });
+
+    it('stops at the first puzzle', () => {
+        const days = archiveDays('2026-10-18');
+        expect(days).toHaveLength(13);
+        expect(days.at(-1)).toBe('2026-10-05');
+        expect(archiveDays('2026-10-05')).toEqual([]);
+    });
+
+    it('knows which days are in the archive', () => {
+        expect(isArchiveDay('2026-11-05', '2026-11-06')).toBe(true);
+        expect(isArchiveDay('2026-10-07', '2026-11-06')).toBe(true);
+        for (const day of ['2026-11-06', '2026-11-07', '2026-10-06', 'junk']) {
+            expect(isArchiveDay(day, '2026-11-06')).toBe(false);
+        }
     });
 });

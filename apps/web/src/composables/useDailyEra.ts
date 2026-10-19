@@ -4,10 +4,14 @@ import { dailyEraApi } from "@/network/api";
 import { track } from "@/lib/analytics";
 import {
     DAILY_ERA_MAX_ATTEMPTS,
-    readDailyEraGame,
+    dailyEraStats,
+    gameOutcome,
+    readDailyEraGames,
     writeDailyEraGame,
     type DailyEraGuess,
+    type StoredDailyEraGame,
 } from "@/utils/dailyEra";
+import { toIsoDate } from "@/utils/date";
 import type { DailyEraPuzzleView, DailyEraReveal, GuessDailyEraResponse } from "@/models/api";
 
 export type DailyEraStatus =
@@ -27,6 +31,19 @@ const statusOf = (err: unknown): number | undefined =>
 // can't write over the game the new page restored.
 let loadSeq = 0;
 
+// A day's guesses only grow, so per day the copy with more is the newer one:
+// memory when a write failed, storage when another tab played on.
+const mergeGames = (
+    memory: Record<string, StoredDailyEraGame>,
+    stored: Record<string, StoredDailyEraGame>,
+): Record<string, StoredDailyEraGame> => {
+    const merged = { ...memory };
+    for (const [day, game] of Object.entries(stored)) {
+        if (!merged[day] || game.guesses.length >= merged[day].guesses.length) merged[day] = game;
+    }
+    return merged;
+};
+
 /**
  * One day's Daily Era game: the puzzle, the guesses so far and, once it's
  * over, the answer. A guess that fails for any reason but 410 costs no
@@ -39,16 +56,29 @@ export const useDailyEra = () => {
     const answer = ref<DailyEraReveal | null>(null);
     const submitting = ref(false);
     const date = ref("");
+    // The local day, as of the last load or guess.
+    const today = ref("");
+    // Whether this game counts as an archive game: see StoredDailyEraGame.
+    const archive = ref(false);
+    const games = ref<Record<string, StoredDailyEraGame>>({});
     const attemptsLeft = computed(() => DAILY_ERA_MAX_ATTEMPTS - guesses.value.length);
+    const stats = computed(() => dailyEraStats(games.value, today.value));
 
-    const save = () => {
+    /** `guessedOn` is the local day the guess was sent, not when it was scored. */
+    const save = (guessedOn: string) => {
         if (!puzzle.value) return;
-        writeDailyEraGame(date.value, {
+        today.value = guessedOn;
+        archive.value = archive.value || date.value !== guessedOn;
+        const record: StoredDailyEraGame = {
             puzzleId: puzzle.value.puzzleId,
             puzzleNumber: puzzle.value.puzzleNumber,
             guesses: guesses.value,
             answer: answer.value,
-        });
+            archive: archive.value,
+        };
+        writeDailyEraGame(date.value, record);
+        // In memory too, so blocked storage still shows this session's streak.
+        games.value = { ...games.value, [date.value]: record };
     };
 
     const load = async (day: string) => {
@@ -59,6 +89,11 @@ export const useDailyEra = () => {
         guesses.value = [];
         answer.value = null;
         date.value = day;
+        today.value = toIsoDate(new Date());
+        archive.value = day !== today.value;
+        // Before the request, so the archive shows stored results even when
+        // this day's puzzle is unavailable.
+        games.value = mergeGames(games.value, readDailyEraGames());
         try {
             const res = await dailyEraApi.getPuzzle(day);
             if (seq !== loadSeq) return;
@@ -67,15 +102,21 @@ export const useDailyEra = () => {
                 return;
             }
             puzzle.value = res.data;
-            const stored = readDailyEraGame(day);
-            if (stored?.puzzleId === res.data.puzzleId) {
-                guesses.value = stored.guesses;
-                answer.value = stored.answer;
+            // Again, in case another tab played this day during the request.
+            games.value = mergeGames(games.value, readDailyEraGames());
+            const stored = games.value[day];
+            const resumed = stored?.puzzleId === res.data.puzzleId ? stored : undefined;
+            if (resumed) {
+                guesses.value = resumed.guesses;
+                answer.value = resumed.answer;
             }
-            const last = guesses.value.at(-1);
-            if (last?.hit) status.value = "won";
-            else if (guesses.value.length >= DAILY_ERA_MAX_ATTEMPTS) status.value = "lost";
-            else status.value = "playing";
+            status.value = gameOutcome(guesses.value);
+            // A finished game keeps the flag it was saved with. One still in
+            // progress is archive once its day has passed, since its next
+            // guess will be.
+            if (resumed) {
+                archive.value = (resumed.archive ?? false) || (archive.value && status.value === "playing");
+            }
             track("daily_era_viewed", {
                 puzzleNumber: res.data.puzzleNumber,
                 state:
@@ -109,6 +150,7 @@ export const useDailyEra = () => {
         const seq = loadSeq;
         const { puzzleId, puzzleNumber } = puzzle.value;
         const attempt = guesses.value.length + 1;
+        const guessedOn = toIsoDate(new Date());
 
         let res: GuessDailyEraResponse | undefined;
         let failure: unknown;
@@ -140,7 +182,7 @@ export const useDailyEra = () => {
             status.value = score.hit ? "won" : "lost";
             answer.value = revealed ?? null;
         }
-        save();
+        save(guessedOn);
         track("daily_era_guessed", { puzzleNumber, attempt, hit: score.hit, band: score.band });
         if (finished) {
             track("daily_era_finished", { puzzleNumber, solved: score.hit, attempts: attempt });
@@ -148,5 +190,19 @@ export const useDailyEra = () => {
         return true;
     };
 
-    return { status, puzzle, guesses, answer, submitting, attemptsLeft, date, load, guess };
+    return {
+        status,
+        puzzle,
+        guesses,
+        answer,
+        submitting,
+        attemptsLeft,
+        date,
+        today,
+        archive,
+        games,
+        stats,
+        load,
+        guess,
+    };
 };
