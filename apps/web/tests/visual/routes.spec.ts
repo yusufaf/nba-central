@@ -1,6 +1,7 @@
 import { test, expect, type Page } from '@playwright/test';
 import gameSummaryFixture from './fixtures/game-summary.json' with { type: 'json' };
 import publicTeamFixture from './fixtures/public-team.json' with { type: 'json' };
+import { DAILY_ERA_FIRST_DATE } from '../../src/constants/dailyEra';
 
 /**
  * One screenshot per route, plus the overlay surfaces that the global
@@ -67,7 +68,8 @@ async function stubNetwork(page: Page) {
             body: JSON.stringify(publicTeamFixture),
         }),
     );
-    // Daily Era: a fixed puzzle, and every guess is a hit (DAILY_ERA_HIT).
+    // Daily Era: the same puzzle for every date, numbered by that date as the
+    // API does, and every guess is a hit (DAILY_ERA_HIT).
     await page.route('**/api/daily/era/**', (route) =>
         route.fulfill({
             status: 200,
@@ -78,7 +80,13 @@ async function stubNetwork(page: Page) {
                     : {
                           success: true,
                           data: {
-                              puzzleNumber: 32,
+                              // Both bare YYYY-MM-DD, so both parse as UTC midnight.
+                              puzzleNumber:
+                                  Math.round(
+                                      (Date.parse(new URL(route.request().url()).pathname.split('/').at(-1)!) -
+                                          Date.parse(DAILY_ERA_FIRST_DATE)) /
+                                          86_400_000,
+                                  ) + 1,
                               puzzleId: 'visual',
                               imageUrl: 'https://visual.invalid/daily-era/visual.webp',
                           },
@@ -113,7 +121,8 @@ const ROUTES = [
     { path: '/teambuilder', name: 'teambuilder' },
     { path: '/scores', name: 'scores' },
     { path: '/news', name: 'news' },
-    { path: '/daily', name: 'daily' },
+    // Fixed, or the archive's dates would change the screenshot every day.
+    { path: '/daily', name: 'daily', clock: '2026-11-06T20:00:00' },
     { path: '/teams', name: 'teams' },
     { path: '/login', name: 'login' },
     { path: '/sign-up', name: 'sign-up' },
@@ -122,8 +131,9 @@ const ROUTES = [
     { path: '/no-such-page', name: 'not-found' },
 ];
 
-for (const { path, name } of ROUTES) {
+for (const { path, name, clock } of ROUTES) {
     test(`route ${name}`, async ({ page }) => {
+        if (clock) await page.clock.setFixedTime(new Date(clock));
         await stubNetwork(page);
         await page.goto(path);
         await settle(page);
@@ -149,6 +159,9 @@ test('daily reveal', async ({ page }) => {
     await page.getByRole('button', { name: '1995-96', exact: true }).click();
     await page.getByTestId('guess-button').click();
     await page.getByText('Got it in 1/4').waitFor();
+    // The clicks scrolled the page, and a full-page shot taken mid-scroll
+    // paints the sticky header halfway down.
+    await page.evaluate(() => window.scrollTo(0, 0));
     await settle(page);
     await expect(page).toHaveScreenshot('daily-reveal.png', { fullPage: true });
 });
@@ -297,8 +310,9 @@ test('dialog and popover do not share modal sizing', async ({ page }) => {
 test.describe('light theme', () => {
     test.use({ colorScheme: 'light' });
 
-    for (const { path, name } of ROUTES) {
+    for (const { path, name, clock } of ROUTES) {
         test(`route ${name}`, async ({ page }) => {
+            if (clock) await page.clock.setFixedTime(new Date(clock));
             await stubNetwork(page);
             await page.goto(path);
             await settle(page);
