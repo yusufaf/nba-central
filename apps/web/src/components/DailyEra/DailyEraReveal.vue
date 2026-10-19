@@ -64,7 +64,7 @@ const onBuilderClick = () => track('daily_era_builder_clicked', { puzzleNumber: 
             <img
                 class="mx-auto max-h-[24rem] w-full object-contain"
                 :src="jersey?.jersey ?? fallbackImageUrl"
-                :alt="answer ? `${answer.teamName} jersey` : 'Today\'s jersey'"
+                :alt="answer ? `${answer.teamName} jersey` : 'The puzzle\'s jersey'"
             />
         </div>
         <DailyEraCredit />
