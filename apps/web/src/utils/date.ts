@@ -69,6 +69,28 @@ export const parseIsoDate = (value: string): Date | null => {
     return date;
 };
 
+const requireIsoDate = (value: string): Date => {
+    const date = parseIsoDate(value);
+    if (!date) throw new Error(`Not a YYYY-MM-DD date: ${value}`);
+    return date;
+};
+
+/** The YYYY-MM-DD `days` calendar days after `value` (before, if negative). */
+export const addDays = (value: string, days: number): string => {
+    const date = requireIsoDate(value);
+    return toIsoDate(new Date(date.getFullYear(), date.getMonth(), date.getDate() + days));
+};
+
+/**
+ * Whole calendar days from `from` to `to`, negative if `to` is earlier.
+ * Measured between UTC midnights of the two local dates, so a DST change in
+ * between can't leave an hour over.
+ */
+export const daysBetween = (from: string, to: string): number => {
+    const utc = (d: Date) => Date.UTC(d.getFullYear(), d.getMonth(), d.getDate());
+    return (utc(requireIsoDate(to)) - utc(requireIsoDate(from))) / 86_400_000;
+};
+
 export const isSameDay = (a: Date, b: Date): boolean =>
     a.getFullYear() === b.getFullYear() &&
     a.getMonth() === b.getMonth() &&

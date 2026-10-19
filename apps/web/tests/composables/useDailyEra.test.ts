@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
 vi.mock('@/network/api', () => ({
     dailyEraApi: { getPuzzle: vi.fn(), guess: vi.fn() },
@@ -10,7 +10,7 @@ import { toast } from 'vue-sonner';
 import { dailyEraApi } from '@/network/api';
 import { track } from '@/lib/analytics';
 import { useDailyEra } from '@/composables/useDailyEra';
-import { readDailyEraGame } from '@/utils/dailyEra';
+import { readDailyEraGame, writeDailyEraGame, type StoredDailyEraGame } from '@/utils/dailyEra';
 
 const DAY = '2026-10-16';
 const puzzle = { puzzleNumber: 12, puzzleId: 'p1', imageUrl: 'https://cdn/x.webp' };
@@ -222,5 +222,153 @@ describe('useDailyEra persistence', () => {
         const again = await loaded();
         expect(again.status.value).toBe('playing');
         expect(again.guesses.value).toEqual([]);
+    });
+});
+
+describe('useDailyEra streaks and archive', () => {
+    const TODAY = '2026-11-06';
+    const hitGuess = { season: 1996, hit: true, direction: null, band: null };
+    const missGuess = { season: 1960, hit: false, direction: 'later', band: 'far' } as const;
+    const seed = (day: string, guesses: StoredDailyEraGame['guesses'], archive?: boolean) =>
+        writeDailyEraGame(day, {
+            puzzleId: puzzle.puzzleId,
+            puzzleNumber: puzzle.puzzleNumber,
+            guesses,
+            answer: null,
+            ...(archive === undefined ? {} : { archive }),
+        });
+    const play = async (day: string) => {
+        const game = useDailyEra();
+        await game.load(day);
+        return game;
+    };
+
+    beforeEach(() => vi.setSystemTime(new Date(2026, 10, 6, 12)));
+    afterEach(() => {
+        vi.useRealTimers();
+        vi.restoreAllMocks();
+    });
+
+    it('plays an earlier day as an archive game', async () => {
+        const game = await play('2026-11-01');
+        guessApi.mockResolvedValueOnce(hit);
+        await game.guess(1996);
+        expect(readDailyEraGame('2026-11-01')?.archive).toBe(true);
+        expect(game.stats.value).toMatchObject({ played: 1, wins: 1, currentStreak: 0 });
+    });
+
+    it("counts today's game toward the streak", async () => {
+        const game = await play(TODAY);
+        guessApi.mockResolvedValueOnce(hit);
+        await game.guess(1996);
+        expect(readDailyEraGame(TODAY)?.archive).toBe(false);
+        expect(game.stats.value.currentStreak).toBe(1);
+    });
+
+    it("makes an earlier day's game finished later an archive game", async () => {
+        seed('2026-11-04', [hitGuess], false);
+        seed('2026-11-05', [missGuess], false);
+        seed(TODAY, [hitGuess], false);
+        const game = await play('2026-11-05');
+        expect(game.archive.value).toBe(true);
+
+        guessApi.mockResolvedValueOnce(hit);
+        await game.guess(1996);
+        expect(readDailyEraGame('2026-11-05')?.archive).toBe(true);
+        expect(game.stats.value.currentStreak).toBe(1);
+    });
+
+    it('keeps a resumed archive game archive', async () => {
+        seed('2026-11-05', [missGuess], true);
+        expect((await play('2026-11-05')).archive.value).toBe(true);
+    });
+
+    it('keeps a game finished on its own day daily when reopened later', async () => {
+        seed('2026-11-05', [hitGuess], false);
+        seed('2026-11-04', [hitGuess]);
+        expect((await play('2026-11-05')).archive.value).toBe(false);
+        expect((await play('2026-11-04')).archive.value).toBe(false);
+    });
+
+    it("makes today's game archive when a guess comes after midnight", async () => {
+        vi.setSystemTime(new Date(2026, 10, 6, 23, 59));
+        const game = await play(TODAY);
+        expect(game.archive.value).toBe(false);
+
+        vi.setSystemTime(new Date(2026, 10, 7, 0, 1));
+        guessApi.mockResolvedValueOnce(hit);
+        await game.guess(1996);
+        expect(readDailyEraGame(TODAY)?.archive).toBe(true);
+        expect(game.today.value).toBe('2026-11-07');
+        expect(game.stats.value.currentStreak).toBe(0);
+    });
+
+    it('keeps a guess sent before midnight on its day when the answer lands after', async () => {
+        vi.setSystemTime(new Date(2026, 10, 6, 23, 59, 59));
+        const game = await play(TODAY);
+        guessApi.mockImplementationOnce(async () => {
+            vi.setSystemTime(new Date(2026, 10, 7, 0, 0, 1));
+            return hit;
+        });
+        await game.guess(1996);
+        expect(readDailyEraGame(TODAY)?.archive).toBe(false);
+        expect(game.stats.value.currentStreak).toBe(1);
+    });
+
+    it('reads stored games when the puzzle is unavailable', async () => {
+        seed('2026-11-05', [hitGuess], false);
+        getPuzzle.mockResolvedValueOnce({ success: false, error: 'nope' });
+        const game = await play(TODAY);
+        expect(game.status.value).toBe('unavailable');
+        expect(game.games.value['2026-11-05']).toBeDefined();
+    });
+
+    it('updates stats after a guess without a reload', async () => {
+        seed('2026-11-05', [hitGuess], false);
+        const game = await play(TODAY);
+        expect(game.stats.value.currentStreak).toBe(1);
+        guessApi.mockResolvedValueOnce(hit);
+        await game.guess(1996);
+        expect(game.stats.value.currentStreak).toBe(2);
+    });
+
+    it('keeps the streak in memory when storage is blocked', async () => {
+        vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {
+            throw new Error('blocked');
+        });
+        const game = await play(TODAY);
+        guessApi.mockResolvedValueOnce(hit);
+        await game.guess(1996);
+        expect(game.status.value).toBe('won');
+        expect(game.stats.value.currentStreak).toBe(1);
+
+        await game.load('2026-11-05');
+        await game.load(TODAY);
+        expect(game.status.value).toBe('won');
+        expect(game.stats.value.currentStreak).toBe(1);
+    });
+
+    it("keeps memory's newer guesses over an older stored copy when writes fail", async () => {
+        seed(TODAY, [missGuess], false);
+        vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {
+            throw new Error('quota');
+        });
+        const game = await play(TODAY);
+        guessApi.mockResolvedValueOnce(hit);
+        await game.guess(1996);
+
+        await game.load('2026-11-05');
+        await game.load(TODAY);
+        expect(game.status.value).toBe('won');
+        expect(game.guesses.value).toHaveLength(2);
+    });
+
+    it('resumes guesses another tab made during the request', async () => {
+        getPuzzle.mockImplementationOnce(async () => {
+            seed(TODAY, [missGuess], false);
+            return { success: true, data: puzzle };
+        });
+        const game = await play(TODAY);
+        expect(game.guesses.value).toHaveLength(1);
     });
 });
