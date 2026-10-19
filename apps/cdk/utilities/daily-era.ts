@@ -13,7 +13,7 @@ import { currentSeasonEndYear } from "./season";
 
 export const DAY_MS = 86_400_000;
 const HOUR_MS = 3_600_000;
-const ARCHIVE_DAYS = 30;
+export const ARCHIVE_DAYS = 30;
 const MAX_AGE_SECONDS = 3600;
 
 /** A `YYYY-MM-DD` calendar date as a UTC day number, or null if it isn't one. */
