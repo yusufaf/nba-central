@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest";
 import {
+	ARCHIVE_DAYS,
 	formatIsoDate,
 	isPlayableDay,
 	lastPlayableSeason,
@@ -10,7 +11,14 @@ import {
 	revealFor,
 	scoreGuess,
 } from "../../utilities/daily-era";
-import type { DailyEraPuzzle } from "../../models/daily-era";
+import {
+	DAILY_ERA_FIRST_DATE,
+	DAILY_ERA_MAX_ATTEMPTS,
+	type DailyEraPuzzle,
+} from "../../models/daily-era";
+// apps/web keeps its own copy of these (the two packages share no code), so
+// this is the check that they haven't drifted apart.
+import * as web from "../../../web/src/constants/dailyEra";
 
 const at = (iso: string) => Date.parse(iso);
 const day = (iso: string) => parseIsoDate(iso)!;
@@ -149,5 +157,13 @@ describe("revealFor", () => {
 			"shownIdentity",
 			"teamName",
 		]);
+	});
+});
+
+describe("apps/web's copy", () => {
+	it("matches the first date, attempts and archive length", () => {
+		expect(web.DAILY_ERA_FIRST_DATE).toBe(DAILY_ERA_FIRST_DATE);
+		expect(web.DAILY_ERA_MAX_ATTEMPTS).toBe(DAILY_ERA_MAX_ATTEMPTS);
+		expect(web.DAILY_ERA_ARCHIVE_DAYS).toBe(ARCHIVE_DAYS);
 	});
 });
