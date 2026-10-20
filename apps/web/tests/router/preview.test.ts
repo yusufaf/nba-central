@@ -14,9 +14,11 @@ const canonicalOf = () => document.querySelector('link[rel="canonical"]')?.getAt
 
 describe('router in a PR preview build', () => {
     let router: Router;
+    // A cold import of the router transforms every eagerly loaded view, which
+    // takes close to the default 10s while other suites run alongside.
     beforeAll(async () => {
         ({ default: router } = await import('@/router'));
-    });
+    }, 30_000);
 
     it('sends every way into sign-in to the sign-in-off page', async () => {
         for (const path of ['/login', '/sign-up', '/callback', '/settings']) {
@@ -37,5 +39,5 @@ describe('router in a PR preview build', () => {
         await fresh.push('/t/abc');
         expect(canonicalOf()).toBeUndefined();
         expect(robotsOf()).toBe('noindex');
-    });
+    }, 30_000);
 });
