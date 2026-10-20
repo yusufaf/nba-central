@@ -5,11 +5,16 @@ import { createMemoryHistory, createRouter, type Router } from 'vue-router';
 vi.mock('@/network/api', () => ({
     dailyEraApi: { getPuzzle: vi.fn(), guess: vi.fn() },
 }));
-vi.mock('vue-sonner', () => ({ toast: { error: vi.fn() } }));
+vi.mock('vue-sonner', () => ({ toast: { error: vi.fn(), success: vi.fn() } }));
 vi.mock('@/lib/analytics', () => ({ track: vi.fn() }));
+// No real crop fetch or html-to-image render from the share block.
+vi.mock('@/components/DailyEra/dailyEraCard', () => ({
+    renderDailyEraCard: vi.fn(async () => new Blob(['x'], { type: 'image/png' })),
+}));
 
 import { dailyEraApi } from '@/network/api';
 import DailyEra from '@/views/DailyEra.vue';
+import DailyEraShare from '@/components/DailyEra/DailyEraShare.vue';
 import { dailyEraPuzzleNumber, readDailyEraGame, writeDailyEraGame, type DailyEraGuess } from '@/utils/dailyEra';
 
 const puzzleFor = (day: string) => {
@@ -309,5 +314,32 @@ describe('DailyEra archive', () => {
         const w = await mountPage();
         expect(w.text()).toContain('No puzzle today');
         expect(archiveLinks(w)[0]!.text()).toContain('Solved 2/4');
+    });
+});
+
+describe('DailyEra share', () => {
+    const shareProps = (w: VueWrapper) => w.findComponent(DailyEraShare).props();
+
+    it("offers today's finished game with the streak", async () => {
+        seed('2026-11-05', [hitGuess]);
+        const w = await mountPage();
+        expect(w.find('[data-testid="share-copy"]').exists()).toBe(false);
+
+        await winOneGuess(w);
+        expect(w.find('[data-testid="share-copy"]').exists()).toBe(true);
+        expect(shareProps(w)).toMatchObject({ puzzleNumber: 33, date: '2026-11-06', archive: false, streak: 2 });
+    });
+
+    it('shares a finished archive game with its date and no streak', async () => {
+        seed('2026-11-06', [hitGuess]);
+        seed('2026-11-02', lostGuesses, true);
+        const w = await mountPage('/daily?date=2026-11-02');
+        expect(shareProps(w)).toMatchObject({ date: '2026-11-02', archive: true, streak: null });
+    });
+
+    it('gives an earlier daily game reopened from the archive no streak', async () => {
+        seed('2026-11-05', [hitGuess]);
+        const w = await mountPage('/daily?date=2026-11-05');
+        expect(shareProps(w)).toMatchObject({ archive: true, streak: null });
     });
 });

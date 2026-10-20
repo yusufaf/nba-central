@@ -159,6 +159,7 @@ test('daily reveal', async ({ page }) => {
     await page.getByRole('button', { name: '1995-96', exact: true }).click();
     await page.getByTestId('guess-button').click();
     await page.getByText('Got it in 1/4').waitFor();
+    await page.getByTestId('share-copy').waitFor();
     // The clicks scrolled the page, and a full-page shot taken mid-scroll
     // paints the sticky header halfway down.
     await page.evaluate(() => window.scrollTo(0, 0));
