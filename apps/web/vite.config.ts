@@ -3,6 +3,7 @@ import { fileURLToPath, URL } from "node:url";
 import { defineConfig, type Plugin } from "vite";
 import vue from "@vitejs/plugin-vue";
 import tailwindcss from "@tailwindcss/vite";
+import { dailyEraHtml } from "./build/dailyEraHtml.ts";
 
 const isPreview = process.env.VITE_PREVIEW === "1";
 
@@ -23,6 +24,21 @@ const previewHtml = (): Plugin => ({
     },
 });
 
+// Writes dist/daily.html, the shell with /daily's own link-preview tags.
+// enforce: "post" runs it after Vite has emitted the final index.html, so the
+// two can't drift: same hashed assets, same theme script.
+const dailyEraPage = (): Plugin => ({
+    name: "daily-era-page",
+    apply: "build",
+    enforce: "post",
+    generateBundle(_, bundle) {
+        const shell = bundle["index.html"];
+        if (shell?.type !== "asset") this.error("daily-era-page: no index.html in the bundle");
+        const html = typeof shell.source === "string" ? shell.source : new TextDecoder().decode(shell.source);
+        this.emitFile({ type: "asset", fileName: "daily.html", source: dailyEraHtml(html) });
+    },
+});
+
 // https://vitejs.dev/config/
 export default defineConfig({
     base: process.env.VITE_BASE ?? "/",
@@ -40,7 +56,7 @@ export default defineConfig({
         //   }
         // }
     },
-    plugins: [vue(), tailwindcss(), ...(isPreview ? [previewHtml()] : [])],
+    plugins: [vue(), tailwindcss(), ...(isPreview ? [previewHtml()] : []), dailyEraPage()],
     resolve: {
         alias: {
             "@": fileURLToPath(new URL("./src", import.meta.url)),
