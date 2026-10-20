@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { App, Stack } from "aws-cdk-lib";
 import { Template } from "aws-cdk-lib/assertions";
-import { TeamBuilderWeb } from "../../service/team-builder-stack/team-builder-web";
+import { DAILY_PAGE_FUNCTION_CODE, TeamBuilderWeb } from "../../service/team-builder-stack/team-builder-web";
 
 // Construct-level CDK assertion test, following the isolated-construct
 // pattern in test/stack/team-builder-dynamo.test.ts (dummy account/region,
@@ -209,5 +209,28 @@ describe("TeamBuilderWeb", () => {
 		template.hasResourceProperties("AWS::CloudFront::CachePolicy", {
 			CachePolicyConfig: { DefaultTTL: 0, MinTTL: 0, MaxTTL: 3600 },
 		});
+	});
+
+	it("serves /daily from daily.html through a viewer-request function", () => {
+		const template = buildTemplate();
+		template.resourceCountIs("AWS::CloudFront::Function", 1);
+		template.hasResourceProperties("AWS::CloudFront::Function", {
+			FunctionConfig: { Runtime: "cloudfront-js-2.0" },
+		});
+
+		const config = getDistributionConfig(template);
+		const behavior = config.CacheBehaviors.find((b: { PathPattern: string }) => b.PathPattern === "/daily");
+		expect(behavior).toBeDefined();
+		expect(behavior.TargetOriginId).toBe(config.DefaultCacheBehavior.TargetOriginId);
+		expect(behavior.FunctionAssociations).toEqual([
+			expect.objectContaining({ EventType: "viewer-request" }),
+		]);
+	});
+
+	it("rewrites the /daily request to /daily.html and keeps the query", () => {
+		const handler = new Function(`${DAILY_PAGE_FUNCTION_CODE}; return handler;`)();
+		const querystring = { date: { value: "2026-10-12" } };
+		expect(handler({ request: { uri: "/daily", querystring } }).uri).toBe("/daily.html");
+		expect(handler({ request: { uri: "/daily", querystring } }).querystring).toBe(querystring);
 	});
 });
