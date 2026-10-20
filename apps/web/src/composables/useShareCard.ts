@@ -1,5 +1,4 @@
-import { createApp, nextTick } from 'vue';
-import { toPng } from 'html-to-image';
+import { renderCardPng } from '@/composables/renderCardPng';
 import ShareCard from '@/components/TeamBuilder/share/ShareCard.vue';
 import type { ShareCardPlayer, ShareCardProps } from '@/components/TeamBuilder/share/ShareCard.vue';
 import type { CourtDesign, PublicTeam } from '@/models/api';
@@ -56,59 +55,10 @@ const courtProps = (teamLogo: string, arena: ShareCardArena | null | undefined):
     };
 };
 
-// A stalled image (dropped connection, ad-blocked host) must not wedge
-// publishing forever - proceed with whatever has loaded once this elapses.
-const IMAGE_WAIT_MS = 4000;
-
-const waitForImages = async (root: HTMLElement) => {
-    const images = Array.from(root.querySelectorAll('img'));
-    const allImagesSettled = Promise.all(
-        images.map(
-            (img) =>
-                new Promise<void>((resolve) => {
-                    if (img.complete) return resolve();
-                    img.addEventListener('load', () => resolve(), { once: true });
-                    img.addEventListener('error', () => resolve(), { once: true });
-                }),
-        ),
-    );
-    const timeout = new Promise<void>((resolve) => setTimeout(resolve, IMAGE_WAIT_MS));
-    await Promise.race([allImagesSettled, timeout]);
-    // Let the component react to any @error swaps before exporting.
-    await nextTick();
-};
-
 /**
  * Renders the 1200x630 share card off-screen and returns it as base64 PNG
  * (no data: prefix), ready for publishTeam's `cardPng`. Mounts a throwaway
  * Vue app: the card is pure props, so it needs neither the router nor Pinia.
  */
-export const renderShareCard = async (props: ShareCardProps): Promise<string> => {
-    const host = document.createElement('div');
-    host.style.position = 'fixed';
-    host.style.left = '-200rem';
-    host.style.top = '0';
-    document.body.appendChild(host);
-
-    const app = createApp(ShareCard, props as unknown as Record<string, unknown>);
-    try {
-        const vm = app.mount(host);
-        const el = vm.$el as HTMLElement;
-        await waitForImages(el);
-        const dataUrl = await toPng(el, {
-            width: 1200,
-            height: 630,
-            pixelRatio: 1,
-            cacheBust: true,
-            // By default one image that fails to load rejects the whole
-            // export. The court's centre logo is an SVG <image> with no
-            // @error fallback of its own, so a dead URL drops that image
-            // and the card still renders.
-            onImageErrorHandler: () => undefined,
-        });
-        return dataUrl.replace(/^data:image\/png;base64,/, '');
-    } finally {
-        app.unmount();
-        host.remove();
-    }
-};
+export const renderShareCard = async (props: ShareCardProps): Promise<string> =>
+    (await renderCardPng(ShareCard, props as unknown as Record<string, unknown>)).replace(/^data:image\/png;base64,/, '');

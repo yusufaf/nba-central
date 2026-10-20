@@ -10,6 +10,7 @@ import DailyEraReveal from '@/components/DailyEra/DailyEraReveal.vue';
 import DailyEraCredit from '@/components/DailyEra/DailyEraCredit.vue';
 import DailyEraStats from '@/components/DailyEra/DailyEraStats.vue';
 import DailyEraArchive from '@/components/DailyEra/DailyEraArchive.vue';
+import DailyEraShare from '@/components/DailyEra/DailyEraShare.vue';
 import { useDailyEra } from '@/composables/useDailyEra';
 import { useDateFormat } from '@/composables/useDateFormat';
 import { parseIsoDate, toIsoDate } from '@/utils/date';
@@ -87,6 +88,11 @@ const playToday = () => {
 };
 
 const viewingArchive = computed(() => !!date.value && date.value !== today.value);
+// Only today's daily game has a streak to brag about: the stored games don't
+// keep what the streak was on an earlier day.
+const shareStreak = computed(() =>
+    !archive.value && date.value === today.value ? stats.value.currentStreak : null,
+);
 const dateLabel = computed(() => {
     const parsed = parseIsoDate(date.value);
     return parsed ? formatDate(parsed, 'medium') : '';
@@ -185,6 +191,15 @@ const submit = async () => {
                         :puzzle-number="puzzle.puzzleNumber"
                         :date="date"
                         @next="playToday"
+                    />
+                    <DailyEraShare
+                        :key="date"
+                        :puzzle-number="puzzle.puzzleNumber"
+                        :guesses="guesses"
+                        :image-url="puzzle.imageUrl"
+                        :date="date"
+                        :archive="viewingArchive || archive"
+                        :streak="shareStreak"
                     />
                     <DailyEraStats
                         :stats="stats"
