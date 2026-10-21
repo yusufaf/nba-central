@@ -36,7 +36,8 @@ let loadSeq = 0;
 
 // A day's game only moves forward, so per day storage wins unless memory is
 // strictly further along on the same puzzle - which it is only when a write
-// failed. Storage wins ties and a different puzzle, as in writeDailyEraGames.
+// failed. Storage also wins ties and a different puzzle. writeDailyEraGames
+// differs there: the game being saved replaces a different stored puzzle.
 const mergeGames = (
     memory: Record<string, StoredDailyEraGame>,
     stored: Record<string, StoredDailyEraGame>,
@@ -88,7 +89,14 @@ export const useDailyEra = () => {
             timer = setTimeout(rollOver, Math.min(nextPuzzleAt(now).getTime() - Date.now(), 60_000));
         };
         rollOver();
-        document.addEventListener("visibilitychange", rollOver);
+        // A frozen or bfcache'd tab misses storage events, so it catches up
+        // when shown again rather than at its next guess. After rollOver, so
+        // resume() judges archive against the new day.
+        const onVisibilityChange = () => {
+            rollOver();
+            if (document.visibilityState === "visible") syncFromStorage();
+        };
+        document.addEventListener("visibilitychange", onVisibilityChange);
         // Another tab's save. A null key is localStorage.clear(): memory keeps its games.
         const onStorage = (event: StorageEvent) => {
             if (event.key === DAILY_ERA_STORAGE_KEY) syncFromStorage();
@@ -96,7 +104,7 @@ export const useDailyEra = () => {
         window.addEventListener("storage", onStorage);
         onScopeDispose(() => {
             clearTimeout(timer);
-            document.removeEventListener("visibilitychange", rollOver);
+            document.removeEventListener("visibilitychange", onVisibilityChange);
             window.removeEventListener("storage", onStorage);
         });
     }
