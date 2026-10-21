@@ -389,3 +389,65 @@ describe('useDailyEra streaks and archive', () => {
         expect(game.guesses.value).toHaveLength(1);
     });
 });
+
+describe('useDailyEra across tabs', () => {
+    const m1960 = { season: 1960, hit: false, direction: 'later', band: 'far' } as const;
+    const m1970 = { season: 1970, hit: false, direction: 'later', band: 'far' } as const;
+    const hit1996 = { season: 1996, hit: true, direction: null, band: null };
+    const wonInThree: StoredDailyEraGame = {
+        puzzleId: 'p1',
+        puzzleNumber: 12,
+        guesses: [m1960, m1970, hit1996],
+        answer,
+        archive: false,
+    };
+
+    beforeEach(() => vi.setSystemTime(new Date(2026, 9, 16, 12)));
+    afterEach(() => {
+        vi.useRealTimers();
+        vi.restoreAllMocks();
+    });
+
+    it("keeps another tab's win when a lagging guess lands after it", async () => {
+        const game = await loaded();
+        guessApi.mockResolvedValueOnce(miss('later', 'far'));
+        await game.guess(1960);
+        guessApi.mockImplementationOnce(async () => {
+            writeDailyEraGame(DAY, wonInThree);
+            return miss('later', 'far');
+        });
+
+        expect(await game.guess(1980)).toBe(false);
+        expect(readDailyEraGame(DAY)).toEqual(wonInThree);
+        expect(game.status.value).toBe('won');
+        expect(game.guesses.value).toEqual(wonInThree.guesses);
+        expect(game.answer.value).toEqual(answer);
+        expect(callsTo('daily_era_guessed')).toHaveLength(1);
+        expect(callsTo('daily_era_finished')).toEqual([]);
+    });
+
+    it('refuses a guess once storage shows another tab finished the day', async () => {
+        const game = await loaded();
+        writeDailyEraGame(DAY, wonInThree);
+        expect(await game.guess(1980)).toBe(false);
+        expect(guessApi).not.toHaveBeenCalled();
+        expect(game.status.value).toBe('won');
+    });
+
+    it('writes back a game that failed to save once storage works', async () => {
+        const setItem = vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {
+            throw new Error('quota');
+        });
+        const game = await loaded();
+        guessApi.mockResolvedValueOnce(hit);
+        await game.guess(1996);
+        setItem.mockRestore();
+
+        getPuzzle.mockResolvedValueOnce({ success: true, data: { ...puzzle, puzzleNumber: 11, puzzleId: 'p0' } });
+        await game.load('2026-10-15');
+        guessApi.mockResolvedValueOnce(miss('later', 'far'));
+        await game.guess(1960);
+        expect(readDailyEraGame(DAY)?.guesses).toEqual([{ season: 1996, hit: true, direction: null, band: null }]);
+        expect(readDailyEraGame('2026-10-15')).not.toBeNull();
+    });
+});
