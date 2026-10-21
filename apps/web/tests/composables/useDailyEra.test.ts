@@ -479,6 +479,19 @@ describe('useDailyEra across tabs', () => {
         scope.stop();
     });
 
+    it('catches up on a missed storage event when the tab is shown again', async () => {
+        const { scope, game } = await inScope();
+        writeDailyEraGame(DAY, wonInThree);
+        const visibility = vi.spyOn(document, 'visibilityState', 'get').mockReturnValue('hidden');
+        document.dispatchEvent(new Event('visibilitychange'));
+        expect(game.status.value).toBe('playing');
+
+        visibility.mockReturnValue('visible');
+        document.dispatchEvent(new Event('visibilitychange'));
+        expect(game.status.value).toBe('won');
+        scope.stop();
+    });
+
     it('ignores other keys and stops listening with its scope', async () => {
         const { scope, game } = await inScope();
         writeDailyEraGame(DAY, wonInThree);
@@ -487,6 +500,7 @@ describe('useDailyEra across tabs', () => {
 
         scope.stop();
         otherTabSaved();
+        document.dispatchEvent(new Event('visibilitychange'));
         expect(game.status.value).toBe('playing');
     });
 
