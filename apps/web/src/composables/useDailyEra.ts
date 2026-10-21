@@ -4,6 +4,7 @@ import { dailyEraApi } from "@/network/api";
 import { track } from "@/lib/analytics";
 import {
     DAILY_ERA_MAX_ATTEMPTS,
+    DAILY_ERA_STORAGE_KEY,
     dailyEraStats,
     gameOutcome,
     isFurtherAlong,
@@ -70,7 +71,8 @@ export const useDailyEra = () => {
     const stats = computed(() => dailyEraStats(games.value, today.value));
 
     // Outside an effect scope, as in most unit tests, nothing would ever
-    // clean up the timer, so the page only rolls over while a scope owns it.
+    // clean up the timer or the storage listener, so the page only rolls over
+    // and follows other tabs while a scope owns them.
     if (getCurrentScope()) {
         let timer: ReturnType<typeof setTimeout> | undefined;
         // An open page moves on to the new day at local midnight, so a game
@@ -87,9 +89,15 @@ export const useDailyEra = () => {
         };
         rollOver();
         document.addEventListener("visibilitychange", rollOver);
+        // Another tab's save. A null key is localStorage.clear(): memory keeps its games.
+        const onStorage = (event: StorageEvent) => {
+            if (event.key === DAILY_ERA_STORAGE_KEY) syncFromStorage();
+        };
+        window.addEventListener("storage", onStorage);
         onScopeDispose(() => {
             clearTimeout(timer);
             document.removeEventListener("visibilitychange", rollOver);
+            window.removeEventListener("storage", onStorage);
         });
     }
 

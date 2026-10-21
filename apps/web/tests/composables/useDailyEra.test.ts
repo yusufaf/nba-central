@@ -11,7 +11,12 @@ import { toast } from 'vue-sonner';
 import { dailyEraApi } from '@/network/api';
 import { track } from '@/lib/analytics';
 import { useDailyEra } from '@/composables/useDailyEra';
-import { readDailyEraGame, writeDailyEraGame, type StoredDailyEraGame } from '@/utils/dailyEra';
+import {
+    DAILY_ERA_STORAGE_KEY,
+    readDailyEraGame,
+    writeDailyEraGame,
+    type StoredDailyEraGame,
+} from '@/utils/dailyEra';
 
 const DAY = '2026-10-16';
 const puzzle = { puzzleNumber: 12, puzzleId: 'p1', imageUrl: 'https://cdn/x.webp' };
@@ -449,5 +454,57 @@ describe('useDailyEra across tabs', () => {
         await game.guess(1960);
         expect(readDailyEraGame(DAY)?.guesses).toEqual([{ season: 1996, hit: true, direction: null, band: null }]);
         expect(readDailyEraGame('2026-10-15')).not.toBeNull();
+    });
+
+    const inScope = async () => {
+        const scope = effectScope();
+        const game = scope.run(() => useDailyEra())!;
+        await game.load(DAY);
+        return { scope, game };
+    };
+    const otherTabSaved = (key: string | null = DAILY_ERA_STORAGE_KEY) =>
+        window.dispatchEvent(new StorageEvent('storage', { key }));
+
+    it("moves to another tab's finished game on a storage event", async () => {
+        const { scope, game } = await inScope();
+        writeDailyEraGame(DAY, wonInThree);
+        otherTabSaved();
+
+        expect(game.status.value).toBe('won');
+        expect(game.answer.value).toEqual(answer);
+        expect(game.guesses.value).toHaveLength(3);
+        expect(game.stats.value.played).toBe(1);
+        expect(await game.guess(1980)).toBe(false);
+        expect(guessApi).not.toHaveBeenCalled();
+        scope.stop();
+    });
+
+    it('ignores other keys and stops listening with its scope', async () => {
+        const { scope, game } = await inScope();
+        writeDailyEraGame(DAY, wonInThree);
+        otherTabSaved('other');
+        expect(game.status.value).toBe('playing');
+
+        scope.stop();
+        otherTabSaved();
+        expect(game.status.value).toBe('playing');
+    });
+
+    it('leaves a guess in flight to settle against storage', async () => {
+        const { scope, game } = await inScope();
+        let resolve!: (value: ReturnType<typeof miss>) => void;
+        guessApi.mockReturnValueOnce(new Promise((r) => (resolve = r)) as never);
+        const pending = game.guess(1980);
+
+        writeDailyEraGame(DAY, { ...wonInThree, guesses: [m1960, m1970], answer: null });
+        otherTabSaved();
+        expect(game.guesses.value).toEqual([]);
+        expect(game.status.value).toBe('playing');
+
+        resolve(miss('later', 'far'));
+        expect(await pending).toBe(false);
+        expect(game.guesses.value).toEqual([m1960, m1970]);
+        expect(readDailyEraGame(DAY)?.guesses).toHaveLength(2);
+        scope.stop();
     });
 });
