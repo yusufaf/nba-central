@@ -1,4 +1,4 @@
-import { computed, ref } from "vue";
+import { computed, getCurrentScope, onScopeDispose, ref } from "vue";
 import { toast } from "vue-sonner";
 import { dailyEraApi } from "@/network/api";
 import { track } from "@/lib/analytics";
@@ -6,6 +6,7 @@ import {
     DAILY_ERA_MAX_ATTEMPTS,
     dailyEraStats,
     gameOutcome,
+    nextPuzzleAt,
     readDailyEraGames,
     writeDailyEraGame,
     type DailyEraGuess,
@@ -56,7 +57,8 @@ export const useDailyEra = () => {
     const answer = ref<DailyEraReveal | null>(null);
     const submitting = ref(false);
     const date = ref("");
-    // The local day, as of the last load or guess.
+    // The local day: set by load() and each guess, and moved on at local
+    // midnight while the page is open.
     const today = ref("");
     // Whether this game counts as an archive game: see StoredDailyEraGame.
     const archive = ref(false);
@@ -64,10 +66,34 @@ export const useDailyEra = () => {
     const attemptsLeft = computed(() => DAILY_ERA_MAX_ATTEMPTS - guesses.value.length);
     const stats = computed(() => dailyEraStats(games.value, today.value));
 
-    /** `guessedOn` is the local day the guess was sent, not when it was scored. */
+    // Outside an effect scope, as in most unit tests, nothing would ever
+    // clean up the timer, so the page only rolls over while a scope owns it.
+    if (getCurrentScope()) {
+        let timer: ReturnType<typeof setTimeout> | undefined;
+        // An open page moves on to the new day at local midnight, so a game
+        // finished before it shares as that day's archive game. A timer
+        // alone misses midnight in a hidden, throttled tab, hence the
+        // visibility check. The wait is capped at a minute because timers
+        // can stop counting while the machine sleeps, and a tab that stays
+        // visible through sleep gets no visibility event.
+        const rollOver = () => {
+            const now = toIsoDate(new Date());
+            if (today.value) today.value = now;
+            clearTimeout(timer);
+            timer = setTimeout(rollOver, Math.min(nextPuzzleAt(now).getTime() - Date.now(), 60_000));
+        };
+        rollOver();
+        document.addEventListener("visibilitychange", rollOver);
+        onScopeDispose(() => {
+            clearTimeout(timer);
+            document.removeEventListener("visibilitychange", rollOver);
+        });
+    }
+
+    /** `guessedOn` is the local day the guess was sent, not when it was scored: it decides archive. */
     const save = (guessedOn: string) => {
         if (!puzzle.value) return;
-        today.value = guessedOn;
+        today.value = toIsoDate(new Date());
         archive.value = archive.value || date.value !== guessedOn;
         const record: StoredDailyEraGame = {
             puzzleId: puzzle.value.puzzleId,

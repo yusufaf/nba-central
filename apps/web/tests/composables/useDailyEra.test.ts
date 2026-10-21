@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { effectScope } from 'vue';
 
 vi.mock('@/network/api', () => ({
     dailyEraApi: { getPuzzle: vi.fn(), guess: vi.fn() },
@@ -312,7 +313,23 @@ describe('useDailyEra streaks and archive', () => {
         });
         await game.guess(1996);
         expect(readDailyEraGame(TODAY)?.archive).toBe(false);
+        expect(game.today.value).toBe('2026-11-07');
         expect(game.stats.value.currentStreak).toBe(1);
+    });
+
+    it('rolls over at local midnight and stops when its scope does', async () => {
+        vi.useFakeTimers({ toFake: ['Date', 'setTimeout', 'clearTimeout'] });
+        vi.setSystemTime(new Date(2026, 10, 6, 23, 59));
+        const scope = effectScope();
+        const game = scope.run(() => useDailyEra())!;
+        await game.load(TODAY);
+
+        vi.advanceTimersByTime(2 * 60_000);
+        expect(game.today.value).toBe('2026-11-07');
+        expect(game.date.value).toBe(TODAY);
+
+        scope.stop();
+        expect(vi.getTimerCount()).toBe(0);
     });
 
     it('reads stored games when the puzzle is unavailable', async () => {

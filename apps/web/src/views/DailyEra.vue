@@ -192,8 +192,9 @@ const submit = async () => {
                         :date="date"
                         @next="playToday"
                     />
+                    <!-- Keyed by streak too: the card is rendered once, so a streak that drops at midnight needs a fresh one. -->
                     <DailyEraShare
-                        :key="date"
+                        :key="`${date}:${shareStreak}`"
                         :puzzle-number="puzzle.puzzleNumber"
                         :guesses="guesses"
                         :image-url="puzzle.imageUrl"

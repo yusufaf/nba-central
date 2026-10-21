@@ -55,8 +55,8 @@ const shareNatively = async () => {
 
 // The card is rendered ahead of time, in idle time once the game is over, so
 // a Download tap saves it straight away: iOS Safari may refuse a download
-// that starts after an await. The view keys this component by date, so the
-// card never goes stale. Loaded on demand, which keeps html-to-image out of
+// that starts after an await. The view keys this component by date and
+// streak, so the card never goes stale. Loaded on demand, which keeps html-to-image out of
 // the page's first load.
 const card = shallowRef<Blob | null>(null);
 let pending: Promise<Blob> | null = null;
