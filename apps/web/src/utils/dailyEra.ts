@@ -74,7 +74,7 @@ export interface StoredDailyEraGame {
 // One record per local date, so a reload resumes the day's game rather than
 // replaying it. Streaks and stats are worked out from these records on read,
 // never stored as counters, so reopening a finished game can't count it twice.
-const STORAGE_KEY = "nba-central:daily-era";
+export const DAILY_ERA_STORAGE_KEY = "nba-central:daily-era";
 const STORAGE_VERSION = 1;
 
 interface StoredDailyEra {
@@ -129,7 +129,7 @@ type StoreRead = { kind: "store"; store: StoredDailyEra } | { kind: "newer" } | 
 
 const readStore = (): StoreRead => {
     try {
-        const raw = localStorage.getItem(STORAGE_KEY);
+        const raw = localStorage.getItem(DAILY_ERA_STORAGE_KEY);
         const parsed: unknown = raw ? JSON.parse(raw) : null;
         if (!isRecord(parsed) || typeof parsed.version !== "number") return { kind: "none" };
         if (parsed.version > STORAGE_VERSION) return { kind: "newer" };
@@ -148,36 +148,65 @@ export const readDailyEraGame = (day: string): StoredDailyEraGame | null => {
     return isGame(game) ? game : null;
 };
 
-export const writeDailyEraGame = (day: string, game: StoredDailyEraGame): void => {
-    try {
-        const read = readStore();
-        if (read.kind === "newer") return;
-        const store = read.kind === "store" ? read.store : { version: STORAGE_VERSION, games: {} };
-        store.games[day] = game;
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(store));
-    } catch {
-        // Private mode or a full quota: the game still plays, it just won't
-        // survive a reload.
-    }
-};
-
-/** Every readable game, by date. A key that isn't a date is dropped too. */
-export const readDailyEraGames = (): Record<string, StoredDailyEraGame> => {
-    const read = readStore();
-    if (read.kind !== "store") return {};
-    return Object.fromEntries(
-        Object.entries(read.store.games).filter(
-            ([day, game]) => parseIsoDate(day) !== null && isGame(game),
-        ),
-    );
-};
-
 export type DailyEraOutcome = "won" | "lost" | "playing";
 
 export const gameOutcome = (guesses: DailyEraGuess[]): DailyEraOutcome => {
     if (guesses.at(-1)?.hit) return "won";
     if (guesses.length >= DAILY_ERA_MAX_ATTEMPTS) return "lost";
     return "playing";
+};
+
+// A finished game can't grow, so it's ahead of any unfinished one.
+const progress = (game: StoredDailyEraGame) =>
+    gameOutcome(game.guesses) === "playing" ? game.guesses.length : DAILY_ERA_MAX_ATTEMPTS + 1;
+
+/** Whether `a` has got further than `b`: finished beats unfinished, then more guesses win. A tie is not further. */
+export const isFurtherAlong = (a: StoredDailyEraGame, b: StoredDailyEraGame): boolean =>
+    progress(a) > progress(b);
+
+/** A key that isn't a date is dropped too. */
+const readableGames = (store: StoredDailyEra): Record<string, StoredDailyEraGame> =>
+    Object.fromEntries(
+        Object.entries(store.games).filter(([day, game]) => parseIsoDate(day) !== null && isGame(game)),
+    );
+
+/**
+ * Saves each game under its date, except where storage already holds the same
+ * puzzle at least as far along: another tab played on, and its copy stays.
+ * Returns every readable game as storage now has it - the given objects where
+ * they were saved, the stored ones where kept - even when the write itself
+ * failed. Passing every game in memory writes back any an earlier failed
+ * write left there.
+ */
+export const writeDailyEraGames = (
+    games: Record<string, StoredDailyEraGame>,
+): Record<string, StoredDailyEraGame> => {
+    const read = readStore();
+    if (read.kind === "newer") return games;
+    const store: StoredDailyEra =
+        read.kind === "store" ? read.store : { version: STORAGE_VERSION, games: {} };
+    for (const [day, game] of Object.entries(games)) {
+        const stored = store.games[day];
+        if (isGame(stored) && stored.puzzleId === game.puzzleId && !isFurtherAlong(game, stored)) continue;
+        store.games[day] = game;
+    }
+    try {
+        localStorage.setItem(DAILY_ERA_STORAGE_KEY, JSON.stringify(store));
+    } catch {
+        // Private mode or a full quota: the game still plays, it just won't
+        // survive a reload.
+    }
+    return readableGames(store);
+};
+
+export const writeDailyEraGame = (day: string, game: StoredDailyEraGame): void => {
+    writeDailyEraGames({ [day]: game });
+};
+
+/** Every readable game, by date. */
+export const readDailyEraGames = (): Record<string, StoredDailyEraGame> => {
+    const read = readStore();
+    return read.kind === "store" ? readableGames(read.store) : {};
 };
 
 export interface DailyEraStats {

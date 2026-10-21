@@ -6,12 +6,14 @@ import {
     formatCountdown,
     gameOutcome,
     isArchiveDay,
+    isFurtherAlong,
     nextPuzzleAt,
     readDailyEraGame,
     readDailyEraGames,
     seasonDecades,
     seasonLabel,
     writeDailyEraGame,
+    writeDailyEraGames,
     type DailyEraGuess,
     type StoredDailyEraGame,
 } from '@/utils/dailyEra';
@@ -161,6 +163,58 @@ describe('daily era storage', () => {
             JSON.stringify({ version: 1, games: { '2026-10-16': { ...game, archive: 'yes' } } }),
         );
         expect(readDailyEraGame('2026-10-16')).toBeNull();
+    });
+
+    it('never replaces a game with one further behind for the same puzzle', () => {
+        const twoGuesses = { ...game, guesses: [...game.guesses, miss] };
+        writeDailyEraGame('2026-10-16', twoGuesses);
+        writeDailyEraGame('2026-10-16', game);
+        expect(readDailyEraGame('2026-10-16')?.guesses).toHaveLength(2);
+        expect(writeDailyEraGames({ '2026-10-16': game })['2026-10-16']).toEqual(twoGuesses);
+    });
+
+    it('keeps a finished game over an unfinished or later-finished one', () => {
+        const wonGame = { ...game, guesses: [miss, hitGuess] };
+        writeDailyEraGame('2026-10-16', wonGame);
+        writeDailyEraGame('2026-10-16', { ...game, guesses: [miss, { ...miss, season: 1970 }] });
+        expect(readDailyEraGame('2026-10-16')).toEqual(wonGame);
+
+        const fourMisses = [1950, 1960, 1970, 1980].map((season) => ({ ...miss, season }));
+        writeDailyEraGame('2026-10-16', { ...game, guesses: fourMisses });
+        expect(readDailyEraGame('2026-10-16')).toEqual(wonGame);
+    });
+
+    it('replaces a game for a different puzzle on the same day', () => {
+        writeDailyEraGame('2026-10-16', { ...game, guesses: [...game.guesses, miss] });
+        const other = { ...game, puzzleId: 'p2' };
+        writeDailyEraGame('2026-10-16', other);
+        expect(readDailyEraGame('2026-10-16')).toEqual(other);
+    });
+
+    it('saves every given day and returns every readable game', () => {
+        writeDailyEraGame('2026-10-16', game);
+        const twoGuesses = { ...game, guesses: [...game.guesses, miss] };
+        const next = { ...game, puzzleId: 'p2' };
+        const games = { '2026-10-16': twoGuesses, '2026-10-17': next };
+
+        expect(writeDailyEraGames(games)).toEqual(games);
+        expect(readDailyEraGames()).toEqual(games);
+
+        localStorage.clear();
+        vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {
+            throw new Error('quota');
+        });
+        expect(writeDailyEraGames(games)).toEqual(games);
+        expect(readDailyEraGames()).toEqual({});
+    });
+});
+
+describe('isFurtherAlong', () => {
+    it('ranks a finished game ahead of any unfinished one, then more guesses', () => {
+        expect(isFurtherAlong(record([miss, miss]), record([miss]))).toBe(true);
+        expect(isFurtherAlong(won(), record([miss, miss, miss]))).toBe(true);
+        expect(isFurtherAlong(lost(), won())).toBe(false);
+        expect(isFurtherAlong(record([miss]), record([miss]))).toBe(false);
     });
 });
 
