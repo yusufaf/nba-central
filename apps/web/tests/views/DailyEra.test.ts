@@ -15,6 +15,7 @@ vi.mock('@/components/DailyEra/dailyEraCard', () => ({
 import { dailyEraApi } from '@/network/api';
 import DailyEra from '@/views/DailyEra.vue';
 import DailyEraShare from '@/components/DailyEra/DailyEraShare.vue';
+import { renderDailyEraCard } from '@/components/DailyEra/dailyEraCard';
 import { dailyEraPuzzleNumber, readDailyEraGame, writeDailyEraGame, type DailyEraGuess } from '@/utils/dailyEra';
 
 const puzzleFor = (day: string) => {
@@ -86,6 +87,7 @@ const statText = (w: VueWrapper, name: string) => w.find(`[data-testid="stat-${n
 const archiveLinks = (w: VueWrapper) =>
     w.findAllComponents(RouterLinkStub).filter((l) => l.attributes('data-testid') === 'archive-day');
 const todayLink = (w: VueWrapper) => w.find('[data-testid="today-link"]');
+const shareProps = (w: VueWrapper) => w.findComponent(DailyEraShare).props();
 
 beforeEach(() => {
     vi.clearAllMocks();
@@ -318,8 +320,6 @@ describe('DailyEra archive', () => {
 });
 
 describe('DailyEra share', () => {
-    const shareProps = (w: VueWrapper) => w.findComponent(DailyEraShare).props();
-
     it("offers today's finished game with the streak", async () => {
         seed('2026-11-05', [hitGuess]);
         const w = await mountPage();
@@ -341,5 +341,62 @@ describe('DailyEra share', () => {
         seed('2026-11-05', [hitGuess]);
         const w = await mountPage('/daily?date=2026-11-05');
         expect(shareProps(w)).toMatchObject({ archive: true, streak: null });
+    });
+});
+
+describe('DailyEra midnight rollover', () => {
+    // setImmediate stays real: flushPromises runs on it.
+    const fakeClock = (at: Date) => {
+        vi.useFakeTimers({ toFake: ['Date', 'setTimeout', 'clearTimeout', 'setInterval', 'clearInterval'] });
+        vi.setSystemTime(at);
+    };
+
+    const finishBeforeMidnight = async () => {
+        seed('2026-11-05', [hitGuess]);
+        fakeClock(new Date(2026, 10, 6, 23, 55));
+        const w = await mountPage();
+        await winOneGuess(w);
+        expect(shareProps(w)).toMatchObject({ date: '2026-11-06', archive: false, streak: 2 });
+        return w;
+    };
+
+    const expectYesterdaysGame = (w: VueWrapper) => {
+        expect(shareProps(w)).toMatchObject({ date: '2026-11-06', archive: true, streak: null });
+        expect(archiveLinks(w)).toHaveLength(30);
+        expect(archiveLinks(w)[0]!.props('to')).toEqual({ name: 'dailyEra', query: { date: '2026-11-06' } });
+        expect(todayLink(w).exists()).toBe(true);
+    };
+
+    it('makes a game finished before midnight an archive share after it', async () => {
+        const writeText = vi.fn().mockResolvedValue(undefined);
+        Object.assign(navigator, { clipboard: { writeText } });
+        const w = await finishBeforeMidnight();
+        // The card is rendered ahead of time, so render it before midnight.
+        vi.advanceTimersByTime(200);
+        await flushPromises();
+        expect(vi.mocked(renderDailyEraCard).mock.calls).toHaveLength(1);
+        expect(vi.mocked(renderDailyEraCard).mock.lastCall![0].streak).toBe(2);
+
+        vi.advanceTimersByTime(15 * 60_000);
+        await flushPromises();
+        expectYesterdaysGame(w);
+
+        await w.find('[data-testid="share-copy"]').trigger('click');
+        await flushPromises();
+        expect(writeText.mock.lastCall![0]).toContain('/daily?date=2026-11-06');
+        expect(writeText.mock.lastCall![0]).not.toContain('🔥');
+
+        vi.advanceTimersByTime(200);
+        await flushPromises();
+        expect(vi.mocked(renderDailyEraCard).mock.calls).toHaveLength(2);
+        expect(vi.mocked(renderDailyEraCard).mock.lastCall![0].streak).toBeNull();
+    });
+
+    it('rolls over when a tab hidden past midnight comes back', async () => {
+        const w = await finishBeforeMidnight();
+        vi.setSystemTime(new Date(2026, 10, 7, 0, 10));
+        document.dispatchEvent(new Event('visibilitychange'));
+        await flushPromises();
+        expectYesterdaysGame(w);
     });
 });
