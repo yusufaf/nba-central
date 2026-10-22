@@ -30,6 +30,7 @@ pnpm type-check      # vue-tsc
 pnpm test            # vitest
 pnpm check:styles    # design-system guard
 pnpm test:visual     # Playwright screenshots of every route
+pnpm render:og       # re-render /daily's link preview, public/og-image-daily.png
 ```
 
 `pnpm lint` works and is gated in CI. The config is flat
