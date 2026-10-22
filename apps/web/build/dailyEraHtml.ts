@@ -9,9 +9,10 @@ import { DAILY_ERA_MAX_ATTEMPTS } from "../src/constants/dailyEra.ts";
 export const DAILY_ERA_HEAD = {
     title: "Which Era?",
     description: `A new NBA jersey every day. Guess the season it was worn in ${DAILY_ERA_MAX_ATTEMPTS} tries.`,
-    // The site's own preview image until the game has one.
-    image: "https://nba.yusufaf.dev/og-image.jpg",
-    imageAlt: "nba-central home page: Build the GOAT team",
+    // Rendered from DailyEraPreviewCard.vue by `pnpm --filter web render:og`.
+    // The same every day, so it never shows a puzzle.
+    image: "https://nba.yusufaf.dev/og-image-daily.png",
+    imageAlt: "Which Era?: a jersey outline with a question mark, and a row of guess tiles",
 } as const;
 
 // The shell's site-wide defaults, as apps/cdk/utilities/og-html.ts strips

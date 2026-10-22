@@ -39,6 +39,26 @@ describe('dailyEraHtml', () => {
         expect(count(dailyEraHtml(added), /property="og:locale"/)).toBe(0);
     });
 
+    it("previews with its own 1200x630 image, not the home page's", () => {
+        const homeImage = /<meta property="og:image" content="([^"]*)"/.exec(shell)![1];
+        const homeAlt = /<meta property="og:image:alt" content="([^"]*)"/.exec(shell)![1];
+        expect(DAILY_ERA_HEAD.image).not.toBe(homeImage);
+        expect(DAILY_ERA_HEAD.imageAlt).not.toBe(homeAlt);
+        expect(DAILY_ERA_HEAD.imageAlt).toContain('Which Era?');
+
+        // Crawlers need an absolute URL, and the file has to ship from public/.
+        const url = new URL(DAILY_ERA_HEAD.image);
+        expect(url.origin).toBe('https://nba.yusufaf.dev');
+        const png = readFileSync(resolve(__dirname, '../public', url.pathname.slice(1)));
+        expect(png.subarray(0, 8)).toEqual(Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]));
+        // IHDR width and height, which the head promises as og:image:width/height.
+        expect([png.readUInt32BE(16), png.readUInt32BE(20)]).toEqual([1200, 630]);
+
+        expect(head).toContain(`<meta property="og:image" content="${DAILY_ERA_HEAD.image}">`);
+        expect(head).toContain(`<meta name="twitter:image" content="${DAILY_ERA_HEAD.image}">`);
+        expect(head).toContain(`<meta property="og:image:alt" content="${DAILY_ERA_HEAD.imageAlt}">`);
+    });
+
     it('stays noindex, with no canonical, until launch', () => {
         expect(head).not.toContain('rel="canonical"');
         expect(count(head, /name="robots"/)).toBe(1);
