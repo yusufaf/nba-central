@@ -1,0 +1,17 @@
+// mulberry32: small, seedable, and the same in every Node version.
+export const mulberry32 = (seed: number) => () => {
+	seed = (seed + 0x6d2b79f5) | 0;
+	let t = Math.imul(seed ^ (seed >>> 15), 1 | seed);
+	t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+	return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+};
+
+// FNV-1a, 32-bit: turns a string such as "cap-five:2026-10-22" into a seed.
+export const seedFromString = (s: string): number => {
+	let h = 0x811c9dc5;
+	for (let i = 0; i < s.length; i++) {
+		h ^= s.charCodeAt(i);
+		h = Math.imul(h, 0x01000193);
+	}
+	return h >>> 0;
+};

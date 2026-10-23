@@ -186,6 +186,12 @@ describe("seededShuffle", () => {
 		expect([...once].sort((a, b) => a - b)).toEqual(items);
 		expect(seededShuffle(items, 175)).not.toEqual(once);
 	});
+
+	// refresh-daily-era appends in this order to a list that is never
+	// rewritten, so the generator must not change underneath it.
+	it("keeps its exact order", () => {
+		expect(seededShuffle(items, 174)).toEqual([4, 8, 1, 9, 10, 6, 19, 18, 0, 17, 11, 5, 2, 16, 7, 15, 3, 14, 13, 12]);
+	});
 });
 
 describe("parsePuzzleList", () => {

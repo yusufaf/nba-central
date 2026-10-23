@@ -34,6 +34,7 @@ import apiAuthorizer from "../lambdas/apiAuthorizer/index";
 import setPlayersData from "../lambdas/setPlayersData";
 import setPlayerRatingsData from "../lambdas/setPlayerRatingsData";
 import fetchNewsCron from "../lambdas/fetchNewsCron";
+import publishCapFive from "../lambdas/publishCapFive";
 import { PUBLIC_ROUTES, PRIVATE_ROUTES } from "./team-builder-api-routes";
 import { mainLambdaPolicyStatements } from "./main-lambda-policy";
 
@@ -162,6 +163,7 @@ export class TeamBuilderAPI extends Construct {
 		setPlayersData({ ...lambdaProps });
 		setPlayerRatingsData({ ...lambdaProps });
 		fetchNewsCron({ ...lambdaProps });
+		publishCapFive({ ...lambdaProps });
 
 		const authorizerNameAndID = `${this.prefix}-authorizer`;
 		const apiAuthorizerLambda = apiAuthorizer({ ...lambdaProps });

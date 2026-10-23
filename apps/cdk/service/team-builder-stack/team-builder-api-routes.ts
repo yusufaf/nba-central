@@ -13,6 +13,7 @@ const DATA_PREFIX = `/api/data`;
 const CUSTOM_ENTITIES_PREFIX = `/api/custom-entities`;
 const FEEDBACK_PREFIX = `/api/feedback`;
 const DAILY_ERA_PREFIX = `/api/daily/era`;
+const CAP_FIVE_PREFIX = `/api/daily/cap-five`;
 
 export const FILES_ROUTES: ApiRoute[] = [
 	{
@@ -162,6 +163,21 @@ export const DAILY_ERA_ROUTES: ApiRoute[] = [
 	},
 ];
 
+// Public like DAILY_ERA_ROUTES: the GET carries no rating, and only the
+// submit reveals them. CloudFront caches the GET too.
+export const CAP_FIVE_ROUTES: ApiRoute[] = [
+	{
+		route: `${CAP_FIVE_PREFIX}/{date}`,
+		lambdaName: "getCapFive",
+		methods: [HttpMethod.GET, HttpMethod.HEAD],
+	},
+	{
+		route: `${CAP_FIVE_PREFIX}/submit`,
+		lambdaName: "submitCapFive",
+		methods: [HttpMethod.POST],
+	},
+];
+
 export const CUSTOM_ENTITIES_ROUTES: ApiRoute[] = [
 	// GM routes
 	{
@@ -271,7 +287,7 @@ export const FEEDBACK_ROUTES: ApiRoute[] = [
 // DATA_ROUTES, NEWS_ROUTES, PUBLIC_TEAM_ROUTES and PAGE_ROUTES are read-only
 // and reachable signed out — the first two are fetched on every page load,
 // the last two are how a published team is viewed and unfurled. DAILY_ERA_ROUTES
-// are the daily game, which needs no account. Everything that reads or writes
+// and CAP_FIVE_ROUTES are the daily games, which need no account. Everything that reads or writes
 // user-owned data stays authenticated.
 export const PUBLIC_ROUTES: ApiRoute[] = [
 	...DATA_ROUTES,
@@ -279,6 +295,7 @@ export const PUBLIC_ROUTES: ApiRoute[] = [
 	...PUBLIC_TEAM_ROUTES,
 	...PAGE_ROUTES,
 	...DAILY_ERA_ROUTES,
+	...CAP_FIVE_ROUTES,
 ];
 export const PRIVATE_ROUTES: ApiRoute[] = [
 	...FILES_ROUTES,
