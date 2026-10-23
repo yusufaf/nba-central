@@ -211,6 +211,17 @@ describe("TeamBuilderWeb", () => {
 		});
 	});
 
+	it("caches /api/daily/cap-five/* like /api/daily/era/*, ahead of /api/*", () => {
+		const behaviors = getDistributionConfig(buildTemplate()).CacheBehaviors;
+		const index = (path: string) => behaviors.findIndex((b: { PathPattern: string }) => b.PathPattern === path);
+		expect(index("/api/daily/cap-five/*")).toBeGreaterThanOrEqual(0);
+		expect(index("/api/daily/cap-five/*")).toBeLessThan(index("/api/*"));
+
+		const { PathPattern: _capFive, ...capFive } = behaviors[index("/api/daily/cap-five/*")];
+		const { PathPattern: _era, ...era } = behaviors[index("/api/daily/era/*")];
+		expect(capFive).toEqual(era);
+	});
+
 	it("serves /daily from daily.html through a viewer-request function", () => {
 		const template = buildTemplate();
 		template.resourceCountIs("AWS::CloudFront::Function", 1);

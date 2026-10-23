@@ -88,7 +88,9 @@ export class TeamBuilderWeb extends Construct {
 		// Origin path intentionally left empty — see apiDomainName doc above.
 		const apiOrigin = new HttpOrigin(apiDomainName);
 
-		// Honours the Daily Era Lambda's Cache-Control. defaultTtl must be 0
+		// Honours the daily games' Cache-Control (Daily Era and Cap Five share
+		// it; its name and comment stay Daily Era's so CloudFront keeps the
+		// existing policy rather than replacing it). defaultTtl must be 0
 		// (CDK's default is a day) so a response without one is never cached;
 		// maxTtl backs up the Lambda's own 1-hour cap. The date is in the path,
 		// so nothing else goes in the cache key.
@@ -134,6 +136,14 @@ export class TeamBuilderWeb extends Construct {
 				// Lambdas refuse with 400/410, never 403/404: errorResponses
 				// below would swap those for index.html and cache it for 300 s.
 				"/api/daily/era/*": {
+					origin: apiOrigin,
+					viewerProtocolPolicy: ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
+					allowedMethods: AllowedMethods.ALLOW_ALL,
+					cachePolicy: dailyEraCachePolicy,
+					originRequestPolicy: OriginRequestPolicy.ALL_VIEWER_EXCEPT_HOST_HEADER,
+				},
+				// The same as /api/daily/era/*, and for the same reasons.
+				"/api/daily/cap-five/*": {
 					origin: apiOrigin,
 					viewerProtocolPolicy: ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
 					allowedMethods: AllowedMethods.ALLOW_ALL,

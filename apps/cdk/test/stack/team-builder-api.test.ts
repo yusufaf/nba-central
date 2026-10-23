@@ -12,6 +12,7 @@ import {
 	PUBLIC_TEAM_ROUTES,
 	PAGE_ROUTES,
 	DAILY_ERA_ROUTES,
+	CAP_FIVE_ROUTES,
 } from "../../service/team-builder-stack/team-builder-api-routes";
 
 // Locks in the public/private route split team-builder-api.ts uses to
@@ -31,15 +32,17 @@ const PUBLIC_ROUTE_PATHS = [
 	"/t/{teamUUID}",
 	"/api/daily/era/{date}",
 	"/api/daily/era/guess",
+	"/api/daily/cap-five/{date}",
+	"/api/daily/cap-five/submit",
 ];
 
 describe("team-builder-api-routes", () => {
-	it("PUBLIC_ROUTES is exactly DATA + NEWS + PUBLIC_TEAM + PAGE + DAILY_ERA routes", () => {
+	it("PUBLIC_ROUTES is exactly DATA + NEWS + PUBLIC_TEAM + PAGE + DAILY_ERA + CAP_FIVE routes", () => {
 		const publicPaths = PUBLIC_ROUTES.map((r) => r.route).sort();
 		expect(publicPaths).toEqual(PUBLIC_ROUTE_PATHS.sort());
 		expect(PUBLIC_ROUTES).toHaveLength(
 			DATA_ROUTES.length + NEWS_ROUTES.length + PUBLIC_TEAM_ROUTES.length + PAGE_ROUTES.length +
-				DAILY_ERA_ROUTES.length,
+				DAILY_ERA_ROUTES.length + CAP_FIVE_ROUTES.length,
 		);
 	});
 
@@ -77,8 +80,8 @@ describe("team-builder-api-routes", () => {
 		// and delete routes 35. Custom arenas (#116) add CRUD plus the image
 		// upload and delete routes: 41. Removing the unused get-team-logos
 		// route (#165) leaves 40. Daily Era's puzzle and guess routes (#173)
-		// make 42.
-		expect(publicPaths.size + privatePaths.size).toBe(42);
+		// make 42, and Cap Five's puzzle and submit routes (#183) 44.
+		expect(publicPaths.size + privatePaths.size).toBe(44);
 	});
 
 	it("the user routes are private, with GET for reads, PUT for writes and DELETE for the delete", () => {
