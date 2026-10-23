@@ -16,9 +16,14 @@ import { formatIsoDate, parseIsoDate, playableDays } from "../../utilities/daily
 import { mulberry32, seedFromString } from "../../utilities/seeded-random";
 import {
 	CAP_FIVE_FIRST_DATE,
+	CAP_FIVE_LINEUP_SIZE,
+	CAP_FIVE_POOL_SIZE,
 	type CapFiveCandidate,
 	type CapFivePuzzle,
 } from "../../models/cap-five";
+// apps/web keeps its own copy of these (the two packages share no code), so
+// this is the check that they haven't drifted apart.
+import * as web from "../../../web/src/constants/capFive";
 
 type Rating = { rating: number; ratingSource: string; positions?: string[] };
 
@@ -286,5 +291,13 @@ describe("publishDates", () => {
 		expect(dates[0]).toBe(formatIsoDate(first));
 		expect(dates.at(-1)).toBe(formatIsoDate(last + 7));
 		dates.forEach((date, i) => expect(parseIsoDate(date)).toBe(first + i));
+	});
+});
+
+describe("apps/web's copy", () => {
+	it("matches the first date, pool size and lineup size", () => {
+		expect(web.CAP_FIVE_FIRST_DATE).toBe(CAP_FIVE_FIRST_DATE);
+		expect(web.CAP_FIVE_POOL_SIZE).toBe(CAP_FIVE_POOL_SIZE);
+		expect(web.CAP_FIVE_LINEUP_SIZE).toBe(CAP_FIVE_LINEUP_SIZE);
 	});
 });
