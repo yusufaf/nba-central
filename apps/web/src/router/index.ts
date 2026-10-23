@@ -63,6 +63,12 @@ const router = createRouter({
             name: 'dailyEra',
             component: () => import('@/views/DailyEra.vue'),
         },
+        // Unlinked and noindex until launch (#183), and lazy like /daily.
+        {
+            path: '/cap-five',
+            name: 'capFive',
+            component: () => import('@/views/CapFive.vue'),
+        },
         {
             path: '/teams',
             name: 'teams',

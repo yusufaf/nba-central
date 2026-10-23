@@ -42,6 +42,9 @@ import type {
     GetDailyEraResponse,
     DailyEraGuessPayload,
     GuessDailyEraResponse,
+    GetCapFiveResponse,
+    CapFiveSubmitPayload,
+    SubmitCapFiveResponse,
 } from '@/models/api';
 import type { SettingsMap } from '@/constants/settings';
 
@@ -258,6 +261,18 @@ export const dailyEraApi = {
     },
     guess: async (payload: DailyEraGuessPayload): Promise<GuessDailyEraResponse> => {
         const response = await api.post<GuessDailyEraResponse>('/api/daily/era/guess', payload);
+        return response.data;
+    },
+};
+
+// Cap Five API - matches CAP_FIVE_ROUTES in CDK. Anonymous.
+export const capFiveApi = {
+    getPuzzle: async (date: string): Promise<GetCapFiveResponse> => {
+        const response = await api.get<GetCapFiveResponse>(`/api/daily/cap-five/${date}`);
+        return response.data;
+    },
+    submit: async (payload: CapFiveSubmitPayload): Promise<SubmitCapFiveResponse> => {
+        const response = await api.post<SubmitCapFiveResponse>('/api/daily/cap-five/submit', payload);
         return response.data;
     },
 };

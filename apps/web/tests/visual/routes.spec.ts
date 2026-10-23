@@ -2,6 +2,7 @@ import { test, expect, type Page } from '@playwright/test';
 import gameSummaryFixture from './fixtures/game-summary.json' with { type: 'json' };
 import publicTeamFixture from './fixtures/public-team.json' with { type: 'json' };
 import { DAILY_ERA_FIRST_DATE } from '../../src/constants/dailyEra';
+import { picks, puzzleView, result as capFiveResult } from '../helpers/capFive';
 
 /**
  * One screenshot per route, plus the overlay surfaces that the global
@@ -94,6 +95,20 @@ async function stubNetwork(page: Page) {
             ),
         }),
     );
+    // Cap Five: the same pool for every date, and a fixed 412 of 415 reveal.
+    await page.route('**/api/daily/cap-five/**', (route) => {
+        const date = new URL(route.request().url()).pathname.split('/').at(-1)!;
+        const isSubmit = route.request().method() === 'POST';
+        const submitted = isSubmit ? (route.request().postDataJSON() as { date: string }).date : date;
+        return route.fulfill({
+            status: 200,
+            contentType: 'application/json',
+            body: JSON.stringify({
+                success: true,
+                data: isSubmit ? capFiveResult({ date: submitted }) : { ...puzzleView, date },
+            }),
+        });
+    });
     await page.route('https://visual.invalid/**', (route) =>
         route.fulfill({ status: 200, contentType: 'image/png', body: GREY_PIXEL }),
     );
@@ -123,6 +138,7 @@ const ROUTES = [
     { path: '/news', name: 'news' },
     // Fixed, or the archive's dates would change the screenshot every day.
     { path: '/daily', name: 'daily', clock: '2026-11-06T20:00:00' },
+    { path: '/cap-five', name: 'cap-five', clock: '2026-11-06T20:00:00' },
     { path: '/teams', name: 'teams' },
     { path: '/login', name: 'login' },
     { path: '/sign-up', name: 'sign-up' },
@@ -165,6 +181,26 @@ test('daily reveal', async ({ page }) => {
     await page.evaluate(() => window.scrollTo(0, 0));
     await settle(page);
     await expect(page).toHaveScreenshot('daily-reveal.png', { fullPage: true });
+});
+
+test('cap-five result', async ({ page }) => {
+    // Before the countdown is rendered, so it reads the same every run.
+    await page.clock.setFixedTime(new Date('2026-11-06T20:00:00'));
+    await stubNetwork(page);
+    await page.goto('/cap-five');
+    await page.getByTestId('lock-in-button').waitFor();
+    const names = new Map(puzzleView.candidates.map((c) => [c.id, c.name]));
+    for (const id of picks) {
+        await page.getByTestId('cap-five-candidate').filter({ hasText: names.get(id)! }).click();
+    }
+    await page.getByTestId('lock-in-button').click();
+    await page.getByText('412 / 415').waitFor();
+    await page.getByTestId('share-copy').waitFor();
+    // The clicks scrolled the page, and a full-page shot taken mid-scroll
+    // paints the sticky header halfway down.
+    await page.evaluate(() => window.scrollTo(0, 0));
+    await settle(page);
+    await expect(page).toHaveScreenshot('cap-five-result.png', { fullPage: true });
 });
 
 test('page shell width is consistent across routes', async ({ page }) => {
