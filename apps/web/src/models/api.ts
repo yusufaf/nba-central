@@ -420,3 +420,63 @@ export type DailyEraGuessResult = DailyEraScore & { answer?: DailyEraReveal };
 export type GetDailyEraResponse = ApiResult<DailyEraPuzzleView>;
 export type GuessDailyEraResponse = ApiResult<DailyEraGuessResult>;
 // #endregion
+
+//#region Cap Five API Types
+// Mirrors apps/cdk/models/api/cap-five-api.ts and the candidate types in
+// apps/cdk/models/cap-five.ts.
+export type CapFiveRatingSource = "current" | "all-time" | "classic-peak";
+// "legend" is an all-time or classic-peak rating.
+export type CapFiveEra = "current" | "legend";
+
+// Everything the player may see before locking in: no rating, ever.
+export interface CapFiveCandidateView {
+    id: string;
+    name: string;
+    positions: string[];
+    era: CapFiveEra;
+}
+
+export interface CapFivePuzzleView {
+    puzzleNumber: number;
+    date: string;
+    cap: number;
+    gameVersion: string;
+    candidates: CapFiveCandidateView[];
+}
+
+export interface CapFiveSubmitPayload {
+    date: string;
+    picks: string[];
+}
+
+export interface CapFiveCandidate {
+    id: string;
+    name: string;
+    positions: string[];
+    rating: number;
+    ratingSource: CapFiveRatingSource;
+}
+
+// `lineup` is one lineup reaching `total`; `count` is how many do.
+export interface CapFiveOptimal {
+    total: number;
+    lineup: string[];
+    count: number;
+}
+
+// The reveal: every candidate's rating and the optimal lineup.
+export interface CapFiveResult {
+    puzzleNumber: number;
+    date: string;
+    cap: number;
+    gameVersion: string;
+    picks: string[];
+    total: number;
+    busted: boolean;
+    optimal: CapFiveOptimal;
+    candidates: CapFiveCandidate[];
+}
+
+export type GetCapFiveResponse = ApiResult<CapFivePuzzleView>;
+export type SubmitCapFiveResponse = ApiResult<CapFiveResult>;
+// #endregion
