@@ -3,6 +3,7 @@ import {
     CAP_FIVE_STORAGE_KEY,
     capFiveGrade,
     capFiveShareText,
+    capFiveShortName,
     capFiveStats,
     capFiveTiers,
     readCapFiveGames,
@@ -124,5 +125,20 @@ describe('share text', () => {
 
     it('lists tiers in pick order', () => {
         expect(capFiveTiers(result())).toEqual(['elite', 'great', 'great', 'good', 'average']);
+    });
+});
+
+describe('capFiveShortName', () => {
+    it.each([
+        ['Karl-Anthony Towns', 'K. Towns'],
+        ['Jaren Jackson Jr.', 'J. Jackson Jr.'],
+        ['  Brandon   Ingram ', 'B. Ingram'],
+        ['Nenê', 'Nenê'],
+        // A decomposed accent, one with no precomposed form, and an astral letter.
+        ['Émile Smith', 'É. Smith'],
+        ['N̈ame Smith', 'N̈. Smith'],
+        ['\u{1D400}lpha Beta', '\u{1D400}. Beta'],
+    ])('shortens %s to %s', (name, short) => {
+        expect(capFiveShortName(name)).toBe(short);
     });
 });
