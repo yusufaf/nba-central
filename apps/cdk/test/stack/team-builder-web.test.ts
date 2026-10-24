@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { App, Stack } from "aws-cdk-lib";
 import { Template } from "aws-cdk-lib/assertions";
-import { DAILY_PAGE_FUNCTION_CODE, TeamBuilderWeb } from "../../service/team-builder-stack/team-builder-web";
+import { GAME_PAGES_FUNCTION_CODE, TeamBuilderWeb } from "../../service/team-builder-stack/team-builder-web";
 
 // Construct-level CDK assertion test, following the isolated-construct
 // pattern in test/stack/team-builder-dynamo.test.ts (dummy account/region,
@@ -222,7 +222,7 @@ describe("TeamBuilderWeb", () => {
 		expect(capFive).toEqual(era);
 	});
 
-	it("serves /daily from daily.html through a viewer-request function", () => {
+	it("serves /daily and /cap-five through one viewer-request function", () => {
 		const template = buildTemplate();
 		template.resourceCountIs("AWS::CloudFront::Function", 1);
 		template.hasResourceProperties("AWS::CloudFront::Function", {
@@ -230,18 +230,25 @@ describe("TeamBuilderWeb", () => {
 		});
 
 		const config = getDistributionConfig(template);
-		const behavior = config.CacheBehaviors.find((b: { PathPattern: string }) => b.PathPattern === "/daily");
-		expect(behavior).toBeDefined();
-		expect(behavior.TargetOriginId).toBe(config.DefaultCacheBehavior.TargetOriginId);
-		expect(behavior.FunctionAssociations).toEqual([
-			expect.objectContaining({ EventType: "viewer-request" }),
-		]);
+		const behavior = (path: string) =>
+			config.CacheBehaviors.find((b: { PathPattern: string }) => b.PathPattern === path);
+		for (const path of ["/daily", "/cap-five"]) {
+			expect(behavior(path)).toBeDefined();
+			expect(behavior(path).TargetOriginId).toBe(config.DefaultCacheBehavior.TargetOriginId);
+			expect(behavior(path).FunctionAssociations).toEqual([
+				expect.objectContaining({ EventType: "viewer-request" }),
+			]);
+		}
+		expect(behavior("/cap-five").FunctionAssociations).toEqual(behavior("/daily").FunctionAssociations);
 	});
 
-	it("rewrites the /daily request to /daily.html and keeps the query", () => {
-		const handler = new Function(`${DAILY_PAGE_FUNCTION_CODE}; return handler;`)();
+	it("rewrites each game's path to its page and keeps the query", () => {
+		const handler = new Function(`${GAME_PAGES_FUNCTION_CODE}; return handler;`)();
 		const querystring = { date: { value: "2026-10-12" } };
 		expect(handler({ request: { uri: "/daily", querystring } }).uri).toBe("/daily.html");
 		expect(handler({ request: { uri: "/daily", querystring } }).querystring).toBe(querystring);
+		expect(handler({ request: { uri: "/cap-five", querystring } }).uri).toBe("/cap-five.html");
+		expect(handler({ request: { uri: "/cap-five", querystring } }).querystring).toBe(querystring);
+		expect(handler({ request: { uri: "/other" } }).uri).toBe("/other");
 	});
 });

@@ -61,8 +61,8 @@ export const buildOgTags = (team: PublicTeam, siteUrl: string): string => {
 // carry two of each and the canonical would claim the team page is the home
 // page. og:site_name is the same on every page, so it stays. A tag added to
 // index.html's head needs handling here too — og-html.test.ts checks every
-// one of them against the real file. apps/web's build/dailyEraHtml.ts strips
-// the same set for /daily; keep the two in step.
+// one of them against the real file. apps/web's build/gamePageHtml.ts strips
+// the same set for /daily and /cap-five; keep the two in step.
 const SHELL_DEFAULT_TAGS =
 	/<(?:meta\s+(?:property="og:(?!site_name")[^"]*"|name="(?:twitter:[^"]*|description)")|link\s+rel="canonical")[^>]*>\s*/g;
 
