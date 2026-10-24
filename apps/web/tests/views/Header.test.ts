@@ -275,3 +275,82 @@ describe('Header Daily menu', () => {
         expect(header.find('[data-testid="daily-trigger"]').classes()).toContain('active');
     });
 });
+
+describe('Header mobile menu', () => {
+    const openMobileMenu = async (header: VueWrapper) => {
+        header.find<HTMLElement>('[data-testid="mobile-menu-trigger"]').element.click();
+        await flushPromises();
+    };
+    const tap = async (label: string) => {
+        body().byText('.mobile-nav a', label)!.click();
+        await flushPromises();
+    };
+    const menuIsOpen = () => document.body.querySelector('.mobile-nav') !== null;
+
+    it.each([
+        ['Home', '/'],
+        ['Scores', '/scores'],
+        ['Which Era?', '/daily'],
+        ['Cap Five', '/cap-five'],
+        ['Login', '/login'],
+    ])('closes after tapping %s and goes to %s', async (label, path) => {
+        await router.push('/teams');
+        const header = await mountHeader();
+        await openMobileMenu(header);
+        expect(menuIsOpen()).toBe(true);
+
+        await tap(label);
+
+        expect(router.currentRoute.value.path).toBe(path);
+        expect(menuIsOpen()).toBe(false);
+    });
+
+    it('closes when the tapped link is the page already open', async () => {
+        await router.push('/scores');
+        const header = await mountHeader();
+        await openMobileMenu(header);
+
+        await tap('Scores');
+
+        expect(router.currentRoute.value.path).toBe('/scores');
+        expect(menuIsOpen()).toBe(false);
+    });
+
+    it('closes after tapping Settings when signed in', async () => {
+        auth.signedIn = true;
+        await router.push('/teams');
+        const header = await mountHeader();
+        await openMobileMenu(header);
+
+        await tap('Settings');
+
+        expect(router.currentRoute.value.path).toBe('/settings');
+        expect(menuIsOpen()).toBe(false);
+    });
+
+    it('stays open while picking a theme', async () => {
+        await router.push('/teams');
+        const header = await mountHeader();
+        await openMobileMenu(header);
+
+        body().byText('[data-testid="mobile-theme"] button', 'Dark')!.click();
+        await flushPromises();
+
+        expect(menuIsOpen()).toBe(true);
+    });
+
+    it.each([
+        ['signed out', false],
+        ['signed in', true],
+    ])('renders its links as plain anchors when %s', async (_, signedIn) => {
+        auth.signedIn = signedIn;
+        await router.push('/teams');
+        const header = await mountHeader();
+        await openMobileMenu(header);
+
+        // Five nav routes, two daily games, then Login or Settings.
+        const links = [...document.body.querySelectorAll('.mobile-nav a')];
+        expect(links).toHaveLength(8);
+        expect(links.map((link) => link.getAttribute('type'))).toEqual(Array(8).fill(null));
+    });
+});

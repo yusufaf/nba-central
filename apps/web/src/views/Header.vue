@@ -4,7 +4,7 @@ import { RouterLink, useRoute } from 'vue-router';
 import { useLogto } from '@logto/vue';
 import { DAILY_GAMES, ROUTES } from '@/constants/constants';
 import { Button } from '@/components/ui/button';
-import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
+import { Sheet, SheetClose, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { Separator } from '@/components/ui/separator';
 import {
     DropdownMenu,
@@ -188,31 +188,36 @@ function handleSignOut() {
                 </SheetTrigger>
                 <SheetContent>
                     <nav class="mobile-nav flex flex-col gap-4 mt-8">
+                        <!-- SheetClose shuts the sheet on every tap, even on the
+                             current page's link, which a route watch would miss.
+                             as="a" only stops it adding type="button" to the link. -->
                         <template v-for="route in navRoutes" :key="route.id">
-                            <RouterLink
-                                :class="['text-lg font-semibold', route?.class]"
-                                :to="route.path"
-                            >
-                                {{ route.name }}
-                            </RouterLink>
+                            <SheetClose as-child as="a">
+                                <RouterLink
+                                    :class="['text-lg font-semibold', route?.class]"
+                                    :to="route.path"
+                                >
+                                    {{ route.name }}
+                                </RouterLink>
+                            </SheetClose>
                             <Separator />
                         </template>
                         <span class="text-[0.6875rem] font-bold uppercase tracking-[0.06em] opacity-60">
                             Daily
                         </span>
                         <template v-for="game in DAILY_GAMES" :key="game.path">
-                            <RouterLink class="text-lg font-semibold" :to="game.path">
-                                {{ game.name }}
-                            </RouterLink>
+                            <SheetClose as-child as="a">
+                                <RouterLink class="text-lg font-semibold" :to="game.path">
+                                    {{ game.name }}
+                                </RouterLink>
+                            </SheetClose>
                             <Separator />
                         </template>
-                        <RouterLink
-                            v-if="!isAuthenticated && !IS_PREVIEW"
-                            class="text-lg font-semibold login"
-                            to="/login"
-                        >
-                            Login
-                        </RouterLink>
+                        <SheetClose v-if="!isAuthenticated && !IS_PREVIEW" as-child as="a">
+                            <RouterLink class="text-lg font-semibold login" to="/login">
+                                Login
+                            </RouterLink>
+                        </SheetClose>
                         <template v-else-if="isAuthenticated">
                             <div class="flex min-w-0 items-center gap-3">
                                 <UserAvatar class="size-10 text-inherit" />
@@ -223,9 +228,11 @@ function handleSignOut() {
                                     <span class="truncate text-lg font-semibold">{{ displayName }}</span>
                                 </div>
                             </div>
-                            <RouterLink class="text-lg font-semibold" to="/settings">
-                                Settings
-                            </RouterLink>
+                            <SheetClose as-child as="a">
+                                <RouterLink class="text-lg font-semibold" to="/settings">
+                                    Settings
+                                </RouterLink>
+                            </SheetClose>
                             <Separator />
                             <button class="text-lg font-semibold login text-left" @click="handleSignOut">
                                 Logout
