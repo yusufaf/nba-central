@@ -109,6 +109,17 @@ describe("eligiblePlayers", () => {
 		expect(out).toEqual([]);
 	});
 
+	it("keeps only real positions, and drops a player left with none", () => {
+		const out = eligiblePlayers(
+			[
+				{ id: "a", first_name: "Truck", last_name: "Robinson" },
+				{ id: "b", first_name: "No", last_name: "Position" },
+			],
+			{ a: { rating: 80, ratingSource: "all-time", positions: ["PF", "N"] }, b: { rating: 80, ratingSource: "current", positions: ["S"] } },
+		);
+		expect(out.map(({ id, positions }) => ({ id, positions }))).toEqual([{ id: "a", positions: ["PF"] }]);
+	});
+
 	it("keeps diacritics in the shown name", () => {
 		const out = eligiblePlayers([{ id: "a", first_name: "Nikola", last_name: "Jokić" }], {
 			a: { rating: 98, ratingSource: "current", positions: ["C"] },
@@ -236,6 +247,21 @@ describe("toPuzzleView", () => {
 		expect(view.candidates).toHaveLength(12);
 		expect(Object.keys(view.candidates[0]).sort()).toEqual(["era", "id", "name", "positions"]);
 		expect(new Set(view.candidates.map((c) => c.era))).toEqual(new Set(["current", "legend"]));
+	});
+});
+
+// A day frozen before eligiblePlayers dropped 2K's placeholder positions.
+describe("a puzzle frozen with placeholder positions", () => {
+	const fresh = buildCapFivePuzzle("2026-10-22", eligible, meta);
+	const frozen = {
+		...fresh,
+		candidates: fresh.candidates.map((c, i) => (i === 0 ? { ...c, positions: [...c.positions, "N"] } : c)),
+	};
+
+	it("serves only real positions before and after locking in", () => {
+		expect(toPuzzleView(frozen).candidates[0].positions).toEqual(fresh.candidates[0].positions);
+		const result = scoreLineup(frozen, frozen.optimal.lineup)!;
+		expect(result.candidates[0].positions).toEqual(fresh.candidates[0].positions);
 	});
 });
 
