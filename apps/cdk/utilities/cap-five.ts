@@ -17,6 +17,7 @@ import {
 } from "../models/cap-five";
 import type { CapFivePuzzleView, CapFiveResult } from "../models/api/cap-five-api";
 import { formatIsoDate, parseIsoDate, playableDays } from "./daily-era";
+import { nbaPositions } from "./positions";
 import { mulberry32, seedFromString } from "./seeded-random";
 import { isOneOf, isRecord } from "./type-guards";
 
@@ -44,10 +45,11 @@ export const eligiblePlayers = (
 	for (const player of players) {
 		const entry = ratings[player.id];
 		if (!entry) continue;
-		const { rating, ratingSource, positions } = entry;
+		const { rating, ratingSource } = entry;
 		if (!Number.isInteger(rating) || (rating as number) < CAP_FIVE_MIN_RATING || (rating as number) > MAX_RATING) continue;
 		if (!isOneOf(RATING_SOURCES, ratingSource)) continue;
-		if (!Array.isArray(positions) || positions.length === 0 || !positions.every((p) => typeof p === "string")) continue;
+		const positions = Array.isArray(entry.positions) ? nbaPositions(entry.positions) : [];
+		if (positions.length === 0) continue;
 		const first = (player.first_name ?? "").trim();
 		const last = (player.last_name ?? "").trim();
 		const name = `${first} ${last}`.trim();
@@ -55,7 +57,7 @@ export const eligiblePlayers = (
 		rated.push({
 			id: player.id,
 			name,
-			positions: [...positions],
+			positions,
 			rating: rating as number,
 			ratingSource,
 			sortKey: fold(`${last} ${first}`),
@@ -225,7 +227,8 @@ export const toPuzzleView = (puzzle: CapFivePuzzle): CapFivePuzzleView => ({
 	candidates: puzzle.candidates.map((c) => ({
 		id: c.id,
 		name: c.name,
-		positions: [...c.positions],
+		// Days frozen before eligiblePlayers filtered them hold 2K's placeholders.
+		positions: nbaPositions(c.positions),
 		era: c.ratingSource === "current" ? "current" : "legend",
 	})),
 });
@@ -246,7 +249,7 @@ export const scoreLineup = (puzzle: CapFivePuzzle, picks: unknown): CapFiveResul
 		total,
 		busted: total > puzzle.cap,
 		optimal: puzzle.optimal,
-		candidates: puzzle.candidates,
+		candidates: puzzle.candidates.map((c) => ({ ...c, positions: nbaPositions(c.positions) })),
 	};
 };
 

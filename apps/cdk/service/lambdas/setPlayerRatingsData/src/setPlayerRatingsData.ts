@@ -4,6 +4,7 @@ import {
 	GetObjectCommand,
 	PutObjectCommand,
 } from "@aws-sdk/client-s3";
+import { nbaPositions } from "utilities/positions";
 
 const { NBA2K_API_BASE_URL = "", staticDataBucket = "" } = process.env;
 
@@ -299,7 +300,7 @@ export const handler: Handler = async (
 					rating: twoKPlayer.overall,
 					ratingSource: RATING_SOURCE[teamType],
 					slug: twoKPlayer.slug,
-					positions: twoKPlayer.positions,
+					positions: Array.isArray(twoKPlayer.positions) ? nbaPositions(twoKPlayer.positions) : undefined,
 					history,
 				};
 			}
