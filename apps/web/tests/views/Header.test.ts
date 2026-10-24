@@ -39,7 +39,6 @@ import Header from '@/views/Header.vue';
 import Settings from '@/views/Settings.vue';
 import { settingsApi, profileApi } from '@/network/api';
 import { settingsSync } from '@/composables/useSettingsSync';
-import { DAILY_GAMES, ROUTES } from '@/constants/constants';
 import { applyDisplayPreferences, useDisplayPreferences } from '@/composables/useDisplayPreferences';
 
 const STORAGE_KEY = 'nba-display-preferences';
@@ -288,32 +287,52 @@ describe('Header mobile menu', () => {
     };
     const menuIsOpen = () => document.body.querySelector('.mobile-nav') !== null;
 
-    // Every nav route but Login, every daily game, then Login or Settings.
-    const linkCount = ROUTES.filter((route) => route.path !== '/login').length + DAILY_GAMES.length + 1;
+    const sharedLinks = [
+        ['Home', '/'],
+        ['My Teams', '/teams'],
+        ['Team Builder', '/teambuilder'],
+        ['Scores', '/scores'],
+        ['News', '/news'],
+        ['Which Era?', '/daily'],
+        ['Cap Five', '/cap-five'],
+    ];
+    const links = {
+        'signed out': [...sharedLinks, ['Login', '/login']],
+        'signed in': [...sharedLinks, ['Settings', '/settings']],
+    };
+    const tapCases = Object.entries(links).flatMap(([state, list]) =>
+        list.map(([label, path]) => [label, state, path, state === 'signed in'] as const),
+    );
 
+    // A link added to the menu fails here until it is in the table above, so it gets a tap test too.
     it.each([
-        ['signed out', false, 'Login'],
-        ['signed in', true, 'Settings'],
-    ])('closes after tapping any of its links when %s', async (_, signedIn, accountLink) => {
+        ['signed out', false],
+        ['signed in', true],
+    ] as const)('lists exactly the expected links, as plain anchors, when %s', async (state, signedIn) => {
         auth.signedIn = signedIn;
-        await router.push('/teams');
         const header = await mountHeader();
         await openMobileMenu(header);
 
         const anchors = [...document.body.querySelectorAll('.mobile-nav a')];
-        expect(anchors).toHaveLength(linkCount);
-        expect(anchors.at(-1)?.textContent?.trim()).toBe(accountLink);
+        expect(anchors.map((anchor) => [anchor.textContent?.trim(), anchor.getAttribute('href')])).toEqual(
+            links[state],
+        );
         // SheetClose would otherwise put type="button" on each link.
-        expect(anchors.map((anchor) => anchor.getAttribute('type'))).toEqual(Array(linkCount).fill(null));
-        const links = anchors.map((anchor) => [anchor.textContent!.trim(), anchor.getAttribute('href')!]);
+        expect(anchors.map((anchor) => anchor.getAttribute('type'))).toEqual(links[state].map(() => null));
+    });
 
-        for (const [label, href] of links) {
-            if (!menuIsOpen()) await openMobileMenu(header);
-            await tap(label);
+    it.each(tapCases)('closes after tapping %s when %s and goes to %s', async (label, _, path, signedIn) => {
+        auth.signedIn = signedIn;
+        // A page with no menu link, so every tap navigates.
+        await router.push('/t/some-team');
+        const header = await mountHeader();
+        await openMobileMenu(header);
+        expect(menuIsOpen()).toBe(true);
 
-            expect(router.currentRoute.value.fullPath, label).toBe(href);
-            expect(menuIsOpen(), label).toBe(false);
-        }
+        await tap(label);
+
+        expect(router.currentRoute.value.fullPath).toBe(path);
+        expect(menuIsOpen()).toBe(false);
     });
 
     it('closes when the tapped link is the page already open', async () => {
