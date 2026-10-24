@@ -114,7 +114,7 @@ to put classes on.
     `@media (prefers-reduced-motion)`, which ignores the setting. JS motion
     (video, timers, smooth scroll) reads `useReducedMotion()`.
   - A breakpoint that has to follow Text size needs a container query
-    (`@container` + `@min-[56rem]:`, as in `Header.vue`): a media query's
+    (`@container` + `@min-[72rem]:`, as in `Header.vue`): a media query's
     rem is the browser default, not the root font size.
 - Static data (`arenas.json`, `coaches.json`, `execs.json`,
   `currentTeamLogos.json`, `historicalLogos.json`, `historicalJerseys.json`) is imported directly from

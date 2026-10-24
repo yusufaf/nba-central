@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { computed } from 'vue';
-import { RouterLink } from 'vue-router';
+import { RouterLink, useRoute } from 'vue-router';
 import { useLogto } from '@logto/vue';
-import { ROUTES } from '@/constants/constants';
+import { DAILY_GAMES, ROUTES } from '@/constants/constants';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { Separator } from '@/components/ui/separator';
@@ -37,6 +37,12 @@ const displayName = computed(() => currentUser.value?.username ?? 'Account');
 // isAuthenticated flips — the plain route loop has no notion of auth state.
 const navRoutes = computed(() => ROUTES.filter((route) => route.path !== '/login'));
 
+// The Daily trigger is a button, not a link, so it can't get RouterLink's
+// active class: it's underlined by hand while one of its games is open.
+// The matched record's path, so /daily/ and /Cap-Five count too.
+const currentRoute = useRoute();
+const onDailyGame = computed(() => DAILY_GAMES.some((game) => game.path === currentRoute.matched[0]?.path));
+
 // A full load, not a RouterLink, so the logo still resets the app as it
 // always has; BASE_URL keeps a PR preview's logo inside that preview.
 const homeHref = import.meta.env.BASE_URL;
@@ -49,7 +55,8 @@ function handleSignOut() {
 <template>
     <!-- The nav switches to the menu button on the header's width in rem, not a
          viewport breakpoint: a media query's rem ignores the Text size setting,
-         and the full nav needs ~54rem at any size (signed in, with a username). -->
+         and the full nav needs ~71rem at any size (signed in, with a username
+         at its 10rem truncation). Below that its links wrap onto two lines. -->
     <header class="@container bg-primary text-black shadow-lg sticky top-0 z-50">
         <div class="flex items-center px-4 h-16">
             <div class="shrink-0">
@@ -63,13 +70,33 @@ function handleSignOut() {
             </div>
 
             <!-- Desktop Nav -->
-            <nav class="desktop-nav hidden @min-[56rem]:flex flex-1 ml-8">
+            <nav class="desktop-nav hidden @min-[72rem]:flex flex-1 ml-8">
                 <ul>
                     <template v-for="route in navRoutes" :key="route.id">
                         <RouterLink :class="route?.class" :to="route.path">
                             {{ route.name }}
                         </RouterLink>
                     </template>
+                    <DropdownMenu>
+                        <DropdownMenuTrigger as-child>
+                            <button
+                                type="button"
+                                :class="['daily-trigger', { active: onDailyGame }]"
+                                data-testid="daily-trigger"
+                            >
+                                Daily
+                                <ChevronDown class="size-4" />
+                            </button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="start" class="min-w-60">
+                            <DropdownMenuItem v-for="game in DAILY_GAMES" :key="game.path" as-child>
+                                <RouterLink :to="game.path" class="flex flex-col items-start gap-0.5">
+                                    <span class="font-semibold">{{ game.name }}</span>
+                                    <span class="text-xs text-foreground/60">{{ game.blurb }}</span>
+                                </RouterLink>
+                            </DropdownMenuItem>
+                        </DropdownMenuContent>
+                    </DropdownMenu>
                     <DropdownMenu v-if="!isAuthenticated">
                         <DropdownMenuTrigger as-child>
                             <button
@@ -154,7 +181,7 @@ function handleSignOut() {
 
             <!-- Mobile Menu -->
             <Sheet>
-                <SheetTrigger as-child class="@min-[56rem]:hidden ml-auto">
+                <SheetTrigger as-child class="@min-[72rem]:hidden ml-auto">
                     <Button variant="ghost" size="icon" aria-label="Menu" data-testid="mobile-menu-trigger">
                         <Menu class="h-6 w-6" />
                     </Button>
@@ -167,6 +194,15 @@ function handleSignOut() {
                                 :to="route.path"
                             >
                                 {{ route.name }}
+                            </RouterLink>
+                            <Separator />
+                        </template>
+                        <span class="text-[0.6875rem] font-bold uppercase tracking-[0.06em] opacity-60">
+                            Daily
+                        </span>
+                        <template v-for="game in DAILY_GAMES" :key="game.path">
+                            <RouterLink class="text-lg font-semibold" :to="game.path">
+                                {{ game.name }}
                             </RouterLink>
                             <Separator />
                         </template>
@@ -236,6 +272,16 @@ function handleSignOut() {
 }
 
 .desktop-nav a.router-link-exact-active {
+    border-bottom: 0.2rem solid hsl(var(--primary-foreground));
+}
+
+.desktop-nav .daily-trigger {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+}
+
+.desktop-nav .daily-trigger.active {
     border-bottom: 0.2rem solid hsl(var(--primary-foreground));
 }
 

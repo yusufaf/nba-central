@@ -55,18 +55,19 @@ const router = createRouter({
             meta: { indexable: true },
             component: News,
         },
-        // Unlinked and noindex until the 2026-11-06 launch (#172). Lazy, unlike
-        // the rest: a standalone game nobody reaches from another page, so it
-        // stays out of the entry chunk and out of every router import.
+        // The daily games, linked from the header's Daily menu. Lazy, unlike
+        // the rest: a standalone game shares nothing with the other pages, so
+        // it stays out of the entry chunk and out of every router import.
         {
             path: '/daily',
             name: 'dailyEra',
+            meta: { indexable: true },
             component: () => import('@/views/DailyEra.vue'),
         },
-        // Unlinked and noindex until launch (#183), and lazy like /daily.
         {
             path: '/cap-five',
             name: 'capFive',
+            meta: { indexable: true },
             component: () => import('@/views/CapFive.vue'),
         },
         {

@@ -15,6 +15,11 @@ export const ROUTES = [
     { id: 6, name: "Login", path: "/login", class: "login" },
 ];
 
+export const DAILY_GAMES = [
+    { name: "Which Era?", path: "/daily", blurb: "Guess the season of a classic jersey" },
+    { name: "Cap Five", path: "/cap-five", blurb: "Pick five players under the rating cap" },
+];
+
 export const TYPE_WRITER_PROPS = {
     closingText: "team",
     leadInText: "Build the",

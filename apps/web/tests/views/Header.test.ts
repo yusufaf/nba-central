@@ -47,7 +47,8 @@ const root = document.documentElement;
 
 const router = createRouter({
     history: createMemoryHistory(),
-    routes: [{ path: '/:pathMatch(.*)*', component: { template: '<div />' } }],
+    // The daily games get their own records: the Daily trigger matches on them.
+    routes: ['/daily', '/cap-five', '/:pathMatch(.*)*'].map((path) => ({ path, component: { template: '<div />' } })),
 });
 
 let scope: EffectScope | null = null;
@@ -238,5 +239,39 @@ describe('Header in a PR preview build', () => {
         await flushPromises();
         expect(document.body.querySelector('.mobile-nav .login')).toBeNull();
         expect(body().byText('.mobile-nav span', 'Signed in as')).toBeUndefined();
+    });
+});
+
+describe('Header Daily menu', () => {
+    it('links each daily game from the desktop menu', async () => {
+        const header = await mountHeader();
+        await openMenu(header.find('[data-testid="daily-trigger"]').element);
+
+        const links = [...document.body.querySelectorAll<HTMLAnchorElement>('[role="menuitem"]')];
+        expect(links.map((link) => [link.querySelector('span')?.textContent, link.getAttribute('href')])).toEqual([
+            ['Which Era?', '/daily'],
+            ['Cap Five', '/cap-five'],
+        ]);
+    });
+
+    it('lists both games in the mobile menu', async () => {
+        const header = await mountHeader();
+        header.find<HTMLElement>('[data-testid="mobile-menu-trigger"]').element.click();
+        await flushPromises();
+
+        expect(body().byText('.mobile-nav a', 'Which Era?')?.getAttribute('href')).toBe('/daily');
+        expect(body().byText('.mobile-nav a', 'Cap Five')?.getAttribute('href')).toBe('/cap-five');
+    });
+
+    it('underlines the trigger only while a daily game is open', async () => {
+        await router.push('/cap-five');
+        const header = await mountHeader();
+        expect(header.find('[data-testid="daily-trigger"]').classes()).toContain('active');
+
+        await router.push('/scores');
+        expect(header.find('[data-testid="daily-trigger"]').classes()).not.toContain('active');
+
+        await router.push('/Daily/');
+        expect(header.find('[data-testid="daily-trigger"]').classes()).toContain('active');
     });
 });
