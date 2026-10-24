@@ -4,6 +4,7 @@ import { Check, Star } from 'lucide-vue-next';
 import { Badge } from '@/components/ui/badge';
 import RatingChip from '@/components/RatingChip.vue';
 import { CAP_FIVE_LINEUP_SIZE } from '@/constants/capFive';
+import { nbaPositions } from '@/constants/positions';
 import type { CapFiveCandidateView, CapFiveResult } from '@/models/api';
 
 const props = defineProps<{
@@ -52,8 +53,11 @@ const isPicked = (id: string) => props.picks.includes(id);
                         />
                     </span>
                     <span class="flex flex-wrap gap-1">
-                        <Badge v-for="position in candidate.positions" :key="position" variant="secondary">{{ position }}</Badge>
-                        <Badge variant="outline">{{ candidate.era === 'current' ? 'Current' : 'Legend' }}</Badge>
+                        <Badge v-for="position in nbaPositions(candidate.positions)" :key="position" variant="secondary">{{ position }}</Badge>
+                        <!-- "legend" on the wire is a 2K All-Time or Classic team rating:
+                             "Classic" is 2K's own word, and unlike "Retired" it's
+                             still true of an active player missing from 2K's rosters. -->
+                        <Badge variant="outline">{{ candidate.era === 'current' ? 'Current' : 'Classic' }}</Badge>
                     </span>
                 </span>
                 <RatingChip v-if="result && ratingOf.has(candidate.id)" :rating="ratingOf.get(candidate.id)!" />

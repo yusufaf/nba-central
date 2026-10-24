@@ -10,6 +10,16 @@ const BBREF_POSITION_EXPANSION: Record<string, string[]> = {
     C: ['C'],
 };
 
+export const NBA_POSITIONS = ['PG', 'SG', 'SF', 'PF', 'C'] as const;
+
+/**
+ * 2K's API pads some positions lists with values that aren't positions ("N",
+ * "S"). apps/cdk drops them now, but a cached ratings file or a stored Cap Five
+ * result from before that can still hold them.
+ */
+export const nbaPositions = (positions: readonly string[]): string[] =>
+    positions.filter((p) => (NBA_POSITIONS as readonly string[]).includes(p));
+
 export const expandPosition = (position?: string): string[] => {
     const parts = (position || '').toUpperCase().split('-');
     const expanded = new Set<string>();
@@ -25,8 +35,7 @@ export const playsPosition = (
     player: { position?: string; positions?: string[] },
     position: string,
 ): boolean => {
-    const positions = player.positions?.length
-        ? player.positions
-        : expandPosition(player.position);
+    const specific = nbaPositions(player.positions ?? []);
+    const positions = specific.length ? specific : expandPosition(player.position);
     return positions.includes(position);
 };

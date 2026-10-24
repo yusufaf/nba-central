@@ -173,3 +173,12 @@ export const capFiveShareText = (result: CapFiveResult, streak: number | null, u
 };
 
 export const capFiveShareUrl = (): string => appUrl("/cap-five");
+
+/** "Karl-Anthony Towns" to "K. Towns", for the lineup's narrow slots. */
+export const capFiveShortName = (name: string): string => {
+    const [first, ...rest] = name.normalize("NFC").trim().split(/\s+/);
+    if (!rest.length) return first;
+    // The first grapheme, so an accent or an astral letter stays whole.
+    const [initial] = new Intl.Segmenter(undefined, { granularity: "grapheme" }).segment(first);
+    return `${initial.segment}. ${rest.join(" ")}`;
+};

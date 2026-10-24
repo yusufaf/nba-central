@@ -91,6 +91,42 @@ describe('CapFive', () => {
         expect(w.get('[data-testid="cap-five-score"]').text()).toContain('412 / 415');
     });
 
+    it("shows only real positions, and a non-current rating as Classic", async () => {
+        // A day frozen before apps/cdk filtered 2K's placeholder positions.
+        const [first, ...rest] = puzzleView.candidates;
+        getPuzzle.mockResolvedValue({
+            success: true,
+            data: { ...puzzleView, candidates: [{ ...first, positions: ['PF', 'N'] }, ...rest] },
+        });
+        const w = await mountPage();
+        const allen = candidateButton(w, 'Ray Allen');
+        expect(allen.findAll('.flex-wrap > *').map((b) => b.text())).toEqual(['PF', 'Classic']);
+        expect(candidateButton(w, 'Stephen Curry').text()).toContain('Current');
+        expect(w.text()).not.toContain('Legend');
+    });
+
+    it('names each pick in the lineup, in full as a row and short as a column', async () => {
+        const w = await mountPage();
+        await candidateButton(w, 'Dikembe Mutombo').trigger('click');
+        const slot = w.findAll('[data-testid="cap-five-slot"]')[0];
+        expect(slot.attributes('title')).toBe('Dikembe Mutombo');
+        expect(slot.findAll('span').map((s) => s.text())).toEqual(['Dikembe Mutombo', 'D. Mutombo']);
+    });
+
+    it('keeps full names in the lineup when two picks would share a short one', async () => {
+        getPuzzle.mockResolvedValue({
+            success: true,
+            data: {
+                ...puzzleView,
+                candidates: puzzleView.candidates.map((c) => (c.id === 'c08' ? { ...c, name: 'Kevin Lowry' } : c)),
+            },
+        });
+        const w = await mountPage();
+        for (const name of ['Kyle Lowry', 'Kevin Lowry', 'Tim Duncan']) await candidateButton(w, name).trigger('click');
+        const shorts = w.findAll('[data-testid="cap-five-slot"]').slice(0, 3).map((s) => s.findAll('span')[1].text());
+        expect(shorts).toEqual(['Kyle Lowry', 'Kevin Lowry', 'T. Duncan']);
+    });
+
     it('says when there is no puzzle today', async () => {
         getPuzzle.mockRejectedValue(Object.assign(new Error('Gone'), { response: { status: 410 } }));
         expect((await mountPage()).text()).toContain('No puzzle today');
