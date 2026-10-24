@@ -352,6 +352,8 @@ export interface PlayerSeasonStats {
 
 export interface GetPlayerStatsResponse {
     data: PlayerSeasonStats[];
+    /** False when the stats snapshot has no career for this player yet. */
+    available?: boolean;
     rating?: number;
     ratingSource?: RatingSource;
     /** Overall per NBA 2K release, newest first. Current players only. */
