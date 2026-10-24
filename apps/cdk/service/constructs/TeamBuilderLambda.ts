@@ -1,5 +1,5 @@
 import { Duration } from "aws-cdk-lib";
-import { Rule, Schedule } from "aws-cdk-lib/aws-events";
+import { CronOptions, Rule, Schedule } from "aws-cdk-lib/aws-events";
 import { LambdaFunction } from "aws-cdk-lib/aws-events-targets";
 import { LayerVersion, Runtime } from "aws-cdk-lib/aws-lambda";
 import {
@@ -11,6 +11,11 @@ import path from "path";
 import { ExtendedStackProps } from "../../models/stack";
 import { layerARNLookup } from "../../resources/lambda";
 import { getRole } from "../../resources/roles";
+
+export type LambdaSchedule = { rate: Duration } | { cron: CronOptions };
+
+export const toSchedule = (schedule: LambdaSchedule): Schedule =>
+	"cron" in schedule ? Schedule.cron(schedule.cron) : Schedule.rate(schedule.rate);
 
 interface TeamBuilderLambdaConfig {
 	// Required configurations
@@ -31,9 +36,8 @@ interface TeamBuilderLambdaConfig {
 	schedule?: {
 		description?: string;
 		enabled: boolean;
-		rate: Duration;
 		ruleName?: string;
-	};
+	} & LambdaSchedule;
 
 	// Layer configuration
 	layers?: string[];
@@ -135,7 +139,7 @@ export class TeamBuilderLambda extends Construct {
 						`${config.functionName}-schedule`,
 						true,
 					), 
-				schedule: Schedule.rate(config.schedule.rate),
+				schedule: toSchedule(config.schedule),
 				targets: [new LambdaFunction(this.lambdaFunction)],
 			});
 		}
