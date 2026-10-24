@@ -5,7 +5,7 @@ coach, a GM, and an arena.
 
 **Try it: [nba.yusufaf.dev](https://nba.yusufaf.dev)**
 
-![nba-central home page](./apps/web/public/og-image.jpg)
+![nba-central: Build the GOAT team](./apps/web/public/og-image-home.jpg)
 
 ## Features
 

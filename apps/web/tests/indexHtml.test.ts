@@ -89,3 +89,41 @@ describe('index.html first-paint text size', () => {
         }
     });
 });
+
+// Width and height from a JPEG's start-of-frame segment. Markers are 0xFF
+// plus a code, optionally after 0xFF fill bytes; every segment before the
+// frame carries a 2-byte big-endian length that counts itself.
+const jpegSize = (buf: Buffer): [number, number] => {
+    let i = 2;
+    while (i < buf.length) {
+        if (buf[i] !== 0xff) throw new Error(`no JPEG marker at byte ${i}`);
+        while (buf[i] === 0xff) i++;
+        const marker = buf[i];
+        if (marker >= 0xc0 && marker <= 0xcf && ![0xc4, 0xc8, 0xcc].includes(marker)) {
+            return [buf.readUInt16BE(i + 6), buf.readUInt16BE(i + 4)];
+        }
+        i += 1 + buf.readUInt16BE(i + 1);
+    }
+    throw new Error('no JPEG start-of-frame segment');
+};
+
+const meta = (key: string) => new RegExp(`<meta (?:property|name)="${key}" content="([^"]*)"`).exec(head)?.[1];
+
+describe('index.html share image', () => {
+    it('gives og and twitter the same rendered home image', () => {
+        const image = meta('og:image')!;
+        expect(meta('twitter:image')).toBe(image);
+        const url = new URL(image);
+        expect(url.origin).toBe('https://nba.yusufaf.dev');
+        expect(url.pathname).toBe('/og-image-home.jpg');
+        expect(meta('og:image:alt')).toContain('Build the GOAT team');
+    });
+
+    it('ships a JPEG from public/ at the size the head declares', () => {
+        const jpg = readFileSync(resolve(__dirname, '../public', new URL(meta('og:image')!).pathname.slice(1)));
+        expect(jpg.subarray(0, 3)).toEqual(Buffer.from([0xff, 0xd8, 0xff]));
+        const declared = [Number(meta('og:image:width')), Number(meta('og:image:height'))];
+        expect(declared).toEqual([1200, 630]);
+        expect(jpegSize(jpg)).toEqual(declared);
+    });
+});

@@ -1,0 +1,20 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>nba-central link preview</title>
+</head>
+<body style="margin: 0">
+    <!-- Dev-server only: scripts/render-og-image.mjs screenshots this page.
+         vite build bundles index.html alone, so it never ships. -->
+    <div id="app"></div>
+    <script type="module">
+        import '@fontsource-variable/inter';
+        import '@/assets/main.css';
+        import { createApp } from 'vue';
+        import HomePreviewCard from '@/components/Home/HomePreviewCard.vue';
+
+        createApp(HomePreviewCard).mount('#app');
+    </script>
+</body>
+</html>

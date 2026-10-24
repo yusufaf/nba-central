@@ -1,10 +1,11 @@
 #!/usr/bin/env node
 /**
- * Renders every daily game's link-preview image: public/og-image-daily.png
- * from src/components/DailyEra/DailyEraPreviewCard.vue, and
+ * Renders every link-preview image: public/og-image-home.jpg from
+ * src/components/Home/HomePreviewCard.vue, public/og-image-daily.png from
+ * src/components/DailyEra/DailyEraPreviewCard.vue, and
  * public/og-image-cap-five.png from src/components/CapFive/CapFivePreviewCard.vue.
- * Run with `pnpm render:og` after changing a card, and commit the PNG: the
- * card and this script are its source, the PNG is what ships. A new game
+ * Run with `pnpm render:og` after changing a card, and commit the image: the
+ * card and this script are its source, the image is what ships. A new card
  * needs a card, a dev entry under scripts/og/ and a TARGETS row.
  *
  * Starts Vite and screenshots each card from its scripts/og/ page in
@@ -20,6 +21,7 @@ import { createServer } from 'vite';
 
 const ROOT = fileURLToPath(new URL('..', import.meta.url));
 const TARGETS = [
+    { entry: 'scripts/og/home.html', out: fileURLToPath(new URL('../public/og-image-home.jpg', import.meta.url)), quality: 85 },
     { entry: 'scripts/og/daily-era.html', out: fileURLToPath(new URL('../public/og-image-daily.png', import.meta.url)) },
     { entry: 'scripts/og/cap-five.html', out: fileURLToPath(new URL('../public/og-image-cap-five.png', import.meta.url)) },
 ];
@@ -36,7 +38,7 @@ try {
     await server.listen();
     browser = await chromium.launch();
     const page = await browser.newPage({ viewport: { width: 1200, height: 630 }, deviceScaleFactor: 1 });
-    for (const { entry, out } of TARGETS) {
+    for (const { entry, out, quality } of TARGETS) {
         await page.goto(new URL(entry, server.resolvedUrls.local[0]).href);
         const card = page.getByTestId('og-card');
         await card.waitFor();
@@ -51,7 +53,11 @@ try {
         });
         if (!interLoaded) throw new Error(`Inter did not load for ${entry}; the image would use a fallback font`);
 
-        await card.screenshot({ path: out, animations: 'disabled' });
+        // A screenshot taken before the poster decodes would ship a card with
+        // no photo; decode() rejects on a broken image, failing the run.
+        await card.locator('img').evaluateAll((imgs) => Promise.all(imgs.map((img) => img.decode())));
+
+        await card.screenshot({ path: out, quality, animations: 'disabled' });
         console.log(`Wrote ${out}`);
     }
 } catch (err) {
