@@ -25,7 +25,7 @@ pnpm --filter web build         # production build
 pnpm --filter web type-check    # vue-tsc
 pnpm --filter web check:styles  # design-system guard
 pnpm --filter web lint          # ESLint
-pnpm --filter web render:og     # re-render public/og-image-daily.png + og-image-cap-five.png (local, Playwright Chromium)
+pnpm --filter web render:og     # re-render the link previews: public/og-image-home.jpg, og-image-daily.png, og-image-cap-five.png (local, Playwright Chromium)
 
 pnpm --filter cdk build         # tsc
 pnpm --filter cdk test          # vitest
