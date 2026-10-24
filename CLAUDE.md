@@ -100,7 +100,10 @@ Entry point: `bin/team-builder-cdk.ts` loads env vars from dotenv.
   settings, share cards, avatar, arena images). Keyed only by the authorizer's sub; the
   Logto account is never touched
 - S3 multipart upload flow: `initiateMultipartUpload`, `getMultipartSignedUploadUrls`, `completeMultipartUpload`, `deleteFile`
-- `getPlayers`, `getPlayerStats`: player data + 2K ratings, merged from `players.json` and `player-ratings.json`
+- `getPlayers`: player data + 2K ratings, merged from `players.json` and `player-ratings.json`
+- `getPlayerStats`: one player's career from the stats snapshot (main table,
+  PK `PLAYERSTATS`) plus their 2K rating; never calls Basketball-Reference,
+  and answers `available: false` for a player the snapshot hasn't reached
 - `getNews`: reads news articles fetched by `fetchNewsCron`
 - `sendFeedback`: emails the site owner via SES (sending identity is in
   us-east-1, not this stack's own us-west-2 — see apps/cdk/CLAUDE.md)
@@ -128,7 +131,19 @@ Entry point: `bin/team-builder-cdk.ts` loads env vars from dotenv.
 **Data ETL Lambdas** (EventBridge triggers):
 - `setPlayersData`, `setPlayerRatingsData`: scrape Basketball-Reference / api.nba2kapi.com;
   `setPlayersData` also adds the latest draft class (same BBRef ids, no bio
-  fields) so rookies are searchable before their first game
+  fields) so rookies are searchable before their first game. `setPlayersData`
+  runs Mondays 10:14 UTC, in the gap between two snapshot runs; test-invoke
+  it by hand only between :13 and :19 (or :33-:39, :53-:59), since it takes
+  no lock
+- `setPlayerStatsData` (every 20 min): scrapes the Basketball-Reference
+  careers that are due into that snapshot, ~17 requests a minute, and no
+  request past 12 minutes into its :00/:20/:40 slot: missing players first,
+  current players weekly, everyone else every 90 days. A 429/403 or a page
+  without player info pauses it for a day (one of those two from a player
+  whose last error was also one of them counts as an ordinary failure,
+  retried daily; a 429 always pauses), and only one run goes at a
+  time; it never stores a career that fails validation or has fewer seasons
+  than the stored one
 - `fetchNewsCron`: pulls ESPN, Bluesky, CBS Sports, and RealGM into the news table
 - `publishCapFive` (daily): freezes every playable Cap Five date, up to a
   week ahead, from the current `player-ratings.json` into its own
