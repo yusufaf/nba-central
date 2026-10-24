@@ -12,26 +12,30 @@ export const DAILY_ERA_HEAD = {
     // Rendered from DailyEraPreviewCard.vue by `pnpm --filter web render:og`.
     // The same every day, so it never shows a puzzle.
     image: "https://nba.yusufaf.dev/og-image-daily.png",
+    url: "https://nba.yusufaf.dev/daily",
     imageAlt: "Which Era?: a jersey outline with a question mark, and a row of guess tiles",
 } as const;
 
 // The shell's site-wide defaults, as apps/cdk/utilities/og-html.ts strips
-// them for /t/*, plus a preview build's robots tag. og:site_name stays.
+// them for /t/*. og:site_name stays, and so does a preview build's robots
+// tag: GitHub Pages serves daily.html as a file, and it must stay noindex.
 const SHELL_DEFAULT_TAGS =
-    /<(?:meta\s+(?:property="og:(?!site_name")[^"]*"|name="(?:twitter:[^"]*|description|robots)")|link\s+rel="canonical")[^>]*>\s*/g;
+    /<(?:meta\s+(?:property="og:(?!site_name")[^"]*"|name="(?:twitter:[^"]*|description)")|link\s+rel="canonical")[^>]*>\s*/g;
 
 export const dailyEraHtml = (shell: string): string => {
     if (!/<meta\s+property="og:title"/.test(shell) || !shell.includes("</head>")) {
         // A changed index.html must fail the build, not ship two sets of tags.
         throw new Error("dailyEraHtml: the shell has no og:title or </head> to rewrite");
     }
-    const { title, description, image, imageAlt } = DAILY_ERA_HEAD;
+    const { title, description, image, imageAlt, url } = DAILY_ERA_HEAD;
     // The <title> stays the shell's: the app never sets one per route, so a
-    // Which Era? title would stick in the tab after leaving the game. No
-    // og:url either, unlike og-html.ts's /t/* pages: an archive link
-    // (/daily?date=...) gets this page too, and some unfurlers would send it
-    // to the og:url instead.
+    // Which Era? title would stick in the tab after leaving the game. An
+    // archive link (/daily?date=...) gets this page too: the canonical folds
+    // every archive day into /daily for crawlers that don't run the app, but
+    // there's no og:url, unlike og-html.ts's /t/* pages, because some
+    // unfurlers would send the archive link to it instead.
     const tags = [
+        `<link rel="canonical" href="${url}">`,
         `<meta name="description" content="${description}">`,
         `<meta property="og:type" content="website">`,
         `<meta property="og:title" content="${title}">`,
@@ -44,9 +48,6 @@ export const dailyEraHtml = (shell: string): string => {
         `<meta name="twitter:title" content="${title}">`,
         `<meta name="twitter:description" content="${description}">`,
         `<meta name="twitter:image" content="${image}">`,
-        // Until launch (#172): drop this, and add the route's `indexable` and
-        // a sitemap entry, together.
-        `<meta name="robots" content="noindex">`,
     ];
     return shell
         .replace(SHELL_DEFAULT_TAGS, "")

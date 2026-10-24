@@ -59,13 +59,15 @@ describe('dailyEraHtml', () => {
         expect(head).toContain(`<meta property="og:image:alt" content="${DAILY_ERA_HEAD.imageAlt}">`);
     });
 
-    it('stays noindex, with no canonical, until launch', () => {
-        expect(head).not.toContain('rel="canonical"');
-        expect(count(head, /name="robots"/)).toBe(1);
-        expect(head).toContain('<meta name="robots" content="noindex">');
-        // A preview build's shell already carries one.
+    it('is indexable, with /daily as the canonical, and keeps a preview build noindex', () => {
+        // Every /daily?date=... archive link gets this same page.
+        expect(count(head, /rel="canonical"/)).toBe(1);
+        expect(head).toContain('<link rel="canonical" href="https://nba.yusufaf.dev/daily">');
+        expect(head).not.toContain('name="robots"');
         const preview = shell.replace('</head>', '<meta name="robots" content="noindex">\n</head>');
-        expect(count(dailyEraHtml(preview), /name="robots"/)).toBe(1);
+        const previewHead = dailyEraHtml(preview);
+        expect(count(previewHead, /name="robots"/)).toBe(1);
+        expect(previewHead).toContain('<meta name="robots" content="noindex">');
     });
 
     it('keeps the rest of the shell as it is', () => {
