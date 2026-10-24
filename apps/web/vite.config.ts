@@ -3,6 +3,7 @@ import { fileURLToPath, URL } from "node:url";
 import { defineConfig, type Plugin } from "vite";
 import vue from "@vitejs/plugin-vue";
 import tailwindcss from "@tailwindcss/vite";
+import { capFiveHtml } from "./build/capFiveHtml.ts";
 import { dailyEraHtml } from "./build/dailyEraHtml.ts";
 
 const isPreview = process.env.VITE_PREVIEW === "1";
@@ -24,18 +25,26 @@ const previewHtml = (): Plugin => ({
     },
 });
 
-// Writes dist/daily.html, the shell with /daily's own link-preview tags.
-// enforce: "post" runs it after Vite has emitted the final index.html, so the
-// two can't drift: same hashed assets, same theme script.
-const dailyEraPage = (): Plugin => ({
-    name: "daily-era-page",
+// Each daily game's copy of the shell, with its own link-preview tags.
+const GAME_PAGES: Record<string, (shell: string) => string> = {
+    "daily.html": dailyEraHtml,
+    "cap-five.html": capFiveHtml,
+};
+
+// Writes GAME_PAGES into dist/. enforce: "post" runs it after Vite has
+// emitted the final index.html, so they can't drift: same hashed assets,
+// same theme script, same preview noindex.
+const gamePages = (): Plugin => ({
+    name: "game-pages",
     apply: "build",
     enforce: "post",
     generateBundle(_, bundle) {
         const shell = bundle["index.html"];
-        if (shell?.type !== "asset") this.error("daily-era-page: no index.html in the bundle");
+        if (shell?.type !== "asset") this.error("game-pages: no index.html in the bundle");
         const html = typeof shell.source === "string" ? shell.source : new TextDecoder().decode(shell.source);
-        this.emitFile({ type: "asset", fileName: "daily.html", source: dailyEraHtml(html) });
+        for (const [fileName, build] of Object.entries(GAME_PAGES)) {
+            this.emitFile({ type: "asset", fileName, source: build(html) });
+        }
     },
 });
 
@@ -56,7 +65,7 @@ export default defineConfig({
         //   }
         // }
     },
-    plugins: [vue(), tailwindcss(), ...(isPreview ? [previewHtml()] : []), dailyEraPage()],
+    plugins: [vue(), tailwindcss(), ...(isPreview ? [previewHtml()] : []), gamePages()],
     resolve: {
         alias: {
             "@": fileURLToPath(new URL("./src", import.meta.url)),
