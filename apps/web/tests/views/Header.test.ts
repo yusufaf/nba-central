@@ -39,6 +39,7 @@ import Header from '@/views/Header.vue';
 import Settings from '@/views/Settings.vue';
 import { settingsApi, profileApi } from '@/network/api';
 import { settingsSync } from '@/composables/useSettingsSync';
+import { DAILY_GAMES, ROUTES } from '@/constants/constants';
 import { applyDisplayPreferences, useDisplayPreferences } from '@/composables/useDisplayPreferences';
 
 const STORAGE_KEY = 'nba-display-preferences';
@@ -287,22 +288,32 @@ describe('Header mobile menu', () => {
     };
     const menuIsOpen = () => document.body.querySelector('.mobile-nav') !== null;
 
+    // Every nav route but Login, every daily game, then Login or Settings.
+    const linkCount = ROUTES.filter((route) => route.path !== '/login').length + DAILY_GAMES.length + 1;
+
     it.each([
-        ['Home', '/'],
-        ['Scores', '/scores'],
-        ['Which Era?', '/daily'],
-        ['Cap Five', '/cap-five'],
-        ['Login', '/login'],
-    ])('closes after tapping %s and goes to %s', async (label, path) => {
+        ['signed out', false, 'Login'],
+        ['signed in', true, 'Settings'],
+    ])('closes after tapping any of its links when %s', async (_, signedIn, accountLink) => {
+        auth.signedIn = signedIn;
         await router.push('/teams');
         const header = await mountHeader();
         await openMobileMenu(header);
-        expect(menuIsOpen()).toBe(true);
 
-        await tap(label);
+        const anchors = [...document.body.querySelectorAll('.mobile-nav a')];
+        expect(anchors).toHaveLength(linkCount);
+        expect(anchors.at(-1)?.textContent?.trim()).toBe(accountLink);
+        // SheetClose would otherwise put type="button" on each link.
+        expect(anchors.map((anchor) => anchor.getAttribute('type'))).toEqual(Array(linkCount).fill(null));
+        const links = anchors.map((anchor) => [anchor.textContent!.trim(), anchor.getAttribute('href')!]);
 
-        expect(router.currentRoute.value.path).toBe(path);
-        expect(menuIsOpen()).toBe(false);
+        for (const [label, href] of links) {
+            if (!menuIsOpen()) await openMobileMenu(header);
+            await tap(label);
+
+            expect(router.currentRoute.value.fullPath, label).toBe(href);
+            expect(menuIsOpen(), label).toBe(false);
+        }
     });
 
     it('closes when the tapped link is the page already open', async () => {
@@ -316,18 +327,6 @@ describe('Header mobile menu', () => {
         expect(menuIsOpen()).toBe(false);
     });
 
-    it('closes after tapping Settings when signed in', async () => {
-        auth.signedIn = true;
-        await router.push('/teams');
-        const header = await mountHeader();
-        await openMobileMenu(header);
-
-        await tap('Settings');
-
-        expect(router.currentRoute.value.path).toBe('/settings');
-        expect(menuIsOpen()).toBe(false);
-    });
-
     it('stays open while picking a theme', async () => {
         await router.push('/teams');
         const header = await mountHeader();
@@ -337,20 +336,5 @@ describe('Header mobile menu', () => {
         await flushPromises();
 
         expect(menuIsOpen()).toBe(true);
-    });
-
-    it.each([
-        ['signed out', false],
-        ['signed in', true],
-    ])('renders its links as plain anchors when %s', async (_, signedIn) => {
-        auth.signedIn = signedIn;
-        await router.push('/teams');
-        const header = await mountHeader();
-        await openMobileMenu(header);
-
-        // Five nav routes, two daily games, then Login or Settings.
-        const links = [...document.body.querySelectorAll('.mobile-nav a')];
-        expect(links).toHaveLength(8);
-        expect(links.map((link) => link.getAttribute('type'))).toEqual(Array(8).fill(null));
     });
 });
