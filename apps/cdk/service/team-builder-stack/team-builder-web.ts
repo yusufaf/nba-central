@@ -2,6 +2,7 @@ import { Duration, RemovalPolicy } from "aws-cdk-lib";
 import { Bucket, BlockPublicAccess } from "aws-cdk-lib/aws-s3";
 import {
 	AllowedMethods,
+	BehaviorOptions,
 	CacheCookieBehavior,
 	CacheHeaderBehavior,
 	CachePolicy,
@@ -23,10 +24,18 @@ import { Construct } from "constructs";
 import { ExtendedStackProps } from "models/stack";
 import { WEB_DOMAIN_NAME } from "../../constants";
 
-// /daily gets its own copy of the SPA shell, apps/web's build/dailyEraHtml.ts,
-// so a pasted link unfurls as the game. Exported for the test.
-export const DAILY_PAGE_FUNCTION_CODE =
-	'function handler(event) { var request = event.request; request.uri = "/daily.html"; return request; }';
+// Each daily game's path and the page it's served from: its own copy of the
+// SPA shell (apps/web's build/gamePageHtml.ts), so a pasted link unfurls as
+// the game. Each path gets an exact-path behavior below, and the function
+// rewrites it; any other request passes through untouched. Exported for the
+// test.
+export const GAME_PAGES: Readonly<Record<string, string>> = {
+	"/daily": "/daily.html",
+	"/cap-five": "/cap-five.html",
+};
+export const GAME_PAGES_FUNCTION_CODE =
+	`var PAGES = ${JSON.stringify(GAME_PAGES)}; ` +
+	"function handler(event) { var request = event.request; request.uri = PAGES[request.uri] || request.uri; return request; }";
 
 export interface TeamBuilderWebProps extends ExtendedStackProps {
 	// Regional domain name of the production HttpApi (no scheme, no path),
@@ -107,13 +116,23 @@ export class TeamBuilderWeb extends Construct {
 			enableAcceptEncodingBrotli: true,
 		});
 
-		const dailyPageNameAndId = `${appName}-${deploymentType}-daily-page`;
-		const dailyPageFunction = new CloudFrontFunction(this, dailyPageNameAndId, {
-			functionName: dailyPageNameAndId,
-			code: FunctionCode.fromInline(DAILY_PAGE_FUNCTION_CODE),
+		// Still named daily-page from when it served /daily alone: renaming it
+		// would replace the Function the live distribution uses.
+		const gamePagesNameAndId = `${appName}-${deploymentType}-daily-page`;
+		const gamePagesFunction = new CloudFrontFunction(this, gamePagesNameAndId, {
+			functionName: gamePagesNameAndId,
+			code: FunctionCode.fromInline(GAME_PAGES_FUNCTION_CODE),
 			runtime: FunctionRuntime.JS_2_0,
-			comment: "Serves /daily from daily.html so link previews get its OG tags",
+			comment: "Serves /daily and /cap-five from their own HTML so link previews get their OG tags",
 		});
+		const gamePageBehavior: BehaviorOptions = {
+			origin: s3Origin,
+			viewerProtocolPolicy: ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
+			cachePolicy: CachePolicy.CACHING_OPTIMIZED,
+			functionAssociations: [
+				{ function: gamePagesFunction, eventType: FunctionEventType.VIEWER_REQUEST },
+			],
+		};
 
 		const certificateNameAndId = `${appName}-${deploymentType}-web-cert`;
 		const certificate = Certificate.fromCertificateArn(
@@ -162,19 +181,13 @@ export class TeamBuilderWeb extends Construct {
 					// the site itself loaded fine.
 					originRequestPolicy: OriginRequestPolicy.ALL_VIEWER_EXCEPT_HOST_HEADER,
 				},
-				// Exact path: /daily?date=... matches too, since the query isn't
-				// part of the match. The browser's URL stays /daily, so the SPA
-				// boots on its route. Before the first web deploy with daily.html,
-				// S3 answers 403 and errorResponses serve index.html, so either
+				// One per game page, exact path: /daily?date=... matches too,
+				// since the query isn't part of the match. The browser's URL
+				// stays /daily, so the SPA boots on its route. Before the first
+				// web deploy with a game's page (daily.html, cap-five.html), S3
+				// answers 403 and errorResponses serve index.html, so either
 				// deploy can go first.
-				"/daily": {
-					origin: s3Origin,
-					viewerProtocolPolicy: ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
-					cachePolicy: CachePolicy.CACHING_OPTIMIZED,
-					functionAssociations: [
-						{ function: dailyPageFunction, eventType: FunctionEventType.VIEWER_REQUEST },
-					],
-				},
+				...Object.fromEntries(Object.keys(GAME_PAGES).map((path) => [path, gamePageBehavior])),
 				// Public team pages. The Lambda returns index.html with OG tags
 				// injected, so crawlers unfurl a published team; the browser
 				// then boots the SPA from that same shell. Uncached at the edge
