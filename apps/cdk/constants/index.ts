@@ -18,8 +18,9 @@ export const ESPN_NEWS_URL = `${ESPN_API_BASE_URL}/news`;
 
 // Basketball-Reference — free, complete all-time history for both the player
 // pool (A-Z index pages) and per-player career averages (per_game_stats table).
-// Scraped via the node-fetch_cheerio layer; cached heavily to respect the
-// 20 req/min limit. Self-consistent ids (the BBRef player id, e.g. "jamesle01").
+// Scraped only by scheduled Lambdas (setPlayersData, setPlayerStatsData) via
+// the node-fetch_cheerio layer, paced under its 20 req/min limit; no user
+// request reaches it. Self-consistent ids (the BBRef player id, e.g. "jamesle01").
 export const BBREF_BASE_URL = "https://www.basketball-reference.com";
 
 // NBA 2K player ratings. 2kratings.com itself returns 403 to non-browser
