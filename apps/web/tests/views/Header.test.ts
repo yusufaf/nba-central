@@ -292,6 +292,7 @@ describe('Header mobile menu', () => {
         ['My Teams', '/teams'],
         ['Team Builder', '/teambuilder'],
         ['Scores', '/scores'],
+        ['Standings', '/standings'],
         ['News', '/news'],
         ['Which Era?', '/daily'],
         ['Cap Five', '/cap-five'],

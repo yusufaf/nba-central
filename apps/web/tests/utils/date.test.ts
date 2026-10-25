@@ -2,6 +2,7 @@ import { describe, it, expect, vi, afterEach } from "vitest";
 import {
     formatDateForEspn,
     espnGameDay,
+    espnGameWeekday,
     toIsoDate,
     parseIsoDate,
     addDays,
@@ -20,6 +21,17 @@ describe("formatDateForEspn", () => {
 
     it("pads single-digit months and days", () => {
         expect(formatDateForEspn(new Date(2026, 0, 5))).toBe("20260105");
+    });
+});
+
+describe("espnGameWeekday", () => {
+    it("names the Eastern weekday of a game that is already Tuesday in UTC", () => {
+        expect(espnGameWeekday("2026-10-27T00:00:00Z")).toBe("Mon");
+        expect(espnGameWeekday("2026-10-27T00:00Z")).toBe("Mon");
+    });
+
+    it("is empty for a date that doesn't parse, like espnGameDay", () => {
+        expect(espnGameWeekday("not a date")).toBe("");
     });
 });
 

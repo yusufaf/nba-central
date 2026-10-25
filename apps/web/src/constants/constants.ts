@@ -11,6 +11,7 @@ export const ROUTES = [
         title: "Team Builder",
     },
     { id: 4, name: "Scores", path: "/scores", title: "NBA Scoreboard" },
+    { id: 7, name: "Standings", path: "/standings", title: "NBA Standings" },
     { id: 5, name: "News", path: "/news", title: "NBA News" },
     { id: 6, name: "Login", path: "/login", class: "login" },
 ];

@@ -182,7 +182,7 @@ For anything touching the UI, read `apps/web/CLAUDE.md` and
 and the constraints enforced by `pnpm --filter web check:styles`.
 
 **Key Directories** (all under `apps/web/`):
-- `src/views/`: Page components (Home, TeamBuilder, Scores, News, Teams, PublicTeam, DailyEra, CapFive, Settings, Login, SignUp)
+- `src/views/`: Page components (Home, TeamBuilder, Scores, Standings, News, Teams, PublicTeam, DailyEra, CapFive, Settings, Login, SignUp)
 - `src/layouts/`: `PageShell` — the single page container (width + gutters)
 - `src/components/ui/`: vendored shadcn-vue wrappers over reka-ui primitives
 - `src/components/TeamBuilder/`: Feature components (CoachSection, ArenaSection, etc.)

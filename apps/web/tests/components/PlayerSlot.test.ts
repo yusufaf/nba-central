@@ -1,7 +1,14 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi } from "vitest";
 import { mount } from "@vue/test-utils";
 import PlayerSlot from "@/components/TeamBuilder/PlayerSlot.vue";
 import type { PlayerStatsStatus } from "@/models/types";
+
+// No case here fetches headshots.json; PlayerSlotHeadshot.test.ts covers the
+// real lookup.
+vi.mock("@/composables/useHeadshots", () => ({
+    headshotUrl: (id: string) =>
+        id === "jamesle01" ? "https://d2s6ea2hcvgd9x.cloudfront.net/live/headshots/1966.png" : undefined,
+}));
 
 const SEASON = { season: 2025, games_played: 70, pts: 24.4, reb: 7.8, ast: 8.2 };
 
@@ -24,6 +31,20 @@ const mountSlot = (props: Record<string, unknown>) =>
 
 const retryButton = (wrapper: ReturnType<typeof mountSlot>) =>
     wrapper.findAll("button").find((b) => b.text().includes("Retry"));
+
+describe("PlayerSlot headshot", () => {
+    it("shows the player's headshot from the CDN", () => {
+        const img = mountSlot({ player: player("ready") }).find("img");
+        expect(img.attributes("src")).toBe("https://d2s6ea2hcvgd9x.cloudfront.net/live/headshots/1966.png");
+        expect(img.attributes("alt")).toBe("LeBron James");
+    });
+
+    it("gives a custom player none", () => {
+        const wrapper = mountSlot({ player: { ...player("ready"), isCustom: true } });
+        expect(wrapper.find("img").exists()).toBe(false);
+        expect(wrapper.text()).toContain("LJ");
+    });
+});
 
 describe("PlayerSlot stats states", () => {
     it.each([

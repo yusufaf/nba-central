@@ -43,6 +43,14 @@ const router = createRouter({
             meta: { indexable: true },
             component: Scores,
         },
+        // Lazy: it shares nothing with the other pages, so it stays out of the
+        // entry chunk.
+        {
+            path: '/standings',
+            name: 'standings',
+            meta: { indexable: true },
+            component: () => import('@/views/Standings.vue'),
+        },
         {
             path: '/game/:gameId',
             name: 'boxScore',

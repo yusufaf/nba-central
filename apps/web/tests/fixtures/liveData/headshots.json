@@ -1,0 +1,36 @@
+{
+  "version": 1,
+  "generatedAt": "2026-10-26T12:07:00.000Z",
+  "rostersAt": "2026-10-26T12:07:00.000Z",
+  "rostersAttemptedAt": "2026-10-26T12:07:00.000Z",
+  "players": {
+    "jamesle01": {
+      "espnId": "1966",
+      "team": "LAL",
+      "hasHeadshot": true,
+      "image": "headshots/1966.png",
+      "imageAt": 1793016420,
+      "attemptAt": 1793016420,
+      "etag": "\"e-1966\""
+    },
+    "doncilu01": {
+      "espnId": "3945274",
+      "team": "LAL",
+      "hasHeadshot": true,
+      "image": "headshots/3945274.png",
+      "imageAt": 1793016420,
+      "attemptAt": 1793016420,
+      "etag": "\"e-3945274\""
+    },
+    "hardyja02": {
+      "espnId": "4432811",
+      "team": "LAL",
+      "hasHeadshot": true,
+      "image": null,
+      "imageAt": null,
+      "attemptAt": null,
+      "etag": null
+    }
+  },
+  "unmatched": []
+}
