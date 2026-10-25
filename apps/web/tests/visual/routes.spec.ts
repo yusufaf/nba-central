@@ -1,6 +1,9 @@
 import { test, expect, type Page } from '@playwright/test';
 import gameSummaryFixture from './fixtures/game-summary.json' with { type: 'json' };
 import publicTeamFixture from './fixtures/public-team.json' with { type: 'json' };
+import liveStandings from '../fixtures/liveData/standings.json' with { type: 'json' };
+import liveSchedule from '../fixtures/liveData/schedule.json' with { type: 'json' };
+import liveHeadshots from '../fixtures/liveData/headshots.json' with { type: 'json' };
 import { DAILY_ERA_FIRST_DATE } from '../../src/constants/dailyEra';
 import { picks, puzzleView, result as capFiveResult } from '../helpers/capFive';
 
@@ -14,6 +17,12 @@ import { picks, puzzleView, result as capFiveResult } from '../helpers/capFive';
  */
 
 const ESPN = 'https://site.api.espn.com/**';
+const ESPN_IMAGES = 'https://a.espncdn.com/**';
+const LIVE_FILES: Record<string, unknown> = {
+    'standings.json': liveStandings,
+    'schedule.json': liveSchedule,
+    'headshots.json': liveHeadshots,
+};
 // Arena photos are hotlinked Wikimedia thumbnails. A fixed grey pixel keeps
 // the arena tile's layout in the shot without depending on the live image.
 const WIKIMEDIA = 'https://*.wikimedia.org/**';
@@ -112,6 +121,24 @@ async function stubNetwork(page: Page) {
     await page.route('https://visual.invalid/**', (route) =>
         route.fulfill({ status: 200, contentType: 'image/png', body: GREY_PIXEL }),
     );
+    // The season files setSeasonContextData writes to the assets CDN.
+    await page.route('https://d2s6ea2hcvgd9x.cloudfront.net/live/**', (route) => {
+        const name = new URL(route.request().url()).pathname.split('/').at(-1)!;
+        if (name.endsWith('.png')) {
+            return route.fulfill({ status: 200, contentType: 'image/png', body: GREY_PIXEL });
+        }
+        const file = LIVE_FILES[name];
+        return file
+            ? route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(file) })
+            : route.fulfill({ status: 404, body: '' });
+    });
+}
+
+/** ESPN unreachable: the page has to work from the cached files alone. */
+async function cutEspn(page: Page) {
+    // Registered after stubNetwork, so these win over its ESPN stub.
+    await page.route(ESPN, (route) => route.abort());
+    await page.route(ESPN_IMAGES, (route) => route.abort());
 }
 
 /** Hides anything whose content is inherently unstable, then waits for paint. */
@@ -136,6 +163,9 @@ const ROUTES = [
     { path: '/teambuilder', name: 'teambuilder' },
     { path: '/scores', name: 'scores' },
     { path: '/news', name: 'news' },
+    // Before the fixture's first tip-off in every US zone, or Next goes blank;
+    // offline proves the page needs nothing from ESPN.
+    { path: '/standings', name: 'standings', clock: '2026-10-26T08:00:00', offline: true },
     // Fixed, or the archive's dates would change the screenshot every day.
     { path: '/daily', name: 'daily', clock: '2026-11-06T20:00:00' },
     { path: '/cap-five', name: 'cap-five', clock: '2026-11-06T20:00:00' },
@@ -147,10 +177,11 @@ const ROUTES = [
     { path: '/no-such-page', name: 'not-found' },
 ];
 
-for (const { path, name, clock } of ROUTES) {
+for (const { path, name, clock, offline } of ROUTES) {
     test(`route ${name}`, async ({ page }) => {
         if (clock) await page.clock.setFixedTime(new Date(clock));
         await stubNetwork(page);
+        if (offline) await cutEspn(page);
         await page.goto(path);
         await settle(page);
         await expect(page).toHaveScreenshot(`${name}.png`, { fullPage: true });
@@ -276,6 +307,21 @@ test('/teambuilder requests nothing from ESPN', async ({ page }) => {
     expect(espn).toEqual([]);
 });
 
+test('/standings requests no ESPN data', async ({ page }) => {
+    await stubNetwork(page);
+    const espn: string[] = [];
+    page.on('request', (request) => {
+        const url = new URL(request.url());
+        // Team logos are the app's existing ESPN hotlinks; headshots and
+        // every API call must come from our CDN.
+        if (url.hostname === 'site.api.espn.com') espn.push(request.url());
+        if (url.hostname === 'a.espncdn.com' && url.pathname.includes('/headshots/')) espn.push(request.url());
+    });
+    await page.goto('/standings', { waitUntil: 'domcontentloaded' });
+    await page.getByText('Eastern Conference').waitFor();
+    expect(espn).toEqual([]);
+});
+
 test('route boxscore', async ({ page }) => {
     // /game/:id was missing from ROUTES entirely - the box score's line
     // score, DNP rows and stat-tab typography all shipped unreviewed
@@ -347,10 +393,11 @@ test('dialog and popover do not share modal sizing', async ({ page }) => {
 test.describe('light theme', () => {
     test.use({ colorScheme: 'light' });
 
-    for (const { path, name, clock } of ROUTES) {
+    for (const { path, name, clock, offline } of ROUTES) {
         test(`route ${name}`, async ({ page }) => {
             if (clock) await page.clock.setFixedTime(new Date(clock));
             await stubNetwork(page);
+            if (offline) await cutEspn(page);
             await page.goto(path);
             await settle(page);
             await expect(page.locator('html')).not.toHaveClass(/\bdark\b/);

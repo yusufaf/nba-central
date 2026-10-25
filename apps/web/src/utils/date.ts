@@ -33,6 +33,20 @@ export const espnGameDay = (date: string | Date): string => {
     return `${year}${month}${day}`;
 };
 
+const ESPN_WEEKDAY_FORMAT = new Intl.DateTimeFormat("en-US", {
+    timeZone: "America/New_York",
+    weekday: "short",
+});
+
+/**
+ * The short weekday ESPN files a game under ("Mon"), from the same Eastern
+ * date. Empty for a date that doesn't parse.
+ */
+export const espnGameWeekday = (date: string | Date): string => {
+    const d = new Date(date);
+    return Number.isNaN(d.getTime()) ? "" : ESPN_WEEKDAY_FORMAT.format(d);
+};
+
 /** ISO 8601 calendar date (YYYY-MM-DD), for the ?date= query param. */
 export const toIsoDate = (d: Date): string => {
     const year = d.getFullYear();

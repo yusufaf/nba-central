@@ -1,0 +1,151 @@
+{
+  "version": 1,
+  "generatedAt": "2026-10-26T12:07:00.000Z",
+  "dates": [
+    "20261025",
+    "20261026",
+    "20261027",
+    "20261028",
+    "20261029",
+    "20261030",
+    "20261031",
+    "20261101"
+  ],
+  "games": [
+    {
+      "id": "401909868",
+      "date": "2026-10-26T23:00Z",
+      "status": "scheduled",
+      "home": {
+        "espnId": "30",
+        "abbreviation": "CHA",
+        "score": null
+      },
+      "away": {
+        "espnId": "27",
+        "abbreviation": "WSH",
+        "score": null
+      }
+    },
+    {
+      "id": "401909869",
+      "date": "2026-10-26T23:00Z",
+      "status": "scheduled",
+      "home": {
+        "espnId": "5",
+        "abbreviation": "CLE",
+        "score": null
+      },
+      "away": {
+        "espnId": "16",
+        "abbreviation": "MIN",
+        "score": null
+      }
+    },
+    {
+      "id": "401909870",
+      "date": "2026-10-26T23:30Z",
+      "status": "scheduled",
+      "home": {
+        "espnId": "2",
+        "abbreviation": "BOS",
+        "score": null
+      },
+      "away": {
+        "espnId": "4",
+        "abbreviation": "CHI",
+        "score": null
+      }
+    },
+    {
+      "id": "401909871",
+      "date": "2026-10-26T23:30Z",
+      "status": "scheduled",
+      "home": {
+        "espnId": "14",
+        "abbreviation": "MIA",
+        "score": null
+      },
+      "away": {
+        "espnId": "6",
+        "abbreviation": "DAL",
+        "score": null
+      }
+    },
+    {
+      "id": "401909872",
+      "date": "2026-10-27T00:00Z",
+      "status": "scheduled",
+      "home": {
+        "espnId": "15",
+        "abbreviation": "MIL",
+        "score": null
+      },
+      "away": {
+        "espnId": "11",
+        "abbreviation": "IND",
+        "score": null
+      }
+    },
+    {
+      "id": "401909873",
+      "date": "2026-10-27T00:00Z",
+      "status": "scheduled",
+      "home": {
+        "espnId": "25",
+        "abbreviation": "OKC",
+        "score": null
+      },
+      "away": {
+        "espnId": "21",
+        "abbreviation": "PHX",
+        "score": null
+      }
+    },
+    {
+      "id": "401909874",
+      "date": "2026-10-27T00:30Z",
+      "status": "scheduled",
+      "home": {
+        "espnId": "10",
+        "abbreviation": "HOU",
+        "score": null
+      },
+      "away": {
+        "espnId": "1",
+        "abbreviation": "ATL",
+        "score": null
+      }
+    },
+    {
+      "id": "401909875",
+      "date": "2026-10-27T01:00Z",
+      "status": "scheduled",
+      "home": {
+        "espnId": "26",
+        "abbreviation": "UTAH",
+        "score": null
+      },
+      "away": {
+        "espnId": "29",
+        "abbreviation": "MEM",
+        "score": null
+      }
+    },
+    {
+      "id": "401909876",
+      "date": "2026-10-27T02:00Z",
+      "status": "scheduled",
+      "home": {
+        "espnId": "7",
+        "abbreviation": "DEN",
+        "score": null
+      },
+      "away": {
+        "espnId": "9",
+        "abbreviation": "GS",
+        "score": null
+      }
+    }
+  ]
+}

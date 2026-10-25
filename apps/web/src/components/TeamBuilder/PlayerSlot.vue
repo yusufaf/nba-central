@@ -3,13 +3,14 @@ import { computed } from 'vue';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Separator } from '@/components/ui/separator';
 import { X, UserPlus, Plus, BarChart3, ArrowLeftRight, GitCompareArrows, GripVertical, Loader2, RotateCw, CircleAlert, Clock3 } from 'lucide-vue-next';
 import { getWikipediaUrl } from '@/constants/utilities';
 import ExternalLinksMenu from '@/components/ExternalLinksMenu.vue';
 import { ratingTier, ratingSourceLabel } from '@/constants/ratings';
 import type { PlayerStatsStatus, RatingSource } from '@/models/types';
+import { headshotUrl } from '@/composables/useHeadshots';
 
 interface Player {
   id: string;
@@ -83,6 +84,12 @@ const playerInitials = computed(() => {
   if (!props.player) return '?';
   return `${props.player.first_name[0]}${props.player.last_name[0]}`;
 });
+
+// Mirrored from ESPN onto our CDN; the initials stay until it loads, or if it
+// fails. Custom players have no BBRef id to look up.
+const headshot = computed(() =>
+  props.player && !props.player.isCustom ? headshotUrl(props.player.id) : undefined,
+);
 
 // Real players carry a 2K rating; custom players carry the one the user typed.
 // Both are 0-99, so the card renders them the same way.
@@ -231,6 +238,7 @@ const onRetry = () => {
         <template v-else-if="!isFlipped">
           <div class="player-info">
             <Avatar class="player-avatar">
+              <AvatarImage v-if="headshot" :src="headshot" :alt="player?.fullName" />
               <AvatarFallback class="avatar-fallback">
                 {{ playerInitials }}
               </AvatarFallback>
