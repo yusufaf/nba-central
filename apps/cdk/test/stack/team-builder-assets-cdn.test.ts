@@ -3,6 +3,11 @@ import { App, Stack } from "aws-cdk-lib";
 import { Template } from "aws-cdk-lib/assertions";
 import { Bucket, BlockPublicAccess } from "aws-cdk-lib/aws-s3";
 import { TeamBuilderAssetsCdn } from "../../service/team-builder-stack/team-builder-assets-cdn";
+import {
+    LIVE_CACHE_MAX_TTL_SECONDS,
+    LIVE_JSON_MAX_AGE_SECONDS,
+    LIVE_STALE_IF_ERROR_SECONDS,
+} from "utilities/live-data";
 
 // Isolated-construct pattern, as in team-builder-web.test.ts: a plain private
 // bucket stands in for TeamBuilderS3's real assets bucket.
@@ -72,5 +77,30 @@ describe("TeamBuilderAssetsCdn", () => {
         expect(config.DefaultCacheBehavior.ResponseHeadersPolicyId).toBe(
             "5cc3b908-e619-4b99-88e5-2cf7f45965bd",
         );
+    });
+
+    it("routes live/* through a short-TTL cache policy with CORS", () => {
+        const template = buildTemplate();
+        const config = getDistributionConfig(template);
+        expect(config.CacheBehaviors).toHaveLength(1);
+        const [live] = config.CacheBehaviors;
+        expect(live.PathPattern).toBe("live/*");
+        expect(live.ViewerProtocolPolicy).toBe("redirect-to-https");
+        expect(live.ResponseHeadersPolicyId).toBe("5cc3b908-e619-4b99-88e5-2cf7f45965bd");
+        expect(live.TargetOriginId).toBe(config.DefaultCacheBehavior.TargetOriginId);
+
+        template.resourceCountIs("AWS::CloudFront::CachePolicy", 1);
+        const [policy] = Object.values(template.findResources("AWS::CloudFront::CachePolicy"));
+        expect(policy.Properties.CachePolicyConfig).toMatchObject({
+            DefaultTTL: 300,
+            MinTTL: 0,
+            MaxTTL: 86400,
+        });
+        expect(LIVE_JSON_MAX_AGE_SECONDS).toBe(300);
+    });
+
+    it("the max TTL covers stale-if-error", () => {
+        // CloudFront serves stale content only up to the smaller of the two.
+        expect(LIVE_CACHE_MAX_TTL_SECONDS).toBeGreaterThanOrEqual(LIVE_STALE_IF_ERROR_SECONDS);
     });
 });

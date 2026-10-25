@@ -34,6 +34,7 @@ import apiAuthorizer from "../lambdas/apiAuthorizer/index";
 import setPlayersData from "../lambdas/setPlayersData";
 import setPlayerRatingsData from "../lambdas/setPlayerRatingsData";
 import setPlayerStatsData from "../lambdas/setPlayerStatsData";
+import setSeasonContextData from "../lambdas/setSeasonContextData";
 import fetchNewsCron from "../lambdas/fetchNewsCron";
 import publishCapFive from "../lambdas/publishCapFive";
 import { PUBLIC_ROUTES, PRIVATE_ROUTES } from "./team-builder-api-routes";
@@ -164,6 +165,7 @@ export class TeamBuilderAPI extends Construct {
 		setPlayersData({ ...lambdaProps });
 		setPlayerRatingsData({ ...lambdaProps });
 		setPlayerStatsData({ ...lambdaProps });
+		setSeasonContextData({ ...lambdaProps });
 		fetchNewsCron({ ...lambdaProps });
 		publishCapFive({ ...lambdaProps });
 

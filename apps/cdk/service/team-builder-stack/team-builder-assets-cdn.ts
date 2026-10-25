@@ -1,6 +1,10 @@
+import { Duration } from "aws-cdk-lib";
 import { Bucket } from "aws-cdk-lib/aws-s3";
 import {
+    CacheCookieBehavior,
+    CacheHeaderBehavior,
     CachePolicy,
+    CacheQueryStringBehavior,
     Distribution,
     PriceClass,
     ResponseHeadersPolicy,
@@ -8,6 +12,13 @@ import {
 } from "aws-cdk-lib/aws-cloudfront";
 import { S3BucketOrigin } from "aws-cdk-lib/aws-cloudfront-origins";
 import { Construct } from "constructs";
+// Relative, not "utilities/live-data": cdk.json runs ts-node with no
+// tsconfig-paths.
+import {
+    LIVE_CACHE_MAX_TTL_SECONDS,
+    LIVE_JSON_MAX_AGE_SECONDS,
+    LIVE_PREFIX,
+} from "../../utilities/live-data";
 
 export interface TeamBuilderAssetsCdnProps {
     appName: string;
@@ -31,6 +42,11 @@ export interface TeamBuilderAssetsCdnProps {
  * policy so images load into a <canvas> (share-card export) without tainting
  * it — a cross-origin image without CORS headers poisons the canvas even
  * though it renders fine as a plain <img>.
+ *
+ * live/* holds the hourly season files setSeasonContextData writes
+ * (standings, schedule, headshots). Its own cache policy keeps them fresh
+ * even if an object lacks its Cache-Control header, and its max TTL is what
+ * lets CloudFront honour the files' stale-if-error when the bucket fails.
  */
 export class TeamBuilderAssetsCdn extends Construct {
     readonly distribution: Distribution;
@@ -43,6 +59,18 @@ export class TeamBuilderAssetsCdn extends Construct {
         // granting CloudFront read access automatically, same as
         // TeamBuilderWeb's origin.
         const origin = S3BucketOrigin.withOriginAccessControl(assetsBucket);
+
+        const liveDataCachePolicy = new CachePolicy(this, `${appName}-${deploymentType}-live-data`, {
+            cachePolicyName: `${appName}-${deploymentType}-live-data`,
+            minTtl: Duration.seconds(0),
+            defaultTtl: Duration.seconds(LIVE_JSON_MAX_AGE_SECONDS),
+            maxTtl: Duration.seconds(LIVE_CACHE_MAX_TTL_SECONDS),
+            cookieBehavior: CacheCookieBehavior.none(),
+            headerBehavior: CacheHeaderBehavior.none(),
+            queryStringBehavior: CacheQueryStringBehavior.none(),
+            enableAcceptEncodingGzip: true,
+            enableAcceptEncodingBrotli: true,
+        });
 
         this.distribution = new Distribution(
             this,
@@ -57,6 +85,14 @@ export class TeamBuilderAssetsCdn extends Construct {
                     // taints the canvas and the export fails. Managed
                     // policy: Access-Control-Allow-Origin: * on every response.
                     responseHeadersPolicy: ResponseHeadersPolicy.CORS_ALLOW_ALL_ORIGINS_WITH_PREFLIGHT,
+                },
+                additionalBehaviors: {
+                    [`${LIVE_PREFIX}*`]: {
+                        origin,
+                        viewerProtocolPolicy: ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
+                        cachePolicy: liveDataCachePolicy,
+                        responseHeadersPolicy: ResponseHeadersPolicy.CORS_ALLOW_ALL_ORIGINS_WITH_PREFLIGHT,
+                    },
                 },
                 // Cost-appropriate for a personal-project audience — easy to
                 // change later.

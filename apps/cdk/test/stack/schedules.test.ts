@@ -7,6 +7,10 @@ import {
 } from "../../service/lambdas/setPlayersData";
 import { SNAPSHOT_TIMEOUT } from "../../service/lambdas/setPlayerStatsData";
 import {
+	SEASON_CONTEXT_CRON,
+	SEASON_CONTEXT_TIMEOUT,
+} from "../../service/lambdas/setSeasonContextData";
+import {
 	SNAPSHOT_INTERVAL_MINUTES,
 	SNAPSHOT_STOP_AFTER_MINUTES,
 } from "utilities/player-stats";
@@ -20,6 +24,15 @@ describe("toSchedule", () => {
 		expect(toSchedule({ cron: { minute: "0/20" } }).expressionString).toBe(
 			"cron(0/20 * * * ? *)",
 		);
+	});
+});
+
+describe("setSeasonContextData", () => {
+	it("runs hourly and finishes inside its hour", () => {
+		expect(toSchedule({ cron: SEASON_CONTEXT_CRON }).expressionString).toBe(
+			"cron(7 * * * ? *)",
+		);
+		expect(SEASON_CONTEXT_TIMEOUT.toMinutes()).toBeLessThan(60);
 	});
 });
 

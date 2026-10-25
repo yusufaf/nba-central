@@ -93,6 +93,21 @@ See the root `CLAUDE.md` for the full stack list (constructs, Lambda
 inventory, DynamoDB schema, S3 buckets, and the Logto auth flow) — it's not
 duplicated here to avoid the two drifting apart.
 
+### live/ (setSeasonContextData)
+
+`live/` in the assets bucket holds files the web fetches as they are:
+`standings.json`, `schedule.json`, `headshots.json` and the mirrored
+`headshots/{espnId}.png`. A response that fails validation, a previous file S3
+fails to return, or a big drop in games or matched players keeps the previous
+file, and the run's summary log says why. A previous file of the wrong shape is
+replaced, like a first run. The JSON goes out with
+`Cache-Control: public, max-age=300, stale-while-revalidate=60,
+stale-if-error=86400`; the `live/*` cache policy's max TTL has to stay at least
+the `stale-if-error` value, since CloudFront serves stale content only up to the
+smaller of the two. The Lambda is production-only (`deployToTypes`), so nothing
+appears until a `cdk deploy`, and its first data until the first hourly run or a
+manual invoke. The headshot backfill takes about five runs.
+
 ## Testing
 
 Vitest, colocated in `test/`, mirroring `service/`. Stack tests

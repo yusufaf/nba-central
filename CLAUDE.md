@@ -153,6 +153,16 @@ Entry point: `bin/team-builder-cdk.ts` loads env vars from dotenv.
   eligible. Its schedule first fires a day after the rule is created, so
   invoke it once by hand after the deploy that creates it, or `/cap-five`
   has no puzzle until then
+- `setSeasonContextData` (hourly at :07, production only): copies ESPN's
+  standings and a week of schedule into `live/standings.json` and
+  `live/schedule.json` in the assets bucket, served by the assets CDN's
+  `live/*` behavior (5-minute TTL, `stale-if-error`). Once a day it joins
+  ESPN's rosters to the BBRef players with the ratings matcher
+  (`utilities/player-names.ts`) into `live/headshots.json`, and it mirrors
+  their headshots to `live/headshots/{espnId}.png`, 100 a run. Every dataset is
+  validated on its own, and one that fails or shrinks sharply keeps its
+  previous file. It is the only thing that calls ESPN for this data: the web
+  reads the files, never ESPN
 
 Arenas, coaches, execs, the current team logos and the historical logos/jerseys have no Lambda: the
 bundled JSON in `apps/web/src/assets/data/` is their only copy, and the
@@ -301,7 +311,9 @@ Partition key patterns use UUIDs (userUUID#..., teamUUID#...).
   (`publishTeam` writes them, keyed `cards/{teamUUID}/{updatedAt}.png`) and
   custom arena images under `arenas/{arenaUUID}/{slot}-{ms}.{ext}` (keyed by
   the arena, never the owner, so a public URL doesn't say whose it is), and
-  Daily Era puzzle images under `daily-era/` (random keys, see `refresh-daily-era`)
+  Daily Era puzzle images under `daily-era/` (random keys, see `refresh-daily-era`),
+  and the live season files under `live/` (`setSeasonContextData` writes
+  them; old versions expire after 7 days)
 - **static-data**: External data cache (`players.json`, `player-ratings.json`),
   the private Daily Era puzzle list (`daily-era-puzzles.json`) and the Cap
   Five puzzles (`cap-five/<date>.json`, one per day, immutable, written only
