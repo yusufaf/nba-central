@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { mount } from "@vue/test-utils";
 import RosterSection from "@/components/TeamBuilder/RosterSection.vue";
+import PlayerSlot from "@/components/TeamBuilder/PlayerSlot.vue";
 
 // Stub the PlayerSlot child so this test stays focused on RosterSection's own
 // counting logic rather than rendering the full slot tree.
@@ -58,6 +59,16 @@ describe("RosterSection", () => {
         const wrapper = mountRoster(selected);
         const counts = wrapper.findAll(".starter-count").map((n) => n.text());
         expect(counts).toEqual(["2/5", "1/10"]);
+    });
+
+    // vue-tsc doesn't check listener names, so only this catches a misnamed
+    // forwarder.
+    it("forwards retryStats from a starter and a bench slot", () => {
+        const wrapper = mountRoster(new Map());
+        const slots = wrapper.findAllComponents(PlayerSlot);
+        slots[2].vm.$emit("retryStats", 3);
+        slots[7].vm.$emit("retryStats", 8);
+        expect(wrapper.emitted("retryStats")).toEqual([[3], [8]]);
     });
 
     it("renders all 15 slots across both sections", () => {

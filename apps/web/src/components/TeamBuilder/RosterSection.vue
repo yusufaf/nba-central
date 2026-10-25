@@ -54,6 +54,7 @@ const emit = defineEmits<{
   'removePlayer': [index: number];
   'flipCard': [index: number];
   'viewStats': [index: number];
+  'retryStats': [index: number];
   'compare': [index: number];
   'dragStart': [index: number, event: DragEvent];
   'dragEnd': [];
@@ -148,6 +149,7 @@ const onKeydown = (event: KeyboardEvent) => {
             @remove="emit('removePlayer', $event)"
             @flip="emit('flipCard', $event)"
             @view-stats="emit('viewStats', $event)"
+            @retry-stats="emit('retryStats', $event)"
             @compare="emit('compare', $event)"
             @drag-start="(slot, event) => emit('dragStart', slot, event)"
             @drag-end="emit('dragEnd')"
@@ -182,6 +184,7 @@ const onKeydown = (event: KeyboardEvent) => {
           @remove="emit('removePlayer', $event)"
           @flip="emit('flipCard', $event)"
           @view-stats="emit('viewStats', $event)"
+          @retry-stats="emit('retryStats', $event)"
           @compare="emit('compare', $event)"
           @drag-start="(slot, event) => emit('dragStart', slot, event)"
           @drag-end="emit('dragEnd')"

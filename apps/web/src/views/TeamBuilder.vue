@@ -57,7 +57,6 @@ import { findHistoricalJersey } from "@/utils/historicalJersey";
 import { track } from "@/lib/analytics";
 import { landingSource } from "@/lib/attribution";
 import type { DrawerSide, NBA2KRating, Player } from "@/models/types";
-import type { GetPlayerStatsResponse } from "@/models/api";
 
 const route = useRoute();
 const router = useRouter();
@@ -186,18 +185,30 @@ const playerStatsData = computed(() => {
 });
 
 // One request for the player's whole career (most recent season first) plus
-// their NBA 2K rating history, which only this endpoint returns.
-const getPlayerStats = async (
-    playerId: string,
-): Promise<GetPlayerStatsResponse> => {
-    if (!playerId) return { data: [] };
+// their NBA 2K rating history, which only this endpoint returns. A failure
+// leaves ratingHistory out, so a failed retry keeps what the player had.
+const fetchStatsDetails = async (
+    playerId?: string,
+): Promise<Pick<Player, "playerStats" | "ratingHistory" | "statsStatus">> => {
+    if (!playerId) return { playerStats: [] };
 
     try {
-        const response = await dataApi.getPlayerStats(playerId);
-        return { ...response, data: response.data ?? [] };
+        const res = await dataApi.getPlayerStats(playerId);
+        // CloudFront answers an /api 403/404 with index.html as a 200, so
+        // the body can be a string.
+        if (!res || typeof res !== "object" || !Array.isArray(res.data)) {
+            console.error("Unexpected player stats response: ", res);
+            return { playerStats: [], statsStatus: "failed" };
+        }
+        const { data, ratingHistory, available } = res;
+        return {
+            playerStats: data,
+            ratingHistory,
+            statsStatus: available === false ? "unavailable" : "ready",
+        };
     } catch (err) {
         console.error("Error fetching player stats: ", err);
-        return { data: [] };
+        return { playerStats: [], statsStatus: "failed" };
     }
 };
 
@@ -213,13 +224,20 @@ const addPlayer = (index: number) => {
 // then, never the slot, so an add that's undone or cleared while it loads
 // stays gone (usePendingPlayers).
 const loadPlayerIntoSlot = (slot: number, player: any) => {
-    const loading = statsLoads.load(player, async () => {
-        const { data: playerStats, ratingHistory } = await getPlayerStats(player.id);
-        return { playerStats, ratingHistory };
-    });
+    const loading = statsLoads.load(player, () => fetchStatsDetails(player.id));
     selectedPlayersData.value.set(slot, loading.player);
     cardsFlipped.value.set(slot, false);
     return loading;
+};
+
+// Refetches into the same player object rather than going through
+// statsLoads: the card stays on the board, and undo snapshots and
+// restoreBuilder, which compare players by identity, see no roster change.
+const retryPlayerStats = async (slot: number) => {
+    const player = selectedPlayersData.value.get(slot);
+    if (player?.statsStatus !== "failed") return;
+    player.statsStatus = "retrying";
+    Object.assign(player, await fetchStatsDetails(player.id));
 };
 
 const isInRoster = (player: Player) =>
@@ -973,6 +991,7 @@ watch(
                 @remove-player="deletePlayer"
                 @flip-card="flipCard"
                 @view-stats="viewPlayerStats"
+                @retry-stats="retryPlayerStats"
                 @compare="togglePlayerInComparison"
                 @drag-start="startDrag"
                 @drag-end="endDrag"
