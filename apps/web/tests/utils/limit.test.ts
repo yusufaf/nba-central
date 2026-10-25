@@ -1,5 +1,5 @@
-import { describe, it, expect } from "vitest";
-import { createLimiter } from "@/utils/limit";
+import { describe, it, expect, vi, afterEach } from "vitest";
+import { createLimiter, LimiterTimeoutError } from "@/utils/limit";
 
 const deferred = <T>() => {
     let resolve!: (value: T) => void;
@@ -102,5 +102,89 @@ describe("createLimiter", () => {
 
         await expect(first).rejects.toThrow("sync boom");
         expect(await second).toBe("ok");
+    });
+});
+
+describe("createLimiter with a deadline", () => {
+    afterEach(() => {
+        vi.useRealTimers();
+    });
+
+    // Each timed-out task gets its expectation before time moves: vitest's
+    // async tick yields a real macrotask between timers, and a rejection with
+    // no handler by then is reported as unhandled.
+    it("rejects a task that never settles at its deadline and frees the slot", async () => {
+        vi.useFakeTimers();
+        const limit = createLimiter(1, { timeoutMs: 1000 });
+        let secondStarted = false;
+
+        const first = limit(() => new Promise<never>(() => {}));
+        const firstOutcome = expect(first).rejects.toBeInstanceOf(LimiterTimeoutError);
+        const second = limit(async () => {
+            secondStarted = true;
+            return "ok";
+        });
+
+        await vi.advanceTimersByTimeAsync(999);
+        expect(secondStarted).toBe(false);
+
+        await vi.advanceTimersByTimeAsync(1);
+        await firstOutcome;
+        expect(await second).toBe("ok");
+    });
+
+    it("aborts the task's signal at the deadline", async () => {
+        vi.useFakeTimers();
+        const limit = createLimiter(1, { timeoutMs: 1000 });
+        let signal: AbortSignal | undefined;
+
+        const first = limit((s) => {
+            signal = s;
+            return new Promise<never>(() => {});
+        });
+        const firstOutcome = expect(first).rejects.toBeInstanceOf(LimiterTimeoutError);
+
+        await vi.advanceTimersByTimeAsync(0);
+        expect(signal?.aborted).toBe(false);
+
+        await vi.advanceTimersByTimeAsync(1000);
+        await firstOutcome;
+        expect(signal?.aborted).toBe(true);
+        expect(signal?.reason).toBeInstanceOf(LimiterTimeoutError);
+    });
+
+    it("clears the deadline when the task settles first", async () => {
+        vi.useFakeTimers();
+        const limit = createLimiter(1, { timeoutMs: 1000 });
+
+        const result = await limit(async () => "done");
+
+        expect(result).toBe("done");
+        expect(vi.getTimerCount()).toBe(0);
+    });
+
+    it("times from when the task starts, not when it was queued", async () => {
+        vi.useFakeTimers();
+        const limit = createLimiter(1, { timeoutMs: 1000 });
+        let secondSettled = false;
+
+        const first = limit(
+            () => new Promise<string>((resolve) => setTimeout(() => resolve("first"), 900)),
+        );
+        const second = limit(() => new Promise<never>(() => {}));
+        const secondOutcome = expect(second).rejects.toBeInstanceOf(LimiterTimeoutError);
+        second.catch(() => {
+            secondSettled = true;
+        });
+
+        await vi.advanceTimersByTimeAsync(900);
+        expect(await first).toBe("first");
+
+        await vi.advanceTimersByTimeAsync(899);
+        expect(secondSettled).toBe(false);
+
+        await vi.advanceTimersByTimeAsync(101);
+        await secondOutcome;
+        expect(secondSettled).toBe(true);
     });
 });

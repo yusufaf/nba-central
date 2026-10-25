@@ -220,9 +220,12 @@ export const feedbackApi = {
 // reads rather than firing 13 Lambda calls together.
 export const PLAYER_STATS_CONCURRENCY = 3;
 // A request that never settles would hold one of those slots for good, so cap
-// it.
+// it. The deadline covers the whole task, the token interceptor included, and
+// aborts the request, so a token that turns up late never sends it.
 export const PLAYER_STATS_TIMEOUT_MS = 20_000;
-const limitPlayerStats = createLimiter(PLAYER_STATS_CONCURRENCY);
+const limitPlayerStats = createLimiter(PLAYER_STATS_CONCURRENCY, {
+    timeoutMs: PLAYER_STATS_TIMEOUT_MS,
+});
 
 // Data API - matches DATA_ROUTES in CDK
 export const dataApi = {
@@ -236,10 +239,10 @@ export const dataApi = {
         return response.data;
     },
     getPlayerStats: (playerId: string): Promise<GetPlayerStatsResponse> =>
-        limitPlayerStats(async () => {
+        limitPlayerStats(async (signal) => {
             const response = await api.get<GetPlayerStatsResponse>(
                 '/api/data/get-player-stats',
-                { params: { playerId }, timeout: PLAYER_STATS_TIMEOUT_MS },
+                { params: { playerId }, signal },
             );
             return response.data;
         }),

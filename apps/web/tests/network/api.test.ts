@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 
 // Mock the axios instance created in src/network/api.ts. `api` is built via
 // axios.create(), so mock that factory to return a stub with the verbs we use.
@@ -32,6 +32,7 @@ import {
     PLAYER_STATS_CONCURRENCY,
     PLAYER_STATS_TIMEOUT_MS,
 } from "@/network/api";
+import { LimiterTimeoutError } from "@/utils/limit";
 
 beforeEach(() => {
     vi.clearAllMocks();
@@ -156,7 +157,7 @@ describe("dataApi.getPlayerStats", () => {
 
         expect(mockInstance.get).toHaveBeenCalledWith(
             "/api/data/get-player-stats",
-            { params: { playerId: "jamesle01" }, timeout: PLAYER_STATS_TIMEOUT_MS },
+            { params: { playerId: "jamesle01" }, signal: expect.any(AbortSignal) },
         );
         expect(result).toEqual(body);
     });
@@ -164,6 +165,11 @@ describe("dataApi.getPlayerStats", () => {
     // The limiter is module state shared by every test in this file, so each
     // test below settles all of its requests before it ends.
     const flush = () => new Promise<void>((resolve) => setTimeout(resolve, 0));
+
+    // The flush helper waits on a real setTimeout.
+    afterEach(() => {
+        vi.useRealTimers();
+    });
 
     it("keeps at most PLAYER_STATS_CONCURRENCY requests in flight for a 13-player team", async () => {
         const pending: Array<(value: unknown) => void> = [];
@@ -229,6 +235,31 @@ describe("dataApi.getPlayerStats", () => {
         pending.slice(PLAYER_STATS_CONCURRENCY).forEach((p) => p.resolve({ data: { data: [] } }));
 
         expect(await Promise.all(outcomes)).toEqual(["failed", "ok", "ok", "ok"]);
+    });
+
+    // Last in the describe: it moves the shared limiter through fake time.
+    it("a request that never settles frees its slot at the deadline", async () => {
+        vi.useFakeTimers();
+        mockInstance.get.mockImplementation((_url, config: { params: { playerId: string } }) =>
+            config.params.playerId === "late"
+                ? Promise.resolve({ data: { data: [] } })
+                : new Promise(() => {}),
+        );
+
+        const hung = Array.from({ length: PLAYER_STATS_CONCURRENCY }, (_, i) =>
+            dataApi.getPlayerStats(`hung${i}`),
+        );
+        const hungOutcomes = hung.map((r) => expect(r).rejects.toBeInstanceOf(LimiterTimeoutError));
+        const late = dataApi.getPlayerStats("late");
+
+        await vi.advanceTimersByTimeAsync(PLAYER_STATS_TIMEOUT_MS - 1);
+        expect(mockInstance.get).toHaveBeenCalledTimes(PLAYER_STATS_CONCURRENCY);
+
+        await vi.advanceTimersByTimeAsync(1);
+        await Promise.all(hungOutcomes);
+        expect(await late).toEqual({ data: [] });
+        expect(mockInstance.get).toHaveBeenCalledTimes(PLAYER_STATS_CONCURRENCY + 1);
+        expect(mockInstance.get.mock.calls[0][1].signal.aborted).toBe(true);
     });
 });
 
