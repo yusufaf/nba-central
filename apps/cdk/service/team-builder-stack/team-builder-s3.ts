@@ -1,4 +1,4 @@
-import { RemovalPolicy } from "aws-cdk-lib";
+import { Duration, RemovalPolicy } from "aws-cdk-lib";
 import {
     Bucket,
     BlockPublicAccess,
@@ -8,6 +8,10 @@ import {
 import { Construct } from "constructs";
 import { ExtendedStackProps } from "models/stack";
 import { DEFAULT_ALLOWED_ORIGINS } from "./../../constants/index";
+import {
+    LIVE_NONCURRENT_VERSION_DAYS,
+    LIVE_PREFIX,
+} from "../../utilities/live-data";
 
 export class TeamBuilderS3 extends Construct {
     // Exposed for TeamBuilderAssetsCdn, which fronts this one bucket with a
@@ -50,6 +54,14 @@ export class TeamBuilderS3 extends Construct {
                     maxAge: 3600, // 1hr
                 },
             ],
+        });
+
+        // setSeasonContextData rewrites live/*.json hourly, and the bucket is
+        // versioned.
+        this.assetsBucket.addLifecycleRule({
+            id: "expire-old-live-versions",
+            prefix: LIVE_PREFIX,
+            noncurrentVersionExpiration: Duration.days(LIVE_NONCURRENT_VERSION_DAYS),
         });
 
         const staticDataBucketNameAndID = `${appName}-${deploymentType}-static-data`;

@@ -1,0 +1,44 @@
+{
+  "athletes": [
+    {
+      "id": "5113969",
+      "fullName": "Cameron Carr",
+      "height": 77.0,
+      "headshot": {
+        "href": "https://a.espncdn.com/i/headshots/nba/players/full/5113969.png"
+      }
+    },
+    {
+      "id": "3945274",
+      "fullName": "Luka Doncic",
+      "height": 80.0,
+      "headshot": {
+        "href": "https://a.espncdn.com/i/headshots/nba/players/full/3945274.png"
+      }
+    },
+    {
+      "id": "4397014",
+      "fullName": "Quentin Grimes",
+      "height": 76.0,
+      "headshot": {
+        "href": "https://a.espncdn.com/i/headshots/nba/players/full/4397014.png"
+      }
+    },
+    {
+      "id": "4868423",
+      "fullName": "Jaden Hardy",
+      "height": 75.0,
+      "headshot": {
+        "href": "https://a.espncdn.com/i/headshots/nba/players/full/4868423.png"
+      }
+    },
+    {
+      "id": "4683774",
+      "fullName": "Bronny James",
+      "height": 74.0,
+      "headshot": {
+        "href": "https://a.espncdn.com/i/headshots/nba/players/full/4683774.png"
+      }
+    }
+  ]
+}

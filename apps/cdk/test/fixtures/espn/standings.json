@@ -1,0 +1,1644 @@
+{
+  "season": {
+    "year": 2027,
+    "displayName": "2026-27"
+  },
+  "children": [
+    {
+      "name": "Eastern Conference",
+      "abbreviation": "East",
+      "standings": {
+        "entries": [
+          {
+            "team": {
+              "id": "15",
+              "displayName": "Milwaukee Bucks",
+              "abbreviation": "MIL"
+            },
+            "stats": [
+              {
+                "type": "gamesbehind",
+                "value": 3.0,
+                "displayValue": "3"
+              },
+              {
+                "type": "losses",
+                "value": 3.0,
+                "displayValue": "3"
+              },
+              {
+                "type": "playoffseed",
+                "value": 14.0,
+                "displayValue": "14"
+              },
+              {
+                "type": "streak",
+                "value": -3.0,
+                "displayValue": "L3"
+              },
+              {
+                "type": "winpercent",
+                "value": 0.0,
+                "displayValue": ".000"
+              },
+              {
+                "type": "wins",
+                "value": 0.0,
+                "displayValue": "0"
+              },
+              {
+                "type": "home",
+                "value": null,
+                "displayValue": "0-1"
+              },
+              {
+                "type": "road",
+                "value": null,
+                "displayValue": "0-2"
+              },
+              {
+                "type": "lasttengames",
+                "value": null,
+                "displayValue": "0-3"
+              }
+            ]
+          },
+          {
+            "team": {
+              "id": "14",
+              "displayName": "Miami Heat",
+              "abbreviation": "MIA"
+            },
+            "stats": [
+              {
+                "type": "gamesbehind",
+                "value": 3.0,
+                "displayValue": "3"
+              },
+              {
+                "type": "losses",
+                "value": 3.0,
+                "displayValue": "3"
+              },
+              {
+                "type": "playoffseed",
+                "value": 15.0,
+                "displayValue": "15"
+              },
+              {
+                "type": "streak",
+                "value": -3.0,
+                "displayValue": "L3"
+              },
+              {
+                "type": "winpercent",
+                "value": 0.0,
+                "displayValue": ".000"
+              },
+              {
+                "type": "wins",
+                "value": 0.0,
+                "displayValue": "0"
+              },
+              {
+                "type": "home",
+                "value": null,
+                "displayValue": "0-2"
+              },
+              {
+                "type": "road",
+                "value": null,
+                "displayValue": "0-1"
+              },
+              {
+                "type": "lasttengames",
+                "value": null,
+                "displayValue": "0-3"
+              }
+            ]
+          },
+          {
+            "team": {
+              "id": "18",
+              "displayName": "New York Knicks",
+              "abbreviation": "NY"
+            },
+            "stats": [
+              {
+                "type": "gamesbehind",
+                "value": 2.5,
+                "displayValue": "2.5"
+              },
+              {
+                "type": "losses",
+                "value": 2.0,
+                "displayValue": "2"
+              },
+              {
+                "type": "playoffseed",
+                "value": 11.0,
+                "displayValue": "11"
+              },
+              {
+                "type": "streak",
+                "value": -2.0,
+                "displayValue": "L2"
+              },
+              {
+                "type": "winpercent",
+                "value": 0.0,
+                "displayValue": ".000"
+              },
+              {
+                "type": "wins",
+                "value": 0.0,
+                "displayValue": "0"
+              },
+              {
+                "type": "home",
+                "value": null,
+                "displayValue": "0-1"
+              },
+              {
+                "type": "road",
+                "value": null,
+                "displayValue": "0-1"
+              },
+              {
+                "type": "lasttengames",
+                "value": null,
+                "displayValue": "0-2"
+              }
+            ]
+          },
+          {
+            "team": {
+              "id": "17",
+              "displayName": "Brooklyn Nets",
+              "abbreviation": "BKN"
+            },
+            "stats": [
+              {
+                "type": "gamesbehind",
+                "value": 2.5,
+                "displayValue": "2.5"
+              },
+              {
+                "type": "losses",
+                "value": 2.0,
+                "displayValue": "2"
+              },
+              {
+                "type": "playoffseed",
+                "value": 12.0,
+                "displayValue": "12"
+              },
+              {
+                "type": "streak",
+                "value": -2.0,
+                "displayValue": "L2"
+              },
+              {
+                "type": "winpercent",
+                "value": 0.0,
+                "displayValue": ".000"
+              },
+              {
+                "type": "wins",
+                "value": 0.0,
+                "displayValue": "0"
+              },
+              {
+                "type": "home",
+                "value": null,
+                "displayValue": "0-1"
+              },
+              {
+                "type": "road",
+                "value": null,
+                "displayValue": "0-1"
+              },
+              {
+                "type": "lasttengames",
+                "value": null,
+                "displayValue": "0-2"
+              }
+            ]
+          },
+          {
+            "team": {
+              "id": "19",
+              "displayName": "Orlando Magic",
+              "abbreviation": "ORL"
+            },
+            "stats": [
+              {
+                "type": "gamesbehind",
+                "value": 2.5,
+                "displayValue": "2.5"
+              },
+              {
+                "type": "losses",
+                "value": 2.0,
+                "displayValue": "2"
+              },
+              {
+                "type": "playoffseed",
+                "value": 13.0,
+                "displayValue": "13"
+              },
+              {
+                "type": "streak",
+                "value": -2.0,
+                "displayValue": "L2"
+              },
+              {
+                "type": "winpercent",
+                "value": 0.0,
+                "displayValue": ".000"
+              },
+              {
+                "type": "wins",
+                "value": 0.0,
+                "displayValue": "0"
+              },
+              {
+                "type": "home",
+                "value": null,
+                "displayValue": "0-2"
+              },
+              {
+                "type": "road",
+                "value": null,
+                "displayValue": "0-0"
+              },
+              {
+                "type": "lasttengames",
+                "value": null,
+                "displayValue": "0-2"
+              }
+            ]
+          },
+          {
+            "team": {
+              "id": "4",
+              "displayName": "Chicago Bulls",
+              "abbreviation": "CHI"
+            },
+            "stats": [
+              {
+                "type": "gamesbehind",
+                "value": 2.0,
+                "displayValue": "2"
+              },
+              {
+                "type": "losses",
+                "value": 2.0,
+                "displayValue": "2"
+              },
+              {
+                "type": "playoffseed",
+                "value": 10.0,
+                "displayValue": "10"
+              },
+              {
+                "type": "streak",
+                "value": -1.0,
+                "displayValue": "L1"
+              },
+              {
+                "type": "winpercent",
+                "value": 0.33333334,
+                "displayValue": ".333"
+              },
+              {
+                "type": "wins",
+                "value": 1.0,
+                "displayValue": "1"
+              },
+              {
+                "type": "home",
+                "value": null,
+                "displayValue": "0-1"
+              },
+              {
+                "type": "road",
+                "value": null,
+                "displayValue": "1-1"
+              },
+              {
+                "type": "lasttengames",
+                "value": null,
+                "displayValue": "1-2"
+              }
+            ]
+          },
+          {
+            "team": {
+              "id": "2",
+              "displayName": "Boston Celtics",
+              "abbreviation": "BOS"
+            },
+            "stats": [
+              {
+                "type": "gamesbehind",
+                "value": 1.5,
+                "displayValue": "1.5"
+              },
+              {
+                "type": "losses",
+                "value": 1.0,
+                "displayValue": "1"
+              },
+              {
+                "type": "playoffseed",
+                "value": 7.0,
+                "displayValue": "7"
+              },
+              {
+                "type": "streak",
+                "value": 1.0,
+                "displayValue": "W1"
+              },
+              {
+                "type": "winpercent",
+                "value": 0.5,
+                "displayValue": ".500"
+              },
+              {
+                "type": "wins",
+                "value": 1.0,
+                "displayValue": "1"
+              },
+              {
+                "type": "home",
+                "value": null,
+                "displayValue": "1-0"
+              },
+              {
+                "type": "road",
+                "value": null,
+                "displayValue": "0-1"
+              },
+              {
+                "type": "lasttengames",
+                "value": null,
+                "displayValue": "1-1"
+              }
+            ]
+          },
+          {
+            "team": {
+              "id": "11",
+              "displayName": "Indiana Pacers",
+              "abbreviation": "IND"
+            },
+            "stats": [
+              {
+                "type": "gamesbehind",
+                "value": 1.5,
+                "displayValue": "1.5"
+              },
+              {
+                "type": "losses",
+                "value": 1.0,
+                "displayValue": "1"
+              },
+              {
+                "type": "playoffseed",
+                "value": 8.0,
+                "displayValue": "8"
+              },
+              {
+                "type": "streak",
+                "value": -1.0,
+                "displayValue": "L1"
+              },
+              {
+                "type": "winpercent",
+                "value": 0.5,
+                "displayValue": ".500"
+              },
+              {
+                "type": "wins",
+                "value": 1.0,
+                "displayValue": "1"
+              },
+              {
+                "type": "home",
+                "value": null,
+                "displayValue": "0-1"
+              },
+              {
+                "type": "road",
+                "value": null,
+                "displayValue": "1-0"
+              },
+              {
+                "type": "lasttengames",
+                "value": null,
+                "displayValue": "1-1"
+              }
+            ]
+          },
+          {
+            "team": {
+              "id": "5",
+              "displayName": "Cleveland Cavaliers",
+              "abbreviation": "CLE"
+            },
+            "stats": [
+              {
+                "type": "gamesbehind",
+                "value": 1.5,
+                "displayValue": "1.5"
+              },
+              {
+                "type": "losses",
+                "value": 1.0,
+                "displayValue": "1"
+              },
+              {
+                "type": "playoffseed",
+                "value": 9.0,
+                "displayValue": "9"
+              },
+              {
+                "type": "streak",
+                "value": 1.0,
+                "displayValue": "W1"
+              },
+              {
+                "type": "winpercent",
+                "value": 0.5,
+                "displayValue": ".500"
+              },
+              {
+                "type": "wins",
+                "value": 1.0,
+                "displayValue": "1"
+              },
+              {
+                "type": "home",
+                "value": null,
+                "displayValue": "1-0"
+              },
+              {
+                "type": "road",
+                "value": null,
+                "displayValue": "0-1"
+              },
+              {
+                "type": "lasttengames",
+                "value": null,
+                "displayValue": "1-1"
+              }
+            ]
+          },
+          {
+            "team": {
+              "id": "1",
+              "displayName": "Atlanta Hawks",
+              "abbreviation": "ATL"
+            },
+            "stats": [
+              {
+                "type": "gamesbehind",
+                "value": 1.0,
+                "displayValue": "1"
+              },
+              {
+                "type": "losses",
+                "value": 1.0,
+                "displayValue": "1"
+              },
+              {
+                "type": "playoffseed",
+                "value": 4.0,
+                "displayValue": "4"
+              },
+              {
+                "type": "streak",
+                "value": -1.0,
+                "displayValue": "L1"
+              },
+              {
+                "type": "winpercent",
+                "value": 0.6666667,
+                "displayValue": ".667"
+              },
+              {
+                "type": "wins",
+                "value": 2.0,
+                "displayValue": "2"
+              },
+              {
+                "type": "home",
+                "value": null,
+                "displayValue": "0-1"
+              },
+              {
+                "type": "road",
+                "value": null,
+                "displayValue": "2-0"
+              },
+              {
+                "type": "lasttengames",
+                "value": null,
+                "displayValue": "2-1"
+              }
+            ]
+          },
+          {
+            "team": {
+              "id": "30",
+              "displayName": "Charlotte Hornets",
+              "abbreviation": "CHA"
+            },
+            "stats": [
+              {
+                "type": "gamesbehind",
+                "value": 1.0,
+                "displayValue": "1"
+              },
+              {
+                "type": "losses",
+                "value": 1.0,
+                "displayValue": "1"
+              },
+              {
+                "type": "playoffseed",
+                "value": 5.0,
+                "displayValue": "5"
+              },
+              {
+                "type": "streak",
+                "value": 1.0,
+                "displayValue": "W1"
+              },
+              {
+                "type": "winpercent",
+                "value": 0.6666667,
+                "displayValue": ".667"
+              },
+              {
+                "type": "wins",
+                "value": 2.0,
+                "displayValue": "2"
+              },
+              {
+                "type": "home",
+                "value": null,
+                "displayValue": "1-1"
+              },
+              {
+                "type": "road",
+                "value": null,
+                "displayValue": "1-0"
+              },
+              {
+                "type": "lasttengames",
+                "value": null,
+                "displayValue": "2-1"
+              }
+            ]
+          },
+          {
+            "team": {
+              "id": "27",
+              "displayName": "Washington Wizards",
+              "abbreviation": "WSH"
+            },
+            "stats": [
+              {
+                "type": "gamesbehind",
+                "value": 1.0,
+                "displayValue": "1"
+              },
+              {
+                "type": "losses",
+                "value": 1.0,
+                "displayValue": "1"
+              },
+              {
+                "type": "playoffseed",
+                "value": 6.0,
+                "displayValue": "6"
+              },
+              {
+                "type": "streak",
+                "value": 1.0,
+                "displayValue": "W1"
+              },
+              {
+                "type": "winpercent",
+                "value": 0.6666667,
+                "displayValue": ".667"
+              },
+              {
+                "type": "wins",
+                "value": 2.0,
+                "displayValue": "2"
+              },
+              {
+                "type": "home",
+                "value": null,
+                "displayValue": "1-1"
+              },
+              {
+                "type": "road",
+                "value": null,
+                "displayValue": "1-0"
+              },
+              {
+                "type": "lasttengames",
+                "value": null,
+                "displayValue": "2-1"
+              }
+            ]
+          },
+          {
+            "team": {
+              "id": "8",
+              "displayName": "Detroit Pistons",
+              "abbreviation": "DET"
+            },
+            "stats": [
+              {
+                "type": "gamesbehind",
+                "value": 0.5,
+                "displayValue": "0.5"
+              },
+              {
+                "type": "losses",
+                "value": 0.0,
+                "displayValue": "0"
+              },
+              {
+                "type": "playoffseed",
+                "value": 2.0,
+                "displayValue": "2"
+              },
+              {
+                "type": "streak",
+                "value": 2.0,
+                "displayValue": "W2"
+              },
+              {
+                "type": "winpercent",
+                "value": 1.0,
+                "displayValue": "1.000"
+              },
+              {
+                "type": "wins",
+                "value": 2.0,
+                "displayValue": "2"
+              },
+              {
+                "type": "home",
+                "value": null,
+                "displayValue": "1-0"
+              },
+              {
+                "type": "road",
+                "value": null,
+                "displayValue": "1-0"
+              },
+              {
+                "type": "lasttengames",
+                "value": null,
+                "displayValue": "2-0"
+              }
+            ]
+          },
+          {
+            "team": {
+              "id": "28",
+              "displayName": "Toronto Raptors",
+              "abbreviation": "TOR"
+            },
+            "stats": [
+              {
+                "type": "gamesbehind",
+                "value": 0.5,
+                "displayValue": "0.5"
+              },
+              {
+                "type": "losses",
+                "value": 0.0,
+                "displayValue": "0"
+              },
+              {
+                "type": "playoffseed",
+                "value": 3.0,
+                "displayValue": "3"
+              },
+              {
+                "type": "streak",
+                "value": 2.0,
+                "displayValue": "W2"
+              },
+              {
+                "type": "winpercent",
+                "value": 1.0,
+                "displayValue": "1.000"
+              },
+              {
+                "type": "wins",
+                "value": 2.0,
+                "displayValue": "2"
+              },
+              {
+                "type": "home",
+                "value": null,
+                "displayValue": "1-0"
+              },
+              {
+                "type": "road",
+                "value": null,
+                "displayValue": "1-0"
+              },
+              {
+                "type": "lasttengames",
+                "value": null,
+                "displayValue": "2-0"
+              }
+            ]
+          },
+          {
+            "team": {
+              "id": "20",
+              "displayName": "Philadelphia 76ers",
+              "abbreviation": "PHI"
+            },
+            "stats": [
+              {
+                "type": "gamesbehind",
+                "value": 0.0,
+                "displayValue": "-"
+              },
+              {
+                "type": "losses",
+                "value": 0.0,
+                "displayValue": "0"
+              },
+              {
+                "type": "playoffseed",
+                "value": 1.0,
+                "displayValue": "1"
+              },
+              {
+                "type": "streak",
+                "value": 3.0,
+                "displayValue": "W3"
+              },
+              {
+                "type": "winpercent",
+                "value": 1.0,
+                "displayValue": "1.000"
+              },
+              {
+                "type": "wins",
+                "value": 3.0,
+                "displayValue": "3"
+              },
+              {
+                "type": "home",
+                "value": null,
+                "displayValue": "2-0"
+              },
+              {
+                "type": "road",
+                "value": null,
+                "displayValue": "1-0"
+              },
+              {
+                "type": "lasttengames",
+                "value": null,
+                "displayValue": "3-0"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "Western Conference",
+      "abbreviation": "West",
+      "standings": {
+        "entries": [
+          {
+            "team": {
+              "id": "3",
+              "displayName": "New Orleans Pelicans",
+              "abbreviation": "NO"
+            },
+            "stats": [
+              {
+                "type": "gamesbehind",
+                "value": 3.0,
+                "displayValue": "3"
+              },
+              {
+                "type": "losses",
+                "value": 3.0,
+                "displayValue": "3"
+              },
+              {
+                "type": "playoffseed",
+                "value": 14.0,
+                "displayValue": "14"
+              },
+              {
+                "type": "streak",
+                "value": -3.0,
+                "displayValue": "L3"
+              },
+              {
+                "type": "winpercent",
+                "value": 0.0,
+                "displayValue": ".000"
+              },
+              {
+                "type": "wins",
+                "value": 0.0,
+                "displayValue": "0"
+              },
+              {
+                "type": "home",
+                "value": null,
+                "displayValue": "0-1"
+              },
+              {
+                "type": "road",
+                "value": null,
+                "displayValue": "0-2"
+              },
+              {
+                "type": "lasttengames",
+                "value": null,
+                "displayValue": "0-3"
+              }
+            ]
+          },
+          {
+            "team": {
+              "id": "9",
+              "displayName": "Golden State Warriors",
+              "abbreviation": "GS"
+            },
+            "stats": [
+              {
+                "type": "gamesbehind",
+                "value": 3.0,
+                "displayValue": "3"
+              },
+              {
+                "type": "losses",
+                "value": 3.0,
+                "displayValue": "3"
+              },
+              {
+                "type": "playoffseed",
+                "value": 15.0,
+                "displayValue": "15"
+              },
+              {
+                "type": "streak",
+                "value": -3.0,
+                "displayValue": "L3"
+              },
+              {
+                "type": "winpercent",
+                "value": 0.0,
+                "displayValue": ".000"
+              },
+              {
+                "type": "wins",
+                "value": 0.0,
+                "displayValue": "0"
+              },
+              {
+                "type": "home",
+                "value": null,
+                "displayValue": "0-1"
+              },
+              {
+                "type": "road",
+                "value": null,
+                "displayValue": "0-2"
+              },
+              {
+                "type": "lasttengames",
+                "value": null,
+                "displayValue": "0-3"
+              }
+            ]
+          },
+          {
+            "team": {
+              "id": "23",
+              "displayName": "Sacramento Kings",
+              "abbreviation": "SAC"
+            },
+            "stats": [
+              {
+                "type": "gamesbehind",
+                "value": 2.5,
+                "displayValue": "2.5"
+              },
+              {
+                "type": "losses",
+                "value": 2.0,
+                "displayValue": "2"
+              },
+              {
+                "type": "playoffseed",
+                "value": 13.0,
+                "displayValue": "13"
+              },
+              {
+                "type": "streak",
+                "value": -2.0,
+                "displayValue": "L2"
+              },
+              {
+                "type": "winpercent",
+                "value": 0.0,
+                "displayValue": ".000"
+              },
+              {
+                "type": "wins",
+                "value": 0.0,
+                "displayValue": "0"
+              },
+              {
+                "type": "home",
+                "value": null,
+                "displayValue": "0-1"
+              },
+              {
+                "type": "road",
+                "value": null,
+                "displayValue": "0-1"
+              },
+              {
+                "type": "lasttengames",
+                "value": null,
+                "displayValue": "0-2"
+              }
+            ]
+          },
+          {
+            "team": {
+              "id": "24",
+              "displayName": "San Antonio Spurs",
+              "abbreviation": "SA"
+            },
+            "stats": [
+              {
+                "type": "gamesbehind",
+                "value": 2.0,
+                "displayValue": "2"
+              },
+              {
+                "type": "losses",
+                "value": 2.0,
+                "displayValue": "2"
+              },
+              {
+                "type": "playoffseed",
+                "value": 11.0,
+                "displayValue": "11"
+              },
+              {
+                "type": "streak",
+                "value": 1.0,
+                "displayValue": "W1"
+              },
+              {
+                "type": "winpercent",
+                "value": 0.33333334,
+                "displayValue": ".333"
+              },
+              {
+                "type": "wins",
+                "value": 1.0,
+                "displayValue": "1"
+              },
+              {
+                "type": "home",
+                "value": null,
+                "displayValue": "0-2"
+              },
+              {
+                "type": "road",
+                "value": null,
+                "displayValue": "1-0"
+              },
+              {
+                "type": "lasttengames",
+                "value": null,
+                "displayValue": "1-2"
+              }
+            ]
+          },
+          {
+            "team": {
+              "id": "6",
+              "displayName": "Dallas Mavericks",
+              "abbreviation": "DAL"
+            },
+            "stats": [
+              {
+                "type": "gamesbehind",
+                "value": 2.0,
+                "displayValue": "2"
+              },
+              {
+                "type": "losses",
+                "value": 2.0,
+                "displayValue": "2"
+              },
+              {
+                "type": "playoffseed",
+                "value": 12.0,
+                "displayValue": "12"
+              },
+              {
+                "type": "streak",
+                "value": -1.0,
+                "displayValue": "L1"
+              },
+              {
+                "type": "winpercent",
+                "value": 0.33333334,
+                "displayValue": ".333"
+              },
+              {
+                "type": "wins",
+                "value": 1.0,
+                "displayValue": "1"
+              },
+              {
+                "type": "home",
+                "value": null,
+                "displayValue": "0-1"
+              },
+              {
+                "type": "road",
+                "value": null,
+                "displayValue": "1-1"
+              },
+              {
+                "type": "lasttengames",
+                "value": null,
+                "displayValue": "1-2"
+              }
+            ]
+          },
+          {
+            "team": {
+              "id": "12",
+              "displayName": "LA Clippers",
+              "abbreviation": "LAC"
+            },
+            "stats": [
+              {
+                "type": "gamesbehind",
+                "value": 1.5,
+                "displayValue": "1.5"
+              },
+              {
+                "type": "losses",
+                "value": 1.0,
+                "displayValue": "1"
+              },
+              {
+                "type": "playoffseed",
+                "value": 7.0,
+                "displayValue": "7"
+              },
+              {
+                "type": "streak",
+                "value": -1.0,
+                "displayValue": "L1"
+              },
+              {
+                "type": "winpercent",
+                "value": 0.5,
+                "displayValue": ".500"
+              },
+              {
+                "type": "wins",
+                "value": 1.0,
+                "displayValue": "1"
+              },
+              {
+                "type": "home",
+                "value": null,
+                "displayValue": "1-0"
+              },
+              {
+                "type": "road",
+                "value": null,
+                "displayValue": "0-1"
+              },
+              {
+                "type": "lasttengames",
+                "value": null,
+                "displayValue": "1-1"
+              }
+            ]
+          },
+          {
+            "team": {
+              "id": "7",
+              "displayName": "Denver Nuggets",
+              "abbreviation": "DEN"
+            },
+            "stats": [
+              {
+                "type": "gamesbehind",
+                "value": 1.5,
+                "displayValue": "1.5"
+              },
+              {
+                "type": "losses",
+                "value": 1.0,
+                "displayValue": "1"
+              },
+              {
+                "type": "playoffseed",
+                "value": 8.0,
+                "displayValue": "8"
+              },
+              {
+                "type": "streak",
+                "value": 1.0,
+                "displayValue": "W1"
+              },
+              {
+                "type": "winpercent",
+                "value": 0.5,
+                "displayValue": ".500"
+              },
+              {
+                "type": "wins",
+                "value": 1.0,
+                "displayValue": "1"
+              },
+              {
+                "type": "home",
+                "value": null,
+                "displayValue": "1-0"
+              },
+              {
+                "type": "road",
+                "value": null,
+                "displayValue": "0-1"
+              },
+              {
+                "type": "lasttengames",
+                "value": null,
+                "displayValue": "1-1"
+              }
+            ]
+          },
+          {
+            "team": {
+              "id": "26",
+              "displayName": "Utah Jazz",
+              "abbreviation": "UTAH"
+            },
+            "stats": [
+              {
+                "type": "gamesbehind",
+                "value": 1.5,
+                "displayValue": "1.5"
+              },
+              {
+                "type": "losses",
+                "value": 1.0,
+                "displayValue": "1"
+              },
+              {
+                "type": "playoffseed",
+                "value": 9.0,
+                "displayValue": "9"
+              },
+              {
+                "type": "streak",
+                "value": 1.0,
+                "displayValue": "W1"
+              },
+              {
+                "type": "winpercent",
+                "value": 0.5,
+                "displayValue": ".500"
+              },
+              {
+                "type": "wins",
+                "value": 1.0,
+                "displayValue": "1"
+              },
+              {
+                "type": "home",
+                "value": null,
+                "displayValue": "1-0"
+              },
+              {
+                "type": "road",
+                "value": null,
+                "displayValue": "0-1"
+              },
+              {
+                "type": "lasttengames",
+                "value": null,
+                "displayValue": "1-1"
+              }
+            ]
+          },
+          {
+            "team": {
+              "id": "21",
+              "displayName": "Phoenix Suns",
+              "abbreviation": "PHX"
+            },
+            "stats": [
+              {
+                "type": "gamesbehind",
+                "value": 1.5,
+                "displayValue": "1.5"
+              },
+              {
+                "type": "losses",
+                "value": 1.0,
+                "displayValue": "1"
+              },
+              {
+                "type": "playoffseed",
+                "value": 10.0,
+                "displayValue": "10"
+              },
+              {
+                "type": "streak",
+                "value": 1.0,
+                "displayValue": "W1"
+              },
+              {
+                "type": "winpercent",
+                "value": 0.5,
+                "displayValue": ".500"
+              },
+              {
+                "type": "wins",
+                "value": 1.0,
+                "displayValue": "1"
+              },
+              {
+                "type": "home",
+                "value": null,
+                "displayValue": "1-0"
+              },
+              {
+                "type": "road",
+                "value": null,
+                "displayValue": "0-1"
+              },
+              {
+                "type": "lasttengames",
+                "value": null,
+                "displayValue": "1-1"
+              }
+            ]
+          },
+          {
+            "team": {
+              "id": "16",
+              "displayName": "Minnesota Timberwolves",
+              "abbreviation": "MIN"
+            },
+            "stats": [
+              {
+                "type": "gamesbehind",
+                "value": 0.5,
+                "displayValue": "0.5"
+              },
+              {
+                "type": "losses",
+                "value": 0.0,
+                "displayValue": "0"
+              },
+              {
+                "type": "playoffseed",
+                "value": 2.0,
+                "displayValue": "2"
+              },
+              {
+                "type": "streak",
+                "value": 2.0,
+                "displayValue": "W2"
+              },
+              {
+                "type": "winpercent",
+                "value": 1.0,
+                "displayValue": "1.000"
+              },
+              {
+                "type": "wins",
+                "value": 2.0,
+                "displayValue": "2"
+              },
+              {
+                "type": "home",
+                "value": null,
+                "displayValue": "0-0"
+              },
+              {
+                "type": "road",
+                "value": null,
+                "displayValue": "2-0"
+              },
+              {
+                "type": "lasttengames",
+                "value": null,
+                "displayValue": "2-0"
+              }
+            ]
+          },
+          {
+            "team": {
+              "id": "22",
+              "displayName": "Portland Trail Blazers",
+              "abbreviation": "POR"
+            },
+            "stats": [
+              {
+                "type": "gamesbehind",
+                "value": 0.5,
+                "displayValue": "0.5"
+              },
+              {
+                "type": "losses",
+                "value": 0.0,
+                "displayValue": "0"
+              },
+              {
+                "type": "playoffseed",
+                "value": 3.0,
+                "displayValue": "3"
+              },
+              {
+                "type": "streak",
+                "value": 2.0,
+                "displayValue": "W2"
+              },
+              {
+                "type": "winpercent",
+                "value": 1.0,
+                "displayValue": "1.000"
+              },
+              {
+                "type": "wins",
+                "value": 2.0,
+                "displayValue": "2"
+              },
+              {
+                "type": "home",
+                "value": null,
+                "displayValue": "1-0"
+              },
+              {
+                "type": "road",
+                "value": null,
+                "displayValue": "1-0"
+              },
+              {
+                "type": "lasttengames",
+                "value": null,
+                "displayValue": "2-0"
+              }
+            ]
+          },
+          {
+            "team": {
+              "id": "13",
+              "displayName": "Los Angeles Lakers",
+              "abbreviation": "LAL"
+            },
+            "stats": [
+              {
+                "type": "gamesbehind",
+                "value": 0.5,
+                "displayValue": "0.5"
+              },
+              {
+                "type": "losses",
+                "value": 0.0,
+                "displayValue": "0"
+              },
+              {
+                "type": "playoffseed",
+                "value": 4.0,
+                "displayValue": "4"
+              },
+              {
+                "type": "streak",
+                "value": 2.0,
+                "displayValue": "W2"
+              },
+              {
+                "type": "winpercent",
+                "value": 1.0,
+                "displayValue": "1.000"
+              },
+              {
+                "type": "wins",
+                "value": 2.0,
+                "displayValue": "2"
+              },
+              {
+                "type": "home",
+                "value": null,
+                "displayValue": "2-0"
+              },
+              {
+                "type": "road",
+                "value": null,
+                "displayValue": "0-0"
+              },
+              {
+                "type": "lasttengames",
+                "value": null,
+                "displayValue": "2-0"
+              }
+            ]
+          },
+          {
+            "team": {
+              "id": "25",
+              "displayName": "Oklahoma City Thunder",
+              "abbreviation": "OKC"
+            },
+            "stats": [
+              {
+                "type": "gamesbehind",
+                "value": 0.5,
+                "displayValue": "0.5"
+              },
+              {
+                "type": "losses",
+                "value": 0.0,
+                "displayValue": "0"
+              },
+              {
+                "type": "playoffseed",
+                "value": 5.0,
+                "displayValue": "5"
+              },
+              {
+                "type": "streak",
+                "value": 2.0,
+                "displayValue": "W2"
+              },
+              {
+                "type": "winpercent",
+                "value": 1.0,
+                "displayValue": "1.000"
+              },
+              {
+                "type": "wins",
+                "value": 2.0,
+                "displayValue": "2"
+              },
+              {
+                "type": "home",
+                "value": null,
+                "displayValue": "1-0"
+              },
+              {
+                "type": "road",
+                "value": null,
+                "displayValue": "1-0"
+              },
+              {
+                "type": "lasttengames",
+                "value": null,
+                "displayValue": "2-0"
+              }
+            ]
+          },
+          {
+            "team": {
+              "id": "29",
+              "displayName": "Memphis Grizzlies",
+              "abbreviation": "MEM"
+            },
+            "stats": [
+              {
+                "type": "gamesbehind",
+                "value": 0.5,
+                "displayValue": "0.5"
+              },
+              {
+                "type": "losses",
+                "value": 0.0,
+                "displayValue": "0"
+              },
+              {
+                "type": "playoffseed",
+                "value": 6.0,
+                "displayValue": "6"
+              },
+              {
+                "type": "streak",
+                "value": 2.0,
+                "displayValue": "W2"
+              },
+              {
+                "type": "winpercent",
+                "value": 1.0,
+                "displayValue": "1.000"
+              },
+              {
+                "type": "wins",
+                "value": 2.0,
+                "displayValue": "2"
+              },
+              {
+                "type": "home",
+                "value": null,
+                "displayValue": "1-0"
+              },
+              {
+                "type": "road",
+                "value": null,
+                "displayValue": "1-0"
+              },
+              {
+                "type": "lasttengames",
+                "value": null,
+                "displayValue": "2-0"
+              }
+            ]
+          },
+          {
+            "team": {
+              "id": "10",
+              "displayName": "Houston Rockets",
+              "abbreviation": "HOU"
+            },
+            "stats": [
+              {
+                "type": "gamesbehind",
+                "value": 0.0,
+                "displayValue": "-"
+              },
+              {
+                "type": "losses",
+                "value": 0.0,
+                "displayValue": "0"
+              },
+              {
+                "type": "playoffseed",
+                "value": 1.0,
+                "displayValue": "1"
+              },
+              {
+                "type": "streak",
+                "value": 3.0,
+                "displayValue": "W3"
+              },
+              {
+                "type": "winpercent",
+                "value": 1.0,
+                "displayValue": "1.000"
+              },
+              {
+                "type": "wins",
+                "value": 3.0,
+                "displayValue": "3"
+              },
+              {
+                "type": "home",
+                "value": null,
+                "displayValue": "1-0"
+              },
+              {
+                "type": "road",
+                "value": null,
+                "displayValue": "2-0"
+              },
+              {
+                "type": "lasttengames",
+                "value": null,
+                "displayValue": "3-0"
+              }
+            ]
+          }
+        ]
+      }
+    }
+  ]
+}

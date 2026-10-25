@@ -16,6 +16,11 @@ export const ESPN_API_BASE_URL = "https://site.api.espn.com/apis/site/v2/sports/
 
 export const ESPN_NEWS_URL = `${ESPN_API_BASE_URL}/news`;
 
+// setSeasonContextData only, never a browser. Standings live on the v2 path:
+// the site/v2 one returns 404.
+export const ESPN_STANDINGS_URL = "https://site.api.espn.com/apis/v2/sports/basketball/nba/standings";
+export const ESPN_HEADSHOT_BASE_URL = "https://a.espncdn.com/i/headshots/nba/players/full";
+
 // Basketball-Reference — free, complete all-time history for both the player
 // pool (A-Z index pages) and per-player career averages (per_game_stats table).
 // Scraped only by scheduled Lambdas (setPlayersData, setPlayerStatsData) via

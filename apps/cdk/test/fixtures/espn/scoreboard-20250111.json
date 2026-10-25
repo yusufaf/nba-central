@@ -1,0 +1,228 @@
+{
+  "events": [
+    {
+      "id": "401705098",
+      "date": "2025-01-11T20:00Z",
+      "competitions": [
+        {
+          "status": {
+            "type": {
+              "name": "STATUS_POSTPONED",
+              "state": "post"
+            }
+          },
+          "competitors": [
+            {
+              "homeAway": "home",
+              "score": "0",
+              "team": {
+                "id": "1",
+                "abbreviation": "ATL"
+              }
+            },
+            {
+              "homeAway": "away",
+              "score": "0",
+              "team": {
+                "id": "10",
+                "abbreviation": "HOU"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "401705099",
+      "date": "2025-01-11T22:00Z",
+      "competitions": [
+        {
+          "status": {
+            "type": {
+              "name": "STATUS_FINAL",
+              "state": "post"
+            }
+          },
+          "competitors": [
+            {
+              "homeAway": "home",
+              "score": "114",
+              "team": {
+                "id": "21",
+                "abbreviation": "PHX"
+              }
+            },
+            {
+              "homeAway": "away",
+              "score": "106",
+              "team": {
+                "id": "26",
+                "abbreviation": "UTAH"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "401705100",
+      "date": "2025-01-12T00:00Z",
+      "competitions": [
+        {
+          "status": {
+            "type": {
+              "name": "STATUS_FINAL",
+              "state": "post"
+            }
+          },
+          "competitors": [
+            {
+              "homeAway": "home",
+              "score": "123",
+              "team": {
+                "id": "8",
+                "abbreviation": "DET"
+              }
+            },
+            {
+              "homeAway": "away",
+              "score": "114",
+              "team": {
+                "id": "28",
+                "abbreviation": "TOR"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "401705101",
+      "date": "2025-01-12T01:00Z",
+      "competitions": [
+        {
+          "status": {
+            "type": {
+              "name": "STATUS_FINAL",
+              "state": "post"
+            }
+          },
+          "competitors": [
+            {
+              "homeAway": "home",
+              "score": "125",
+              "team": {
+                "id": "16",
+                "abbreviation": "MIN"
+              }
+            },
+            {
+              "homeAway": "away",
+              "score": "127",
+              "team": {
+                "id": "29",
+                "abbreviation": "MEM"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "401705102",
+      "date": "2025-01-12T03:00Z",
+      "competitions": [
+        {
+          "status": {
+            "type": {
+              "name": "STATUS_FINAL",
+              "state": "post"
+            }
+          },
+          "competitors": [
+            {
+              "homeAway": "home",
+              "score": "98",
+              "team": {
+                "id": "22",
+                "abbreviation": "POR"
+              }
+            },
+            {
+              "homeAway": "away",
+              "score": "119",
+              "team": {
+                "id": "14",
+                "abbreviation": "MIA"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "401705103",
+      "date": "2025-01-12T03:30Z",
+      "competitions": [
+        {
+          "status": {
+            "type": {
+              "name": "STATUS_POSTPONED",
+              "state": "post"
+            }
+          },
+          "competitors": [
+            {
+              "homeAway": "home",
+              "score": "0",
+              "team": {
+                "id": "13",
+                "abbreviation": "LAL"
+              }
+            },
+            {
+              "homeAway": "away",
+              "score": "0",
+              "team": {
+                "id": "24",
+                "abbreviation": "SA"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "401705104",
+      "date": "2025-01-12T03:30Z",
+      "competitions": [
+        {
+          "status": {
+            "type": {
+              "name": "STATUS_POSTPONED",
+              "state": "post"
+            }
+          },
+          "competitors": [
+            {
+              "homeAway": "home",
+              "score": "0",
+              "team": {
+                "id": "12",
+                "abbreviation": "LAC"
+              }
+            },
+            {
+              "homeAway": "away",
+              "score": "0",
+              "team": {
+                "id": "30",
+                "abbreviation": "CHA"
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
