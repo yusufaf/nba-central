@@ -131,9 +131,12 @@ export type Player = {
     ratingSource?: RatingSource;
     ratingHistory?: NBA2KRating[];
     // Populated when a roster slot's full career stats are fetched
-    // (TeamBuilder.vue's getPlayerStats) - not part of the roster choice
+    // (TeamBuilder.vue's fetchStatsDetails) - not part of the roster choice
     // itself, so useTeamPersistence's toSnapshot drops it again before save.
     playerStats?: unknown[];
+    // How that fetch went. Absent for a player whose stats were never
+    // fetched (a custom player); also dropped by toSnapshot.
+    statsStatus?: PlayerStatsStatus;
     heightAndWeight?: string;
     // Custom player fields (camelCase)
     isCustom?: boolean;
@@ -145,6 +148,9 @@ export type Player = {
     weightPounds?: number;
     overallRating?: number;
 };
+
+// "unavailable": the stats snapshot hasn't reached this player yet.
+export type PlayerStatsStatus = 'ready' | 'unavailable' | 'failed' | 'retrying';
 
 export type CoachSpecialty = 'Offensive' | 'Defensive' | 'Balanced';
 export type PlayerPosition = 'PG' | 'SG' | 'SF' | 'PF' | 'C';

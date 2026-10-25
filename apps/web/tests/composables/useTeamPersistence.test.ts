@@ -21,6 +21,7 @@ const apiPlayer = (overrides: Record<string, any> = {}) => ({
     heightAndWeight: "6' 9\", 250lbs",
     playerStats: [{ season: 2025, pts: 27 }],
     ratingHistory: [{ gameVersion: "2K25", overall: 96 }],
+    statsStatus: "failed",
     ...overrides,
 });
 
@@ -85,6 +86,7 @@ describe("serializeTeam", () => {
         expect(snapshot).not.toHaveProperty("playerStats");
         expect(snapshot).not.toHaveProperty("ratingHistory");
         expect(snapshot).not.toHaveProperty("heightAndWeight");
+        expect(snapshot).not.toHaveProperty("statsStatus");
         expect(snapshot.id).toBe("jamesle01");
     });
 
@@ -257,13 +259,14 @@ describe("serializeTeam", () => {
 });
 
 // A snapshot as it actually comes back from the API - already stripped of
-// playerStats/ratingHistory/heightAndWeight, unlike the working `apiPlayer()`
-// fixture above.
+// playerStats/ratingHistory/heightAndWeight/statsStatus, unlike the working
+// `apiPlayer()` fixture above.
 const snapshotPlayer = (overrides: Record<string, any> = {}) => {
     const {
         heightAndWeight: _heightAndWeight,
         playerStats: _playerStats,
         ratingHistory: _ratingHistory,
+        statsStatus: _statsStatus,
         ...snapshot
     } = apiPlayer(overrides);
     return snapshot;

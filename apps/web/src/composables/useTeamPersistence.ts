@@ -29,15 +29,17 @@ interface BuilderState {
     teamGM: GM | null;
 }
 
-// Career stats/rating history are fetched per slot (getPlayerStats) rather
-// than saved on the team - they're derived from the player's id, not part
-// of the roster choice, and re-fetching keeps a saved team from going stale
-// the moment a player's career continues.
+// Career stats/rating history are fetched per slot (fetchStatsDetails)
+// rather than saved on the team - they're derived from the player's id, not
+// part of the roster choice, and re-fetching keeps a saved team from going
+// stale the moment a player's career continues. The fetch's status goes
+// with them, so a failed load is never saved as an empty career.
 const toSnapshot = (player: Player): PlayerSnapshot => {
     const {
         playerStats: _playerStats,
         ratingHistory: _ratingHistory,
         heightAndWeight: _heightAndWeight,
+        statsStatus: _statsStatus,
         ...snapshot
     } = player;
     return snapshot as PlayerSnapshot;

@@ -5,11 +5,11 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Separator } from '@/components/ui/separator';
-import { X, UserPlus, Plus, BarChart3, ArrowLeftRight, GitCompareArrows, GripVertical, Loader2 } from 'lucide-vue-next';
+import { X, UserPlus, Plus, BarChart3, ArrowLeftRight, GitCompareArrows, GripVertical, Loader2, RotateCw, CircleAlert, Clock3 } from 'lucide-vue-next';
 import { getWikipediaUrl } from '@/constants/utilities';
 import ExternalLinksMenu from '@/components/ExternalLinksMenu.vue';
 import { ratingTier, ratingSourceLabel } from '@/constants/ratings';
-import type { RatingSource } from '@/models/types';
+import type { PlayerStatsStatus, RatingSource } from '@/models/types';
 
 interface Player {
   id: string;
@@ -22,6 +22,7 @@ interface Player {
     abbreviation: string;
   };
   playerStats?: any[];
+  statsStatus?: PlayerStatsStatus;
   isCustom?: boolean;
   rating?: number;
   ratingSource?: RatingSource;
@@ -58,6 +59,7 @@ const emit = defineEmits<{
   'remove': [index: number];
   'flip': [index: number];
   'viewStats': [index: number];
+  'retryStats': [index: number];
   'compare': [index: number];
   'dragStart': [index: number, event: DragEvent];
   'dragEnd': [];
@@ -101,6 +103,26 @@ const averageStats = computed(() => {
     apg: latestSeason.ast?.toFixed(1) || 'N/A',
   };
 });
+
+const statsStatus = computed(() => props.player?.statsStatus);
+const isRetrying = computed(() => statsStatus.value === 'retrying');
+// True from a failed load until its retry settles.
+const showStatsError = computed(() => statsStatus.value === 'failed' || isRetrying.value);
+// What the card shows in place of the stats row. A custom player has no
+// status, so it shows nothing, as before.
+const statsNotice = computed<'failed' | 'unavailable' | 'empty' | null>(() => {
+  if (averageStats.value) return null;
+  if (showStatsError.value) return 'failed';
+  if (statsStatus.value === 'unavailable') return 'unavailable';
+  if (statsStatus.value === 'ready') return 'empty';
+  return null;
+});
+
+// The button stays mounted while retrying, so keyboard focus survives the
+// retry; it just does nothing until that settles.
+const onRetry = () => {
+  if (!isRetrying.value) emit('retryStats', props.slotIndex);
+};
 </script>
 
 <template>
@@ -241,17 +263,57 @@ const averageStats = computed(() => {
                 <div class="stat-label">AST</div>
               </div>
             </div>
+            <div v-else-if="statsNotice === 'failed'" class="stats-notice">
+              <p class="stats-notice-text" role="status">
+                <template v-if="isRetrying">Loading stats...</template>
+                <template v-else>
+                  <CircleAlert class="stats-notice-icon is-error" aria-hidden="true" />
+                  Couldn't load stats
+                </template>
+              </p>
+              <Button
+                variant="outline"
+                size="sm"
+                :aria-label="`Retry stats for ${player?.fullName}`"
+                :aria-disabled="isRetrying || undefined"
+                class="aria-disabled:opacity-50 aria-disabled:cursor-not-allowed aria-disabled:hover:bg-background aria-disabled:hover:text-foreground aria-disabled:hover:shadow-none aria-disabled:hover:scale-100"
+                @click.stop="onRetry"
+              >
+                <Loader2 v-if="isRetrying" class="w-4 h-4 mr-1 animate-spin" aria-hidden="true" />
+                <RotateCw v-else class="w-4 h-4 mr-1" aria-hidden="true" />
+                Retry
+              </Button>
+            </div>
+            <div v-else-if="statsNotice === 'unavailable'" class="stats-notice">
+              <p class="stats-notice-text">
+                <Clock3 class="stats-notice-icon" aria-hidden="true" />
+                Stats not available yet
+              </p>
+            </div>
+            <div v-else-if="statsNotice === 'empty'" class="stats-notice">
+              <p class="stats-notice-text">No NBA games yet</p>
+            </div>
           </div>
         </template>
 
         <!-- Filled State - Back (Flipped) -->
         <template v-else>
           <div class="action-buttons">
+            <!-- A failed add can land here with "flip new cards" on, so say
+                 why View Stats is off. Retry lives on the front only. -->
+            <p v-if="showStatsError" class="stats-notice-text back-notice" role="status">
+              <template v-if="isRetrying">Loading stats...</template>
+              <template v-else>
+                <CircleAlert class="stats-notice-icon is-error" aria-hidden="true" />
+                Couldn't load stats. Flip to retry.
+              </template>
+            </p>
             <Button
               @click.stop="emit('viewStats', slotIndex)"
               variant="outline"
               size="sm"
               class="action-btn"
+              :disabled="showStatsError"
             >
               <BarChart3 class="w-4 h-4 mr-1" />
               View Stats
@@ -547,6 +609,38 @@ const averageStats = computed(() => {
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.05em;
+}
+
+/* Stats notice - in place of the stats row when there are none to show */
+.stats-notice {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+}
+
+.stats-notice-text {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  font-size: 0.8125rem;
+  color: hsl(var(--muted-foreground));
+  margin: 0;
+}
+
+.stats-notice-icon {
+  width: 1rem;
+  height: 1rem;
+  flex-shrink: 0;
+}
+
+.stats-notice-icon.is-error {
+  color: hsl(var(--destructive-strong));
+}
+
+.back-notice {
+  justify-content: center;
 }
 
 /* Action Buttons */
