@@ -1,6 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { useCalendarGameCounts } from "@/composables/useCalendarGameCounts";
-import { monthScoreboardUrl } from "@/utils/calendarGameCounts";
 
 const now = () => new Date("2026-10-17T16:00Z");
 const JANUARY = [{ date: "2026-01-31T17:00Z" }, { date: "2026-02-01T01:30Z" }];
@@ -31,7 +30,7 @@ describe("useCalendarGameCounts", () => {
         await loadMonths([{ month: 1, year: 2026 }]);
 
         expect(fetchMock).toHaveBeenCalledOnce();
-        expect(fetchMock).toHaveBeenCalledWith(monthScoreboardUrl(2026, 1));
+        expect(fetchMock).toHaveBeenCalledWith("/api/scores/month/202601");
         expect(gameCounts.value.get("20260131")).toBe(2);
     });
 
@@ -56,7 +55,7 @@ describe("useCalendarGameCounts", () => {
         expect(fetchMock).toHaveBeenCalledOnce();
     });
 
-    it("retries a month after ESPN answers with an error status", async () => {
+    it("retries a month after the API answers with an error status", async () => {
         fetchMock
             .mockResolvedValueOnce({ ok: false, status: 400, json: async () => ({}) })
             .mockResolvedValueOnce(okResponse(JANUARY));

@@ -11,9 +11,10 @@ import { picks, puzzleView, result as capFiveResult } from '../helpers/capFive';
  * One screenshot per route, plus the overlay surfaces that the global
  * `[role="dialog"]` rules used to distort.
  *
- * These routes call ESPN directly from the browser, so live data would make
- * every snapshot differ run to run. The network is stubbed with fixed
- * responses; the point of the suite is layout, not content.
+ * These routes read live data (ESPN news and leaders from the browser, scores
+ * and box scores through /api/scores/*), so it would make every snapshot
+ * differ run to run. The network is stubbed with fixed responses; the point
+ * of the suite is layout, not content.
  */
 
 const ESPN = 'https://site.api.espn.com/**';
@@ -69,8 +70,15 @@ async function stubNetwork(page: Page) {
             body: JSON.stringify([]),
         }),
     );
-    // Playwright runs routes in the reverse order of registration, so this
-    // has to come after the catch-all above to actually take priority over it.
+    // Playwright runs routes in the reverse order of registration, so these
+    // have to come after the catch-all above to actually take priority over it.
+    await page.route('**/api/scores/**', (route) =>
+        route.fulfill({
+            status: 200,
+            contentType: 'application/json',
+            body: JSON.stringify({ events: [] }),
+        }),
+    );
     await page.route('**/api/teams/public/**', (route) =>
         route.fulfill({
             status: 200,
@@ -322,15 +330,63 @@ test('/standings requests no ESPN data', async ({ page }) => {
     expect(espn).toEqual([]);
 });
 
+// #263: /scores, its calendar and /game/:id read /api/scores/* instead of
+// ESPN's API. Team logos and headshots are still hotlinked from espncdn.com.
+const recordScoresRequests = (page: Page) => {
+    const espn: string[] = [];
+    const scores: string[] = [];
+    page.on('request', (request) => {
+        const url = new URL(request.url());
+        if (/(^|\.)espn\.com$/.test(url.hostname)) espn.push(request.url());
+        if (url.pathname.startsWith('/api/scores/')) scores.push(url.pathname);
+    });
+    return { espn, scores };
+};
+
+test("/scores requests nothing from ESPN's API", async ({ page }) => {
+    await stubNetwork(page);
+    const { espn, scores } = recordScoresRequests(page);
+    // Before goto: the onMounted fetch can finish before goto returns.
+    const dayRequest = page.waitForRequest('**/api/scores/day/**');
+    await page.goto('/scores', { waitUntil: 'domcontentloaded' });
+    await dayRequest;
+
+    const monthRequest = page.waitForRequest('**/api/scores/month/**');
+    await page.locator('.gameday-container button').click();
+    await monthRequest;
+
+    expect(espn).toEqual([]);
+    expect(scores.some((path) => path.startsWith('/api/scores/day/'))).toBe(true);
+    expect(scores.some((path) => path.startsWith('/api/scores/month/'))).toBe(true);
+});
+
+test("/game/:id requests nothing from ESPN's API", async ({ page }) => {
+    await stubNetwork(page);
+    await page.route('**/api/scores/game/**', (route) =>
+        route.fulfill({
+            status: 200,
+            contentType: 'application/json',
+            body: JSON.stringify(gameSummaryFixture),
+        }),
+    );
+    const { espn, scores } = recordScoresRequests(page);
+    await page.goto('/game/401859965', { waitUntil: 'domcontentloaded' });
+    // Rendering the fixture's team proves the summary request already happened.
+    await page.getByText('New York Knicks').first().waitFor();
+
+    expect(espn).toEqual([]);
+    expect(scores).toContain('/api/scores/game/401859965');
+});
+
 test('route boxscore', async ({ page }) => {
     // /game/:id was missing from ROUTES entirely - the box score's line
     // score, DNP rows and stat-tab typography all shipped unreviewed
-    // because no baseline ever rendered them. The shared ESPN stub above
+    // because no baseline ever rendered them. The shared scores stub above
     // returns { events: [] }, which is fine for every other route but
     // renders the box score's own empty state - override it with a real
     // captured summary response for this game's specific URL.
     await stubNetwork(page);
-    await page.route('**/apis/site/v2/sports/basketball/nba/summary**', (route) =>
+    await page.route('**/api/scores/game/**', (route) =>
         route.fulfill({
             status: 200,
             contentType: 'application/json',
@@ -349,7 +405,7 @@ test('route boxscore, team stats and advanced tabs', async ({ page }) => {
     // import that silently rendered as an unstyled <sectionheading> tag)
     // went unreviewed. Same fixture as the route boxscore test.
     await stubNetwork(page);
-    await page.route('**/apis/site/v2/sports/basketball/nba/summary**', (route) =>
+    await page.route('**/api/scores/game/**', (route) =>
         route.fulfill({
             status: 200,
             contentType: 'application/json',
@@ -407,7 +463,7 @@ test.describe('light theme', () => {
 
     test('route boxscore', async ({ page }) => {
         await stubNetwork(page);
-        await page.route('**/apis/site/v2/sports/basketball/nba/summary**', (route) =>
+        await page.route('**/api/scores/game/**', (route) =>
             route.fulfill({
                 status: 200,
                 contentType: 'application/json',

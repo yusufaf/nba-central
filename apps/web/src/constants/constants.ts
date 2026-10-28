@@ -140,12 +140,8 @@ export const PLAY_TYPES = {
 } as const;
 
 /* API */
-export const ESPN_SCORES_URL =
-    "https://site.api.espn.com/apis/site/v2/sports/basketball/nba/scoreboard";
 export const ESPN_NEWS_URL =
     "https://site.api.espn.com/apis/site/v2/sports/basketball/nba/news";
-export const ESPN_GAME_SUMMARY_URL =
-    "https://site.api.espn.com/apis/site/v2/sports/basketball/nba/summary";
 
 /* API URLs for reference 
 - https://site.api.espn.com/apis/site/v2/sports/basketball/nba/teams/7
