@@ -1,17 +1,8 @@
-import { ESPN_SCORES_URL } from "@/constants/constants";
 import type { ESPNEvent } from "@/models/types";
 import { espnGameDay } from "@/utils/date";
 
-const espnMonth = (year: number, month: number): string =>
+export const espnMonth = (year: number, month: number): string =>
     `${year}${String(month).padStart(2, "0")}`;
-
-/**
- * One request for a whole month. ESPN rejects YYYYMMDD-YYYYMMDD ranges with a
- * 400, defaults to 100 events without a limit, and silently returns far fewer
- * above 1000 - the busiest month has ~240.
- */
-export const monthScoreboardUrl = (year: number, month: number): string =>
-    `${ESPN_SCORES_URL}?dates=${espnMonth(year, month)}&limit=1000`;
 
 /**
  * Games per ESPN day (YYYYMMDD) for one month; `month` is 1-based, like

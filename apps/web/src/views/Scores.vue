@@ -1,7 +1,6 @@
 <script setup lang="ts">
-import { onMounted, ref, computed, watch } from "vue";
+import { onMounted, onUnmounted, ref, computed, watch } from "vue";
 import {
-    ESPN_SCORES_URL,
     VIEW_OPTIONS,
     VIEWS,
     EASTERN_TEAMS,
@@ -22,7 +21,9 @@ import { useScoresRouteState } from "@/composables/useScoresRouteState";
 import { useCalendarGameCounts } from "@/composables/useCalendarGameCounts";
 import { useDateFormat } from "@/composables/useDateFormat";
 import { useResolvedTheme } from "@/composables/useDisplayPreferences";
-import { formatDateForEspn, isSameDay } from "@/utils/date";
+import { isSameDay } from "@/utils/date";
+import { getScoreboard, LIVE_SCORES_POLL_MS } from "@/network/scores";
+import { shouldPollScoreboard } from "@/utils/scoresPolling";
 import { latestScheduleDate } from "@/utils/season";
 import OptionsMenu from "@/components/Scores/OptionsMenu.vue";
 import { Button } from "@/components/ui/button";
@@ -123,19 +124,19 @@ const notificationsMenuOpen = ref<boolean>(false);
 
 const { notifyScoreChanges } = useGameNotifications();
 
-const fetchCurrentScores = async (forDate?: Date) => {
-    fetchStatus.value = "loading";
+/* Loads and polls finish after an await, which can be after the viewer has
+   left the page. */
+let isUnmounted = false;
+
+/* A background poll leaves fetchStatus alone, so the empty state doesn't
+   flicker on every refresh and a failed poll keeps the last good scores.
+   Resolves to null when the viewer has picked another day or left the page
+   meanwhile: a late answer must not replace the day now on screen. */
+const fetchCurrentScores = async (forDate: Date, { background = false }: { background?: boolean } = {}) => {
+    if (!background) fetchStatus.value = "loading";
     try {
-        const url = forDate
-            ? `${ESPN_SCORES_URL}?dates=${formatDateForEspn(forDate)}`
-            : ESPN_SCORES_URL;
-        const response = await fetch(url, { method: "GET" });
-
-        if (!response.ok) {
-            throw new Error(`Failed to fetch data. Status: ${response.status}`);
-        }
-
-        const data: ESPNScoreboardResponse = await response.json();
+        const data = await getScoreboard(forDate);
+        if (isUnmounted || !isSameDay(forDate, selectedDate.value)) return null;
         const { events } = data;
 
         notifyScoreChanges(events ?? []);
@@ -157,7 +158,7 @@ const fetchCurrentScores = async (forDate?: Date) => {
 
         return data;
     } catch (err) {
-        fetchStatus.value = "error";
+        if (!background && isSameDay(forDate, selectedDate.value)) fetchStatus.value = "error";
         console.error(err);
         throw err; // Rethrow the error to be caught by the caller
     }
@@ -282,35 +283,54 @@ const emptyReason = computed(() =>
 
 let pollIntervalId: ReturnType<typeof setInterval> | null = null;
 
-const startScorePolling = (events: ESPNEvent[], forDate: Date) => {
+const stopScorePolling = () => {
     if (pollIntervalId) {
         clearInterval(pollIntervalId);
         pollIntervalId = null;
     }
-    /* Only poll for live updates if viewing today AND at least one game is in progress */
-    if (!isSameDay(forDate, new Date())) return;
-    const isAnyGameNotDone = events.some(
-        (event) => !event.competitions[0]?.status.type.completed
-    );
-    if (!isAnyGameNotDone) return;
-    const SCOREBOARD_INTERVAL = 300000;
-    pollIntervalId = setInterval(() => {
-        fetchCurrentScores(selectedDate.value);
-    }, SCOREBOARD_INTERVAL);
 };
 
-watch(selectedDate, async (newDate, oldDate) => {
+const refreshScores = async () => {
+    const date = selectedDate.value;
+    try {
+        const data = await fetchCurrentScores(date, { background: true });
+        if (data && !shouldPollScoreboard(data.events ?? [], date, new Date())) stopScorePolling();
+    } catch {
+        // fetchCurrentScores logged it; the next poll tries again.
+    }
+};
+
+const startScorePolling = (events: ESPNEvent[], forDate: Date) => {
+    stopScorePolling();
+    if (isUnmounted || !shouldPollScoreboard(events, forDate, new Date())) return;
+    pollIntervalId = setInterval(refreshScores, LIVE_SCORES_POLL_MS);
+};
+
+/* Stops the previous day's polling first, so a failed load can't leave it
+   running against the new day. */
+const loadDay = async (date: Date) => {
+    stopScorePolling();
+    try {
+        const scoresData = await fetchCurrentScores(date);
+        if (scoresData) startScorePolling(scoresData.events ?? [], date);
+    } catch {
+        // fetchCurrentScores logged it and set the error state.
+    }
+};
+
+watch(selectedDate, (newDate, oldDate) => {
     // useScoresRouteState writes a default ?date= into the URL on mount,
     // which re-derives selectedDate as a new Date instance for the same
     // calendar day - skip the refetch when nothing actually changed.
     if (oldDate && isSameDay(newDate, oldDate)) return;
-    const scoresData = await fetchCurrentScores(newDate);
-    startScorePolling(scoresData.events ?? [], newDate);
+    loadDay(newDate);
 });
 
-onMounted(async () => {
-    const scoresData = await fetchCurrentScores(selectedDate.value);
-    startScorePolling(scoresData.events ?? [], selectedDate.value);
+onMounted(() => loadDay(selectedDate.value));
+
+onUnmounted(() => {
+    isUnmounted = true;
+    stopScorePolling();
 });
 </script>
 

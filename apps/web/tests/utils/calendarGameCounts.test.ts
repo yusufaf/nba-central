@@ -1,18 +1,13 @@
 import { describe, it, expect } from "vitest";
-import { ESPN_SCORES_URL } from "@/constants/constants";
-import { countGamesByDay, monthScoreboardUrl } from "@/utils/calendarGameCounts";
+import { countGamesByDay, espnMonth } from "@/utils/calendarGameCounts";
 
 const TODAY = new Date("2026-10-17T16:00Z");
 const game = (date: string) => ({ date });
 
-describe("monthScoreboardUrl", () => {
-    it("asks for the whole month with dates=YYYYMM", () => {
-        expect(monthScoreboardUrl(2026, 1)).toBe(`${ESPN_SCORES_URL}?dates=202601&limit=1000`);
-        expect(monthScoreboardUrl(2026, 11)).toContain("dates=202611&");
-    });
-
-    it("never sends a YYYYMMDD-YYYYMMDD range, which ESPN rejects with a 400", () => {
-        expect(monthScoreboardUrl(2026, 1)).not.toMatch(/dates=\d+-/);
+describe("espnMonth", () => {
+    it("formats a 1-based month as YYYYMM", () => {
+        expect(espnMonth(2026, 1)).toBe("202601");
+        expect(espnMonth(2026, 11)).toBe("202611");
     });
 });
 
