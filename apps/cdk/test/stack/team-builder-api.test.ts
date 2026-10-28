@@ -13,6 +13,7 @@ import {
 	PAGE_ROUTES,
 	DAILY_ERA_ROUTES,
 	CAP_FIVE_ROUTES,
+	SCORES_ROUTES,
 } from "../../service/team-builder-stack/team-builder-api-routes";
 
 // Locks in the public/private route split team-builder-api.ts uses to
@@ -34,15 +35,18 @@ const PUBLIC_ROUTE_PATHS = [
 	"/api/daily/era/guess",
 	"/api/daily/cap-five/{date}",
 	"/api/daily/cap-five/submit",
+	"/api/scores/day/{date}",
+	"/api/scores/month/{month}",
+	"/api/scores/game/{gameId}",
 ];
 
 describe("team-builder-api-routes", () => {
-	it("PUBLIC_ROUTES is exactly DATA + NEWS + PUBLIC_TEAM + PAGE + DAILY_ERA + CAP_FIVE routes", () => {
+	it("PUBLIC_ROUTES is exactly DATA + NEWS + PUBLIC_TEAM + PAGE + DAILY_ERA + CAP_FIVE + SCORES routes", () => {
 		const publicPaths = PUBLIC_ROUTES.map((r) => r.route).sort();
 		expect(publicPaths).toEqual(PUBLIC_ROUTE_PATHS.sort());
 		expect(PUBLIC_ROUTES).toHaveLength(
 			DATA_ROUTES.length + NEWS_ROUTES.length + PUBLIC_TEAM_ROUTES.length + PAGE_ROUTES.length +
-				DAILY_ERA_ROUTES.length + CAP_FIVE_ROUTES.length,
+				DAILY_ERA_ROUTES.length + CAP_FIVE_ROUTES.length + SCORES_ROUTES.length,
 		);
 	});
 
@@ -80,8 +84,9 @@ describe("team-builder-api-routes", () => {
 		// and delete routes 35. Custom arenas (#116) add CRUD plus the image
 		// upload and delete routes: 41. Removing the unused get-team-logos
 		// route (#165) leaves 40. Daily Era's puzzle and guess routes (#173)
-		// make 42, and Cap Five's puzzle and submit routes (#183) 44.
-		expect(publicPaths.size + privatePaths.size).toBe(44);
+		// make 42, and Cap Five's puzzle and submit routes (#183) 44. The
+		// scores routes (#263) make 47.
+		expect(publicPaths.size + privatePaths.size).toBe(47);
 	});
 
 	it("the user routes are private, with GET for reads, PUT for writes and DELETE for the delete", () => {
@@ -206,6 +211,15 @@ describe("team-builder-api-routes", () => {
 	it("the /t/{teamUUID} page route accepts GET and HEAD", () => {
 		const pageRoute = PAGE_ROUTES.find((r) => r.route === "/t/{teamUUID}");
 		expect(pageRoute?.methods).toEqual(["GET", "HEAD"]);
+	});
+
+	it("serves the scores routes (GET, HEAD) without an authorizer", () => {
+		expect(SCORES_ROUTES.map((r) => [r.route, r.lambdaName, r.methods])).toEqual([
+			["/api/scores/day/{date}", "getScoreboardDay", ["GET", "HEAD"]],
+			["/api/scores/month/{month}", "getScoreboardMonth", ["GET", "HEAD"]],
+			["/api/scores/game/{gameId}", "getGameSummary", ["GET", "HEAD"]],
+		]);
+		for (const route of SCORES_ROUTES) expect(PUBLIC_ROUTES).toContain(route);
 	});
 
 	it("serves the Daily Era puzzle (GET, HEAD) and guess (POST) without an authorizer", () => {

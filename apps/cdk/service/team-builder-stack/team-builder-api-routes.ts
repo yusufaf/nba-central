@@ -14,6 +14,7 @@ const CUSTOM_ENTITIES_PREFIX = `/api/custom-entities`;
 const FEEDBACK_PREFIX = `/api/feedback`;
 const DAILY_ERA_PREFIX = `/api/daily/era`;
 const CAP_FIVE_PREFIX = `/api/daily/cap-five`;
+const SCORES_PREFIX = `/api/scores`;
 
 export const FILES_ROUTES: ApiRoute[] = [
 	{
@@ -178,6 +179,28 @@ export const CAP_FIVE_ROUTES: ApiRoute[] = [
 	},
 ];
 
+// ESPN's scoreboards and box scores, fetched server-side so no visitor's
+// browser calls ESPN. CloudFront caches them by game state (see
+// team-builder-web.ts), so refusals are 400/410/502, never 403/404. HEAD for
+// the same reason as DAILY_ERA_ROUTES.
+export const SCORES_ROUTES: ApiRoute[] = [
+	{
+		route: `${SCORES_PREFIX}/day/{date}`,
+		lambdaName: "getScoreboardDay",
+		methods: [HttpMethod.GET, HttpMethod.HEAD],
+	},
+	{
+		route: `${SCORES_PREFIX}/month/{month}`,
+		lambdaName: "getScoreboardMonth",
+		methods: [HttpMethod.GET, HttpMethod.HEAD],
+	},
+	{
+		route: `${SCORES_PREFIX}/game/{gameId}`,
+		lambdaName: "getGameSummary",
+		methods: [HttpMethod.GET, HttpMethod.HEAD],
+	},
+];
+
 export const CUSTOM_ENTITIES_ROUTES: ApiRoute[] = [
 	// GM routes
 	{
@@ -287,8 +310,9 @@ export const FEEDBACK_ROUTES: ApiRoute[] = [
 // DATA_ROUTES, NEWS_ROUTES, PUBLIC_TEAM_ROUTES and PAGE_ROUTES are read-only
 // and reachable signed out — the first two are fetched on every page load,
 // the last two are how a published team is viewed and unfurled. DAILY_ERA_ROUTES
-// and CAP_FIVE_ROUTES are the daily games, which need no account. Everything that reads or writes
-// user-owned data stays authenticated.
+// and CAP_FIVE_ROUTES are the daily games, which need no account. SCORES_ROUTES
+// back /scores and /game/:id. Everything that reads or writes user-owned data
+// stays authenticated.
 export const PUBLIC_ROUTES: ApiRoute[] = [
 	...DATA_ROUTES,
 	...NEWS_ROUTES,
@@ -296,6 +320,7 @@ export const PUBLIC_ROUTES: ApiRoute[] = [
 	...PAGE_ROUTES,
 	...DAILY_ERA_ROUTES,
 	...CAP_FIVE_ROUTES,
+	...SCORES_ROUTES,
 ];
 export const PRIVATE_ROUTES: ApiRoute[] = [
 	...FILES_ROUTES,

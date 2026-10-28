@@ -203,7 +203,7 @@ const ET_DATE = new Intl.DateTimeFormat("en-CA", {
 });
 
 // YYYYMMDD of the New York calendar day an instant falls on.
-const etDate = (instant: Date | number): string => ET_DATE.format(instant).replace(/-/g, "");
+export const etDate = (instant: Date | number): string => ET_DATE.format(instant).replace(/-/g, "");
 
 /**
  * The ET calendar days the schedule covers, `back` days before today through

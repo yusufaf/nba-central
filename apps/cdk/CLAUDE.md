@@ -108,6 +108,30 @@ smaller of the two. The Lambda is production-only (`deployToTypes`), so nothing
 appears until a `cdk deploy`, and its first data until the first hourly run or a
 manual invoke. The headshot backfill takes about five runs.
 
+### /api/scores/* (getScoreboardDay, getScoreboardMonth, getGameSummary)
+
+`/scores`, its calendar counts and `/game/:id` read
+`/api/scores/day/{YYYYMMDD}`, `/api/scores/month/{YYYYMM}` and
+`/api/scores/game/{id}`. Each Lambda fetches ESPN server-side, and the
+`/api/scores/*` CloudFront behavior (ahead of `/api/*`) caches the answer for
+as long as its `Cache-Control` says, which follows game state
+(`utilities/scores-cache.ts`): 10 s while a game is on or about to tip,
+60 s otherwise (an empty past day included), a day once a past ET day has
+games and all are final, an hour for the current month or an empty past
+one, and 60 s for an unknown game (410). An empty answer is never cached for
+a day, in case it's an ESPN glitch. `stale-if-error` is an
+hour; the cache policy's max TTL (a day) has to cover it and every max-age. The day and game bodies are
+ESPN's as sent (`plays` and `winprobability` included); the month is cut to
+`{ events: [{ date }] }`, since ESPN's is ~3 MB against Lambda's 6 MB limit.
+Params are validated and range-bounded before any ESPN call, and refusals
+are 400/410/502, never 403/404 (see the distribution's error pages).
+
+The web polls live games every 15 s (`LIVE_SCORES_POLL_MS` in apps/web), so a
+viewer is at most ~25 s behind ESPN; change it and the 10 s live max-age
+together. The web auto-deploys on merge, so a change here that the web
+depends on has to be `cdk deploy`ed first, or `/api/scores/*` falls through to
+`/api/*` and the SPA's `index.html`.
+
 ## Testing
 
 Vitest, colocated in `test/`, mirroring `service/`. Stack tests

@@ -24,6 +24,7 @@ import {
 	scheduleDates,
 	scheduleShrinkReason,
 } from "utilities/espn";
+import { ESPN_USER_AGENT } from "resources/espn";
 import {
 	HEADSHOTS_KEY,
 	HEADSHOT_CACHE_CONTROL,
@@ -60,9 +61,7 @@ const {
 
 const s3Client = new S3Client();
 
-// ESPN's site API turns away clients that don't look like a browser.
-export const ESPN_USER_AGENT =
-	"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36";
+export { ESPN_USER_AGENT };
 // Start-to-start, like setPlayerStatsData. A first run is about 140 requests.
 export const ESPN_REQUEST_INTERVAL_MS = 500;
 export const FETCH_TIMEOUT_MS = 10_000;

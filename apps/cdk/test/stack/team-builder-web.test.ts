@@ -34,6 +34,15 @@ const getDistributionConfig = (template: Template) => {
 	return Object.values(distributions)[0].Properties.DistributionConfig;
 };
 
+// Each cache policy's config, by logical id.
+const cachePolicies = (template: Template): Record<string, { Name: string }> =>
+	Object.fromEntries(
+		Object.entries(template.findResources("AWS::CloudFront::CachePolicy")).map(([id, policy]) => [
+			id,
+			policy.Properties.CachePolicyConfig,
+		]),
+	);
+
 describe("TeamBuilderWeb", () => {
 	it("creates exactly one CloudFront distribution and one S3 bucket", () => {
 		const template = buildTemplate();
@@ -202,12 +211,40 @@ describe("TeamBuilderWeb", () => {
 		expect(behavior.AllowedMethods).toContain("POST");
 		expect(behavior.OriginRequestPolicyId).toBe("b689b0a8-53d0-40ab-baf2-68738e2966ac");
 
-		const policies = template.findResources("AWS::CloudFront::CachePolicy");
-		expect(Object.keys(policies)).toHaveLength(1);
-		const [policyId] = Object.keys(policies);
+		const policies = cachePolicies(template);
+		expect(Object.keys(policies)).toHaveLength(2);
+		const [policyId] = Object.entries(policies).find(([, config]) => config.Name.endsWith("-daily-era"))!;
 		expect(behavior.CachePolicyId).toEqual({ Ref: policyId });
-		template.hasResourceProperties("AWS::CloudFront::CachePolicy", {
-			CachePolicyConfig: { DefaultTTL: 0, MinTTL: 0, MaxTTL: 3600 },
+		expect(policies[policyId]).toMatchObject({
+			DefaultTTL: 0,
+			MinTTL: 0,
+			MaxTTL: 3600,
+		});
+	});
+
+	it("caches /api/scores/* per the origin's Cache-Control, ahead of /api/*", () => {
+		const template = buildTemplate();
+		const behaviors = getDistributionConfig(template).CacheBehaviors;
+		const index = (path: string) => behaviors.findIndex((b: { PathPattern: string }) => b.PathPattern === path);
+		expect(index("/api/scores/*")).toBeGreaterThanOrEqual(0);
+		expect(index("/api/scores/*")).toBeLessThan(index("/api/*"));
+
+		const behavior = behaviors[index("/api/scores/*")];
+		expect(behavior.TargetOriginId).toBe(behaviors[index("/api/*")].TargetOriginId);
+		expect(behavior.AllowedMethods).toEqual(["GET", "HEAD"]);
+		expect(behavior.OriginRequestPolicyId).toBe("b689b0a8-53d0-40ab-baf2-68738e2966ac");
+
+		// The max TTL must cover the settled day's max-age and stale-if-error.
+		expect(cachePolicies(template)[behavior.CachePolicyId.Ref]).toMatchObject({
+			Name: expect.stringMatching(/-scores$/),
+			DefaultTTL: 0,
+			MinTTL: 0,
+			MaxTTL: 86400,
+			ParametersInCacheKeyAndForwardedToOrigin: {
+				QueryStringsConfig: { QueryStringBehavior: "none" },
+				CookiesConfig: { CookieBehavior: "none" },
+				HeadersConfig: { HeaderBehavior: "none" },
+			},
 		});
 	});
 
