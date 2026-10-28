@@ -71,7 +71,8 @@ for a published team's page reaches `getPublicTeamPage` — a shared team page
 Lambda, not Lambda@Edge — before the SPA shell ships. `/api/daily/era/*` and
 `/api/daily/cap-five/*` behaviors sit ahead of `/api/*` and honour the
 origin's `Cache-Control` (one shared cache policy, TTLs 0/0/1h) so the daily
-puzzles can be cached. API refusals must never use
+puzzles can be cached. `/api/scores/*` does the same with its own policy
+(TTLs 0/0/1 day; see apps/cdk/CLAUDE.md). API refusals must never use
 403 or 404: the distribution's error pages turn those into an edge-cached
 `index.html` 200, for `/api/*` too. The assets CDN
 (`TeamBuilderAssetsCdn`) attaches the managed CORS-with-preflight
@@ -122,6 +123,10 @@ Entry point: `bin/team-builder-cdk.ts` loads env vars from dotenv.
   second scores a season guess and reveals the answer only on a hit or the
   4th attempt. Both read `daily-era-puzzles.json` from static-data and keep
   no state (spec: `docs/superpowers/specs/2026-10-14-daily-era-design.md`)
+- `getScoreboardDay`, `getScoreboardMonth`, `getGameSummary`: `/api/scores/*`,
+  ESPN's day scoreboard, a month's game dates and a game's box score,
+  fetched server-side and cached at CloudFront by game state, so no browser
+  calls ESPN for `/scores` or `/game/:id` (see apps/cdk/CLAUDE.md)
 - `getCapFive`, `submitCapFive`: the Cap Five game. The first returns a
   date's pool of 12 players and the rating cap (never a rating); the second
   scores a five-player lineup and reveals every rating and the optimal. Both
@@ -283,10 +288,11 @@ shared identity provider also used by Quizaroni. No Cognito, no Clerk.
 
 A handful of routes (`/api/data/*`, `/api/news/get`,
 `/api/teams/public/{teamUUID}`, `/t/{teamUUID}`, `/api/daily/era/*`,
-`/api/daily/cap-five/*`) skip the authorizer entirely — the first two serve
-every visitor, signed in or not; the next two are how a published team is
-viewed and unfurled by anyone, including crawlers with no session at all; the
-last two are the daily games, which need no account.
+`/api/daily/cap-five/*`, `/api/scores/*`) skip the authorizer entirely — the
+first two serve every visitor, signed in or not; the next two are how a
+published team is viewed and unfurled by anyone, including crawlers with no
+session at all; the next two are the daily games, which need no account; the
+last backs the scores pages.
 
 ### Data Models
 

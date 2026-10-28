@@ -23,6 +23,7 @@ import { CloudFrontTarget } from "aws-cdk-lib/aws-route53-targets";
 import { Construct } from "constructs";
 import { ExtendedStackProps } from "models/stack";
 import { WEB_DOMAIN_NAME } from "../../constants";
+import { SCORES_CACHE_MAX_TTL_SECONDS } from "../../utilities/scores-cache";
 
 // Each daily game's path and the page it's served from: its own copy of the
 // SPA shell (apps/web's build/gamePageHtml.ts), so a pasted link unfurls as
@@ -116,6 +117,24 @@ export class TeamBuilderWeb extends Construct {
 			enableAcceptEncodingBrotli: true,
 		});
 
+		// Honours the scores Lambdas' Cache-Control, which follows game state
+		// (10 s while a game is on, a day once a past day is final). Its own
+		// policy because the daily games' 1-hour max TTL would cap both that
+		// and stale-if-error. Like the daily games, defaultTtl 0 and nothing
+		// but the path in the cache key.
+		const scoresCachePolicy = new CachePolicy(this, `${appName}-${deploymentType}-scores-cache`, {
+			cachePolicyName: `${appName}-${deploymentType}-scores`,
+			comment: "Honours the scores Lambdas' Cache-Control (10 s live to 1 day settled); nothing cached without one",
+			defaultTtl: Duration.seconds(0),
+			minTtl: Duration.seconds(0),
+			maxTtl: Duration.seconds(SCORES_CACHE_MAX_TTL_SECONDS),
+			cookieBehavior: CacheCookieBehavior.none(),
+			headerBehavior: CacheHeaderBehavior.none(),
+			queryStringBehavior: CacheQueryStringBehavior.none(),
+			enableAcceptEncodingGzip: true,
+			enableAcceptEncodingBrotli: true,
+		});
+
 		// Still named daily-page from when it served /daily alone: renaming it
 		// would replace the Function the live distribution uses.
 		const gamePagesNameAndId = `${appName}-${deploymentType}-daily-page`;
@@ -167,6 +186,16 @@ export class TeamBuilderWeb extends Construct {
 					viewerProtocolPolicy: ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
 					allowedMethods: AllowedMethods.ALLOW_ALL,
 					cachePolicy: dailyEraCachePolicy,
+					originRequestPolicy: OriginRequestPolicy.ALL_VIEWER_EXCEPT_HOST_HEADER,
+				},
+				// Also ahead of /api/*. Every viewer of a day or game shares one
+				// ESPN request per cache window and regional edge cache. GET and
+				// HEAD only; refusals are 400/410/502, never 403/404.
+				"/api/scores/*": {
+					origin: apiOrigin,
+					viewerProtocolPolicy: ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
+					allowedMethods: AllowedMethods.ALLOW_GET_HEAD,
+					cachePolicy: scoresCachePolicy,
 					originRequestPolicy: OriginRequestPolicy.ALL_VIEWER_EXCEPT_HOST_HEADER,
 				},
 				"/api/*": {
