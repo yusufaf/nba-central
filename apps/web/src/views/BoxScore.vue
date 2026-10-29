@@ -49,6 +49,8 @@
 
                 <!-- Box Score Tab -->
                 <TabsContent value="box-score" class="mt-2">
+                    <WinProbabilityCard :game-summary="gameSummary" />
+
                     <!-- Game Leaders -->
                     <GameLeaders
                         v-if="gameSummary.boxscore?.players"
@@ -109,7 +111,6 @@
                     <AdvancedStats
                         v-if="gameSummary.boxscore"
                         :boxscore="gameSummary.boxscore"
-                        :win-probability="gameSummary.winprobability"
                     />
                     <div v-else class="text-center py-12 text-muted-foreground">
                         <p>Advanced statistics not yet available</p>
@@ -131,6 +132,7 @@ import GameHeader from '@/components/BoxScore/GameHeader.vue';
 import QuarterScores from '@/components/BoxScore/QuarterScores.vue';
 import PlayerStatsTable from '@/components/BoxScore/PlayerStatsTable.vue';
 import GameLeaders from '@/components/BoxScore/GameLeaders.vue';
+import WinProbabilityCard from '@/components/BoxScore/WinProbabilityCard.vue';
 import TeamStatsComparison from '@/components/BoxScore/TeamStatsComparison.vue';
 import PlayByPlay from '@/components/BoxScore/PlayByPlay.vue';
 import AdvancedStats from '@/components/BoxScore/AdvancedStats.vue';

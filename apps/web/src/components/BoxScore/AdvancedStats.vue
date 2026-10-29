@@ -115,7 +115,6 @@ import type { ESPNGameSummary } from '@/models/types';
 
 interface Props {
     boxscore: NonNullable<ESPNGameSummary['boxscore']>;
-    winProbability?: ESPNGameSummary['winprobability'];
 }
 
 const props = defineProps<Props>();
