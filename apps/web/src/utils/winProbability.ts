@@ -1,4 +1,4 @@
-import type { ESPNPlay, ESPNTeamInfo, ESPNWinProbability } from '@/models/types';
+import type { ESPNGameSummary, ESPNPlay, ESPNTeamInfo, ESPNWinProbability } from '@/models/types';
 import { contrastRatio, normaliseHex } from '@/utils/court';
 
 export type WpSide = 'home' | 'away';
@@ -21,15 +21,20 @@ export interface WpPoint {
     homeWp: number;
     // The acting team, or null for a play no team made (timeouts, reviews, ...).
     side: WpSide | null;
+    // Athlete ids in ESPN's order: the actor first, then an assister, blocker or stealer.
+    participants: string[];
 }
 
-export interface WpSwing {
+export interface WpPlaySwing {
     index: number;
-    rank: number;
     point: WpPoint;
     homeDelta: number;
     // The change for the acting team: negative when its own play hurt it.
     actorDelta: number;
+}
+
+export interface WpSwing extends WpPlaySwing {
+    rank: number;
 }
 
 export const REGULATION_PERIODS = 4;
@@ -129,9 +134,22 @@ export const buildWpSeries = (
             awayScore,
             homeWp,
             side,
+            participants: play.participants?.map((p) => p.athlete.id) ?? [],
         });
     }
     return series;
+};
+
+/** The series for a game summary, or [] without both teams in its header. */
+export const summaryWpSeries = (summary: ESPNGameSummary): WpPoint[] => {
+    const competitors = summary.header?.competitions?.[0]?.competitors;
+    const home = competitors?.find((c) => c.homeAway === 'home');
+    const away = competitors?.find((c) => c.homeAway === 'away');
+    if (!home || !away) return [];
+    return buildWpSeries(summary.plays ?? [], summary.winprobability ?? [], {
+        homeId: home.team.id,
+        awayId: away.team.id,
+    });
 };
 
 export const wpDelta = (series: WpPoint[]) =>
@@ -142,11 +160,11 @@ const sameMoment = (a: WpPoint, b: WpPoint) => a.period === b.period && a.clock 
 const OVERTURNED = /overturned/i;
 
 /**
- * The n actor plays that moved WP most. ESPN prices challenges and reviews as
- * rows of their own, so a play after one is measured from before that
- * stoppage, and a call a challenge overturned is not a candidate.
+ * Every actor play's swing, zero ones included. ESPN prices challenges and
+ * reviews as rows of their own, so a play after one is measured from before
+ * that stoppage, and a call a challenge overturned is left out.
  */
-export const biggestSwings = (series: WpPoint[], n: number): WpSwing[] => {
+export const actorSwings = (series: WpPoint[]): WpPlaySwing[] => {
     // Each overturned row reverses the nearest call before it at that moment.
     // Baskets and free throws there stood: no overturn measured changed the score.
     const dropped = new Set<number>();
@@ -160,7 +178,7 @@ export const biggestSwings = (series: WpPoint[], n: number): WpSwing[] => {
         }
     });
 
-    const candidates: Omit<WpSwing, 'rank'>[] = [];
+    const swings: WpPlaySwing[] = [];
     for (let i = 1; i < series.length; i++) {
         const point = series[i];
         if (point.side === null || dropped.has(i)) continue;
@@ -173,20 +191,23 @@ export const biggestSwings = (series: WpPoint[], n: number): WpSwing[] => {
             base--;
         }
         const homeDelta = point.homeWp - series[base].homeWp;
-        if (homeDelta === 0) continue;
-        candidates.push({
+        swings.push({
             index: i,
             point,
             homeDelta,
             actorDelta: point.side === 'home' ? homeDelta : -homeDelta,
         });
     }
+    return swings;
+};
 
-    return candidates
+/** The n actor plays that moved WP most. */
+export const biggestSwings = (series: WpPoint[], n: number): WpSwing[] =>
+    actorSwings(series)
+        .filter((swing) => swing.homeDelta !== 0)
         .sort((a, b) => Math.abs(b.homeDelta) - Math.abs(a.homeDelta) || a.index - b.index)
         .slice(0, n)
         .map((swing, i) => ({ ...swing, rank: i + 1 }));
-};
 
 /** The last point at or before `elapsed`, clamped to the first and last. */
 export const pointIndexAt = (series: WpPoint[], elapsed: number): number | null => {

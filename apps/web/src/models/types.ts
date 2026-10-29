@@ -508,10 +508,10 @@ export type ESPNPlay = {
     team?: {
         id: string;
     };
+    // ESPN sends only ids here; names come from the boxscore.
     participants?: Array<{
         athlete: {
             id: string;
-            displayName: string;
         };
     }>;
 };
