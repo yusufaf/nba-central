@@ -3,19 +3,25 @@ import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import type { ESPNGameSummary, ESPNPlay, ESPNWinProbability } from '@/models/types';
 import {
+    BIG_SWING,
     THEME_HEX,
     actorSwings,
     biggestSwings,
     buildWpSeries,
+    comeback,
     elapsedSeconds,
+    excitement,
     formatDelta,
     formatWp,
     gameLength,
+    isBigSwing,
     parseClock,
     periodLabel,
     pickWpColors,
+    playerWpa,
     pointIndexAt,
     summaryWpSeries,
+    swingByPlayId,
     wpDelta,
     type WpPoint,
 } from '@/utils/winProbability';
@@ -485,5 +491,227 @@ describe('pickWpColors', () => {
                 mutedForeground: tokens['--muted-foreground'],
             });
         }
+    });
+});
+
+describe('player win probability added', () => {
+    // Hand fixture: each row's credit is in the comment beside it.
+    const FIXTURE: [PlayInput, number][] = [
+        [{ id: '0', clock: '12:00', team: 'H', type: 'Jumpball', participants: ['h1', 'a1'] }, 0.5], // none
+        [{ id: '1', clock: '11:40', team: 'H', scoring: true, home: 2, participants: ['h1', 'h2'] }, 0.56], // h1 +0.06
+        [{ id: '2', clock: '11:20', team: 'A', type: 'Bad Pass Turnover', participants: ['a1', 'h2'] }, 0.6], // a1 -0.04
+        [{ id: '3', clock: '11:00', team: 'H', participants: ['h2', 'a2'] }, 0.55], // h2 -0.05
+        [{ id: '4', clock: '10:58', team: 'A', type: 'Defensive Rebound', participants: ['a2'] }, 0.53], // a2 +0.02
+        [{ id: '5', clock: '10:40', team: 'H', type: 'Shooting Foul', participants: ['h1'] }, 0.47], // a1 +0.06
+        [{ id: '6', clock: '10:40', team: 'A', type: 'Full Timeout', participants: false }, 0.45], // none
+        [{ id: '7', clock: '10:40', team: 'A', type: 'Free Throw - 1 of 2', away: 1, participants: ['a1'] }, 0.46], // a1 +0.01
+        [{ id: '8', clock: '10:40', team: 'A', type: 'Free Throw - 2 of 2', participants: ['a1'] }, 0.48], // a1 -0.02
+        [{ id: '9', clock: '10:38', team: 'H', type: 'Defensive Team Rebound', participants: false }, 0.49], // none
+        [{ id: '10', clock: '10:20', team: 'A', type: 'Offensive Foul', participants: ['a2'] }, 0.53], // a2 -0.04
+        [{ id: '11', clock: '10:20', team: 'A', type: 'Offensive Foul Turnover', participants: ['a2'] }, 0.53], // a2 0
+        [{ id: '12', clock: '10:00', team: 'H', type: 'Personal Foul', participants: ['h2'] }, 0.52], // none
+        [{ id: '13', clock: '9:40', team: 'H', scoring: true, home: 4, participants: ['h1'] }, 0.58], // h1 +0.06
+    ];
+    const series = seriesOf(FIXTURE);
+    const byId = (rows: ReturnType<typeof playerWpa>) => Object.fromEntries(rows.map((r) => [r.athleteId, r]));
+
+    // A charge by a9 that a challenge overturns, then a turnover by a8.
+    const OVERTURNED: [PlayInput, number][] = [
+        [{ id: '0', period: 4, clock: '4:30', team: 'H', type: 'Bad Pass Turnover', participants: ['h9'] }, 0.3],
+        [{ id: '1', period: 4, clock: '4:22', team: 'A', type: 'Offensive Charge', participants: ['a9'] }, 0.495],
+        [{ id: '2', period: 4, clock: '4:22', team: 'H', type: 'Challenge', participants: false }, 0.387],
+        [{ id: '3', period: 4, clock: '4:22', team: 'H', type: "Coach's Challenge (Overturned)", participants: false }, 0.387],
+        [{ id: '4', period: 4, clock: '4:22', team: 'A', type: 'Bad Pass Turnover', participants: ['a8'] }, 0.387],
+    ];
+
+    describe('playerWpa', () => {
+        it('credits each player signed for their own team', () => {
+            const rows = playerWpa(series);
+            expect(rows.map((r) => [r.athleteId, r.side])).toEqual([
+                ['h1', 'home'],
+                ['a1', 'away'],
+                ['a2', 'away'],
+                ['h2', 'home'],
+            ]);
+            [0.12, 0.01, -0.02, -0.05].forEach((expected, i) => expect(rows[i].wpa).toBeCloseTo(expected));
+        });
+
+        it('leaves team rebounds, timeouts, jump balls and fouls with no free throws unattributed', () => {
+            // Row 12's personal foul would otherwise take h2 to -0.04.
+            expect(byId(playerWpa(series)).h2.wpa).toBeCloseTo(-0.05);
+            expect(playerWpa(series)).toHaveLength(4);
+        });
+
+        it("gives a foul's swing to the free-throw shooter it sends to the line", () => {
+            const rows = byId(playerWpa(seriesOf(FIXTURE.slice(4, 9))));
+            expect(rows.h1).toBeUndefined();
+            expect(rows.a1.wpa).toBeCloseTo(0.06 + 0.01 - 0.02);
+        });
+
+        it("counts an offensive foul as the fouler's turnover", () => {
+            const rows = byId(playerWpa(seriesOf(FIXTURE.slice(9, 12))));
+            expect(rows.a2.wpa).toBeCloseTo(-0.04);
+        });
+
+        it('gives assisters, stealers and blockers nothing', () => {
+            const rows = byId(playerWpa(seriesOf(FIXTURE.slice(0, 4))));
+            expect(rows.h1.wpa).toBeCloseTo(0.06);
+            expect(rows.a1.wpa).toBeCloseTo(-0.04);
+            expect(rows.h2.wpa).toBeCloseTo(-0.05);
+            expect(rows.a2).toBeUndefined();
+        });
+
+        it('does not credit a call a challenge overturned', () => {
+            const rows = byId(playerWpa(seriesOf(OVERTURNED)));
+            expect(rows.a9).toBeUndefined();
+            expect(rows.a8.wpa).toBeCloseTo(-0.087);
+        });
+
+        it("players don't add up to the team's change", () => {
+            const home = playerWpa(series)
+                .filter((r) => r.side === 'home')
+                .reduce((sum, r) => sum + r.wpa, 0);
+            expect(home).toBeCloseTo(0.07);
+            expect(series.at(-1)!.homeWp - series[0].homeWp).toBeCloseTo(0.08);
+        });
+
+        it('gives a shooting foul and a technical at one stoppage each their own shooter', () => {
+            const at = { clock: '5:00' };
+            const rows = byId(
+                playerWpa(
+                    seriesOf([
+                        [{ id: '0', clock: '5:10', team: 'H', participants: ['h9'] }, 0.5],
+                        [{ id: '1', ...at, team: 'H', type: 'Shooting Foul', participants: ['h1'] }, 0.44], // a1 +0.06
+                        [{ id: '2', ...at, team: 'H', type: 'Technical Foul', participants: ['h2'] }, 0.42], // a2 +0.02
+                        [{ id: '3', ...at, team: 'A', type: 'Free Throw - 1 of 2', participants: ['a1'] }, 0.43], // a1 -0.01
+                        [{ id: '4', ...at, team: 'A', type: 'Free Throw - Technical', participants: ['a2'] }, 0.41], // a2 +0.02
+                        [{ id: '5', ...at, team: 'A', type: 'Free Throw - 2 of 2', participants: ['a1'] }, 0.4], // a1 +0.01
+                    ]),
+                ),
+            );
+            expect(rows.a1.wpa).toBeCloseTo(0.06);
+            expect(rows.a2.wpa).toBeCloseTo(0.04);
+        });
+
+        it('gives a lone technical the free throw ESPN labels "1 of 1"', () => {
+            const rows = byId(
+                playerWpa(
+                    seriesOf([
+                        [{ id: '0', clock: '3:10', team: 'H', participants: ['h9'] }, 0.5],
+                        [{ id: '1', clock: '3:00', team: 'H', type: 'Defensive 3-Seconds Technical', participants: ['h1'] }, 0.47], // a1 +0.03
+                        [{ id: '2', clock: '3:00', team: 'A', type: 'Free Throw - 1 of 1', participants: ['a1'] }, 0.46], // a1 +0.01
+                    ]),
+                ),
+            );
+            expect(rows.h1).toBeUndefined();
+            expect(rows.a1.wpa).toBeCloseTo(0.04);
+        });
+
+        it('gives a lone flagrant the free throws ESPN labels "Technical", even after an offensive foul', () => {
+            const rows = byId(
+                playerWpa(
+                    seriesOf([
+                        [{ id: '0', clock: '1:10', team: 'H', participants: ['h9'] }, 0.5],
+                        [{ id: '1', clock: '1:00', team: 'A', type: 'Offensive Foul', participants: ['a9'] }, 0.52], // a9 -0.02
+                        [{ id: '2', clock: '1:00', team: 'H', type: 'Flagrant Foul Type 1', participants: ['h1'] }, 0.47], // a1 +0.05
+                        [{ id: '3', clock: '1:00', team: 'A', type: 'Free Throw - Technical', participants: ['a1'] }, 0.45], // a1 +0.02
+                    ]),
+                ),
+            );
+            expect(rows.h1).toBeUndefined();
+            expect(rows.a1.wpa).toBeCloseTo(0.07);
+            expect(rows.a9.wpa).toBeCloseTo(-0.02);
+        });
+
+        it("doesn't give a personal foul the free throw of a technical called with it", () => {
+            const rows = byId(
+                playerWpa(
+                    seriesOf([
+                        [{ id: '0', clock: '2:10', team: 'H', participants: ['h9'] }, 0.5],
+                        [{ id: '1', clock: '2:00', team: 'H', type: 'Personal Foul', participants: ['h1'] }, 0.49], // none
+                        [{ id: '2', clock: '2:00', team: 'H', type: 'Technical Foul', participants: ['h2'] }, 0.47], // a1 +0.02
+                        [{ id: '3', clock: '2:00', team: 'A', type: 'Free Throw - Technical', participants: ['a1'] }, 0.46], // a1 +0.01
+                    ]),
+                ),
+            );
+            expect(rows.a1.wpa).toBeCloseTo(0.03);
+        });
+
+        it('rounds away float residue so swings that cancel give +0.0%', () => {
+            const [row] = playerWpa(
+                seriesOf([
+                    [{ id: '0', clock: '12:00' }, 0.1],
+                    [{ id: '1', clock: '11:00', team: 'H', participants: ['h1'] }, 0.3],
+                    [{ id: '2', clock: '10:00', team: 'H', participants: ['h1'] }, 0.2],
+                    [{ id: '3', clock: '9:00', team: 'H', participants: ['h1'] }, 0.1],
+                ]),
+            );
+            expect(Object.is(row.wpa, 0)).toBe(true);
+            expect(formatDelta(row.wpa)).toBe('+0.0%');
+        });
+
+        it('returns [] for an empty series', () => {
+            expect(playerWpa([])).toEqual([]);
+        });
+    });
+
+    describe('swingByPlayId', () => {
+        it("maps every actor play to the acting team's swing", () => {
+            const swings = swingByPlayId(series);
+            expect(swings.get('1')).toBeCloseTo(0.06);
+            expect(swings.get('2')).toBeCloseTo(-0.04);
+            expect(swings.has('0')).toBe(false);
+            expect(swings.has('6')).toBe(false);
+        });
+
+        it('leaves out an overturned call', () => {
+            expect(swingByPlayId(seriesOf(OVERTURNED)).has('1')).toBe(false);
+        });
+    });
+
+    describe('excitement', () => {
+        it('sums the size of every actor swing', () => {
+            expect(excitement(series)).toBeCloseTo(0.38);
+        });
+
+        it('does not count an overturned call and its reversal', () => {
+            expect(excitement(seriesOf(OVERTURNED))).toBeCloseTo(0.087);
+        });
+    });
+
+    describe('comeback', () => {
+        it("gives the winner's lowest WP over every point", () => {
+            expect(comeback(series)).toEqual({ side: 'home', low: 0.45 });
+        });
+
+        it('reads an away winner from the home WP', () => {
+            const result = comeback(
+                seriesOf([
+                    [{ id: '0', clock: '12:00' }, 0.5],
+                    [{ id: '1', clock: '11:00', team: 'H', scoring: true, home: 2 }, 0.8],
+                    [{ id: '2', clock: '10:00', team: 'A', scoring: true, away: 3 }, 0.3],
+                ]),
+            );
+            expect(result?.side).toBe('away');
+            expect(result?.low).toBeCloseTo(0.2);
+        });
+
+        it('returns null for a tied score or an empty series', () => {
+            const tied = seriesOf([
+                [{ id: '0' }, 0.5],
+                [{ id: '1', clock: '9:00' }, 0.6],
+            ]);
+            expect(comeback(tied)).toBeNull();
+            expect(comeback([])).toBeNull();
+        });
+    });
+
+    describe('isBigSwing', () => {
+        it('counts a 5.0% move that float subtraction leaves just under 0.05', () => {
+            expect(0.5 - 0.45).toBeLessThan(BIG_SWING);
+            expect(isBigSwing(0.5 - 0.45)).toBe(true);
+            expect(isBigSwing(0.45 - 0.5)).toBe(true);
+            expect(isBigSwing(0.049)).toBe(false);
+        });
     });
 });

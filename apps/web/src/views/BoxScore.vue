@@ -111,6 +111,9 @@
                     <AdvancedStats
                         v-if="gameSummary.boxscore"
                         :boxscore="gameSummary.boxscore"
+                        :series="wpSeries"
+                        :competitors="gameSummary.header?.competitions?.[0]?.competitors || []"
+                        :final="final"
                     />
                     <div v-else class="text-center py-12 text-muted-foreground">
                         <p>Advanced statistics not yet available</p>
@@ -122,9 +125,11 @@
 </template>
 
 <script setup lang="ts">
+import { computed } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useGameSummary } from '@/composables/useGameSummary';
 import { toIsoDate } from '@/utils/date';
+import { summaryWpSeries } from '@/utils/winProbability';
 import PageShell from '@/layouts/PageShell.vue';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
@@ -142,6 +147,9 @@ const router = useRouter();
 const gameId = route.params.gameId as string;
 
 const { gameSummary, loading, error, isLive, fetchGameSummary } = useGameSummary(gameId);
+
+const wpSeries = computed(() => (gameSummary.value ? summaryWpSeries(gameSummary.value) : []));
+const final = computed(() => gameSummary.value?.header?.competitions?.[0]?.status?.type?.state === 'post');
 
 // Carries the game's date back to /scores so the scoreboard reopens on the
 // same day rather than resetting to today - falls back to a bare navigation
