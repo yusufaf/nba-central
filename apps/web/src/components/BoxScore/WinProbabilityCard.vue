@@ -44,7 +44,7 @@ import { computed, ref, watch } from 'vue';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { useResolvedTheme } from '@/composables/useDisplayPreferences';
 import type { ESPNGameSummary } from '@/models/types';
-import { REGULATION_PERIODS, biggestSwings, buildWpSeries, formatWp, pickWpColors } from '@/utils/winProbability';
+import { REGULATION_PERIODS, biggestSwings, formatWp, pickWpColors, summaryWpSeries } from '@/utils/winProbability';
 import WinProbabilityChart from '@/components/BoxScore/WinProbabilityChart.vue';
 import BiggestPlays from '@/components/BoxScore/BiggestPlays.vue';
 
@@ -57,13 +57,7 @@ const state = computed(() => competition.value?.status?.type?.state);
 // useGameSummary's isLive is also true before tip-off, so read the state.
 const isLive = computed(() => state.value === 'in');
 
-const series = computed(() => {
-    if (!home.value || !away.value) return [];
-    return buildWpSeries(props.gameSummary.plays ?? [], props.gameSummary.winprobability ?? [], {
-        homeId: home.value.team.id,
-        awayId: away.value.team.id,
-    });
-});
+const series = computed(() => summaryWpSeries(props.gameSummary));
 const swings = computed(() => biggestSwings(series.value, 5));
 const lastPoint = computed(() => series.value.at(-1));
 const periods = computed(() => Math.max(REGULATION_PERIODS, lastPoint.value?.period ?? 0));

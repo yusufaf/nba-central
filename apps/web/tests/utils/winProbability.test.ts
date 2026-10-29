@@ -1,9 +1,10 @@
 import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
-import type { ESPNPlay, ESPNWinProbability } from '@/models/types';
+import type { ESPNGameSummary, ESPNPlay, ESPNWinProbability } from '@/models/types';
 import {
     THEME_HEX,
+    actorSwings,
     biggestSwings,
     buildWpSeries,
     elapsedSeconds,
@@ -14,6 +15,7 @@ import {
     periodLabel,
     pickWpColors,
     pointIndexAt,
+    summaryWpSeries,
     wpDelta,
     type WpPoint,
 } from '@/utils/winProbability';
@@ -30,7 +32,8 @@ interface PlayInput {
     home?: number;
     away?: number;
     scoring?: boolean;
-    participants?: boolean;
+    // true gives athlete '1'; an array gives those ids.
+    participants?: boolean | string[];
 }
 
 const play = ({
@@ -55,7 +58,12 @@ const play = ({
     clock: { displayValue: clock },
     scoringPlay: scoring,
     team: team ? { id: team } : undefined,
-    participants: participants ? [{ athlete: { id: '1', displayName: 'x' } }] : undefined,
+    participants:
+        participants === true
+            ? [{ athlete: { id: '1' } }]
+            : participants
+              ? participants.map((athleteId) => ({ athlete: { id: athleteId } }))
+              : undefined,
 });
 
 const wp = (playId: string, home: number): ESPNWinProbability => ({
@@ -121,6 +129,16 @@ describe('buildWpSeries', () => {
         expect(series.map((p) => p.playId)).toEqual(['27', '94', '29']);
         expect(series.map((p) => p.homeWp)).toEqual([0.5, 0.6, 0.7]);
         expect(series.map((p) => p.elapsed)).toEqual([90, 118, 135]);
+    });
+
+    it('carries participant ids in order', () => {
+        const [point] = seriesOf([[{ id: '1', team: 'H', participants: ['h1', 'h2'] }, 0.5]]);
+        expect(point.participants).toEqual(['h1', 'h2']);
+    });
+
+    it('gives [] for a play with no participants', () => {
+        const [point] = seriesOf([[{ id: '1' }, 0.5]]);
+        expect(point.participants).toEqual([]);
     });
 
     it('skips a play with no WP entry and ignores an entry with no play', () => {
@@ -208,6 +226,38 @@ describe('buildWpSeries', () => {
         const elapsed = seriesOf(rows).map((p) => p.elapsed);
         expect(elapsed).toEqual([...elapsed].sort((a, b) => a - b));
         expect(elapsed.at(-1)).toBe(3480);
+    });
+});
+
+describe('summaryWpSeries', () => {
+    const competitor = (homeAway: 'home' | 'away', id: string) => ({ homeAway, team: { id } });
+    const summary = (competitors: ReturnType<typeof competitor>[]) =>
+        ({
+            header: { competitions: [{ competitors }] },
+            plays: [play({ id: '1', team: 'H' }), play({ id: '2', clock: '9:00', team: 'A' })],
+            winprobability: [wp('1', 0.5), wp('2', 0.4)],
+        }) as unknown as ESPNGameSummary;
+
+    it('builds the series with the header teams', () => {
+        const series = summaryWpSeries(summary([competitor('home', 'H'), competitor('away', 'A')]));
+        expect(series.map((p) => p.side)).toEqual(['home', 'away']);
+    });
+
+    it('returns [] without both competitors', () => {
+        expect(summaryWpSeries(summary([competitor('home', 'H')]))).toEqual([]);
+        expect(summaryWpSeries({} as ESPNGameSummary)).toEqual([]);
+    });
+});
+
+describe('actorSwings', () => {
+    it('keeps zero swings that biggestSwings drops', () => {
+        const series = seriesOf([
+            [{ id: '0', clock: '12:00', team: 'H' }, 0.5],
+            [{ id: '1', clock: '11:00', team: 'A' }, 0.5],
+            [{ id: '2', clock: '10:00', team: 'H' }, 0.55],
+        ]);
+        expect(actorSwings(series).map((s) => s.point.playId)).toEqual(['1', '2']);
+        expect(biggestSwings(series, 5).map((s) => s.point.playId)).toEqual(['2']);
     });
 });
 
