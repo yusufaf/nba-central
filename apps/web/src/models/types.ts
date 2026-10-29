@@ -516,6 +516,13 @@ export type ESPNPlay = {
     }>;
 };
 
+// One entry per play, ordered by sequence number (not by game clock).
+export type ESPNWinProbability = {
+    tiePercentage: number;
+    homeWinPercentage: number;
+    playId: string;
+};
+
 export type ESPNGameInfo = {
     venue: ESPNVenue;
     attendance?: number;
@@ -532,11 +539,7 @@ export type ESPNGameSummary = {
     leaders?: ESPNLeader[][];
     broadcasts?: ESPNBroadcast[];
     plays?: ESPNPlay[];
-    winprobability?: Array<{
-        tiePercentage: number;
-        homeWinPercentage: number;
-        playId: string;
-    }>;
+    winprobability?: ESPNWinProbability[];
     header?: {
         id: string;
         uid: string;
