@@ -1,5 +1,13 @@
 <template>
     <div class="space-y-2">
+        <PlayerWpa
+            v-if="series && competitors"
+            :series="series"
+            :players="boxscore.players"
+            :competitors="competitors"
+            :final="final ?? false"
+        />
+
         <!-- Plus/Minus Leaders -->
         <Card>
             <CardHeader class="pb-1 py-2">
@@ -111,10 +119,15 @@
 import { computed } from 'vue';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import SectionHeading from '@/components/layout/SectionHeading.vue';
-import type { ESPNGameSummary } from '@/models/types';
+import PlayerWpa from '@/components/BoxScore/PlayerWpa.vue';
+import type { ESPNCompetitor, ESPNGameSummary } from '@/models/types';
+import type { WpPoint } from '@/utils/winProbability';
 
 interface Props {
     boxscore: NonNullable<ESPNGameSummary['boxscore']>;
+    series?: WpPoint[];
+    competitors?: ESPNCompetitor[];
+    final?: boolean;
 }
 
 const props = defineProps<Props>();

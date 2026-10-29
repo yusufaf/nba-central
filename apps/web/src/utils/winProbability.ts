@@ -209,6 +209,116 @@ export const biggestSwings = (series: WpPoint[], n: number): WpSwing[] =>
         .slice(0, n)
         .map((swing, i) => ({ ...swing, rank: i + 1 }));
 
+export const BIG_SWING = 0.05;
+
+// ESPN's WP has 3 decimals, so a real 0.050 move can subtract to 0.04999999999999993.
+export const isBigSwing = (delta: number) => Math.abs(delta) >= BIG_SWING - 1e-9;
+
+export interface PlayerWpa {
+    athleteId: string;
+    side: WpSide;
+    wpa: number;
+}
+
+interface Credit {
+    athleteId: string;
+    side: WpSide;
+    share: number;
+}
+
+const FREE_THROW = /free throw/i;
+const TURNOVER = /turnover/i;
+const OFFENSIVE_FOUL = /offensive (foul|charge)/i;
+const FOUL = /foul|flagrant|technical/i;
+const TECHNICAL = /technical/i;
+
+const otherSide = (side: WpSide): WpSide => (side === 'home' ? 'away' : 'home');
+
+// A foul that can send someone to the line: offensive fouls never do.
+const isFoulCall = (point: WpPoint) =>
+    FOUL.test(point.type) &&
+    !FREE_THROW.test(point.type) &&
+    !TURNOVER.test(point.type) &&
+    !OFFENSIVE_FOUL.test(point.type);
+
+// No other foul was called at this play's moment.
+const aloneAtMoment = (series: WpPoint[], index: number) => {
+    const point = series[index];
+    for (let j = index - 1; j >= 0 && sameMoment(series[j], point); j--) if (isFoulCall(series[j])) return false;
+    for (let j = index + 1; j < series.length && sameMoment(series[j], point); j++) if (isFoulCall(series[j])) return false;
+    return true;
+};
+
+/**
+ * Who a swing belongs to. The actor gets it, except that a foul's swing goes
+ * to the player it sends to the free-throw line: charging the fouler would
+ * make a trailing team's intentional fouler its worst player. Assisters,
+ * stealers and blockers get nothing, since ESPN prices each play once.
+ */
+const creditsFor = (series: WpPoint[], { index, point }: WpPlaySwing): Credit[] => {
+    const side = point.side;
+    if (side === null) return [];
+    const actor = point.participants[0];
+    // "Free Throw - Technical" and "Offensive Foul Turnover" also match FOUL.
+    if (FREE_THROW.test(point.type) || TURNOVER.test(point.type) || OFFENSIVE_FOUL.test(point.type)) {
+        return actor ? [{ athleteId: actor, side, share: 1 }] : [];
+    }
+    if (FOUL.test(point.type)) {
+        // Prefer a free throw of the foul's own kind, so a personal foul and a
+        // technical at one stoppage each find their own shooter. ESPN labels
+        // some technicals' free throws "1 of 1" and some flagrants' "Technical",
+        // so a foul alone at its moment takes the first free throw of any kind.
+        const technical = TECHNICAL.test(point.type);
+        let sameKind: WpPoint | undefined;
+        let anyKind: WpPoint | undefined;
+        for (let j = index + 1; j < series.length && sameMoment(series[j], point); j++) {
+            const shot = series[j];
+            if (FREE_THROW.test(shot.type) && shot.side === otherSide(side) && shot.participants[0]) {
+                anyKind ??= shot;
+                if (TECHNICAL.test(shot.type) === technical) sameKind ??= shot;
+            }
+        }
+        const shot = sameKind ?? (aloneAtMoment(series, index) ? anyKind : undefined);
+        return shot ? [{ athleteId: shot.participants[0], side: otherSide(side), share: 1 }] : [];
+    }
+    return actor ? [{ athleteId: actor, side, share: 1 }] : [];
+};
+
+/** Each player's total WP added, signed for their own team, highest first. */
+export const playerWpa = (series: WpPoint[]): PlayerWpa[] => {
+    const totals = new Map<string, PlayerWpa>();
+    for (const swing of actorSwings(series)) {
+        for (const credit of creditsFor(series, swing)) {
+            const delta = credit.share * (credit.side === 'home' ? swing.homeDelta : -swing.homeDelta);
+            const total = totals.get(credit.athleteId) ?? { athleteId: credit.athleteId, side: credit.side, wpa: 0 };
+            total.wpa += delta;
+            totals.set(credit.athleteId, total);
+        }
+    }
+    // ESPN's WP has 3 decimals, so rounding there drops float residue: a
+    // player whose swings cancel shows +0.0%, not −0.0%.
+    return [...totals.values()]
+        .map((total) => ({ ...total, wpa: Math.round(total.wpa * 1000) / 1000 || 0 }))
+        .sort((a, b) => b.wpa - a.wpa);
+};
+
+/** Every actor play's swing for the acting team, by play id. */
+export const swingByPlayId = (series: WpPoint[]) =>
+    new Map(actorSwings(series).map((swing) => [swing.point.playId, swing.actorDelta]));
+
+/** How much WP moved over the game: the sum of every actor play's swing. */
+export const excitement = (series: WpPoint[]) =>
+    actorSwings(series).reduce((sum, swing) => sum + Math.abs(swing.homeDelta), 0);
+
+/** The winner's lowest WP, over every point so it matches the chart's line. */
+export const comeback = (series: WpPoint[]): { side: WpSide; low: number } | null => {
+    const last = series.at(-1);
+    if (!last || last.homeScore === last.awayScore) return null;
+    const side: WpSide = last.homeScore > last.awayScore ? 'home' : 'away';
+    const low = Math.min(...series.map((point) => (side === 'home' ? point.homeWp : 1 - point.homeWp)));
+    return { side, low };
+};
+
 /** The last point at or before `elapsed`, clamped to the first and last. */
 export const pointIndexAt = (series: WpPoint[], elapsed: number): number | null => {
     if (series.length === 0) return null;
