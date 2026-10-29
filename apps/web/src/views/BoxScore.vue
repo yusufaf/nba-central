@@ -89,6 +89,7 @@
                         v-if="gameSummary.plays && gameSummary.plays.length > 0"
                         :plays="gameSummary.plays"
                         :competitors="gameSummary.header?.competitions?.[0]?.competitors || []"
+                        :wp-by-play-id="wpByPlayId"
                     />
                     <div v-else class="text-center py-12 text-muted-foreground">
                         <p>Play-by-play not available for this game</p>
@@ -129,7 +130,7 @@ import { computed } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useGameSummary } from '@/composables/useGameSummary';
 import { toIsoDate } from '@/utils/date';
-import { summaryWpSeries } from '@/utils/winProbability';
+import { summaryWpSeries, swingByPlayId } from '@/utils/winProbability';
 import PageShell from '@/layouts/PageShell.vue';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
@@ -149,6 +150,7 @@ const gameId = route.params.gameId as string;
 const { gameSummary, loading, error, isLive, fetchGameSummary } = useGameSummary(gameId);
 
 const wpSeries = computed(() => (gameSummary.value ? summaryWpSeries(gameSummary.value) : []));
+const wpByPlayId = computed(() => swingByPlayId(wpSeries.value));
 const final = computed(() => gameSummary.value?.header?.competitions?.[0]?.status?.type?.state === 'post');
 
 // Carries the game's date back to /scores so the scoreboard reopens on the

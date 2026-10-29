@@ -424,6 +424,25 @@ test('route boxscore, team stats and advanced tabs', async ({ page }) => {
     await expect(page).toHaveScreenshot('boxscore-advanced.png', { fullPage: true });
 });
 
+test('route boxscore play-by-play big swings', async ({ page }) => {
+    // The Big swings filter and its badges only show behind two clicks.
+    await stubNetwork(page);
+    await page.route('**/api/scores/game/**', (route) =>
+        route.fulfill({
+            status: 200,
+            contentType: 'application/json',
+            body: JSON.stringify(gameSummaryFixture),
+        }),
+    );
+    await page.goto('/game/401859965');
+    await settle(page);
+
+    await page.getByRole('tab', { name: /play-by-play/i }).click();
+    await page.getByRole('button', { name: /big swings/i }).click();
+    await page.waitForTimeout(100);
+    await expect(page).toHaveScreenshot('boxscore-big-swings.png', { fullPage: true });
+});
+
 test('dialog and popover do not share modal sizing', async ({ page }) => {
     await stubNetwork(page);
     await page.goto('/teambuilder');

@@ -1,11 +1,11 @@
 <template>
     <Card>
         <CardHeader>
-            <div class="flex items-center justify-between">
+            <div class="flex flex-wrap items-center justify-between gap-2">
                 <h3 class="text-lg font-bold">Play-by-Play</h3>
 
                 <!-- Filter Toggle Group -->
-                <ToggleGroup v-model="selectedFilter" type="single" class="hidden md:flex">
+                <ToggleGroup v-model="selectedFilter" type="single" size="sm" class="flex-wrap justify-start">
                     <ToggleGroupItem value="all" aria-label="All plays">
                         All
                     </ToggleGroupItem>
@@ -17,6 +17,9 @@
                     </ToggleGroupItem>
                     <ToggleGroupItem value="turnover" aria-label="Turnovers only">
                         Turnovers
+                    </ToggleGroupItem>
+                    <ToggleGroupItem v-if="hasBigSwings" value="swing" aria-label="Big swings only">
+                        Big swings
                     </ToggleGroupItem>
                 </ToggleGroup>
             </div>
@@ -77,6 +80,15 @@
                                             <p v-if="play.scoringPlay" class="text-xs text-muted-foreground mt-1">
                                                 Scoring play
                                             </p>
+                                            <span
+                                                v-if="bigSwing(play)"
+                                                data-testid="wp-badge"
+                                                class="mt-1 inline-block rounded px-1.5 py-0.5 text-[0.6875rem] font-semibold tabular-nums"
+                                                :class="swingOf(play)! > 0 ? 'bg-success/10 text-success' : 'bg-destructive/10 text-destructive-strong'"
+                                            >
+                                                {{ formatDelta(swingOf(play)!) }} WP
+                                                <span class="sr-only">for the team that made the play</span>
+                                            </span>
                                         </div>
 
                                         <!-- Score -->
@@ -87,7 +99,7 @@
                                 </div>
 
                                 <div v-if="getFilteredPlaysForPeriod(period).length === 0" class="px-4 py-8 text-center text-muted-foreground">
-                                    No {{ selectedFilter === 'all' ? '' : selectedFilter }} plays in this period
+                                    No {{ FILTER_NOUNS[selectedFilter] ?? '' }} plays in this period
                                 </div>
                             </div>
                         </AccordionContent>
@@ -99,7 +111,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue';
+import { ref, computed, watch } from 'vue';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -107,15 +119,29 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import type { ESPNPlay, ESPNCompetitor } from '@/models/types';
 import { useReducedMotion } from '@/composables/useDisplayPreferences';
+import { formatDelta, isBigSwing } from '@/utils/winProbability';
 
 interface Props {
     plays: ESPNPlay[];
     competitors: ESPNCompetitor[];
+    // Each actor play's WP swing for the team that made it.
+    wpByPlayId?: Map<string, number>;
 }
 
 const props = defineProps<Props>();
 
 const selectedFilter = ref<string>('all');
+
+const FILTER_NOUNS: Record<string, string> = { shot: 'shot', foul: 'foul', turnover: 'turnover', swing: 'big-swing' };
+
+const swingOf = (play: ESPNPlay) => props.wpByPlayId?.get(play.id);
+const bigSwing = (play: ESPNPlay) => isBigSwing(swingOf(play) ?? 0);
+const hasBigSwings = computed(() => props.plays.some(bigSwing));
+// A live poll can take away the last big swing, and with it the toggle that
+// would clear the filter.
+watch(hasBigSwings, (has) => {
+    if (!has && selectedFilter.value === 'swing') selectedFilter.value = 'all';
+});
 const periodRefs = ref<Record<number, any>>({});
 
 const periods = computed(() => {
@@ -141,6 +167,8 @@ const filteredPlays = computed(() => {
             return typeText.includes('foul');
         } else if (selectedFilter.value === 'turnover') {
             return typeText.includes('turnover');
+        } else if (selectedFilter.value === 'swing') {
+            return bigSwing(play);
         }
 
         return false;
