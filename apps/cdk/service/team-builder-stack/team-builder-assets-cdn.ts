@@ -43,9 +43,10 @@ export interface TeamBuilderAssetsCdnProps {
  * it — a cross-origin image without CORS headers poisons the canvas even
  * though it renders fine as a plain <img>.
  *
- * live/* holds the hourly season files setSeasonContextData writes
- * (standings, schedule, headshots). Its own cache policy keeps them fresh
- * even if an object lacks its Cache-Control header, and its max TTL is what
+ * live/* holds the season files setSeasonContextData writes (standings,
+ * schedule and headshots hourly, injuries every 15 minutes). Its own cache
+ * policy keeps them fresh even if an object lacks its Cache-Control header,
+ * and its max TTL is what
  * lets CloudFront honour the files' stale-if-error when the bucket fails.
  */
 export class TeamBuilderAssetsCdn extends Construct {

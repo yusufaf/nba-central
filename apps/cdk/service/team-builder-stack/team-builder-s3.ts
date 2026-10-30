@@ -56,8 +56,8 @@ export class TeamBuilderS3 extends Construct {
             ],
         });
 
-        // setSeasonContextData rewrites live/*.json hourly, and the bucket is
-        // versioned.
+        // setSeasonContextData rewrites live/*.json hourly (injuries.json
+        // every 15 minutes), and the bucket is versioned.
         this.assetsBucket.addLifecycleRule({
             id: "expire-old-live-versions",
             prefix: LIVE_PREFIX,

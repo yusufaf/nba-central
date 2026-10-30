@@ -1,14 +1,38 @@
 import { Duration } from "aws-cdk-lib";
-import { LambdaProps } from "../../../models/stack";
-import { TeamBuilderLambda } from "../../constructs/TeamBuilderLambda";
+import { Rule, RuleTargetInput } from "aws-cdk-lib/aws-events";
+import { LambdaFunction } from "aws-cdk-lib/aws-events-targets";
+import { IFunction } from "aws-cdk-lib/aws-lambda";
+import { Construct } from "constructs";
+import { ExtendedStackProps, LambdaProps } from "../../../models/stack";
+import { TeamBuilderLambda, toSchedule } from "../../constructs/TeamBuilderLambda";
 import {
 	ESPN_API_BASE_URL,
 	ESPN_HEADSHOT_BASE_URL,
+	ESPN_INJURIES_URL,
 	ESPN_STANDINGS_URL,
 } from "../../../constants";
 
 export const SEASON_CONTEXT_CRON = { minute: "7" };
 export const SEASON_CONTEXT_TIMEOUT = Duration.minutes(5);
+// :02, :17, :32 and :47, so it never overlaps the hourly :07 run.
+export const INJURIES_CRON = { minute: "2/15" };
+
+// The handler's INJURIES_DATASET; this file can't import the Lambda source,
+// so the stack and Lambda tests pin both sides.
+const INJURIES_EVENT = { dataset: "injuries" };
+
+// TeamBuilderLambda takes one schedule, so the second rule is added here.
+export const addInjuriesSchedule = (
+	scope: Construct,
+	fn: IFunction,
+	{ appName = "team-builder", deploymentType = "development" }: ExtendedStackProps,
+) =>
+	new Rule(scope, "setSeasonContextData-injuries-rule", {
+		ruleName: `${appName}-${deploymentType}-setSeasonContextData-injuries-schedule`,
+		description: "Every 15 minutes: ESPN injuries joined to BBRef ids into live/injuries.json",
+		schedule: toSchedule({ cron: INJURIES_CRON }),
+		targets: [new LambdaFunction(fn, { event: RuleTargetInput.fromObject(INJURIES_EVENT) })],
+	});
 
 export default ({ props, construct }: LambdaProps) => {
 	const functionName = "setSeasonContextData";
@@ -30,6 +54,7 @@ export default ({ props, construct }: LambdaProps) => {
 			ESPN_API_BASE_URL,
 			ESPN_STANDINGS_URL,
 			ESPN_HEADSHOT_BASE_URL,
+			ESPN_INJURIES_URL,
 			assetsBucket: `${appName}-${deploymentType}-assets`,
 			staticDataBucket: `${appName}-${deploymentType}-static-data`,
 		},
@@ -42,6 +67,9 @@ export default ({ props, construct }: LambdaProps) => {
 			cron: SEASON_CONTEXT_CRON,
 		},
 	});
+
+	// Unset when this deployment type is excluded.
+	if (lambdaFunction) addInjuriesSchedule(construct, lambdaFunction, props);
 
 	return lambdaFunction;
 };

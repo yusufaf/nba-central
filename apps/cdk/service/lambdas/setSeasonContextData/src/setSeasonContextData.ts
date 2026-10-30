@@ -7,6 +7,7 @@ import {
 import type {
 	HeadshotEntry,
 	HeadshotsFile,
+	InjuriesFile,
 	RosterAthlete,
 	ScheduleFile,
 	ScheduleGame,
@@ -16,7 +17,10 @@ import {
 	CONFERENCES,
 	TEAMS_PER_CONFERENCE,
 	headshotsShrinkReason,
+	injuriesJoinReason,
 	isNonEmptyString,
+	joinInjuries,
+	parseInjuries,
 	parseRoster,
 	parseScoreboardDay,
 	parseStandings,
@@ -28,6 +32,7 @@ import { ESPN_USER_AGENT } from "resources/espn";
 import {
 	HEADSHOTS_KEY,
 	HEADSHOT_CACHE_CONTROL,
+	INJURIES_KEY,
 	LIVE_JSON_CACHE_CONTROL,
 	SCHEDULE_KEY,
 	STANDINGS_KEY,
@@ -46,15 +51,18 @@ import { isRecord } from "utilities/type-guards";
 /**
  * Hourly: copies ESPN's standings and a week of schedule into live/ in the
  * assets bucket, and once a day joins ESPN's rosters to the BBRef players so
- * their headshots can be mirrored there too, a batch per run. The web reads
- * only those files, so no visitor ever reaches ESPN. Every dataset is
- * validated on its own, and one that fails keeps its previous file.
+ * their headshots can be mirrored there too, a batch per run. Every 15
+ * minutes a second rule (event `{ dataset: "injuries" }`) copies ESPN's
+ * injuries report instead, joined to BBRef ids through headshots.json. The
+ * web reads only those files, so no visitor ever reaches ESPN. Every dataset
+ * is validated on its own, and one that fails keeps its previous file.
  */
 
 const {
 	ESPN_API_BASE_URL = "",
 	ESPN_STANDINGS_URL = "",
 	ESPN_HEADSHOT_BASE_URL = "",
+	ESPN_INJURIES_URL = "",
 	assetsBucket = "",
 	staticDataBucket = "",
 } = process.env;
@@ -277,19 +285,10 @@ export const buildHeadshotMap = (
 const teamsOf = (standings: StandingsFile | null): { espnId: string; abbreviation: string }[] =>
 	standings ? standings.conferences.flatMap((c) => c.teams) : [];
 
-// ---- Handler ----
+// ---- ESPN client ----
 
-interface Summary {
-	standings: string;
-	schedule: string;
-	rosters: string;
-	headshots: { mirrored: number; unchanged: number; failed: number };
-}
-
-export const handler: Handler = async (event, context) => {
-	console.log(JSON.stringify({ event }));
-
-	// Per invocation, so a warm Lambda (or the next test) starts unpaced.
+// Per invocation, so a warm Lambda (or the next test) starts unpaced.
+const espnClient = () => {
 	let lastStart = 0;
 	const espnFetch = async (url: string, headers: Record<string, string> = {}) => {
 		const wait = lastStart + ESPN_REQUEST_INTERVAL_MS - Date.now();
@@ -310,6 +309,63 @@ export const handler: Handler = async (event, context) => {
 		}
 		return res.json();
 	};
+	return { espnFetch, espnJson };
+};
+
+// ---- Injuries ----
+
+export const INJURIES_DATASET = "injuries";
+const isInjuriesRun = (event: unknown) => isRecord(event) && event.dataset === INJURIES_DATASET;
+
+// Needs headshots.json for the join, so it never asks ESPN without one. Any
+// failure keeps the previous injuries.json by not writing.
+const refreshInjuries = async (espnJson: (url: string) => Promise<unknown>) => {
+	const result = await (async (): Promise<string> => {
+		const headshots = await readLiveJson<HeadshotsFile>(HEADSHOTS_KEY, isHeadshotsFile);
+		if (headshots.state !== "ok") {
+			return `kept: no headshots map (${headshots.state === "missing" ? "missing" : headshots.reason})`;
+		}
+		if (Object.keys(headshots.value.players).length === 0) return "kept: empty headshots map";
+
+		let body: unknown;
+		try {
+			body = await espnJson(ESPN_INJURIES_URL);
+		} catch (err) {
+			return `kept: ${message(err)}`;
+		}
+		const parsed = parseInjuries(body);
+		if (!parsed.ok) return `kept: ${parsed.error}`;
+
+		const { reports, skipped } = parsed.value;
+		const { players, unmatched } = joinInjuries(reports, headshots.value.players);
+		const reason = injuriesJoinReason(reports.length, Object.keys(players).length);
+		if (reason) return `kept: ${reason}`;
+
+		const file: InjuriesFile = { version: 1, generatedAt: new Date().toISOString(), players, unmatched };
+		await putLiveJson(INJURIES_KEY, file);
+		if (unmatched.length) console.warn(`Injured athletes with no BBRef id: ${unmatched.join(", ")}`);
+		if (skipped) console.warn(`Skipped ${skipped} unreadable injury entries`);
+		return "saved";
+	})();
+	if (result !== "saved") console.error(`Kept the previous injuries: ${result.slice("kept: ".length)}`);
+	console.log(JSON.stringify({ injuries: result }));
+	return { statusCode: 200, body: JSON.stringify({ injuries: result }) };
+};
+
+// ---- Handler ----
+
+interface Summary {
+	standings: string;
+	schedule: string;
+	rosters: string;
+	headshots: { mirrored: number; unchanged: number; failed: number };
+}
+
+export const handler: Handler = async (event, context) => {
+	console.log(JSON.stringify({ event }));
+
+	const { espnFetch, espnJson } = espnClient();
+	if (isInjuriesRun(event)) return refreshInjuries(espnJson);
 
 	const summary: Summary = {
 		standings: "",

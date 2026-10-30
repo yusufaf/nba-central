@@ -1,0 +1,914 @@
+{
+  "timestamp": "2026-10-29T07:42:59Z",
+  "status": "success",
+  "season": {
+    "year": 2027,
+    "type": 2,
+    "name": "Regular Season",
+    "displayName": "2026-27"
+  },
+  "injuries": [
+    {
+      "id": "1",
+      "displayName": "Atlanta Hawks",
+      "injuries": [
+        {
+          "id": "-58751",
+          "longComment": "Gueye will be re-evaluated by medical staff in 3-to-4 months, which means he'll miss all of training camp and preseason and likely the start of the 2026-27 regular season. It's a brutal blow for the fourth-year big man, given that the Hawks used the No. 23 overall pick of the 2026 NBA Draft to select St. John's product Zuby Ejiofor. Gueye's absence means Ejiofor will have more opportunities in the preseason, and the rookie could establish a key role off the bench behind Onyeka Okongwu and projected backup center Jock Landale (ankle).",
+          "shortComment": "Gueye underwent surgery Tuesday to repair a fractured left foot that he suffered during a workout last week, Brad Rowland of the Locked On Podcast Network reports.",
+          "status": "Out",
+          "date": "2026-10-19T19:38Z",
+          "type": {
+            "id": "4",
+            "name": "INJURY_STATUS_OUT",
+            "description": "out",
+            "abbreviation": "O"
+          },
+          "details": {
+            "fantasyStatus": {
+              "description": "OUT",
+              "abbreviation": "OUT"
+            },
+            "type": "Foot",
+            "location": "Leg",
+            "detail": "Fracture",
+            "side": "Left",
+            "returnDate": "2026-11-20"
+          },
+          "athlete": {
+            "firstName": "Mouhamed",
+            "lastName": "Gueye",
+            "displayName": "Mouhamed Gueye",
+            "shortName": "M. Gueye",
+            "headshot": {
+              "href": "https://a.espncdn.com/i/headshots/nba/players/full/4712863.png",
+              "alt": "Mouhamed Gueye"
+            },
+            "links": [
+              {
+                "language": "en-US",
+                "rel": [
+                  "playercard",
+                  "desktop",
+                  "athlete"
+                ],
+                "href": "https://www.espn.com/nba/player/_/id/4712863/mouhamed-gueye",
+                "text": "Player Card",
+                "shortText": "Player Card",
+                "isExternal": false,
+                "isPremium": false
+              },
+              {
+                "language": "en-US",
+                "rel": [
+                  "overview",
+                  "desktop",
+                  "athlete"
+                ],
+                "href": "https://www.espn.com/nba/player/_/id/4712863/mouhamed-gueye",
+                "text": "Overview",
+                "shortText": "Overview",
+                "isExternal": false,
+                "isPremium": false
+              },
+              {
+                "language": "en-US",
+                "rel": [
+                  "overview",
+                  "sportscenter",
+                  "app",
+                  "athlete"
+                ],
+                "href": "sportscenter://x-callback-url/showClubhouse?uid=s:40~l:46~a:4712863",
+                "text": "Overview",
+                "shortText": "Overview",
+                "isExternal": false,
+                "isPremium": false
+              }
+            ],
+            "team": {
+              "id": "1",
+              "abbreviation": "ATL",
+              "displayName": "Atlanta Hawks"
+            }
+          }
+        },
+        {
+          "id": "-57577",
+          "longComment": "Veesaar suffered the injury during a workout on Sept. 15, and an MRI confirmed the diagnosis. The No. 52 overall pick in the 2026 NBA Draft, Veesaar was expected to spend a lot of time with Atlanta's G League affiliate this season.",
+          "shortComment": "Veesaar was diagnosed with a torn right ACL and is expected to miss the 2026-27 season, the Hawks announced Monday.",
+          "status": "Out",
+          "date": "2026-09-21T19:50Z",
+          "type": {
+            "id": "4",
+            "name": "INJURY_STATUS_OUT",
+            "description": "out",
+            "abbreviation": "O"
+          },
+          "details": {
+            "fantasyStatus": {
+              "description": "OFS",
+              "abbreviation": "OFS"
+            },
+            "type": "Knee",
+            "location": "Leg",
+            "side": "Right",
+            "returnDate": "2027-07-01"
+          },
+          "athlete": {
+            "firstName": "Henri",
+            "lastName": "Veesaar",
+            "displayName": "Henri Veesaar",
+            "shortName": "H. Veesaar",
+            "headshot": {
+              "href": "https://a.espncdn.com/i/headshots/nba/players/full/5105571.png",
+              "alt": "Henri Veesaar"
+            },
+            "links": [
+              {
+                "language": "en-US",
+                "rel": [
+                  "playercard",
+                  "desktop",
+                  "athlete"
+                ],
+                "href": "https://www.espn.com/nba/player/_/id/5105571/henri-veesaar",
+                "text": "Player Card",
+                "shortText": "Player Card",
+                "isExternal": false,
+                "isPremium": false
+              },
+              {
+                "language": "en-US",
+                "rel": [
+                  "overview",
+                  "desktop",
+                  "athlete"
+                ],
+                "href": "https://www.espn.com/nba/player/_/id/5105571/henri-veesaar",
+                "text": "Overview",
+                "shortText": "Overview",
+                "isExternal": false,
+                "isPremium": false
+              },
+              {
+                "language": "en-US",
+                "rel": [
+                  "overview",
+                  "sportscenter",
+                  "app",
+                  "athlete"
+                ],
+                "href": "sportscenter://x-callback-url/showClubhouse?uid=s:40~l:46~a:5105571",
+                "text": "Overview",
+                "shortText": "Overview",
+                "isExternal": false,
+                "isPremium": false
+              }
+            ],
+            "team": {
+              "id": "1",
+              "abbreviation": "ATL",
+              "displayName": "Atlanta Hawks"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "6",
+      "displayName": "Dallas Mavericks",
+      "injuries": [
+        {
+          "id": "-60088",
+          "longComment": "De Larrea sustained a right knee sprain in Monday's win over the Heat and will be held out of Wednesday's contest. His next chance to play will come Friday against Houston. With the rookie guard sidelined, Marcus Sasser could see a slight bump in minutes.",
+          "shortComment": "De Larrea (knee) has been ruled out for Wednesday's game against the Thunder.",
+          "status": "Day-To-Day",
+          "date": "2026-10-29T04:40Z",
+          "type": {
+            "id": "6",
+            "name": "INJURY_STATUS_DAYTODAY",
+            "description": "day-to-day",
+            "abbreviation": "DD"
+          },
+          "details": {
+            "fantasyStatus": {
+              "description": "GTD",
+              "abbreviation": "GTD"
+            },
+            "type": "Knee",
+            "location": "Leg",
+            "detail": "Strain",
+            "side": "Right",
+            "returnDate": "2026-10-30"
+          },
+          "athlete": {
+            "firstName": "Sergio",
+            "lastName": "de Larrea",
+            "displayName": "Sergio de Larrea",
+            "shortName": "S. de Larrea",
+            "headshot": {
+              "href": "https://a.espncdn.com/i/headshots/nba/players/full/5279129.png",
+              "alt": "Sergio de Larrea"
+            },
+            "links": [
+              {
+                "language": "en-US",
+                "rel": [
+                  "playercard",
+                  "desktop",
+                  "athlete"
+                ],
+                "href": "https://www.espn.com/nba/player/_/id/5279129/sergio-de-larrea",
+                "text": "Player Card",
+                "shortText": "Player Card",
+                "isExternal": false,
+                "isPremium": false
+              },
+              {
+                "language": "en-US",
+                "rel": [
+                  "overview",
+                  "desktop",
+                  "athlete"
+                ],
+                "href": "https://www.espn.com/nba/player/_/id/5279129/sergio-de-larrea",
+                "text": "Overview",
+                "shortText": "Overview",
+                "isExternal": false,
+                "isPremium": false
+              },
+              {
+                "language": "en-US",
+                "rel": [
+                  "overview",
+                  "sportscenter",
+                  "app",
+                  "athlete"
+                ],
+                "href": "sportscenter://x-callback-url/showClubhouse?uid=s:40~l:46~a:5279129",
+                "text": "Overview",
+                "shortText": "Overview",
+                "isExternal": false,
+                "isPremium": false
+              }
+            ],
+            "team": {
+              "id": "6",
+              "abbreviation": "DAL",
+              "displayName": "Dallas Mavericks"
+            }
+          }
+        },
+        {
+          "id": "-60087",
+          "longComment": "Marshall will now miss his second consecutive contest, meaning his next opportunity to suit up will come Friday against the Rockets. Without Marshall on the floor, Max Christie, Walter Clayton and Morez Johnson should each see a few extra minutes versus the Thunder.",
+          "shortComment": "Marshall (illness) won't play in Wednesday's game against Oklahoma City.",
+          "status": "Day-To-Day",
+          "date": "2026-10-29T04:39Z",
+          "type": {
+            "id": "6",
+            "name": "INJURY_STATUS_DAYTODAY",
+            "description": "day-to-day",
+            "abbreviation": "DD"
+          },
+          "details": {
+            "fantasyStatus": {
+              "description": "GTD",
+              "abbreviation": "GTD"
+            },
+            "type": "Illness",
+            "location": "Other",
+            "returnDate": "2026-10-30"
+          },
+          "athlete": {
+            "firstName": "Naji",
+            "lastName": "Marshall",
+            "displayName": "Naji Marshall",
+            "shortName": "N. Marshall",
+            "headshot": {
+              "href": "https://a.espncdn.com/i/headshots/nba/players/full/4278594.png",
+              "alt": "Naji Marshall"
+            },
+            "links": [
+              {
+                "language": "en-US",
+                "rel": [
+                  "playercard",
+                  "desktop",
+                  "athlete"
+                ],
+                "href": "https://www.espn.com/nba/player/_/id/4278594/naji-marshall",
+                "text": "Player Card",
+                "shortText": "Player Card",
+                "isExternal": false,
+                "isPremium": false
+              },
+              {
+                "language": "en-US",
+                "rel": [
+                  "overview",
+                  "desktop",
+                  "athlete"
+                ],
+                "href": "https://www.espn.com/nba/player/_/id/4278594/naji-marshall",
+                "text": "Overview",
+                "shortText": "Overview",
+                "isExternal": false,
+                "isPremium": false
+              },
+              {
+                "language": "en-US",
+                "rel": [
+                  "overview",
+                  "sportscenter",
+                  "app",
+                  "athlete"
+                ],
+                "href": "sportscenter://x-callback-url/showClubhouse?uid=s:40~l:46~a:4278594",
+                "text": "Overview",
+                "shortText": "Overview",
+                "isExternal": false,
+                "isPremium": false
+              }
+            ],
+            "team": {
+              "id": "6",
+              "abbreviation": "DAL",
+              "displayName": "Dallas Mavericks"
+            }
+          }
+        },
+        {
+          "id": "536488",
+          "longComment": "Biberovic is still waiting to make his NBA debut. His next chance to do so arrives Friday against the Rockets.",
+          "shortComment": "Biberovic (knee) is out for Wednesday's game against the Thunder.",
+          "status": "Out",
+          "date": "2026-10-28T18:21Z",
+          "type": {
+            "id": "4",
+            "name": "INJURY_STATUS_OUT",
+            "description": "out",
+            "abbreviation": "O"
+          },
+          "details": {
+            "fantasyStatus": {
+              "description": "GTD",
+              "abbreviation": "GTD"
+            },
+            "type": "Heel",
+            "location": "Leg",
+            "detail": "Inflammation",
+            "side": "Right",
+            "returnDate": "2026-10-30"
+          },
+          "athlete": {
+            "firstName": "Tarik",
+            "lastName": "Biberovic",
+            "displayName": "Tarik Biberovic",
+            "shortName": "T. Biberovic",
+            "headshot": {
+              "href": "https://a.espncdn.com/i/headshots/nba/players/full/5148538.png",
+              "alt": "Tarik Biberovic"
+            },
+            "links": [
+              {
+                "language": "en-US",
+                "rel": [
+                  "playercard",
+                  "desktop",
+                  "athlete"
+                ],
+                "href": "https://www.espn.com/nba/player/_/id/5148538/tarik-biberovic",
+                "text": "Player Card",
+                "shortText": "Player Card",
+                "isExternal": false,
+                "isPremium": false
+              },
+              {
+                "language": "en-US",
+                "rel": [
+                  "overview",
+                  "desktop",
+                  "athlete"
+                ],
+                "href": "https://www.espn.com/nba/player/_/id/5148538/tarik-biberovic",
+                "text": "Overview",
+                "shortText": "Overview",
+                "isExternal": false,
+                "isPremium": false
+              },
+              {
+                "language": "en-US",
+                "rel": [
+                  "overview",
+                  "sportscenter",
+                  "app",
+                  "athlete"
+                ],
+                "href": "sportscenter://x-callback-url/showClubhouse?uid=s:40~l:46~a:5148538",
+                "text": "Overview",
+                "shortText": "Overview",
+                "isExternal": false,
+                "isPremium": false
+              }
+            ],
+            "team": {
+              "id": "6",
+              "abbreviation": "DAL",
+              "displayName": "Dallas Mavericks"
+            }
+          }
+        },
+        {
+          "id": "536486",
+          "longComment": "Aldama is still waiting to make his Mavericks debut. His next chance to return from knee surgery comes Friday versus Houston.",
+          "shortComment": "Aldama (knee) is out for Wednesday's game against the Thunder.",
+          "status": "Out",
+          "date": "2026-10-28T18:19Z",
+          "type": {
+            "id": "4",
+            "name": "INJURY_STATUS_OUT",
+            "description": "out",
+            "abbreviation": "O"
+          },
+          "details": {
+            "fantasyStatus": {
+              "description": "GTD",
+              "abbreviation": "GTD"
+            },
+            "type": "Knee",
+            "location": "Leg",
+            "detail": "Surgery",
+            "side": "Right",
+            "returnDate": "2026-10-30"
+          },
+          "athlete": {
+            "firstName": "Santi",
+            "lastName": "Aldama",
+            "displayName": "Santi Aldama",
+            "shortName": "S. Aldama",
+            "headshot": {
+              "href": "https://a.espncdn.com/i/headshots/nba/players/full/4593125.png",
+              "alt": "Santi Aldama"
+            },
+            "links": [
+              {
+                "language": "en-US",
+                "rel": [
+                  "playercard",
+                  "desktop",
+                  "athlete"
+                ],
+                "href": "https://www.espn.com/nba/player/_/id/4593125/santi-aldama",
+                "text": "Player Card",
+                "shortText": "Player Card",
+                "isExternal": false,
+                "isPremium": false
+              },
+              {
+                "language": "en-US",
+                "rel": [
+                  "overview",
+                  "desktop",
+                  "athlete"
+                ],
+                "href": "https://www.espn.com/nba/player/_/id/4593125/santi-aldama",
+                "text": "Overview",
+                "shortText": "Overview",
+                "isExternal": false,
+                "isPremium": false
+              },
+              {
+                "language": "en-US",
+                "rel": [
+                  "overview",
+                  "sportscenter",
+                  "app",
+                  "athlete"
+                ],
+                "href": "sportscenter://x-callback-url/showClubhouse?uid=s:40~l:46~a:4593125",
+                "text": "Overview",
+                "shortText": "Overview",
+                "isExternal": false,
+                "isPremium": false
+              }
+            ],
+            "team": {
+              "id": "6",
+              "abbreviation": "DAL",
+              "displayName": "Dallas Mavericks"
+            }
+          }
+        },
+        {
+          "id": "535576",
+          "longComment": "Lively underwent right foot surgery last December and remains without a clear timetable to return. The big man can be considered week-to-week until the Mavericks offer an update on his status. In the meantime, Moussa Cisse and Morez Johnson are candidates for increased minutes.",
+          "shortComment": "Lively (foot) has been ruled out for Friday's game against the Pacers.",
+          "status": "Out",
+          "date": "2026-10-22T20:10Z",
+          "type": {
+            "id": "4",
+            "name": "INJURY_STATUS_OUT",
+            "description": "out",
+            "abbreviation": "O"
+          },
+          "details": {
+            "fantasyStatus": {
+              "description": "OUT",
+              "abbreviation": "OUT"
+            },
+            "type": "Foot",
+            "location": "Leg",
+            "detail": "Surgery",
+            "side": "Right",
+            "returnDate": "2026-11-02"
+          },
+          "athlete": {
+            "firstName": "Dereck",
+            "lastName": "Lively II",
+            "displayName": "Dereck Lively II",
+            "shortName": "D. Lively II",
+            "headshot": {
+              "href": "https://a.espncdn.com/i/headshots/nba/players/full/4683688.png",
+              "alt": "Dereck Lively II"
+            },
+            "links": [
+              {
+                "language": "en-US",
+                "rel": [
+                  "playercard",
+                  "desktop",
+                  "athlete"
+                ],
+                "href": "https://www.espn.com/nba/player/_/id/4683688/dereck-lively-ii",
+                "text": "Player Card",
+                "shortText": "Player Card",
+                "isExternal": false,
+                "isPremium": false
+              },
+              {
+                "language": "en-US",
+                "rel": [
+                  "overview",
+                  "desktop",
+                  "athlete"
+                ],
+                "href": "https://www.espn.com/nba/player/_/id/4683688/dereck-lively-ii",
+                "text": "Overview",
+                "shortText": "Overview",
+                "isExternal": false,
+                "isPremium": false
+              },
+              {
+                "language": "en-US",
+                "rel": [
+                  "overview",
+                  "sportscenter",
+                  "app",
+                  "athlete"
+                ],
+                "href": "sportscenter://x-callback-url/showClubhouse?uid=s:40~l:46~a:4683688",
+                "text": "Overview",
+                "shortText": "Overview",
+                "isExternal": false,
+                "isPremium": false
+              }
+            ],
+            "team": {
+              "id": "6",
+              "abbreviation": "DAL",
+              "displayName": "Dallas Mavericks"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "13",
+      "displayName": "Los Angeles Lakers",
+      "injuries": [
+        {
+          "id": "-60091",
+          "longComment": "Williams is sitting out the second part of this back-to-back set. Sandro Mamukelashvili and Jake LaRavia seem to be the most likely options to replace Williams in the starting lineup.",
+          "shortComment": "Williams (foot) is out for Wednesday's game against the Clippers.",
+          "status": "Day-To-Day",
+          "date": "2026-10-29T05:05Z",
+          "type": {
+            "id": "6",
+            "name": "INJURY_STATUS_DAYTODAY",
+            "description": "day-to-day",
+            "abbreviation": "DD"
+          },
+          "details": {
+            "fantasyStatus": {
+              "description": "GTD",
+              "abbreviation": "GTD"
+            },
+            "type": "Foot",
+            "location": "Leg",
+            "returnDate": "2026-10-30"
+          },
+          "athlete": {
+            "firstName": "Ziaire",
+            "lastName": "Williams",
+            "displayName": "Ziaire Williams",
+            "shortName": "Z. Williams",
+            "headshot": {
+              "href": "https://a.espncdn.com/i/headshots/nba/players/full/4433137.png",
+              "alt": "Ziaire Williams"
+            },
+            "links": [
+              {
+                "language": "en-US",
+                "rel": [
+                  "playercard",
+                  "desktop",
+                  "athlete"
+                ],
+                "href": "https://www.espn.com/nba/player/_/id/4433137/ziaire-williams",
+                "text": "Player Card",
+                "shortText": "Player Card",
+                "isExternal": false,
+                "isPremium": false
+              },
+              {
+                "language": "en-US",
+                "rel": [
+                  "overview",
+                  "desktop",
+                  "athlete"
+                ],
+                "href": "https://www.espn.com/nba/player/_/id/4433137/ziaire-williams",
+                "text": "Overview",
+                "shortText": "Overview",
+                "isExternal": false,
+                "isPremium": false
+              },
+              {
+                "language": "en-US",
+                "rel": [
+                  "overview",
+                  "sportscenter",
+                  "app",
+                  "athlete"
+                ],
+                "href": "sportscenter://x-callback-url/showClubhouse?uid=s:40~l:46~a:4433137",
+                "text": "Overview",
+                "shortText": "Overview",
+                "isExternal": false,
+                "isPremium": false
+              }
+            ],
+            "team": {
+              "id": "13",
+              "abbreviation": "LAL",
+              "displayName": "Los Angeles Lakers"
+            }
+          }
+        },
+        {
+          "id": "-60090",
+          "longComment": "Doncic is sitting out the second half of this back-to-back set. Quentin Grimes appears to be the most likely candidate to replace Doncic in the starting lineup.",
+          "shortComment": "Doncic (back) is out for Wednesday's game against the Clippers.",
+          "status": "Day-To-Day",
+          "date": "2026-10-29T05:05Z",
+          "type": {
+            "id": "6",
+            "name": "INJURY_STATUS_DAYTODAY",
+            "description": "day-to-day",
+            "abbreviation": "DD"
+          },
+          "details": {
+            "fantasyStatus": {
+              "description": "GTD",
+              "abbreviation": "GTD"
+            },
+            "type": "Back",
+            "location": "Torso",
+            "returnDate": "2026-10-30"
+          },
+          "athlete": {
+            "firstName": "Luka",
+            "lastName": "Doncic",
+            "displayName": "Luka Doncic",
+            "shortName": "L. Doncic",
+            "headshot": {
+              "href": "https://a.espncdn.com/i/headshots/nba/players/full/3945274.png",
+              "alt": "Luka Doncic"
+            },
+            "links": [
+              {
+                "language": "en-US",
+                "rel": [
+                  "playercard",
+                  "desktop",
+                  "athlete"
+                ],
+                "href": "https://www.espn.com/nba/player/_/id/3945274/luka-doncic",
+                "text": "Player Card",
+                "shortText": "Player Card",
+                "isExternal": false,
+                "isPremium": false
+              },
+              {
+                "language": "en-US",
+                "rel": [
+                  "overview",
+                  "desktop",
+                  "athlete"
+                ],
+                "href": "https://www.espn.com/nba/player/_/id/3945274/luka-doncic",
+                "text": "Overview",
+                "shortText": "Overview",
+                "isExternal": false,
+                "isPremium": false
+              },
+              {
+                "language": "en-US",
+                "rel": [
+                  "overview",
+                  "sportscenter",
+                  "app",
+                  "athlete"
+                ],
+                "href": "sportscenter://x-callback-url/showClubhouse?uid=s:40~l:46~a:3945274",
+                "text": "Overview",
+                "shortText": "Overview",
+                "isExternal": false,
+                "isPremium": false
+              }
+            ],
+            "team": {
+              "id": "13",
+              "abbreviation": "LAL",
+              "displayName": "Los Angeles Lakers"
+            }
+          }
+        },
+        {
+          "id": "536523",
+          "longComment": "The rookie first-rounder will need more time to recover from the oblique injury that's kept him sidelined for what will be his fifth consecutive contest. Carr's next chance to suit up will come against the Warriors on Friday in the first Emirates NBA Cup matchup.",
+          "shortComment": "Carr (oblique) is out for Wednesday's game against the Clippers.",
+          "status": "Out",
+          "date": "2026-10-28T20:12Z",
+          "type": {
+            "id": "4",
+            "name": "INJURY_STATUS_OUT",
+            "description": "out",
+            "abbreviation": "O"
+          },
+          "details": {
+            "fantasyStatus": {
+              "description": "GTD",
+              "abbreviation": "GTD"
+            },
+            "type": "Oblique",
+            "location": "Torso",
+            "detail": "Strain",
+            "side": "Right",
+            "returnDate": "2026-10-30"
+          },
+          "athlete": {
+            "firstName": "Cameron",
+            "lastName": "Carr",
+            "displayName": "Cameron Carr",
+            "shortName": "C. Carr",
+            "headshot": {
+              "href": "https://a.espncdn.com/i/headshots/nba/players/full/5113969.png",
+              "alt": "Cameron Carr"
+            },
+            "links": [
+              {
+                "language": "en-US",
+                "rel": [
+                  "playercard",
+                  "desktop",
+                  "athlete"
+                ],
+                "href": "https://www.espn.com/nba/player/_/id/5113969/cameron-carr",
+                "text": "Player Card",
+                "shortText": "Player Card",
+                "isExternal": false,
+                "isPremium": false
+              },
+              {
+                "language": "en-US",
+                "rel": [
+                  "overview",
+                  "desktop",
+                  "athlete"
+                ],
+                "href": "https://www.espn.com/nba/player/_/id/5113969/cameron-carr",
+                "text": "Overview",
+                "shortText": "Overview",
+                "isExternal": false,
+                "isPremium": false
+              },
+              {
+                "language": "en-US",
+                "rel": [
+                  "overview",
+                  "sportscenter",
+                  "app",
+                  "athlete"
+                ],
+                "href": "sportscenter://x-callback-url/showClubhouse?uid=s:40~l:46~a:5113969",
+                "text": "Overview",
+                "shortText": "Overview",
+                "isExternal": false,
+                "isPremium": false
+              }
+            ],
+            "team": {
+              "id": "13",
+              "abbreviation": "LAL",
+              "displayName": "Los Angeles Lakers"
+            }
+          }
+        },
+        {
+          "id": "536522",
+          "longComment": "Thiero will miss his fifth consecutive outing to begin the 2026-27 campaign with swelling in his left knee. His next chance to suit up will come against the Warriors on Friday in the first Emirates NBA Cup matchup.",
+          "shortComment": "Thiero (knee) is out for Wednesday's game against the Clippers.",
+          "status": "Out",
+          "date": "2026-10-28T20:10Z",
+          "type": {
+            "id": "4",
+            "name": "INJURY_STATUS_OUT",
+            "description": "out",
+            "abbreviation": "O"
+          },
+          "details": {
+            "fantasyStatus": {
+              "description": "GTD",
+              "abbreviation": "GTD"
+            },
+            "type": "Knee",
+            "location": "Leg",
+            "detail": "Inflammation",
+            "side": "Left",
+            "returnDate": "2026-10-30"
+          },
+          "athlete": {
+            "firstName": "Adou",
+            "lastName": "Thiero",
+            "displayName": "Adou Thiero",
+            "shortName": "A. Thiero",
+            "headshot": {
+              "href": "https://a.espncdn.com/i/headshots/nba/players/full/5060631.png",
+              "alt": "Adou Thiero"
+            },
+            "links": [
+              {
+                "language": "en-US",
+                "rel": [
+                  "playercard",
+                  "desktop",
+                  "athlete"
+                ],
+                "href": "https://www.espn.com/nba/player/_/id/5060631/adou-thiero",
+                "text": "Player Card",
+                "shortText": "Player Card",
+                "isExternal": false,
+                "isPremium": false
+              },
+              {
+                "language": "en-US",
+                "rel": [
+                  "overview",
+                  "desktop",
+                  "athlete"
+                ],
+                "href": "https://www.espn.com/nba/player/_/id/5060631/adou-thiero",
+                "text": "Overview",
+                "shortText": "Overview",
+                "isExternal": false,
+                "isPremium": false
+              },
+              {
+                "language": "en-US",
+                "rel": [
+                  "overview",
+                  "sportscenter",
+                  "app",
+                  "athlete"
+                ],
+                "href": "sportscenter://x-callback-url/showClubhouse?uid=s:40~l:46~a:5060631",
+                "text": "Overview",
+                "shortText": "Overview",
+                "isExternal": false,
+                "isPremium": false
+              }
+            ],
+            "team": {
+              "id": "13",
+              "abbreviation": "LAL",
+              "displayName": "Los Angeles Lakers"
+            }
+          }
+        }
+      ]
+    }
+  ]
+}
