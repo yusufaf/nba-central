@@ -3,6 +3,9 @@ import type {
 	ConferenceName,
 	GameStatus,
 	HeadshotEntry,
+	InjuryEntry,
+	InjuryKind,
+	InjuryReport,
 	Parsed,
 	RosterAthlete,
 	ScheduleFile,
@@ -292,3 +295,112 @@ export const pickHeadshotsToMirror = (
 	stale.sort((a, b) => a[1] - b[1] || a[0].localeCompare(b[0]));
 	return [...missing, ...stale.map(([id]) => id)].slice(0, batch);
 };
+
+// ---- Injuries ----
+
+// Under half of this many injured athletes joining a BBRef id means the
+// headshots map or ESPN's ids broke, not a real report.
+export const MIN_INJURIES_FOR_JOIN_GUARD = 10;
+const MIN_JOINED_SHARE = 0.5;
+
+// Player pages only (/player/_/id/N, /player/stats/_/id/N, ...): a team or
+// game link elsewhere in `links` would read as a second, conflicting id.
+const ID_PATTERNS = [/\/player\/(?:[a-z-]+\/)?_\/id\/(\d+)(?:\/|$)/, /~a:(\d+)/, /\/players\/full\/(\d+)\.png/];
+
+/**
+ * The injuries report has no athlete id field: the id only appears in the
+ * athlete's links and headshot URL. Exactly one distinct id, or null.
+ */
+export const espnAthleteId = (athlete: unknown): string | null => {
+	if (!isRecord(athlete)) return null;
+	const ids = new Set<string>();
+	if (typeof athlete.id === "string" && /^\d+$/.test(athlete.id)) ids.add(athlete.id);
+	const hrefs: unknown[] = Array.isArray(athlete.links)
+		? athlete.links.map((link) => (isRecord(link) ? link.href : null))
+		: [];
+	if (isRecord(athlete.headshot)) hrefs.push(athlete.headshot.href);
+	for (const href of hrefs) {
+		if (typeof href !== "string") continue;
+		for (const pattern of ID_PATTERNS) {
+			const match = pattern.exec(href);
+			if (match) ids.add(match[1]);
+		}
+	}
+	return ids.size === 1 ? [...ids][0] : null;
+};
+
+const injuryKind = (type: unknown, status: string): InjuryKind => {
+	const name = isRecord(type) ? type.name : null;
+	if (name === "INJURY_STATUS_OUT") return "out";
+	if (name === "INJURY_STATUS_DAYTODAY") return "day-to-day";
+	const label = status.toLowerCase();
+	if (label === "out") return "out";
+	if (label === "day-to-day") return "day-to-day";
+	return "other";
+};
+
+const parseInjuryEntry = (entry: unknown): InjuryReport | null => {
+	if (!isRecord(entry) || !isNonEmptyString(entry.status) || !isRecord(entry.athlete)) return null;
+	const espnId = espnAthleteId(entry.athlete);
+	if (espnId === null) return null;
+	return {
+		espnId,
+		name: isNonEmptyString(entry.athlete.displayName) ? entry.athlete.displayName : "",
+		status: entry.status,
+		kind: injuryKind(entry.type, entry.status),
+		comment: typeof entry.shortComment === "string" ? entry.shortComment : "",
+		date: typeof entry.date === "string" && !Number.isNaN(Date.parse(entry.date)) ? entry.date : null,
+	};
+};
+
+const laterReport = (a: InjuryReport, b: InjuryReport): InjuryReport => {
+	if (a.date === null) return b;
+	if (b.date === null) return a;
+	return Date.parse(b.date) > Date.parse(a.date) ? b : a;
+};
+
+export const parseInjuries = (body: unknown): Parsed<{ reports: InjuryReport[]; skipped: number }> => {
+	if (!isRecord(body) || !Array.isArray(body.injuries)) return fail("no injuries");
+	const byId = new Map<string, InjuryReport>();
+	let total = 0;
+	let skipped = 0;
+	for (const team of body.injuries) {
+		if (!isRecord(team) || !Array.isArray(team.injuries)) return fail("team without injuries");
+		for (const entry of team.injuries) {
+			total++;
+			const report = parseInjuryEntry(entry);
+			if (report === null) {
+				skipped++;
+				continue;
+			}
+			const prev = byId.get(report.espnId);
+			byId.set(report.espnId, prev ? laterReport(prev, report) : report);
+		}
+	}
+	// ESPN lists long-term injuries for months, so an empty league is a broken
+	// response, not a healthy one.
+	if (total === 0) return fail("no injured athletes");
+	if (skipped * 2 > total) return fail(`${skipped} of ${total} entries unreadable`);
+	return ok({ reports: [...byId.values()], skipped });
+};
+
+export const joinInjuries = (
+	reports: InjuryReport[],
+	headshots: Record<string, HeadshotEntry>,
+): { players: Record<string, InjuryEntry>; unmatched: string[] } => {
+	const bbrefByEspn = new Map(Object.entries(headshots).map(([bbrefId, entry]) => [entry.espnId, bbrefId]));
+	const players: Record<string, InjuryEntry> = {};
+	const unmatched: string[] = [];
+	for (const { espnId, name, status, kind, comment, date } of reports) {
+		const bbrefId = bbrefByEspn.get(espnId);
+		if (bbrefId) players[bbrefId] = { espnId, status, kind, comment, date };
+		else unmatched.push(`${name} (${espnId})`);
+	}
+	unmatched.sort();
+	return { players, unmatched };
+};
+
+export const injuriesJoinReason = (total: number, joined: number): string | null =>
+	total >= MIN_INJURIES_FOR_JOIN_GUARD && joined < total * MIN_JOINED_SHARE
+		? `${joined} of ${total} injured athletes joined`
+		: null;

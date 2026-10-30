@@ -4,8 +4,13 @@ import path from "node:path";
 import {
 	HEADSHOT_REFRESH_SECONDS,
 	HEADSHOT_RETRY_SECONDS,
+	MIN_INJURIES_FOR_JOIN_GUARD,
 	MIN_MATCHED_ATHLETES,
+	espnAthleteId,
 	headshotsShrinkReason,
+	injuriesJoinReason,
+	joinInjuries,
+	parseInjuries,
 	parseRoster,
 	parseScoreboardDay,
 	parseStandings,
@@ -371,5 +376,127 @@ describe("pickHeadshotsToMirror", () => {
 			},
 		};
 		expect(pickHeadshotsToMirror(players, NOW_S, 10)).toEqual(["failedYesterday"]);
+	});
+});
+
+const athlete = (ids: { link?: string; headshot?: string; id?: string }, name = "Some Player") => ({
+	displayName: name,
+	...(ids.id ? { id: ids.id } : {}),
+	links: ids.link ? [{ href: `https://www.espn.com/nba/player/_/id/${ids.link}/some-player` }] : [],
+	...(ids.headshot ? { headshot: { href: `https://a.espncdn.com/i/headshots/nba/players/full/${ids.headshot}.png` } } : {}),
+});
+
+const entry = (espnId: string, extra: Record<string, unknown> = {}) => ({
+	status: "Out",
+	date: "2026-10-20T12:00Z",
+	shortComment: "Hurt.",
+	type: { name: "INJURY_STATUS_OUT" },
+	athlete: athlete({ link: espnId }),
+	...extra,
+});
+
+const league = (...entries: unknown[]) => ({ injuries: [{ id: "1", displayName: "Team", injuries: entries }] });
+
+const reports = (body: unknown) => {
+	const parsed = parseInjuries(body);
+	if (!parsed.ok) throw new Error(parsed.error);
+	return parsed.value;
+};
+
+describe("parseInjuries", () => {
+	it("parses ESPN's injuries report", () => {
+		const { reports: parsed, skipped } = reports(fixture("injuries.json"));
+		expect(parsed).toHaveLength(11);
+		expect(skipped).toBe(0);
+		const gueye = parsed.find((r) => r.name === "Mouhamed Gueye");
+		expect(gueye).toMatchObject({ espnId: "4712863", status: "Out", kind: "out", date: "2026-10-19T19:38Z" });
+		expect(gueye?.comment).toMatch(/fractured left foot/);
+		expect(parsed.find((r) => r.name === "Luka Doncic")).toMatchObject({ status: "Day-To-Day", kind: "day-to-day" });
+		expect(parsed.filter((r) => r.kind === "day-to-day")).toHaveLength(4);
+	});
+
+	it("takes the ESPN id from the links, the headshot or an id field", () => {
+		expect(espnAthleteId(athlete({ link: "11" }))).toBe("11");
+		expect(espnAthleteId(athlete({ headshot: "22" }))).toBe("22");
+		expect(espnAthleteId(athlete({ id: "33" }))).toBe("33");
+		expect(espnAthleteId({ links: [{ href: "sportscenter://x-callback-url/showClubhouse?uid=s:40~l:46~a:44" }] })).toBe("44");
+		expect(espnAthleteId(athlete({ link: "55", headshot: "55" }))).toBe("55");
+		expect(espnAthleteId({ links: [{ href: "https://www.espn.com/nba/player/stats/_/id/66/x" }] })).toBe("66");
+		expect(espnAthleteId({ links: [{ href: "https://www.espn.com/nba/player/game-log/_/id/67/x" }] })).toBe("67");
+	});
+
+	it("ignores a team or game link among the athlete's links", () => {
+		const links = [
+			{ href: "https://www.espn.com/nba/player/_/id/77/some-player" },
+			{ href: "https://www.espn.com/nba/team/_/id/13/los-angeles-lakers" },
+			{ href: "https://www.espn.com/nba/game/_/gameId/401809000" },
+		];
+		expect(espnAthleteId({ links })).toBe("77");
+	});
+
+	it("skips an athlete whose ids disagree", () => {
+		expect(espnAthleteId(athlete({ link: "1", headshot: "2" }))).toBeNull();
+		expect(espnAthleteId({})).toBeNull();
+		const { reports: parsed, skipped } = reports(league(entry("7"), entry("8", { athlete: athlete({ link: "1", headshot: "2" }) })));
+		expect(parsed.map((r) => r.espnId)).toEqual(["7"]);
+		expect(skipped).toBe(1);
+	});
+
+	it("skips an entry without a status or an id, and fails when most are unreadable", () => {
+		const one = reports(league(entry("1"), entry("2"), entry("3", { status: "" })));
+		expect(one.reports).toHaveLength(2);
+		expect(one.skipped).toBe(1);
+		const most = parseInjuries(league(entry("1"), entry("2", { status: 4 }), entry("3", { athlete: athlete({}) })));
+		expect(most).toEqual({ ok: false, error: "2 of 3 entries unreadable" });
+	});
+
+	it("fails without an injuries array", () => {
+		expect(parseInjuries({})).toEqual({ ok: false, error: "no injuries" });
+		expect(parseInjuries({ injuries: "x" })).toEqual({ ok: false, error: "no injuries" });
+		expect(parseInjuries({ injuries: [{ id: "1" }] })).toEqual({ ok: false, error: "team without injuries" });
+	});
+
+	it("fails a report with no injured athletes", () => {
+		expect(parseInjuries({ injuries: [] })).toEqual({ ok: false, error: "no injured athletes" });
+		expect(parseInjuries({ injuries: [{ id: "1", injuries: [] }] })).toEqual({ ok: false, error: "no injured athletes" });
+	});
+
+	it("keeps the latest entry for an athlete listed twice", () => {
+		const { reports: parsed } = reports(
+			league(entry("9", { status: "Out", date: "2026-10-01T00:00Z" }), entry("9", { status: "Day-To-Day", date: "2026-10-05T00:00Z", type: {} })),
+		);
+		expect(parsed).toHaveLength(1);
+		expect(parsed[0]).toMatchObject({ status: "Day-To-Day", date: "2026-10-05T00:00Z" });
+	});
+
+	it("falls back to the status text for an unknown type", () => {
+		const { reports: parsed } = reports(
+			league(entry("1", { type: undefined }), entry("2", { type: {}, status: "Suspension" }), entry("3", { date: "soon", shortComment: 5 })),
+		);
+		expect(parsed.map((r) => r.kind)).toEqual(["out", "other", "out"]);
+		expect(parsed[2]).toMatchObject({ date: null, comment: "" });
+	});
+});
+
+describe("joinInjuries", () => {
+	const headshot = (espnId: string) => ({ espnId }) as HeadshotEntry;
+
+	it("keys entries by BBRef id and lists the rest as unmatched", () => {
+		const { reports: parsed } = reports(
+			league(entry("100"), entry("300", { athlete: athlete({ link: "300" }, "Zed Unknown") }), entry("200", { status: "Day-To-Day", type: { name: "INJURY_STATUS_DAYTODAY" } }), entry("400", { athlete: athlete({ link: "400" }, "Abe Unknown") })),
+		);
+		const { players, unmatched } = joinInjuries(parsed, { aaa01: headshot("100"), bbb01: headshot("200"), ccc01: headshot("999") });
+		expect(Object.keys(players).sort()).toEqual(["aaa01", "bbb01"]);
+		expect(players.aaa01).toEqual({ espnId: "100", status: "Out", kind: "out", comment: "Hurt.", date: "2026-10-20T12:00Z" });
+		expect(players.bbb01.kind).toBe("day-to-day");
+		expect(unmatched).toEqual(["Abe Unknown (400)", "Zed Unknown (300)"]);
+	});
+});
+
+describe("injuriesJoinReason", () => {
+	it("keeps the previous file when under half of ten or more athletes join", () => {
+		expect(injuriesJoinReason(10, 4)).toBe("4 of 10 injured athletes joined");
+		expect(injuriesJoinReason(10, 5)).toBeNull();
+		expect(injuriesJoinReason(MIN_INJURIES_FOR_JOIN_GUARD - 1, 0)).toBeNull();
 	});
 });

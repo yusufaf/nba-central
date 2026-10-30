@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { readFileSync } from "node:fs";
 import path from "node:path";
-import type { HeadshotsFile, ScheduleFile, StandingsFile } from "models/live-data";
+import type { HeadshotsFile, InjuriesFile, ScheduleFile, StandingsFile } from "models/live-data";
 import type { PoolPlayer } from "utilities/player-names";
 
 const s3Send = vi.fn();
@@ -15,6 +15,7 @@ vi.mock("@aws-sdk/client-s3", async (importOriginal) => {
 process.env.ESPN_API_BASE_URL = "https://espn.test/site";
 process.env.ESPN_STANDINGS_URL = "https://espn.test/standings";
 process.env.ESPN_HEADSHOT_BASE_URL = "https://img.espn.test/full";
+process.env.ESPN_INJURIES_URL = "https://espn.test/site/injuries";
 process.env.assetsBucket = "assets";
 process.env.staticDataBucket = "static";
 
@@ -23,6 +24,7 @@ const { normalizeName } = await import("utilities/player-names");
 const {
 	HEADSHOTS_KEY,
 	HEADSHOT_CACHE_CONTROL,
+	INJURIES_KEY,
 	LIVE_JSON_CACHE_CONTROL,
 	SCHEDULE_KEY,
 	STANDINGS_KEY,
@@ -171,6 +173,7 @@ const fetchMock = vi.fn(async (input: string | URL, init?: RequestInit) => {
 	}
 	const roster = /^\/site\/teams\/(\d+)\/roster$/.exec(url.pathname);
 	if (roster) return json({ athletes: rosters.get(roster[1]) ?? [] });
+	if (url.pathname === "/site/injuries") return json(injuriesBody());
 	const image = /^\/full\/(\d+)\.png$/.exec(url.pathname);
 	if (url.host === "img.espn.test" && image) return png(image[1]);
 	return json({ message: "not found" }, 404);
@@ -178,7 +181,23 @@ const fetchMock = vi.fn(async (input: string | URL, init?: RequestInit) => {
 
 const requestsTo = (pattern: RegExp) => requests.filter((r) => pattern.test(r.url));
 const ROSTER = /\/site\/teams\/\d+\/roster$/;
+const INJURIES = /\/site\/injuries$/;
 const IMAGE = /^https:\/\/img\.espn\.test\//;
+
+// An injuries report entry: ESPN puts the athlete's id only in its links.
+const injury = (espnId: string, status = "Out") => ({
+	status,
+	date: "2026-10-25T10:00Z",
+	shortComment: "Hurt.",
+	type: { name: status === "Out" ? "INJURY_STATUS_OUT" : "INJURY_STATUS_DAYTODAY" },
+	athlete: {
+		displayName: `Player ${espnId}`,
+		links: [{ href: `https://www.espn.com/nba/player/_/id/${espnId}/x` }],
+	},
+});
+const injuriesBody = (...entries: unknown[]) => ({
+	injuries: [{ id: "1", displayName: "Team", injuries: entries }],
+});
 
 // ---- Running the handler ----
 
@@ -186,11 +205,11 @@ const ctx = (remaining = 300_000) => ({ getRemainingTimeInMillis: () => remainin
 
 // Both handlers go on before the clock loop, so a run that rejects is never
 // an unhandled rejection that fails the vitest process.
-const run = async (context = ctx()) => {
+const run = async (context = ctx(), event: unknown = {}) => {
 	requests.length = 0;
 	puts.length = 0;
 	let settled = false;
-	const p = handler({} as any, context, () => {}) as Promise<any>;
+	const p = handler(event as any, context, () => {}) as Promise<any>;
 	p.then(
 		() => {
 			settled = true;
@@ -628,5 +647,70 @@ describe("setSeasonContextData", () => {
 		for (let i = 1; i < starts.length; i++) {
 			expect(starts[i] - starts[i - 1]).toBeGreaterThanOrEqual(500);
 		}
+	});
+});
+
+describe("injuries run", () => {
+	const PREVIOUS = { version: 1, generatedAt: "2026-10-25T11:47:00.000Z", players: { old01: { espnId: "1" } }, unmatched: [] };
+	const runInjuries = () => run(ctx(), { dataset: "injuries" });
+
+	beforeEach(() => {
+		vi.spyOn(console, "warn").mockImplementation(() => {});
+	});
+
+	it("writes injuries.json keyed by BBRef id from the cached headshots map", async () => {
+		await run();
+		override = (url) => (INJURIES.test(url.href) ? json(injuriesBody(injury("90000"), injury("90001", "Day-To-Day"), injury("99999"))) : undefined);
+
+		expect(await runInjuries()).toEqual({ injuries: "saved" });
+
+		const stored = storedJson<InjuriesFile>(INJURIES_KEY);
+		expect(stored.version).toBe(1);
+		expect(stored.players.synth0).toMatchObject({ espnId: "90000", status: "Out", kind: "out", comment: "Hurt." });
+		expect(stored.players.synth1.kind).toBe("day-to-day");
+		expect(stored.unmatched).toEqual([expect.stringContaining("(99999)")]);
+		expect(objects.get(objectKey("assets", INJURIES_KEY))).toMatchObject({
+			contentType: "application/json",
+			cacheControl: LIVE_JSON_CACHE_CONTROL,
+		});
+		expect(requests.map((r) => r.url)).toEqual(["https://espn.test/site/injuries"]);
+		expect(puts).toEqual([objectKey("assets", INJURIES_KEY)]);
+	});
+
+	it.each<[string, () => Response, string]>([
+		["a malformed injuries response", () => json({ injuries: "nope" }), "kept: no injuries"],
+		["a 500 from ESPN", () => json({ message: "down" }, 500), "kept: ESPN 500 for https://espn.test/site/injuries"],
+		["an empty report", () => json(injuriesBody()), "kept: no injured athletes"],
+	])("%s leaves the previous injuries.json in place", async (_, response, result) => {
+		await run();
+		seed(INJURIES_KEY, PREVIOUS);
+		const before = objects.get(objectKey("assets", INJURIES_KEY))!.body;
+		override = (url) => (INJURIES.test(url.href) ? response() : undefined);
+
+		expect(await runInjuries()).toEqual({ injuries: result });
+		expect(objects.get(objectKey("assets", INJURIES_KEY))!.body).toBe(before);
+		expect(puts).not.toContain(objectKey("assets", INJURIES_KEY));
+	});
+
+	it("skips ESPN without a headshots map", async () => {
+		const { injuries } = await runInjuries();
+		expect(injuries).toMatch(/^kept: no headshots map/);
+		expect(requestsTo(INJURIES)).toEqual([]);
+		expect(puts).toEqual([]);
+	});
+
+	it("keeps the previous file when most injured athletes join no player", async () => {
+		await run();
+		const unknown = Array.from({ length: 10 }, (_, i) => injury(`8888${i}`));
+		override = (url) => (INJURIES.test(url.href) ? json(injuriesBody(...unknown)) : undefined);
+
+		expect(await runInjuries()).toEqual({ injuries: "kept: 0 of 10 injured athletes joined" });
+		expect(puts).toEqual([]);
+	});
+
+	it("the hourly run doesn't fetch injuries", async () => {
+		await run();
+		expect(requestsTo(INJURIES)).toEqual([]);
+		expect(puts).not.toContain(objectKey("assets", INJURIES_KEY));
 	});
 });

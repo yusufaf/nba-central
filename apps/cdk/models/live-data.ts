@@ -88,4 +88,37 @@ export interface RosterAthlete {
 	hasHeadshot: boolean;
 }
 
+export type InjuryKind = "out" | "day-to-day" | "other";
+
+// One athlete's entry as parsed from ESPN, before the BBRef join.
+export interface InjuryReport {
+	espnId: string;
+	// athlete.displayName, for the unmatched list.
+	name: string;
+	// ESPN's label as sent: "Out", "Day-To-Day", ...
+	status: string;
+	kind: InjuryKind;
+	// shortComment, "" when absent.
+	comment: string;
+	// ESPN's last update, as sent ("2026-10-19T19:38Z").
+	date: string | null;
+}
+
+export interface InjuryEntry {
+	espnId: string;
+	status: string;
+	kind: InjuryKind;
+	comment: string;
+	date: string | null;
+}
+
+export interface InjuriesFile {
+	version: 1;
+	generatedAt: string;
+	// Keyed by Basketball-Reference id.
+	players: Record<string, InjuryEntry>;
+	// Injured ESPN athletes with no BBRef id in headshots.json, as "Name (espnId)".
+	unmatched: string[];
+}
+
 export type Parsed<T> = { ok: true; value: T } | { ok: false; error: string };

@@ -15,6 +15,7 @@ export const SITE_URL = `https://${WEB_DOMAIN_NAME}`;
 export const ESPN_API_BASE_URL = "https://site.api.espn.com/apis/site/v2/sports/basketball/nba";
 
 export const ESPN_NEWS_URL = `${ESPN_API_BASE_URL}/news`;
+export const ESPN_INJURIES_URL = `${ESPN_API_BASE_URL}/injuries`;
 
 // setSeasonContextData only, never a browser. Standings live on the v2 path:
 // the site/v2 one returns 404.

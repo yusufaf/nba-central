@@ -7,6 +7,7 @@ import {
 } from "../../service/lambdas/setPlayersData";
 import { SNAPSHOT_TIMEOUT } from "../../service/lambdas/setPlayerStatsData";
 import {
+	INJURIES_CRON,
 	SEASON_CONTEXT_CRON,
 	SEASON_CONTEXT_TIMEOUT,
 } from "../../service/lambdas/setSeasonContextData";
@@ -33,6 +34,11 @@ describe("setSeasonContextData", () => {
 			"cron(7 * * * ? *)",
 		);
 		expect(SEASON_CONTEXT_TIMEOUT.toMinutes()).toBeLessThan(60);
+	});
+
+	it("runs injuries every 15 minutes, off the hourly run's minute", () => {
+		expect(toSchedule({ cron: INJURIES_CRON }).expressionString).toBe("cron(2/15 * * * ? *)");
+		expect([2, 17, 32, 47]).not.toContain(Number(SEASON_CONTEXT_CRON.minute));
 	});
 });
 

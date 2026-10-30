@@ -96,8 +96,18 @@ duplicated here to avoid the two drifting apart.
 ### live/ (setSeasonContextData)
 
 `live/` in the assets bucket holds files the web fetches as they are:
-`standings.json`, `schedule.json`, `headshots.json` and the mirrored
-`headshots/{espnId}.png`. A response that fails validation, a previous file S3
+`standings.json`, `schedule.json`, `headshots.json`, the mirrored
+`headshots/{espnId}.png` and `injuries.json`. A second rule runs the same
+Lambda every 15 minutes (`cron(2/15 * * * ? *)`, so never with the hourly :07
+run) with the input `{"dataset":"injuries"}`, which skips everything else and
+writes only `injuries.json`: ESPN's injuries report, keyed by BBRef id through
+the ESPN ids in `headshots.json`. ESPN's report has no athlete id field, so
+the id is read from the athlete's link and headshot URLs. That run keeps the
+previous file when it can't read `headshots.json`, when ESPN's response fails
+validation or lists no one, or when under half of ten or more injured athletes
+join. To invoke it by hand, pass that input.
+
+For the hourly files, a response that fails validation, a previous file S3
 fails to return, or a big drop in games or matched players keeps the previous
 file, and the run's summary log says why. A previous file of the wrong shape is
 replaced, like a first run. The JSON goes out with
