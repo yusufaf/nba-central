@@ -9,6 +9,8 @@ vi.mock("@/composables/useHeadshots", () => ({
     headshotUrl: (id: string) =>
         id === "jamesle01" ? "https://d2s6ea2hcvgd9x.cloudfront.net/live/headshots/1966.png" : undefined,
 }));
+// Nor injuries.json; PlayerSlotInjury.test.ts covers that lookup.
+vi.mock("@/composables/useInjuries", () => ({ injuryFor: () => undefined }));
 
 const SEASON = { season: 2025, games_played: 70, pts: 24.4, reb: 7.8, ast: 8.2 };
 

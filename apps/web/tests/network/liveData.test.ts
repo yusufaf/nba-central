@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, afterEach } from "vitest";
-import { getHeadshots, getSchedule, getStandings } from "@/network/liveData";
+import { getHeadshots, getInjuries, getSchedule, getStandings } from "@/network/liveData";
 import { LIVE_DATA_BASE_URL } from "@/constants/liveData";
 import standings from "../fixtures/liveData/standings.json";
 
@@ -23,6 +23,10 @@ describe("live data client", () => {
         respond({ version: 1, players: {} });
         await getHeadshots();
         expect(fetch).toHaveBeenCalledWith(`${LIVE_DATA_BASE_URL}/headshots.json`);
+
+        respond({ version: 1, generatedAt: "2026-10-26T12:07:00.000Z", players: {} });
+        await getInjuries();
+        expect(fetch).toHaveBeenCalledWith(`${LIVE_DATA_BASE_URL}/injuries.json`);
     });
 
     it("throws on a 404", async () => {
@@ -37,5 +41,7 @@ describe("live data client", () => {
         await expect(getSchedule()).rejects.toThrow("version 1");
         respond([]);
         await expect(getHeadshots()).rejects.toThrow("not an object");
+        respond({ version: 1, players: {} });
+        await expect(getInjuries()).rejects.toThrow("version 1");
     });
 });

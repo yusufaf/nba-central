@@ -116,11 +116,15 @@ to put classes on.
   - A breakpoint that has to follow Text size needs a container query
     (`@container` + `@min-[79rem]:`, as in `Header.vue`): a media query's
     rem is the browser default, not the root font size.
-- Live season data (standings, the week's schedule, player headshots) comes
+- Live season data (standings, the week's schedule, player headshots, injuries) comes
   from the files `setSeasonContextData` writes under `live/` on the assets
   CDN (`LIVE_DATA_BASE_URL`, `src/network/liveData.ts`), never from ESPN in
   the browser. `/standings` reads standings and schedule; `PlayerSlot` shows
-  a headshot through `useHeadshots`, keeping the initials until it loads.
+  a headshot through `useHeadshots`, keeping the initials until it loads, and
+  an injury status through `useInjuries` (`injuries.json`, rewritten every 15
+  minutes and refetched by an open tab on the same cadence,
+  `INJURIES_REFRESH_MS`), hidden once the file is over 12 hours old
+  (`INJURIES_MAX_AGE_MS`).
   They can lag live results, so the page says it is unofficial.
 - Scores (`/scores`, its calendar counts, `/game/:id`) read `/api/scores/*`
   through `src/network/scores.ts`, which CloudFront caches by game state, so

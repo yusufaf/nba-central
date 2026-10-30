@@ -1,5 +1,5 @@
 import { LIVE_DATA_BASE_URL } from "@/constants/liveData";
-import type { HeadshotsFile, ScheduleFile, StandingsFile } from "@/models/liveData";
+import type { HeadshotsFile, InjuriesFile, ScheduleFile, StandingsFile } from "@/models/liveData";
 
 // Plain fetch, not the axios `api`: these are public files on the CDN, so no
 // /api base URL and no auth header. ESPN is never called from the browser.
@@ -27,4 +27,11 @@ export const getHeadshots = () =>
     getLiveFile<HeadshotsFile>(
         "headshots",
         (body) => typeof body.players === "object" && body.players !== null,
+    );
+
+export const getInjuries = () =>
+    getLiveFile<InjuriesFile>(
+        "injuries",
+        (body) =>
+            typeof body.generatedAt === "string" && typeof body.players === "object" && body.players !== null,
     );
