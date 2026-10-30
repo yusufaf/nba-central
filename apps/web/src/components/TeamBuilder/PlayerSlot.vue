@@ -11,6 +11,8 @@ import ExternalLinksMenu from '@/components/ExternalLinksMenu.vue';
 import { ratingTier, ratingSourceLabel } from '@/constants/ratings';
 import type { PlayerStatsStatus, RatingSource } from '@/models/types';
 import { headshotUrl } from '@/composables/useHeadshots';
+import { injuryFor } from '@/composables/useInjuries';
+import { useDateFormat } from '@/composables/useDateFormat';
 
 interface Player {
   id: string;
@@ -90,6 +92,16 @@ const playerInitials = computed(() => {
 const headshot = computed(() =>
   props.player && !props.player.isCustom ? headshotUrl(props.player.id) : undefined,
 );
+
+// ESPN's injury report, cached on our CDN every 15 minutes.
+const injury = computed(() =>
+  props.player && !props.player.isCustom ? injuryFor(props.player.id) : undefined,
+);
+const injuryVariant = computed(
+  () => ({ out: 'destructive', 'day-to-day': 'warning', other: 'secondary' } as const)[injury.value?.kind ?? 'other'],
+);
+const { formatDate } = useDateFormat();
+const injuryUpdated = computed(() => (injury.value?.date ? formatDate(injury.value.date, 'short') : null));
 
 // Real players carry a 2K rating; custom players carry the one the user typed.
 // Both are 0-99, so the card renders them the same way.
@@ -256,6 +268,13 @@ const onRetry = () => {
               <span v-if="player?.team?.abbreviation" class="meta-item">{{ player.team.abbreviation }}</span>
               <span v-if="player?.team?.abbreviation" class="meta-divider">•</span>
               <span class="meta-item">{{ player?.position }}</span>
+              <!-- Badge renders a <div>, so it can't be named with aria-label. -->
+              <template v-if="injury">
+                <span class="meta-divider">•</span>
+                <Badge :variant="injuryVariant" class="injury-badge" :title="injury.comment || undefined">
+                  <span class="sr-only">Injury status: </span>{{ injury.status }}
+                </Badge>
+              </template>
             </div>
             <div v-if="averageStats" class="stats-grid">
               <div class="stat-item">
@@ -307,6 +326,13 @@ const onRetry = () => {
         <!-- Filled State - Back (Flipped) -->
         <template v-else>
           <div class="action-buttons">
+            <div v-if="injury" class="injury-notice">
+              <div class="injury-notice-status">
+                <Badge :variant="injuryVariant" class="injury-badge">{{ injury.status }}</Badge>
+                <span v-if="injuryUpdated" class="injury-notice-date">Updated {{ injuryUpdated }}</span>
+              </div>
+              <p v-if="injury.comment" class="injury-notice-comment" :title="injury.comment">{{ injury.comment }}</p>
+            </div>
             <!-- A failed add can land here with "flip new cards" on, so say
                  why View Stats is off. Retry lives on the front only. -->
             <p v-if="showStatsError" class="stats-notice-text back-notice" role="status">
@@ -649,6 +675,43 @@ const onRetry = () => {
 
 .back-notice {
   justify-content: center;
+}
+
+/* Injury */
+.injury-badge {
+  font-size: 0.6875rem;
+  padding: 0 0.375rem;
+  line-height: 1.4;
+}
+
+.injury-notice {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.injury-notice-status {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+}
+
+.injury-notice-date {
+  font-size: 0.75rem;
+  color: hsl(var(--muted-foreground));
+}
+
+/* Two lines keep a flipped card about as tall as its front; the full comment
+   is in the title. */
+.injury-notice-comment {
+  font-size: 0.75rem;
+  line-height: 1.4;
+  color: hsl(var(--foreground) / 0.8);
+  margin: 0;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 
 /* Action Buttons */

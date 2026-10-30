@@ -61,3 +61,21 @@ export interface HeadshotsFile {
     // until the image is mirrored.
     players: Record<string, { image: string | null }>;
 }
+
+export type InjuryKind = "out" | "day-to-day" | "other";
+
+export interface PlayerInjury {
+    // ESPN's label as sent: "Out", "Day-To-Day", ...
+    status: string;
+    kind: InjuryKind;
+    comment: string;
+    // ESPN's last update, e.g. "2026-10-19T19:38Z".
+    date: string | null;
+}
+
+export interface InjuriesFile {
+    version: 1;
+    generatedAt: string;
+    // Keyed by Basketball-Reference id.
+    players: Record<string, PlayerInjury>;
+}

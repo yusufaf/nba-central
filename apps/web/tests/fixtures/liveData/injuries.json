@@ -1,0 +1,21 @@
+{
+  "version": 1,
+  "generatedAt": "2026-10-26T12:07:00.000Z",
+  "players": {
+    "jamesle01": {
+      "espnId": "1966",
+      "status": "Out",
+      "kind": "out",
+      "comment": "James (sciatica) won't play Monday against the Kings.",
+      "date": "2026-10-26T10:00Z"
+    },
+    "doncilu01": {
+      "espnId": "3945274",
+      "status": "Day-To-Day",
+      "kind": "day-to-day",
+      "comment": "Doncic (ankle) is questionable for Monday.",
+      "date": "2026-10-26T09:00Z"
+    }
+  },
+  "unmatched": []
+}

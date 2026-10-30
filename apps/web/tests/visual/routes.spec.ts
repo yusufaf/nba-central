@@ -4,6 +4,7 @@ import publicTeamFixture from './fixtures/public-team.json' with { type: 'json' 
 import liveStandings from '../fixtures/liveData/standings.json' with { type: 'json' };
 import liveSchedule from '../fixtures/liveData/schedule.json' with { type: 'json' };
 import liveHeadshots from '../fixtures/liveData/headshots.json' with { type: 'json' };
+import liveInjuries from '../fixtures/liveData/injuries.json' with { type: 'json' };
 import { DAILY_ERA_FIRST_DATE } from '../../src/constants/dailyEra';
 import { picks, puzzleView, result as capFiveResult } from '../helpers/capFive';
 
@@ -23,6 +24,8 @@ const LIVE_FILES: Record<string, unknown> = {
     'standings.json': liveStandings,
     'schedule.json': liveSchedule,
     'headshots.json': liveHeadshots,
+    // Dated 2026-10-26, so it's stale (no badges) unless a test fixes the clock.
+    'injuries.json': liveInjuries,
 };
 // Arena photos are hotlinked Wikimedia thumbnails. A fixed grey pixel keeps
 // the arena tile's layout in the shot without depending on the live image.
@@ -441,6 +444,55 @@ test('route boxscore play-by-play big swings', async ({ page }) => {
     await page.getByRole('button', { name: /big swings/i }).click();
     await page.waitForTimeout(100);
     await expect(page).toHaveScreenshot('boxscore-big-swings.png', { fullPage: true });
+});
+
+test('teambuilder card shows a cached injury with ESPN cut', async ({ page }) => {
+    // An hour after the fixture's generatedAt, inside its 12-hour window.
+    await page.clock.setFixedTime(new Date('2026-10-26T13:00:00Z'));
+    await stubNetwork(page);
+    await cutEspn(page);
+    // Registered after stubNetwork, so it wins for this team.
+    await page.route('**/api/teams/public/injury-team', (route) =>
+        route.fulfill({
+            status: 200,
+            contentType: 'application/json',
+            body: JSON.stringify({
+                ...publicTeamFixture,
+                data: {
+                    ...publicTeamFixture.data,
+                    teamUUID: 'injury-team',
+                    title: 'Injury Check',
+                    playerCount: 1,
+                    roster: [
+                        {
+                            slot: 1,
+                            player: {
+                                id: 'jamesle01',
+                                fullName: 'LeBron James',
+                                first_name: 'LeBron',
+                                last_name: 'James',
+                                position: 'SF',
+                                team: { full_name: 'Los Angeles Lakers', abbreviation: 'LAL' },
+                            },
+                        },
+                    ],
+                },
+            }),
+        }),
+    );
+    await page.goto('/teambuilder?remix=injury-team');
+    await settle(page);
+
+    const badge = page.locator('.injury-badge').first();
+    await expect(badge).toBeVisible();
+    // Not getByText('Out'): the badge also holds a screen-reader prefix.
+    await expect(badge).toContainText('Out');
+    const card = page.locator('.player-card-wrapper').first();
+    await expect(card).toHaveScreenshot('teambuilder-injury-card.png');
+
+    await card.locator('.main-content').click();
+    await expect(card.locator('.injury-notice')).toBeVisible();
+    await expect(card).toHaveScreenshot('teambuilder-injury-card-back.png');
 });
 
 test('dialog and popover do not share modal sizing', async ({ page }) => {

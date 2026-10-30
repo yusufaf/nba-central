@@ -2,20 +2,29 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { flushPromises, mount } from "@vue/test-utils";
 import PlayerSlot from "@/components/TeamBuilder/PlayerSlot.vue";
 import { resetHeadshots } from "@/composables/useHeadshots";
+import { resetInjuries } from "@/composables/useInjuries";
 import { LIVE_DATA_BASE_URL } from "@/constants/liveData";
 import headshots from "../fixtures/liveData/headshots.json";
 
 // Its own file because PlayerSlot.test.ts mocks useHeadshots for every case;
 // this one goes from the cached JSON to the rendered <img>.
-const fetchMock = vi.fn(async () => new Response(JSON.stringify(headshots)));
+// Routed by file name, so the card's injuries lookup gets a 404, not this body.
+const fetchMock = vi.fn(async (url: string) =>
+    String(url).endsWith("/headshots.json")
+        ? new Response(JSON.stringify(headshots))
+        : new Response("missing", { status: 404 }),
+);
 
 beforeEach(() => {
     resetHeadshots();
+    resetInjuries();
     vi.stubGlobal("fetch", fetchMock);
+    vi.spyOn(console, "error").mockImplementation(() => {});
 });
 
 afterEach(() => {
     vi.unstubAllGlobals();
+    vi.restoreAllMocks();
     fetchMock.mockClear();
 });
 
