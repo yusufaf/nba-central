@@ -1,4 +1,9 @@
 import { Duration, RemovalPolicy } from "aws-cdk-lib";
+import {
+	ComparisonOperator,
+	TreatMissingData,
+} from "aws-cdk-lib/aws-cloudwatch";
+import { SnsAction } from "aws-cdk-lib/aws-cloudwatch-actions";
 import { CronOptions, Rule, Schedule } from "aws-cdk-lib/aws-events";
 import { LambdaFunction } from "aws-cdk-lib/aws-events-targets";
 import { LayerVersion, Runtime } from "aws-cdk-lib/aws-lambda";
@@ -6,22 +11,29 @@ import {
 	NodejsFunction,
 	NodejsFunctionProps,
 } from "aws-cdk-lib/aws-lambda-nodejs";
+import { SqsDestination } from "aws-cdk-lib/aws-lambda-destinations";
 import { LogGroup, RetentionDays } from "aws-cdk-lib/aws-logs";
 import { Construct } from "constructs";
 import path from "path";
-import { ExtendedStackProps } from "../../models/stack";
+import { ExtendedStackProps, LambdaAlerts } from "../../models/stack";
 import { layerARNLookup } from "../../resources/lambda";
 import { getRole } from "../../resources/roles";
 
 // A month covers four runs of the weekly jobs.
 export const LAMBDA_LOG_RETENTION = RetentionDays.ONE_MONTH;
 
+export const ERROR_ALARM_PERIOD = Duration.minutes(5);
+// Two hours of 5-minute periods, so a job that fails every run (every 15
+// minutes at worst: fetchNewsCron, or setSeasonContextData's injuries rule
+// if it keeps crashing) holds one alarm instead of re-alarming per run.
+export const ERROR_ALARM_EVALUATION_PERIODS = 24;
+
 export type LambdaSchedule = { rate: Duration } | { cron: CronOptions };
 
 export const toSchedule = (schedule: LambdaSchedule): Schedule =>
 	"cron" in schedule ? Schedule.cron(schedule.cron) : Schedule.rate(schedule.rate);
 
-interface TeamBuilderLambdaConfig {
+export interface TeamBuilderLambdaConfig {
 	// Required configurations
 	functionName: string;
 	stackProps: ExtendedStackProps;
@@ -48,6 +60,15 @@ interface TeamBuilderLambdaConfig {
 
 	// Additional function configuration to override defaults
 	functionProps?: Partial<NodejsFunctionProps>;
+
+	/**
+	 * Scheduled (async-invoked) Lambdas only. Emails `stackProps.alerts.topic`
+	 * when the function errors in `failuresToAlarm` (default 1) of the last 24
+	 * five-minute periods, and sends an event that fails every retry to
+	 * `stackProps.alerts.failedEvents`. API Lambdas are invoked synchronously,
+	 * so neither applies to them.
+	 */
+	monitor?: { failuresToAlarm?: number };
 }
 
 export class TeamBuilderLambda extends Construct {
@@ -77,6 +98,10 @@ export class TeamBuilderLambda extends Construct {
 			)
 		) {
 			return;
+		}
+
+		if (config.monitor && !config.stackProps.alerts) {
+			throw new Error(`${config.functionName}: monitor needs stackProps.alerts`);
 		}
 
 		const functionName = this.getResourceName(config.functionName);
@@ -109,6 +134,11 @@ export class TeamBuilderLambda extends Construct {
 			runtime: config.runtime || Runtime.NODEJS_22_X,
 			timeout: config.timeout || Duration.seconds(30),
 			logGroup,
+			// Ahead of functionProps, so a retryAttempts there lands in the
+			// same EventInvokeConfig.
+			...(config.monitor && {
+				onFailure: new SqsDestination(config.stackProps.alerts!.failedEvents),
+			}),
 			...config.functionProps,
 		};
 
@@ -140,6 +170,14 @@ export class TeamBuilderLambda extends Construct {
 			nodejsFunctionProps,
 		);
 
+		if (config.monitor) {
+			this.addErrorAlarm(
+				functionName,
+				config.stackProps.alerts!,
+				config.monitor.failuresToAlarm ?? 1,
+			);
+		}
+
 		// Add CloudWatch Event Rule if schedule is specified
 		if (config.schedule?.enabled) {
 			new Rule(this, `${functionName}-rule`, {
@@ -156,5 +194,25 @@ export class TeamBuilderLambda extends Construct {
 				targets: [new LambdaFunction(this.lambdaFunction)],
 			});
 		}
+	}
+	// No OK action: a recovery email is noise.
+	private addErrorAlarm(
+		functionName: string,
+		{ topic, failedEvents }: LambdaAlerts,
+		failuresToAlarm: number,
+	) {
+		const periods = failuresToAlarm > 1 ? ` in ${failuresToAlarm} 5-minute periods` : "";
+		this.lambdaFunction
+			.metricErrors({ period: ERROR_ALARM_PERIOD, statistic: "Sum" })
+			.createAlarm(this, `${functionName}-errors-alarm`, {
+				alarmName: `${functionName}-errors`,
+				alarmDescription: `${functionName} threw or timed out${periods} within two hours. Events that failed every retry wait in ${failedEvents.queueName}; logs are linked from the function's Monitor tab.`,
+				threshold: 1,
+				comparisonOperator: ComparisonOperator.GREATER_THAN_OR_EQUAL_TO_THRESHOLD,
+				evaluationPeriods: ERROR_ALARM_EVALUATION_PERIODS,
+				datapointsToAlarm: failuresToAlarm,
+				treatMissingData: TreatMissingData.NOT_BREACHING,
+			})
+			.addAlarmAction(new SnsAction(topic));
 	}
 }

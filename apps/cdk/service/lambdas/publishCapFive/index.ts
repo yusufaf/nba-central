@@ -7,6 +7,7 @@ export default ({ props, construct }: LambdaProps) => {
 	const { lambdaFunction } = new TeamBuilderLambda(construct, functionName, {
 		functionName,
 		stackProps: props,
+		monitor: {},
 		memorySize: 512,
 		timeout: Duration.minutes(1),
 		environment: {
