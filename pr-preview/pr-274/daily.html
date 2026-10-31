@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <link rel="icon" href="/nba-central/pr-preview/pr-274/favicon.ico">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>nba-central — build all-time NBA rosters</title>
+    <!-- Default share/search tags. getPublicTeamPage (apps/cdk) swaps these
+         for a published team's own on /t/:teamUUID; a tag added here needs
+         handling in apps/cdk/utilities/og-html.ts too. Once the app loads,
+         src/router/indexing.ts points the canonical and og:url at public
+         routes and marks the rest noindex. -->
+    <meta property="og:site_name" content="nba-central">
+    <!-- Sets the theme and text size before the first paint: the app
+         (useDisplayPreferences) loads too late to avoid a flash of the wrong
+         theme or a jump in size. Reads this device's copy of the Display
+         settings, and the OS for System or when it can't. -->
+    <script>
+      (function () {
+        var prefs;
+        try {
+          prefs = JSON.parse(localStorage.getItem('nba-display-preferences'));
+        } catch (e) {}
+        var theme = prefs && prefs.theme;
+        var scale = prefs && prefs.fontScale;
+        var root = document.documentElement;
+        var dark = theme === 'dark' || (theme !== 'light' && matchMedia('(prefers-color-scheme: dark)').matches);
+        root.classList.toggle('dark', dark);
+        if (['87.5', '112.5', '125', '137.5'].indexOf(scale) !== -1) root.style.fontSize = scale + '%';
+      })();
+    </script>
+    <!-- Umami analytics — self-hosted, cookieless. See C:\Projects\umami-flyio. -->
+    
+    <script type="module" crossorigin src="/nba-central/pr-preview/pr-274/assets/index-CGZfWThO.js"></script>
+    <link rel="modulepreload" crossorigin href="/nba-central/pr-preview/pr-274/assets/rolldown-runtime-DK3Fl9T5.js">
+    <link rel="modulepreload" crossorigin href="/nba-central/pr-preview/pr-274/assets/date-DktM9eci.js">
+    <link rel="modulepreload" crossorigin href="/nba-central/pr-preview/pr-274/assets/runtime-dom.esm-bundler-Cq8qQ4vJ.js">
+    <link rel="modulepreload" crossorigin href="/nba-central/pr-preview/pr-274/assets/Card-BFha9TNa.js">
+    <link rel="modulepreload" crossorigin href="/nba-central/pr-preview/pr-274/assets/useDateFormat-CTpe6j-o.js">
+    <link rel="modulepreload" crossorigin href="/nba-central/pr-preview/pr-274/assets/createLucideIcon-B6nX8qfp.js">
+    <link rel="modulepreload" crossorigin href="/nba-central/pr-preview/pr-274/assets/analytics-CdUyxf5O.js">
+    <link rel="stylesheet" crossorigin href="/nba-central/pr-preview/pr-274/assets/Card-CbbQblhK.css">
+    <link rel="stylesheet" crossorigin href="/nba-central/pr-preview/pr-274/assets/index-1CqwiG3R.css">
+      <meta name="robots" content="noindex">
+    <link rel="canonical" href="https://nba.yusufaf.dev/daily">
+    <meta name="description" content="A new NBA jersey every day. Guess the season it was worn in 4 tries.">
+    <meta property="og:type" content="website">
+    <meta property="og:title" content="Which Era?">
+    <meta property="og:description" content="A new NBA jersey every day. Guess the season it was worn in 4 tries.">
+    <meta property="og:image" content="https://nba.yusufaf.dev/og-image-daily.png">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
+    <meta property="og:image:alt" content="Which Era?: a jersey outline with a question mark, and a row of guess tiles">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Which Era?">
+    <meta name="twitter:description" content="A new NBA jersey every day. Guess the season it was worn in 4 tries.">
+    <meta name="twitter:image" content="https://nba.yusufaf.dev/og-image-daily.png">
+  </head>
+  <body>
+    <div id="app"></div>
+  </body>
+</html>
