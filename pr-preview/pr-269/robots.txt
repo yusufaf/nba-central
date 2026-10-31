@@ -1,0 +1,10 @@
+User-agent: *
+Allow: /
+Disallow: /login
+Disallow: /sign-up
+Disallow: /callback
+Disallow: /settings
+Disallow: /data-deleted
+Disallow: /teams
+
+Sitemap: https://nba.yusufaf.dev/sitemap.xml
