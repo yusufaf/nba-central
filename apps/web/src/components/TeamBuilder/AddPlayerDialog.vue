@@ -3,7 +3,7 @@ import { ref, computed, watch } from 'vue';
 import { useDebounceFn } from '@vueuse/core';
 import type { DrawerSide } from '@/models/types';
 import type { PlayerRecord } from '@/models/api';
-import { toBuilderPlayer } from '@/utils/builderPlayer';
+import { compareTeamNames, toBuilderPlayer } from '@/utils/builderPlayer';
 import { dataApi } from '@/network/api';
 import { ratingTier, ratingSourceLabel } from '@/constants/ratings';
 import { playsPosition } from '@/constants/positions';
@@ -109,16 +109,12 @@ const searchListResults = computed(() => {
   }
 
   // Sort
-  const sortModifier = sortDirection.value === 'asc' ? 1 : -1;
+  const sortModifier: 1 | -1 = sortDirection.value === 'asc' ? 1 : -1;
 
   if (selectedSort.value === 'Alphabetic') {
     results.sort((a, b) => sortModifier * a.fullName.localeCompare(b.fullName));
   } else if (selectedSort.value === 'Team Name') {
-    results.sort((a, b) => {
-      const aTeam = a.team?.full_name || '';
-      const bTeam = b.team?.full_name || '';
-      return sortModifier * aTeam.localeCompare(bTeam);
-    });
+    results.sort((a, b) => compareTeamNames(a, b, sortModifier));
   } else if (selectedSort.value === 'Rating') {
     // Unrated players sink in both directions - most of the pool has no 2K
     // rating, and an absent rating isn't a zero.
