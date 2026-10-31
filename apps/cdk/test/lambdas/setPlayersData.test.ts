@@ -112,7 +112,6 @@ describe("parseDraftPage", () => {
 			expect(p).toMatchObject({
 				active: true,
 				position: "",
-				team: { full_name: "", abbreviation: "" },
 				height_feet: null,
 				height_inches: null,
 				weight_pounds: null,

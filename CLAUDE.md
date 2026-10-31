@@ -104,7 +104,10 @@ Entry point: `bin/team-builder-cdk.ts` loads env vars from dotenv.
 - S3 multipart upload flow: `initiateMultipartUpload`, `getMultipartSignedUploadUrls`, `completeMultipartUpload`, `deleteFile`
 - `getPlayers`: player data + 2K ratings, merged from `players.json` and `player-ratings.json`;
   `ids=a,b,c` (up to 20) returns just those players in that order, ignoring
-  every other filter
+  every other filter. Each player's `team` is the ESPN roster they are on in
+  `live/headshots.json` (empty when on none), so a trade shows within about a
+  day of `setSeasonContextData`'s roster rebuild; production only, since no
+  other stack has that file
 - `getPlayerStats`: one player's career from the stats snapshot (main table,
   PK `PLAYERSTATS`) plus their 2K rating; never calls Basketball-Reference,
   and answers `available: false` for a player the snapshot hasn't reached

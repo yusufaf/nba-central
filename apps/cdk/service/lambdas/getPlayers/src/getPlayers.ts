@@ -1,7 +1,10 @@
 import { Handler } from "aws-lambda";
 import { S3Client, GetObjectCommand } from "@aws-sdk/client-s3";
+import { HEADSHOTS_KEY, MAX_ROSTERS_AGE_MS } from "utilities/live-data";
+import { NO_TEAM, teamFor, type PlayerTeam } from "utilities/nba-teams";
+import { isRecord } from "utilities/type-guards";
 
-const { staticDataBucket = "" } = process.env;
+const { staticDataBucket = "", assetsBucket = "" } = process.env;
 
 const s3Client = new S3Client();
 
@@ -34,7 +37,6 @@ interface NormalizedPlayer {
 	first_name: string;
 	last_name: string;
 	position: string;
-	team: { full_name: string; abbreviation: string };
 	height_feet: number | null;
 	height_inches: number | null;
 	weight_pounds: number | null;
@@ -54,6 +56,7 @@ interface RatingsFile {
 }
 
 type MergedPlayer = NormalizedPlayer & {
+	team: PlayerTeam;
 	rating?: number;
 	ratingSource?: string;
 	positions?: string[];
@@ -85,30 +88,66 @@ const playsPosition = (player: MergedPlayer, position: string): boolean => {
 	return positions.includes(position);
 };
 
-// Both files are rewritten weekly by their scheduled Lambdas, so a warm
-// container can serve searches without re-reading ~1 MB from S3 every time.
-const CACHE_TTL_MS = 15 * 60 * 1000;
+// Both files are rewritten weekly by their scheduled Lambdas, and the rosters
+// daily, so a warm container can serve searches without re-reading ~1 MB from
+// S3 every time.
+export const CACHE_TTL_MS = 15 * 60 * 1000;
 const cache = new Map<string, { at: number; value: unknown }>();
 
-const readJson = async <T>(key: string): Promise<T | null> => {
-	const cached = cache.get(key);
+const readJson = async <T>(bucket: string, key: string): Promise<T | null> => {
+	const cacheKey = `${bucket}/${key}`;
+	const cached = cache.get(cacheKey);
 	if (cached && Date.now() - cached.at < CACHE_TTL_MS) {
 		return cached.value as T;
 	}
 
 	try {
 		const { Body } = await s3Client.send(
-			new GetObjectCommand({ Bucket: staticDataBucket, Key: key }),
+			new GetObjectCommand({ Bucket: bucket, Key: key }),
 		);
 		const value = JSON.parse(await Body!.transformToString()) as T;
-		cache.set(key, { at: Date.now(), value });
+		cache.set(cacheKey, { at: Date.now(), value });
 		return value;
 	} catch (err) {
-		// Ratings are an optional overlay - a missing or unreadable file means
-		// no ratings, not a failed player search.
+		// Ratings and rosters are optional overlays - a missing or unreadable
+		// file means no ratings or teams, not a failed player search.
 		console.error(`Failed to read ${key}`, err);
 		return null;
 	}
+};
+
+// headshots.json's `players` is keyed by BBRef id, each with the ESPN code of
+// the roster setSeasonContextData last found them on. A player on no roster
+// has no entry.
+export const currentTeams = (headshots: unknown, now: number): Map<string, PlayerTeam> => {
+	const teams = new Map<string, PlayerTeam>();
+	if (!isRecord(headshots) || !isRecord(headshots.players)) return teams;
+
+	for (const [id, entry] of Object.entries(headshots.players)) {
+		if (isRecord(entry) && typeof entry.team === "string" && entry.team) {
+			teams.set(id, teamFor(entry.team));
+		}
+	}
+
+	const { rostersAt } = headshots;
+	if (typeof rostersAt !== "string" || !(now - Date.parse(rostersAt) < MAX_ROSTERS_AGE_MS)) {
+		// Stale teams beat wiping every player's team.
+		console.warn(
+			`headshots.json rosters are from ${rostersAt ?? "never"}; serving ${teams.size} teams anyway`,
+		);
+	}
+	return teams;
+};
+
+// readJson hands back the same object until its cache entry expires, so the
+// map (and any staleness warning) is built once per read, not per request.
+let lastTeams: { source: unknown; teams: Map<string, PlayerTeam> } | undefined;
+
+const teamsFrom = (headshots: unknown): Map<string, PlayerTeam> => {
+	if (!lastTeams || lastTeams.source !== headshots) {
+		lastTeams = { source: headshots, teams: currentTeams(headshots, Date.now()) };
+	}
+	return lastTeams.teams;
 };
 
 export const handler: Handler = async (event, context): Promise<any> => {
@@ -128,9 +167,10 @@ export const handler: Handler = async (event, context): Promise<any> => {
 		const cursor = Math.max(parseInt(params.cursor, 10) || 0, 0);
 		const ids = parseIds(params.ids);
 
-		const [playersFile, ratingsFile] = await Promise.all([
-			readJson<{ data: NormalizedPlayer[] }>("players.json"),
-			readJson<RatingsFile>("player-ratings.json"),
+		const [playersFile, ratingsFile, headshotsFile] = await Promise.all([
+			readJson<{ data: NormalizedPlayer[] }>(staticDataBucket, "players.json"),
+			readJson<RatingsFile>(staticDataBucket, "player-ratings.json"),
+			assetsBucket ? readJson<unknown>(assetsBucket, HEADSHOTS_KEY) : Promise.resolve(null),
 		]);
 
 		if (!playersFile) {
@@ -141,8 +181,10 @@ export const handler: Handler = async (event, context): Promise<any> => {
 		}
 
 		const ratings = ratingsFile?.data || {};
+		const teams = teamsFrom(headshotsFile);
 
-		let players: MergedPlayer[] = (playersFile.data || []).map((player) => {
+		let players: MergedPlayer[] = (playersFile.data || []).map((row) => {
+			const player = { ...row, team: teams.get(row.id) ?? NO_TEAM };
 			const rating = ratings[player.id];
 			if (!rating) return player;
 			return {
@@ -196,13 +238,13 @@ export const handler: Handler = async (event, context): Promise<any> => {
 				return modifier * (a.rating - b.rating);
 			});
 		} else if (sort === "team") {
-			players.sort(
-				(a, b) =>
-					modifier *
-					(a.team?.full_name || "").localeCompare(
-						b.team?.full_name || "",
-					),
-			);
+			// Same rule for players on no roster, most of the all-time pool.
+			players.sort((a, b) => {
+				if (!a.team.full_name && !b.team.full_name) return 0;
+				if (!a.team.full_name) return 1;
+				if (!b.team.full_name) return -1;
+				return modifier * a.team.full_name.localeCompare(b.team.full_name);
+			});
 		} else if (sort === "name") {
 			players.sort(
 				(a, b) =>

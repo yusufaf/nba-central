@@ -11,6 +11,11 @@ export default ({ props, construct }: LambdaProps) => {
 		timeout: Duration.seconds(30),
 		environment: {
 			staticDataBucket: `${props.appName}-${props.deploymentType}-static-data`,
+			// live/headshots.json (each player's current team) is written only by
+			// the production-only setSeasonContextData, so other stacks skip the read.
+			...(props.deploymentType === "production"
+				? { assetsBucket: `${props.appName}-${props.deploymentType}-assets` }
+				: {}),
 		},
 	});
 
