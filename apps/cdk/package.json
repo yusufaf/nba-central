@@ -20,6 +20,7 @@
         "refresh-historical-jerseys": "ts-node -r tsconfig-paths/register scripts/refresh-historical-jerseys.ts",
         "refresh-current-logos": "ts-node -r tsconfig-paths/register scripts/refresh-current-logos.ts",
         "refresh-daily-era": "ts-node -r tsconfig-paths/register scripts/refresh-daily-era.ts",
+        "refresh-team-seasons": "ts-node -r tsconfig-paths/register scripts/refresh-team-seasons.ts",
         "upload-hero-video": "ts-node -r tsconfig-paths/register scripts/upload-hero-video.ts",
         "cdk": "cdk"
     },
