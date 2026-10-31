@@ -178,6 +178,12 @@ so cap them once after deploying a stage:
 for each `/aws/lambda/team-builder-*` group. The API access-log group keeps
 its own (731-day) retention.
 
+The API's `$default` stage (CloudFront's origin) has a default route throttle
+of 50 requests a second, 100 burst (`api-throttle.ts`). Each route gets its
+own bucket, so it caps one hammered endpoint, not the API's total rate and
+not any one client; above it, API Gateway answers 429 before a Lambda runs.
+The named `<deploymentType>` stage has no deployment and serves nothing.
+
 ## Testing
 
 Vitest, colocated in `test/`, mirroring `service/`. Stack tests
