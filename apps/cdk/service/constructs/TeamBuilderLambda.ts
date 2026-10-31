@@ -1,4 +1,4 @@
-import { Duration } from "aws-cdk-lib";
+import { Duration, RemovalPolicy } from "aws-cdk-lib";
 import { CronOptions, Rule, Schedule } from "aws-cdk-lib/aws-events";
 import { LambdaFunction } from "aws-cdk-lib/aws-events-targets";
 import { LayerVersion, Runtime } from "aws-cdk-lib/aws-lambda";
@@ -6,11 +6,15 @@ import {
 	NodejsFunction,
 	NodejsFunctionProps,
 } from "aws-cdk-lib/aws-lambda-nodejs";
+import { LogGroup, RetentionDays } from "aws-cdk-lib/aws-logs";
 import { Construct } from "constructs";
 import path from "path";
 import { ExtendedStackProps } from "../../models/stack";
 import { layerARNLookup } from "../../resources/lambda";
 import { getRole } from "../../resources/roles";
+
+// A month covers four runs of the weekly jobs.
+export const LAMBDA_LOG_RETENTION = RetentionDays.ONE_MONTH;
 
 export type LambdaSchedule = { rate: Duration } | { cron: CronOptions };
 
@@ -78,6 +82,14 @@ export class TeamBuilderLambda extends Construct {
 		const functionName = this.getResourceName(config.functionName);
 		const role = getRole(this.getResourceName("main-lambda-role", true)); // Force deployment type for role name
 
+		// A CDK-owned group, not Lambda's auto-created /aws/lambda/<name>, so
+		// retention is set here. Its name is generated, so a retained group
+		// could never be reattached: delete it with the function.
+		const logGroup = new LogGroup(this, `${functionName}-logs`, {
+			retention: LAMBDA_LOG_RETENTION,
+			removalPolicy: RemovalPolicy.DESTROY,
+		});
+
 		// Construct the Lambda configuration
 		let nodejsFunctionProps: NodejsFunctionProps = {
 			bundling: config.bundling,
@@ -96,6 +108,7 @@ export class TeamBuilderLambda extends Construct {
 			role,
 			runtime: config.runtime || Runtime.NODEJS_22_X,
 			timeout: config.timeout || Duration.seconds(30),
+			logGroup,
 			...config.functionProps,
 		};
 

@@ -144,6 +144,18 @@ together. The web auto-deploys on merge, so a change here that the web
 depends on has to be `cdk deploy`ed first, or `/api/scores/*` falls through to
 `/api/*` and the SPA's `index.html`.
 
+## Monitoring
+
+Every `TeamBuilderLambda` logs to its own CDK-managed log group with 30-day
+retention (`LAMBDA_LOG_RETENTION`), not Lambda's auto-created
+`/aws/lambda/<name>`, so `aws logs tail /aws/lambda/<name>` shows nothing new
+after the deploy that moved it; the function's `LoggingConfig` names the
+group. The old auto-created groups keep their history and had no retention,
+so cap them once after deploying a stage:
+`aws logs put-retention-policy --log-group-name <group> --retention-in-days 30`
+for each `/aws/lambda/team-builder-*` group. The API access-log group keeps
+its own (731-day) retention.
+
 ## Testing
 
 Vitest, colocated in `test/`, mirroring `service/`. Stack tests
