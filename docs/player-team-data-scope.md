@@ -1,5 +1,29 @@
 # TeamBuilder — Player Team Data Scope
 
+## Decision (2026-10-31, #178)
+
+A player's **current team comes from ESPN rosters**, not from Basketball-Reference
+season pages. `setSeasonContextData` already joins ESPN's 30 rosters to BBRef ids
+once a day (`utilities/player-names.ts`) into `live/headshots.json`, which is the
+name-matching table this doc worried about. `getPlayers` overlays each player's
+roster team from that file on every request, so no new BBRef requests are made
+and `players.json` no longer carries a `team` at all.
+
+- `team` means the **current roster** only. Free agents and retirees have an empty
+  team and keep the "Free Agent / Retired" label. This replaces the "most recent
+  team for everyone" idea below.
+- Teams show ESPN's abbreviations and names (`GS`, `NY`, `UTAH`, "LA Clippers"),
+  as the standings page does (`apps/cdk/utilities/nba-teams.ts`).
+- Freshness: a trade, or a player newly added to `players.json`, shows after the
+  next roster rebuild, about a day later (rebuilds land roughly every 24h).
+  Production only: no other stack writes `headshots.json`.
+- While rebuilds fail, teams stay as last rebuilt, and `getPlayers` logs a
+  warning once the rosters are over 8 days old.
+- Saved teams keep the team frozen in their `PlayerSnapshot` at save time.
+
+The season-page scrape below is superseded for the current team. Team history
+(`teams[]`) moved to #273. The rest of this doc is kept as history.
+
 Add real team data to the player dataset so the Add Player list can show/sort by team
 and player preview cards show team abbreviation.
 
