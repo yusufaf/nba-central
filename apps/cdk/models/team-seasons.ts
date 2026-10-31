@@ -13,6 +13,9 @@ export interface TeamSeason {
 	name: string;
 	// Basketball-Reference coach id, the `href` id in apps/web's coaches.json.
 	coachId: string | null;
+	// For coaches coaches.json doesn't list (mostly ABA-only ones). Absent
+	// from files published before it was added.
+	coachName?: string | null;
 	arena: string | null;
 	// BBRef player ids in Team Builder slot order.
 	roster: string[];

@@ -2,8 +2,25 @@ import { EventBridgeEvent, Handler } from "aws-lambda";
 import { S3Client, GetObjectCommand, PutObjectCommand } from "@aws-sdk/client-s3";
 import fetch from "node-fetch";
 import * as cheerio from "cheerio";
+import type { HeadshotsFile } from "models/live-data";
+import type { TeamSeasonsIndex } from "models/team-seasons";
+import {
+	CURRENT_TEAM_SEASON_KEY,
+	HEADSHOTS_KEY,
+	LIVE_JSON_CACHE_CONTROL,
+	TEAM_SEASONS_INDEX_KEY,
+} from "utilities/live-data";
+import { currentSeasonEndYear } from "utilities/season";
+import {
+	buildTeamSeasonFile,
+	parseCoaches,
+	parseLeagueTeams,
+	parsePerGame,
+	seasonPaths,
+	type RosterMember,
+} from "utilities/team-seasons";
 
-const { BBREF_BASE_URL = "", staticDataBucket = "" } = process.env;
+const { BBREF_BASE_URL = "", staticDataBucket = "", assetsBucket = "" } = process.env;
 
 const s3Client = new S3Client();
 
@@ -146,6 +163,128 @@ export const parseDraftPage = (html: string): NormalizedPlayer[] => {
 export const hasDraftTable = (html: string): boolean =>
 	cheerio.load(html)("table#stats").length > 0;
 
+// headshots.json keeps ESPN's team abbreviations; the season pages use
+// Basketball-Reference's. These nine are the ones that differ.
+export const ESPN_TO_BBREF: Record<string, string> = {
+	BKN: "BRK",
+	CHA: "CHO",
+	GS: "GSW",
+	NO: "NOP",
+	NY: "NYK",
+	PHX: "PHO",
+	SA: "SAS",
+	UTAH: "UTA",
+	WSH: "WAS",
+};
+
+// Before opening night, and for its first days, the season's per-game page
+// has few rows or none; a file built from it would rank rosters on nothing.
+export const MIN_CURRENT_SEASON_ROWS = 150;
+// setSeasonContextData rebuilds rosters daily; a week without a rebuild means
+// it is broken, and last week's file is better than rosters that old.
+export const MAX_ROSTERS_AGE_MS = 8 * 24 * 60 * 60 * 1000;
+
+const readS3Json = async <T>(bucket: string, key: string): Promise<T | null> => {
+	try {
+		const res = await s3Client.send(new GetObjectCommand({ Bucket: bucket, Key: key }));
+		return JSON.parse(await res.Body!.transformToString()) as T;
+	} catch (err) {
+		console.error(`Failed to read ${bucket}/${key}`, err);
+		return null;
+	}
+};
+
+const fetchSeasonPage = async (path: string): Promise<string> => {
+	const res = await fetch(`${BBREF_BASE_URL}${path}`, {
+		headers: { "User-Agent": "Mozilla/5.0 (compatible; TeamBuilder/1.0)" },
+		signal: AbortSignal.timeout(DRAFT_FETCH_TIMEOUT_MS),
+	});
+	if (!res.ok) throw new Error(`${path} responded ${res.status}`);
+	return res.text();
+};
+
+// The current roster of each team, by BBRef code, from the ESPN rosters
+// setSeasonContextData joins daily. Players it couldn't match are already
+// missing from it.
+export const rosterMembers = (
+	headshots: HeadshotsFile,
+	ratings: Record<string, { rating?: number }>,
+): Map<string, RosterMember[]> => {
+	const members = new Map<string, RosterMember[]>();
+	for (const [id, entry] of Object.entries(headshots.players)) {
+		const code = ESPN_TO_BBREF[entry.team] ?? entry.team;
+		members.set(code, [...(members.get(code) ?? []), { id, rating: ratings[id]?.rating ?? null }]);
+	}
+	return members;
+};
+
+/**
+ * Writes the current season's team-season file (live/team-seasons/current.json
+ * in the assets bucket), the one the refresh-team-seasons script leaves to
+ * this Lambda. Rosters come from headshots.json; the season's per-game page
+ * orders them and its coaches and league pages name the coach and arena.
+ * Without fresh rosters it keeps the previous file: the per-game page alone
+ * would keep traded-away players and miss signings who haven't played.
+ * Returns what happened, for the run's log; never throws, so players.json is
+ * never at stake.
+ */
+export const writeCurrentTeamSeason = async (
+	positions: Map<string, string>,
+	now: Date = new Date(),
+): Promise<string> => {
+	try {
+		const year = currentSeasonEndYear(now);
+		const paths = seasonPaths("NBA", year);
+		const perGame = parsePerGame(await fetchSeasonPage(paths.perGame));
+		if (perGame.length < MIN_CURRENT_SEASON_ROWS) {
+			return `skipped: ${perGame.length} player rows for ${year} so far`;
+		}
+		await sleep(REQUEST_DELAY_MS);
+		const coaches = parseCoaches(await fetchSeasonPage(paths.coaches), "NBA");
+		await sleep(REQUEST_DELAY_MS);
+		const teams = parseLeagueTeams(await fetchSeasonPage(paths.league));
+
+		const [headshots, ratingsFile, index] = await Promise.all([
+			readS3Json<HeadshotsFile>(assetsBucket, HEADSHOTS_KEY),
+			readS3Json<{ data?: Record<string, { rating?: number }> }>(staticDataBucket, "player-ratings.json"),
+			readS3Json<TeamSeasonsIndex>(assetsBucket, TEAM_SEASONS_INDEX_KEY),
+		]);
+		const rostersAt = headshots?.rostersAt ? Date.parse(headshots.rostersAt) : NaN;
+		if (!headshots?.players || !Object.keys(headshots.players).length) {
+			return "kept previous: no rosters in headshots.json";
+		}
+		if (!(now.getTime() - rostersAt < MAX_ROSTERS_AGE_MS)) {
+			return `kept previous: headshots.json rosters are from ${headshots.rostersAt ?? "never"}`;
+		}
+		const members = rosterMembers(headshots, ratingsFile?.data ?? {});
+		// Lineage codes from the finished seasons; a code new this season is
+		// its own franchise until refresh-team-seasons publishes it.
+		const lineage = new Map(index?.seasons.flatMap((s) => s.teams.map((t) => [t.code, t.franchise])) ?? []);
+
+		const { file, problems } = buildTeamSeasonFile(
+			{ league: "NBA", year, perGame, coaches, teams },
+			(code) => lineage.get(code) ?? code,
+			positions,
+			now.toISOString(),
+			members,
+		);
+		if (problems.length) return `kept previous: ${problems.join("; ")}`;
+
+		await s3Client.send(
+			new PutObjectCommand({
+				Bucket: assetsBucket,
+				Key: CURRENT_TEAM_SEASON_KEY,
+				Body: JSON.stringify(file),
+				ContentType: "application/json",
+				CacheControl: LIVE_JSON_CACHE_CONTROL,
+			}),
+		);
+		return `saved ${year}: ${file.teams.length} teams`;
+	} catch (err) {
+		return `kept previous: ${err instanceof Error ? err.message : String(err)}`;
+	}
+};
+
 export const refusalReason = (
 	scrapedCount: number,
 	currentCount: number | null,
@@ -258,12 +397,22 @@ export const handler: Handler = async (
 		`Saved ${players.length} players to ${staticDataBucket}/${PLAYERS_KEY} (was ${currentCount ?? "none"}), incl. ${addedDraftees} from the ${draftYear} draft`,
 	);
 
+	await sleep(REQUEST_DELAY_MS);
+	const currentTeamSeason = await writeCurrentTeamSeason(
+		new Map(players.filter((p) => p.position).map((p) => [p.id, p.position])),
+	);
+	// A kept-previous outcome is a failure worth an error line, not just a log.
+	(currentTeamSeason.startsWith("kept previous") ? console.error : console.log)(
+		`Current team season: ${currentTeamSeason}`,
+	);
+
 	return {
 		statusCode: 200,
 		body: JSON.stringify({
 			message: "Players saved",
 			count: players.length,
 			draftees: addedDraftees,
+			currentTeamSeason,
 		}),
 	};
 };

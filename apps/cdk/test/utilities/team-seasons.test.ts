@@ -16,7 +16,7 @@ import {
 	withIndexSeason,
 	type PerGameRow,
 	type RosterCandidate,
-} from "../../scripts/lib/teamSeasons";
+} from "../../utilities/team-seasons";
 
 // Hand-written in the shape of basketball-reference.com's season pages; no
 // copy of a real page is kept in the repo.
@@ -95,9 +95,9 @@ const coachesPage = (league: string, rows: string) => `
 <table id="${league}_coaches"><tbody>${rows}</tbody></table>
 `;
 
-const coachRow = (id: string, team: string, g: string) => `
+const coachRow = (id: string, team: string, g: string, name = "Coach") => `
 	<tr>
-		<th data-stat="coach"><a href="/coaches/${id}.html">Coach</a></th>
+		<th data-stat="coach"><a href="/coaches/${id}.html">${name}</a></th>
 		<td data-stat="team">${team}</td>
 		<td data-stat="cur_g">${g}</td>
 	</tr>
@@ -105,8 +105,8 @@ const coachRow = (id: string, team: string, g: string) => `
 
 describe("parseCoaches / coachByTeam", () => {
 	it("reads the league's coaches table", () => {
-		expect(parseCoaches(coachesPage("ABA", coachRow("brownhu01c", "KEN", "84")), "ABA")).toEqual([
-			{ coachId: "brownhu01c", team: "KEN", g: 84 },
+		expect(parseCoaches(coachesPage("ABA", coachRow("brownhu01c", "KEN", "84", "Hubie Brown")), "ABA")).toEqual([
+			{ coachId: "brownhu01c", name: "Hubie Brown", team: "KEN", g: 84 },
 		]);
 		expect(parseCoaches(coachesPage("ABA", coachRow("brownhu01c", "KEN", "84")), "NBA")).toEqual([]);
 	});
@@ -116,7 +116,7 @@ describe("parseCoaches / coachByTeam", () => {
 			coachesPage("NBA", coachRow("firstco01c", "ATL", "30") + coachRow("secondc01c", "ATL", "52")),
 			"NBA",
 		);
-		expect(coachByTeam(rows).get("ATL")).toBe("secondc01c");
+		expect(coachByTeam(rows).get("ATL")?.coachId).toBe("secondc01c");
 	});
 });
 
@@ -328,7 +328,7 @@ describe("buildTeamSeasonFile", () => {
 				league: "NBA",
 				year: 1996,
 				perGame: codes.flatMap(nineFor),
-				coaches: [{ coachId: "karlge01c", team: "SEA", g: 82 }],
+				coaches: [{ coachId: "karlge01c", name: "George Karl", team: "SEA", g: 82 }],
 				teams: leagueTeams(codes),
 			},
 			franchiseOf,
@@ -342,11 +342,12 @@ describe("buildTeamSeasonFile", () => {
 			franchise: "OKC",
 			name: "SEA Name",
 			coachId: "karlge01c",
+			coachName: "George Karl",
 			arena: "SEA Arena",
 			starters: 5,
 		});
 		expect(file.teams[0].roster).toHaveLength(9);
-		expect(file.teams[1].coachId).toBeNull();
+		expect(file.teams[1]).toMatchObject({ coachId: null, coachName: null });
 		// Only the order leaves the module, never the numbers behind it.
 		expect(JSON.stringify(file)).not.toContain("mpg");
 	});
@@ -365,6 +366,48 @@ describe("buildTeamSeasonFile", () => {
 		);
 		const bos = file.teams.find((t) => t.code === "BOS")!;
 		expect(bos.roster.slice(0, 5)).toEqual(["bos2", "bos4", "bos1", "bos3", "bos0"]);
+	});
+
+	it("builds the current season from rosters, joining whatever the season page has", () => {
+		const members = new Map(
+			codes.map((code) => [
+				code,
+				[
+					...Array.from({ length: 8 }, (_, i) => ({ id: `${code.toLowerCase()}${i}` })),
+					{ id: `${code.toLowerCase()}signed`, rating: 77 },
+				],
+			]),
+		);
+		const perGame = [
+			...codes.flatMap(nineFor),
+			// Traded away: on the page for SEA, no longer on its roster.
+			pgRow("tradedaway", "SEA", { mpg: 45 }),
+		];
+		const { file, problems } = buildTeamSeasonFile(
+			{ league: "NBA", year: 2027, perGame, coaches: [], teams: leagueTeams(codes) },
+			franchiseOf,
+			new Map(),
+			"now",
+			members,
+		);
+		expect(problems).toEqual([]);
+		const sea = file.teams.find((t) => t.code === "SEA")!;
+		expect(sea.roster).not.toContain("tradedaway");
+		// sea8 is on the page but not the roster; the signing hasn't played.
+		expect(sea.roster).not.toContain("sea8");
+		expect(sea.roster.at(-1)).toBe("seasigned");
+		expect(sea.roster.slice(0, 2)).toEqual(["sea0", "sea1"]);
+	});
+
+	it("reports a current-season team with no roster", () => {
+		const { problems } = buildTeamSeasonFile(
+			{ league: "NBA", year: 2027, perGame: codes.flatMap(nineFor), coaches: [], teams: leagueTeams(codes) },
+			franchiseOf,
+			new Map(),
+			"now",
+			new Map(codes.slice(1).map((code) => [code, nineFor(code).map(({ id }) => ({ id }))])),
+		);
+		expect(problems).toEqual(["NBA-2027: SEA has 0 players"]);
 	});
 
 	it("reports short seasons, short rosters and players on unnamed teams", () => {
@@ -424,7 +467,7 @@ describe("withIndexSeason", () => {
 					year: 1996,
 					label: "1995-96",
 					generatedAt: "now",
-					teams: [{ code: "CHI", franchise: "CHI", name: "Chicago Bulls", coachId: null, arena: null, roster: [], starters: 0, alternates: [] }],
+					teams: [{ code: "CHI", franchise: "CHI", name: "Chicago Bulls", coachId: null, coachName: null, arena: null, roster: [], starters: 0, alternates: [] }],
 				},
 				"team-seasons/NBA-1996.json",
 			),
