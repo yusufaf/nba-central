@@ -7,6 +7,15 @@ const s3Client = new S3Client();
 
 const DEFAULT_LIMIT = 100;
 const MAX_LIMIT = 500;
+// A Team Builder roster is 15; a real team-season adds up to 3 alternates.
+export const MAX_IDS = 20;
+
+/** `ids=a,b,c` -> ["a", "b", "c"], deduped, in order, at most MAX_IDS. */
+export const parseIds = (value: unknown): string[] | null => {
+	if (typeof value !== "string" || !value.trim()) return null;
+	const ids = [...new Set(value.split(",").map((id) => id.trim()).filter(Boolean))];
+	return ids.length ? ids.slice(0, MAX_IDS) : null;
+};
 
 // Unicode combining marks, as escapes so this file stays ASCII.
 const COMBINING_MARKS = new RegExp("[\\u0300-\\u036f]", "g");
@@ -117,6 +126,7 @@ export const handler: Handler = async (event, context): Promise<any> => {
 			MAX_LIMIT,
 		);
 		const cursor = Math.max(parseInt(params.cursor, 10) || 0, 0);
+		const ids = parseIds(params.ids);
 
 		const [playersFile, ratingsFile] = await Promise.all([
 			readJson<{ data: NormalizedPlayer[] }>("players.json"),
@@ -142,6 +152,22 @@ export const handler: Handler = async (event, context): Promise<any> => {
 				positions: rating.positions,
 			};
 		});
+
+		// A lookup by id answers those players, in the order asked, and ignores
+		// every other filter. Unknown ids are left out.
+		if (ids) {
+			const byId = new Map(players.map((p) => [String(p.id), p]));
+			const data = ids.flatMap((id) => byId.get(id) ?? []);
+			return {
+				statusCode: 200,
+				body: JSON.stringify({
+					data,
+					nextCursor: null,
+					total: data.length,
+					gameVersion: ratingsFile?.gameVersion,
+				}),
+			};
+		}
 
 		if (search) {
 			players = players.filter((p) =>
