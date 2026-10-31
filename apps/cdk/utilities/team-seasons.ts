@@ -13,7 +13,7 @@ import type {
 	TeamSeason,
 	TeamSeasonFile,
 	TeamSeasonsIndexSeason,
-} from "../../models/team-seasons";
+} from "../models/team-seasons";
 
 export type { League };
 
@@ -35,6 +35,7 @@ export interface CoachRow {
 	// Basketball-Reference coach id, e.g. "jacksph01c" - the same id as the
 	// `href` in apps/web's coaches.json.
 	coachId: string;
+	name: string;
 	team: string;
 	g: number;
 }
@@ -204,24 +205,24 @@ export const parseCoaches = (body: string, league: League): CoachRow[] => {
 	for (const tr of $(`table#${league}_coaches > tbody > tr`)) {
 		const row = $(tr);
 		if (row.hasClass("thead")) continue;
-		const href = row.find('[data-stat="coach"] a').attr("href");
-		const coachId = href?.match(/\/coaches\/([a-z0-9]+)\.html/)?.[1];
+		const link = row.find('[data-stat="coach"] a');
+		const coachId = link.attr("href")?.match(/\/coaches\/([a-z0-9]+)\.html/)?.[1];
 		const team = row.find('[data-stat="team"]').text().trim();
 		const g = numberOrNull(row.find('[data-stat="cur_g"]').text());
 		if (!coachId || !team || g === null) continue;
-		rows.push({ coachId, team, g });
+		rows.push({ coachId, name: link.text().trim(), team, g });
 	}
 	return rows;
 };
 
 /** Each team's coach: the one who coached it the most games that season. */
-export const coachByTeam = (rows: CoachRow[]): Map<string, string> => {
+export const coachByTeam = (rows: CoachRow[]): Map<string, CoachRow> => {
 	const best = new Map<string, CoachRow>();
 	for (const row of rows) {
 		const current = best.get(row.team);
 		if (!current || row.g > current.g) best.set(row.team, row);
 	}
-	return new Map([...best].map(([team, row]) => [team, row.coachId]));
+	return best;
 };
 
 /**
@@ -293,6 +294,12 @@ export const mergeStints = (rows: PerGameRow[]): PerGameRow[] => {
 export const MIN_TEAMS_PER_SEASON = 5;
 export const MIN_PLAYERS_PER_TEAM = 8;
 
+/** A player on a team's current roster, before the season page is joined in. */
+export interface RosterMember {
+	id: string;
+	rating?: number | null;
+}
+
 export interface SeasonPages {
 	league: League;
 	year: number;
@@ -312,6 +319,11 @@ export const buildTeamSeasonFile = (
 	// players.json's coarse G/F/C positions, for rows the season page leaves blank.
 	coarsePositions: Map<string, string>,
 	generatedAt: string,
+	// The current season's rosters by team code. Without them a team is
+	// everyone the per-game page lists for it, which suits a finished season;
+	// mid-season that would keep players traded away and miss signings who
+	// haven't played.
+	members?: Map<string, RosterMember[]>,
 ): { file: TeamSeasonFile; problems: string[] } => {
 	const { league, year } = pages;
 	const season = `${league}-${year}`;
@@ -330,20 +342,28 @@ export const buildTeamSeasonFile = (
 	}
 
 	const teams: TeamSeason[] = pages.teams.map((team) => {
-		const candidates = (rowsByTeam.get(team.code) ?? []).map((row) => ({
+		const rows = rowsByTeam.get(team.code) ?? [];
+		const listed: RosterCandidate[] = members
+			? (members.get(team.code) ?? []).map(({ id, rating }) => ({
+					...(rows.find((row) => row.id === id) ?? { id, pos: "", g: 0, gs: null, mpg: null, ppg: null }),
+					rating,
+				}))
+			: rows;
+		const candidates = listed.map((row) => ({
 			...row,
 			pos: row.pos || coarsePositions.get(row.id) || "",
 		}));
 		if (candidates.length < MIN_PLAYERS_PER_TEAM) {
 			problems.push(`${season}: ${team.code} has ${candidates.length} players`);
 		}
-		const coachId = coaches.get(team.code) ?? null;
-		if (!coachId) console.warn(`${season}: no coach for ${team.code}`);
+		const coach = coaches.get(team.code);
+		if (!coach) console.warn(`${season}: no coach for ${team.code}`);
 		return {
 			code: team.code,
 			franchise: franchiseOf(team.code),
 			name: team.name,
-			coachId,
+			coachId: coach?.coachId ?? null,
+			coachName: coach?.name ?? null,
 			arena: team.arena,
 			...orderRoster(candidates),
 		};

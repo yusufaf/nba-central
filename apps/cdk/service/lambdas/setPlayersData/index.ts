@@ -21,6 +21,8 @@ export default ({ props, construct }: LambdaProps) => {
 		environment: {
 			BBREF_BASE_URL,
 			staticDataBucket: `${props.appName}-${props.deploymentType}-static-data`,
+			// For live/team-seasons/current.json, read alongside live/headshots.json.
+			assetsBucket: `${props.appName}-${props.deploymentType}-assets`,
 		},
 		layers: ["node-fetch_cheerio"],
 		// A failed run throws now; Lambda's default 2 async retries would

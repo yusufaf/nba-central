@@ -35,7 +35,7 @@ import {
 	parsePerGame,
 	seasonPaths,
 	withIndexSeason,
-} from "./lib/teamSeasons";
+} from "../utilities/team-seasons";
 import {
 	LIVE_JSON_CACHE_CONTROL,
 	TEAM_SEASON_CACHE_CONTROL,

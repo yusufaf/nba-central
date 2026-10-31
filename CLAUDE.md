@@ -102,7 +102,9 @@ Entry point: `bin/team-builder-cdk.ts` loads env vars from dotenv.
   settings, share cards, avatar, arena images). Keyed only by the authorizer's sub; the
   Logto account is never touched
 - S3 multipart upload flow: `initiateMultipartUpload`, `getMultipartSignedUploadUrls`, `completeMultipartUpload`, `deleteFile`
-- `getPlayers`: player data + 2K ratings, merged from `players.json` and `player-ratings.json`
+- `getPlayers`: player data + 2K ratings, merged from `players.json` and `player-ratings.json`;
+  `ids=a,b,c` (up to 20) returns just those players in that order, ignoring
+  every other filter
 - `getPlayerStats`: one player's career from the stats snapshot (main table,
   PK `PLAYERSTATS`) plus their 2K rating; never calls Basketball-Reference,
   and answers `available: false` for a player the snapshot hasn't reached
@@ -137,7 +139,11 @@ Entry point: `bin/team-builder-cdk.ts` loads env vars from dotenv.
 **Data ETL Lambdas** (EventBridge triggers):
 - `setPlayersData`, `setPlayerRatingsData`: scrape Basketball-Reference / api.nba2kapi.com;
   `setPlayersData` also adds the latest draft class (same BBRef ids, no bio
-  fields) so rookies are searchable before their first game. `setPlayersData`
+  fields) so rookies are searchable before their first game. After
+  `players.json` it writes the current season's team rosters to
+  `live/team-seasons/current.json` in the assets bucket (3 more BBRef pages:
+  `headshots.json` says who is on each roster, the season's per-game page
+  orders them); a failure there only keeps the previous file. `setPlayersData`
   runs Mondays 10:14 UTC, in the gap between two snapshot runs; test-invoke
   it by hand only between :13 and :19 (or :33-:39, :53-:59), since it takes
   no lock
@@ -320,7 +326,11 @@ Partition key patterns use UUIDs (userUUID#..., teamUUID#...).
   the arena, never the owner, so a public URL doesn't say whose it is), and
   Daily Era puzzle images under `daily-era/` (random keys, see `refresh-daily-era`),
   and the live season files under `live/` (`setSeasonContextData` writes
-  them; old versions expire after 7 days)
+  them; old versions expire after 7 days), and the team-season rosters:
+  finished seasons under `team-seasons/{L}-{Y}.json` with their index at
+  `live/team-seasons/index.json` (`refresh-team-seasons`, run by hand once a
+  season ends), the current season at `live/team-seasons/current.json`
+  (`setPlayersData`, weekly)
 - **static-data**: External data cache (`players.json`, `player-ratings.json`),
   the private Daily Era puzzle list (`daily-era-puzzles.json`) and the Cap
   Five puzzles (`cap-five/<date>.json`, one per day, immutable, written only

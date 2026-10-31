@@ -21,6 +21,9 @@ const {
 	handler,
 	refusalReason,
 	hasPlayersTable,
+	rosterMembers,
+	writeCurrentTeamSeason,
+	MIN_CURRENT_SEASON_ROWS,
 } = await import("lambdas/setPlayersData/src/setPlayersData");
 
 const row = (id: string, name: string, yearMax: string) =>
@@ -444,5 +447,152 @@ describe("handler guard (#168)", () => {
 
 		expect(fetchMock).not.toHaveBeenCalled();
 		expect(puts()).toHaveLength(0);
+	});
+});
+
+describe("rosterMembers", () => {
+	it("groups headshots.json players by Basketball-Reference team code with their rating", () => {
+		const entry = (team: string) => ({ espnId: "1", team, hasHeadshot: true, image: null, imageAt: null, attemptAt: null, etag: null });
+		const members = rosterMembers(
+			{
+				version: 1,
+				generatedAt: "",
+				rostersAt: null,
+				rostersAttemptedAt: "",
+				players: { curryst01: entry("GS"), jamesle01: entry("PHI"), greendr01: entry("GS") },
+				unmatched: [],
+			},
+			{ curryst01: { rating: 94 } },
+		);
+		expect(members.get("GSW")).toEqual([
+			{ id: "curryst01", rating: 94 },
+			{ id: "greendr01", rating: null },
+		]);
+		expect(members.get("PHI")).toEqual([{ id: "jamesle01", rating: null }]);
+	});
+});
+
+describe("writeCurrentTeamSeason", () => {
+	const CODES = ["GSW", "PHI", "BOS", "LAL", "NYK"];
+	const ESPN: Record<string, string> = { GSW: "GS", NYK: "NY" };
+
+	const perGamePage = (rowsPerTeam: number) =>
+		`<table id="per_game_stats"><tbody>${CODES.flatMap((code) =>
+			Array.from(
+				{ length: rowsPerTeam },
+				(_, i) =>
+					`<tr><td data-append-csv="${code.toLowerCase()}${i}" data-stat="name_display"></td>` +
+					`<td data-stat="team_name_abbr">${code}</td><td data-stat="pos">SF</td>` +
+					`<td data-stat="games">5</td><td data-stat="games_started">${i < 5 ? 5 : 0}</td>` +
+					`<td data-stat="mp_per_g">${40 - i}</td><td data-stat="pts_per_g">10</td></tr>`,
+			),
+		).join("")}</tbody></table>`;
+	const coachesPage = `<table id="NBA_coaches"><tbody>${CODES.map(
+		(code) => `<tr><th data-stat="coach"><a href="/coaches/${code.toLowerCase()}co01c.html">Coach ${code}</a></th><td data-stat="team">${code}</td><td data-stat="cur_g">5</td></tr>`,
+	).join("")}</tbody></table>`;
+	const leaguePage = `<table id="advanced-team"><tbody>${CODES.map(
+		(code) => `<tr><td data-stat="team"><a href='/teams/${code}/2027.html'>${code} Team</a></td><td data-stat="arena_name">${code} Arena</td></tr>`,
+	).join("")}</tbody></table>`;
+
+	// Nine on each roster: the top eight on the page plus one signing who hasn't played.
+	const headshots = {
+		version: 1,
+		rostersAt: "2026-11-01T12:00:00.000Z",
+		players: Object.fromEntries(
+			CODES.flatMap((code) =>
+				[...Array.from({ length: 8 }, (_, i) => `${code.toLowerCase()}${i}`), `${code.toLowerCase()}new`].map((id) => [
+					id,
+					{ espnId: id, team: ESPN[code] ?? code },
+				]),
+			),
+		),
+		unmatched: [],
+	};
+
+	const stub = ({ rowsPerTeam = 30, withHeadshots = true, failLeague = false, rostersAt = headshots.rostersAt as string | null } = {}) => {
+		fetchMock.mockImplementation(async (url: string) => {
+			if (failLeague && url.endsWith("NBA_2027.html")) return { ok: false, status: 429, text: async () => "" };
+			const body = url.includes("_per_game") ? perGamePage(rowsPerTeam) : url.includes("_coaches") ? coachesPage : leaguePage;
+			return { ok: true, status: 200, text: async () => body };
+		});
+		s3Send.mockImplementation(async (cmd: unknown) => {
+			if (!(cmd instanceof GetObjectCommand)) return {};
+			const key = (cmd as InstanceType<typeof GetObjectCommand>).input.Key;
+			const json =
+				key === "live/headshots.json" ? (withHeadshots ? { ...headshots, rostersAt } : null) :
+				key === "player-ratings.json" ? { data: { gswnew: { rating: 70 } } } :
+				key === "live/team-seasons/index.json" ? { seasons: [{ teams: [{ code: "GSW", franchise: "GSW" }, { code: "NYK", franchise: "NYK" }] }] } :
+				null;
+			if (!json) throw new NoSuchKey({ message: "missing", $metadata: {} });
+			return { Body: { transformToString: async () => JSON.stringify(json) } };
+		});
+	};
+
+	const putBodies = () =>
+		s3Send.mock.calls
+			.map(([cmd]) => cmd)
+			.filter((cmd) => cmd instanceof PutObjectCommand)
+			.map((cmd) => (cmd as InstanceType<typeof PutObjectCommand>).input);
+
+	const run = async (positions = new Map<string, string>()) => {
+		const p = writeCurrentTeamSeason(positions, new Date(2026, 10, 2));
+		await vi.runAllTimersAsync();
+		return p;
+	};
+
+	beforeEach(() => {
+		vi.useFakeTimers();
+		s3Send.mockReset();
+		fetchMock.mockReset();
+		vi.spyOn(console, "error").mockImplementation(() => {});
+		vi.spyOn(console, "warn").mockImplementation(() => {});
+	});
+
+	afterEach(() => {
+		vi.useRealTimers();
+		vi.restoreAllMocks();
+	});
+
+	it("writes the current season from today's rosters, ordered by the season page", async () => {
+		stub();
+		expect(await run()).toBe("saved 2027: 5 teams");
+		const [put] = putBodies();
+		expect(put).toMatchObject({
+			Key: "live/team-seasons/current.json",
+			CacheControl: expect.stringContaining("max-age=300"),
+		});
+		const file = JSON.parse(put.Body as string);
+		expect(file).toMatchObject({ league: "NBA", year: 2027, label: "2026-27" });
+		const gsw = file.teams.find((t: { code: string }) => t.code === "GSW");
+		expect(gsw).toMatchObject({ coachId: "gswco01c", coachName: "Coach GSW", arena: "GSW Arena", starters: 5 });
+		expect(gsw.roster).toEqual(["gsw0", "gsw1", "gsw2", "gsw3", "gsw4", "gsw5", "gsw6", "gsw7", "gswnew"]);
+		expect(fetchMock.mock.calls.map(([u]) => String(u))).toEqual([
+			expect.stringContaining("/leagues/NBA_2027_per_game.html"),
+			expect.stringContaining("/leagues/NBA_2027_coaches.html"),
+			expect.stringContaining("/leagues/NBA_2027.html"),
+		]);
+	});
+
+	it("skips before the season has enough games, after one request", async () => {
+		stub({ rowsPerTeam: Math.floor(MIN_CURRENT_SEASON_ROWS / 5) - 1 });
+		expect(await run()).toMatch(/^skipped: /);
+		expect(putBodies()).toEqual([]);
+		expect(fetchMock).toHaveBeenCalledTimes(1);
+	});
+
+	it.each([
+		["headshots.json is missing", { withHeadshots: false }, /no rosters/],
+		["its rosters are over a week old", { rostersAt: "2026-10-20T00:00:00.000Z" }, /from 2026-10-20/],
+		["its rosters were never built", { rostersAt: null }, /from never/],
+	])("keeps the previous file when %s", async (_label, options, reason) => {
+		stub(options);
+		expect(await run()).toMatch(reason);
+		expect(putBodies()).toEqual([]);
+	});
+
+	it("keeps the previous file, without throwing, when a page fails", async () => {
+		stub({ failLeague: true });
+		expect(await run()).toMatch(/^kept previous: .*429/);
+		expect(putBodies()).toEqual([]);
 	});
 });
