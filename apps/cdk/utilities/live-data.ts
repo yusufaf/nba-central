@@ -9,6 +9,10 @@ export const SCHEDULE_KEY = `${LIVE_PREFIX}schedule.json`;
 export const HEADSHOTS_KEY = `${LIVE_PREFIX}headshots.json`;
 export const INJURIES_KEY = `${LIVE_PREFIX}injuries.json`;
 
+// setSeasonContextData rebuilds headshots.json's rosters daily; a week without
+// a rebuild means it is broken. setPlayersData and getPlayers both read them.
+export const MAX_ROSTERS_AGE_MS = 8 * 24 * 60 * 60 * 1000;
+
 // Relative to live/, as headshots.json stores it.
 export const headshotPath = (espnId: string): string => `headshots/${espnId}.png`;
 export const headshotKey = (espnId: string): string =>

@@ -8,6 +8,7 @@ import {
 	CURRENT_TEAM_SEASON_KEY,
 	HEADSHOTS_KEY,
 	LIVE_JSON_CACHE_CONTROL,
+	MAX_ROSTERS_AGE_MS,
 	TEAM_SEASONS_INDEX_KEY,
 } from "utilities/live-data";
 import { currentSeasonEndYear } from "utilities/season";
@@ -63,7 +64,6 @@ interface NormalizedPlayer {
 	first_name: string;
 	last_name: string;
 	position: string;
-	team: { full_name: string; abbreviation: string };
 	height_feet: number | null;
 	height_inches: number | null;
 	weight_pounds: number | null;
@@ -113,7 +113,6 @@ export const parsePage = (html: string, seasonEndYear: number): NormalizedPlayer
 			first_name,
 			last_name,
 			position: td("pos"),
-			team: { full_name: "", abbreviation: "" },
 			height_feet,
 			height_inches,
 			weight_pounds: Number.isFinite(weight) ? weight : null,
@@ -149,7 +148,6 @@ export const parseDraftPage = (html: string): NormalizedPlayer[] => {
 			first_name,
 			last_name,
 			position: "",
-			team: { full_name: "", abbreviation: "" },
 			height_feet: null,
 			height_inches: null,
 			weight_pounds: null,
@@ -180,9 +178,6 @@ export const ESPN_TO_BBREF: Record<string, string> = {
 // Before opening night, and for its first days, the season's per-game page
 // has few rows or none; a file built from it would rank rosters on nothing.
 export const MIN_CURRENT_SEASON_ROWS = 150;
-// setSeasonContextData rebuilds rosters daily; a week without a rebuild means
-// it is broken, and last week's file is better than rosters that old.
-export const MAX_ROSTERS_AGE_MS = 8 * 24 * 60 * 60 * 1000;
 
 const readS3Json = async <T>(bucket: string, key: string): Promise<T | null> => {
 	try {
@@ -253,6 +248,7 @@ export const writeCurrentTeamSeason = async (
 		if (!headshots?.players || !Object.keys(headshots.players).length) {
 			return "kept previous: no rosters in headshots.json";
 		}
+		// Last week's file is better than rosters that old.
 		if (!(now.getTime() - rostersAt < MAX_ROSTERS_AGE_MS)) {
 			return `kept previous: headshots.json rosters are from ${headshots.rostersAt ?? "never"}`;
 		}
