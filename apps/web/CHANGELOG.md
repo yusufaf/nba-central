@@ -1,5 +1,67 @@
 # Changelog
 
+## [0.5.0](https://github.com/yusufaf/nba-central/compare/web-v0.4.0...web-v0.5.0) (2026-10-31)
+
+
+### Features
+
+* per-PR previews on GitHub Pages ([#224](https://github.com/yusufaf/nba-central/issues/224)) ([38588a1](https://github.com/yusufaf/nba-central/commit/38588a18feebc40f49b562cada89fadfa4f29e24))
+* **scores:** allow selecting scheduled future dates ([4da4295](https://github.com/yusufaf/nba-central/commit/4da4295946941a77ad91bd3bf81375079faeee9f))
+* share/search metadata, robots.txt and sitemap, license, README ([#220](https://github.com/yusufaf/nba-central/issues/220)) ([dc97710](https://github.com/yusufaf/nba-central/commit/dc9771032ac2ed5f09ebe0ae62d82aa912492113))
+* **web:** add a 30-day Daily Era archive ([d56fc31](https://github.com/yusufaf/nba-central/commit/d56fc3189d05197363aa29b9723237850c3b5dd3)), closes [#177](https://github.com/yusufaf/nba-central/issues/177)
+* **web:** add a Daily Era result share ([a448847](https://github.com/yusufaf/nba-central/commit/a44884772df5f30f07e7fe09a69982fc050fc3ba))
+* **web:** add builder-engagement events and remix attribution ([#221](https://github.com/yusufaf/nba-central/issues/221)) ([ccf7b52](https://github.com/yusufaf/nba-central/commit/ccf7b5201de59de22c5657af6224fe389060dc9a)), closes [#170](https://github.com/yusufaf/nba-central/issues/170)
+* **web:** add the Cap Five daily game at /cap-five ([80431bf](https://github.com/yusufaf/nba-central/commit/80431bfe875c5e1f721c6d9c015fc7df07dc7c64)), closes [#183](https://github.com/yusufaf/nba-central/issues/183)
+* **web:** add the Daily Era game page ([#175](https://github.com/yusufaf/nba-central/issues/175)) ([7068605](https://github.com/yusufaf/nba-central/commit/7068605be5808aba3a5e356ee297b9cab30a2f07))
+* **web:** build a win probability series and rank its biggest swings ([#202](https://github.com/yusufaf/nba-central/issues/202)) ([bc97398](https://github.com/yusufaf/nba-central/commit/bc973983c52c04c7917baf26a42aacf5d3168d2d))
+* **web:** credit each player with the win probability they added ([#203](https://github.com/yusufaf/nba-central/issues/203)) ([5ae3b12](https://github.com/yusufaf/nba-central/commit/5ae3b12861c47e960f6171e0a84ca78f34b76f95))
+* **web:** flag big win probability swings in the play-by-play ([#203](https://github.com/yusufaf/nba-central/issues/203)) ([99bee8a](https://github.com/yusufaf/nba-central/commit/99bee8a48f21731043cf12fcb7d770333e03295c))
+* **web:** give /cap-five its own link-preview page and image ([fd7df81](https://github.com/yusufaf/nba-central/commit/fd7df819495a99c544e9d02a38956358fded8593)), closes [#249](https://github.com/yusufaf/nba-central/issues/249)
+* **web:** give /daily its own link preview ([15db880](https://github.com/yusufaf/nba-central/commit/15db880381f0ccf3e3875bf166f990d8915b1607))
+* **web:** give /daily its own link-preview image ([5fc5d4f](https://github.com/yusufaf/nba-central/commit/5fc5d4f6bde04d2f3c6e19ae1d3af26cc8376411)), closes [#236](https://github.com/yusufaf/nba-central/issues/236)
+* **web:** keep a signed-out team through sign-in and save it on return ([caae699](https://github.com/yusufaf/nba-central/commit/caae69924522688c7e4a49c15545e5f172b10e0d))
+* **web:** keep Daily Era streaks and stats in local storage ([3a47951](https://github.com/yusufaf/nba-central/commit/3a4795120058b7dcb121ffd6e46d5df2cc276a44))
+* **web:** launch Which Era? and Cap Five from a Daily menu ([50bb9bd](https://github.com/yusufaf/nba-central/commit/50bb9bdb43dd598f4efeb82c80f861f6aec7a31b))
+* **web:** preselect a historical jersey from the builder's jersey query ([37b45a2](https://github.com/yusufaf/nba-central/commit/37b45a2fdda623889aad8d4c6548a4947aa8e0a2))
+* **web:** read scores, calendar counts and box scores from /api/scores ([#263](https://github.com/yusufaf/nba-central/issues/263)) ([663d39f](https://github.com/yusufaf/nba-central/commit/663d39f657cc763b7966c0446d90d1cd9a2649ba))
+* **web:** render a 404 view for unknown paths ([#222](https://github.com/yusufaf/nba-central/issues/222)) ([247cbfa](https://github.com/yusufaf/nba-central/commit/247cbfadcad997bf3da22e0b6483c672d80ded93)), closes [#167](https://github.com/yusufaf/nba-central/issues/167)
+* **web:** render the home page's link preview with render:og ([a30840f](https://github.com/yusufaf/nba-central/commit/a30840f74165272e2cd129fb7e6d4265ad5cd551)), closes [#245](https://github.com/yusufaf/nba-central/issues/245)
+* **web:** show a win probability chart and the biggest plays on the box score ([#202](https://github.com/yusufaf/nba-central/issues/202)) ([cfcda43](https://github.com/yusufaf/nba-central/commit/cfcda43987f7f97f6af7a2188fbc4412bac98d87))
+* **web:** show empty states on scores page ([40ebf5d](https://github.com/yusufaf/nba-central/commit/40ebf5d04d0fec1f5b54d39818ee8fa81341ba71)), closes [#200](https://github.com/yusufaf/nba-central/issues/200)
+* **web:** show injury status on Team Builder player cards ([#261](https://github.com/yusufaf/nba-central/issues/261)) ([0fbef05](https://github.com/yusufaf/nba-central/commit/0fbef050f32f2a1e586bc2c1edc7ed125cbc0487))
+* **web:** show standings and player headshots from the cached season data ([#182](https://github.com/yusufaf/nba-central/issues/182)) ([8ccfc5f](https://github.com/yusufaf/nba-central/commit/8ccfc5fef8ec6ea73a682966d7e1389567afcef0))
+* **web:** show when a player's stats are unavailable or failed to load ([8875434](https://github.com/yusufaf/nba-central/commit/8875434eb827cfa0b8c8d77583ea7762f16715e2)), closes [#208](https://github.com/yusufaf/nba-central/issues/208)
+* **web:** start a team from any real NBA, BAA or ABA team-season ([e7d6007](https://github.com/yusufaf/nba-central/commit/e7d6007f3609db3ed4e18f89c6a1db3229ec8d39))
+
+
+### Bug Fixes
+
+* **scores:** keep the date picker button from shifting between dates ([39333aa](https://github.com/yusufaf/nba-central/commit/39333aab5742e43bc8a7f1d4f2b0965bb70f8c8b))
+* **web:** align score card records and show game logos before tip-off ([c3f956e](https://github.com/yusufaf/nba-central/commit/c3f956e4c8f3488cf76628da5beb573fa1b443ee))
+* **web:** bound each player stats request with one deadline ([738b5c5](https://github.com/yusufaf/nba-central/commit/738b5c5ea81460c114e0fdd028db29fa98221516))
+* **web:** bundle current team logos instead of fetching ESPN on mount ([f01a24c](https://github.com/yusufaf/nba-central/commit/f01a24c5e5efbafeeee3866d5a7e67ee61279800)), closes [#188](https://github.com/yusufaf/nba-central/issues/188)
+* **web:** catch up on Daily Era saves missed while a tab was hidden ([60c52b6](https://github.com/yusufaf/nba-central/commit/60c52b6ce5184f7d29a9e2acbaef6d457226a048))
+* **web:** close the mobile menu when a link is tapped ([c1b78f4](https://github.com/yusufaf/nba-central/commit/c1b78f4608d81b79ce16c7014be63ba9e13c0465))
+* **web:** fit Cap Five names in their lineup slots and relabel Legend ([6b5fb4d](https://github.com/yusufaf/nba-central/commit/6b5fb4d8eb88408402603a989e2b522d8464de72))
+* **web:** follow other tabs' Daily Era saves through storage events ([e5a1d1e](https://github.com/yusufaf/nba-central/commit/e5a1d1e44667c9a596af6bf405294e4138abb97f))
+* **web:** keep a newer Daily Era store instead of overwriting it ([32d8255](https://github.com/yusufaf/nba-central/commit/32d8255cb6562e59dc501237c62dd0e707c06321))
+* **web:** limit concurrent player stats requests ([f66ed52](https://github.com/yusufaf/nba-central/commit/f66ed5225524f015859bd673f48e75071ddc7116)), closes [#166](https://github.com/yusufaf/nba-central/issues/166)
+* **web:** load Scores calendar game counts by month ([db8c307](https://github.com/yusufaf/nba-central/commit/db8c3073528ac299816e4447a5677c483823afc0)), closes [#196](https://github.com/yusufaf/nba-central/issues/196)
+* **web:** match the header avatar icon to the name, reword feedback link ([ffe3304](https://github.com/yusufaf/nba-central/commit/ffe3304a01da2218f311c10aee10e195c35a92c5))
+* **web:** never let a Daily Era save move a day's game backwards ([0c4ce17](https://github.com/yusufaf/nba-central/commit/0c4ce17c4e6b773debd44c32fa28e7d18ae6b746))
+* **web:** only load custom coaches, GMs and players when signed in ([924b0f1](https://github.com/yusufaf/nba-central/commit/924b0f1af60c534d423acdb48fdcb7a50a73b33e)), closes [#225](https://github.com/yusufaf/nba-central/issues/225)
+* **web:** re-read Daily Era storage before a guess and adopt another tab's game ([37da6ea](https://github.com/yusufaf/nba-central/commit/37da6ea7521ffc9a66708eaa5013ca9390b38039))
+* **web:** roll Daily Era over to the new day at local midnight ([e6837b4](https://github.com/yusufaf/nba-central/commit/e6837b4d1cf9a27a41bd862a4d4c39da621bbed1)), closes [#238](https://github.com/yusufaf/nba-central/issues/238)
+* **web:** roll the current season over on Oct 1, not Jan 1 ([60b7d46](https://github.com/yusufaf/nba-central/commit/60b7d469a89a287aae99b3e758e73f6e1a296708)), closes [#163](https://github.com/yusufaf/nba-central/issues/163)
+* **web:** show DNP reason next to DNP in box score ([3457bdb](https://github.com/yusufaf/nba-central/commit/3457bdb389a64b3a06b5b6fb3bd1532fd33d2120))
+* **web:** stop fetching team logos on every page load ([f0d50c2](https://github.com/yusufaf/nba-central/commit/f0d50c2fc674ee7a1ee40b1c12d9ebbcccae1779))
+* **web:** time out player stats requests ([cee6553](https://github.com/yusufaf/nba-central/commit/cee6553861b48f82c570732b071c64925120ad6a)), closes [#166](https://github.com/yusufaf/nba-central/issues/166)
+
+
+### Performance Improvements
+
+* **web:** drop backdrop blur from fullscreen picker overlays ([d0060fc](https://github.com/yusufaf/nba-central/commit/d0060fc7a5a00e2af1655897942161d2a314d645))
+
 ## [0.4.0](https://github.com/yusufaf/nba-central/compare/web-v0.3.0...web-v0.4.0) (2026-10-08)
 
 
