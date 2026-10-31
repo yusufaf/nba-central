@@ -5,6 +5,7 @@ import liveStandings from '../fixtures/liveData/standings.json' with { type: 'js
 import liveSchedule from '../fixtures/liveData/schedule.json' with { type: 'json' };
 import liveHeadshots from '../fixtures/liveData/headshots.json' with { type: 'json' };
 import liveInjuries from '../fixtures/liveData/injuries.json' with { type: 'json' };
+import teamSeasonsIndex from '../fixtures/liveData/team-seasons-index.json' with { type: 'json' };
 import { DAILY_ERA_FIRST_DATE } from '../../src/constants/dailyEra';
 import { picks, puzzleView, result as capFiveResult } from '../helpers/capFive';
 
@@ -26,6 +27,8 @@ const LIVE_FILES: Record<string, unknown> = {
     'headshots.json': liveHeadshots,
     // Dated 2026-10-26, so it's stale (no badges) unless a test fixes the clock.
     'injuries.json': liveInjuries,
+    // live/team-seasons/index.json; current.json 404s, as before opening night.
+    'index.json': teamSeasonsIndex,
 };
 // Arena photos are hotlinked Wikimedia thumbnails. A fixed grey pixel keeps
 // the arena tile's layout in the shot without depending on the live image.
@@ -513,6 +516,18 @@ test('dialog and popover do not share modal sizing', async ({ page }) => {
     expect(padding).not.toBe('12px 32px');
 
     await expect(sheet).toHaveScreenshot('sheet-add-player.png');
+});
+
+test('real-team picker with a season chosen', async ({ page }) => {
+    await stubNetwork(page);
+    await page.goto('/teambuilder');
+    await settle(page);
+    await page.getByTestId('real-team-button').click();
+    await page.getByTestId('real-team-franchise').click();
+    await page.getByRole('option', { name: 'Chicago Bulls' }).click();
+    await page.getByTestId('real-team-season').filter({ hasText: '1996-97' }).click();
+    const dialog = page.locator('[role="dialog"]').first();
+    await expect(dialog).toHaveScreenshot('dialog-real-team.png');
 });
 
 // The baselines above run in dark (colorScheme in playwright.config.ts, and

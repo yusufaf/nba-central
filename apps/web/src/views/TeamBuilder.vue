@@ -17,6 +17,7 @@ import CoachSection from "@/components/TeamBuilder/CoachSection.vue";
 import ArenaSection from "@/components/TeamBuilder/ArenaSection.vue";
 import GMSection from "@/components/TeamBuilder/GMSection.vue";
 import PlayerComparison from "@/components/TeamBuilder/PlayerComparison.vue";
+import RealTeamPicker from "@/components/TeamBuilder/RealTeamPicker.vue";
 import {
     useRosterDragDrop,
     swapMapEntries,
@@ -54,6 +55,9 @@ import { centreLogoUrl } from "@/utils/court";
 import { shareUrlFor } from "@/utils/shareUrl";
 import { downloadUrlAsFile, slugFilename } from "@/utils/downloadFile";
 import { findHistoricalJersey } from "@/utils/historicalJersey";
+import { getCurrentTeamSeason, getTeamSeasonFile, getTeamSeasonsIndex } from "@/network/teamSeasons";
+import { findSeasonChoice, parseRealParam, realTeamDetails, rosterSlots, seasonChoices } from "@/utils/realTeam";
+import { toBuilderPlayer } from "@/utils/builderPlayer";
 import { track } from "@/lib/analytics";
 import { landingSource } from "@/lib/attribution";
 import type { DrawerSide, NBA2KRating, Player } from "@/models/types";
@@ -607,6 +611,7 @@ const saveTeam = async () => {
                         remix: undefined,
                         resume: undefined,
                         jersey: undefined,
+                        real: undefined,
                         team: saved.teamUUID,
                     },
                 });
@@ -808,6 +813,80 @@ const loadRemixFromRoute = async (teamUUID: string) => {
     }
 };
 
+// /teambuilder?real=CHI-1996: a new team prefilled from a real team-season,
+// the picker's shareable link. Like a remix, loadedTeamUUID stays null so the
+// first Save creates a team. Three fetches stand between the click and the
+// roster, so after each one it checks the URL still asks for this team: the
+// visitor may have picked another, or left.
+const loadRealTeamFromRoute = async (param: string) => {
+    clearBuilderState();
+    const stillWanted = () =>
+        route.name === "teamBuilder" && route.query.real === param && builderEntry() === "real";
+    const ref = parseRealParam(param);
+    if (!ref) {
+        toast.error("That link doesn't name a team-season");
+        return;
+    }
+    try {
+        const [index, current] = await Promise.all([getTeamSeasonsIndex(), getCurrentTeamSeason()]);
+        if (!stillWanted()) return;
+        const choice = findSeasonChoice(seasonChoices(index, current), ref);
+        const file = choice && (choice.path ? await getTeamSeasonFile(choice.path) : current);
+        if (!stillWanted()) return;
+        const team = file?.teams.find((t) => t.code === ref.code);
+        if (!file || !team) {
+            toast.error("We don't have that team-season");
+            return;
+        }
+        const ids = [...team.roster, ...team.alternates];
+        const response = await dataApi.getPlayers({ ids: ids.join(",") });
+        if (!stillWanted()) return;
+        // Only ids that were asked for: an older getPlayers that ignores `ids`
+        // answers with its first page of everyone.
+        const records = new Map(
+            response.data.filter((p) => ids.includes(p.id)).map((p) => [p.id, p]),
+        );
+        const slots = rosterSlots(team, new Set(records.keys()));
+        if (!slots.size) {
+            toast.error("Couldn't load that team's players");
+            return;
+        }
+        const details = realTeamDetails(team, file);
+        teamName.value = details.teamName;
+        teamCity.value = details.teamCity;
+        teamCountry.value = details.teamCountry;
+        teamLogo.value = details.teamLogo;
+        teamJersey.value = details.teamJersey;
+        teamCoach.value = details.teamCoach;
+        teamGM.value = details.teamGM;
+        teamArena.value = details.teamArena;
+        forgetHistory();
+        track("real_team_loaded", { team: ref.code, season: ref.year, source: landingSource() });
+        if (slots.size < team.roster.length) {
+            toast.info(`${slots.size} of the team's players could be loaded`);
+        }
+        await Promise.all(
+            Array.from(slots, ([slot, id]) => loadPlayerIntoSlot(slot, toBuilderPlayer(records.get(id)!)).done),
+        );
+    } catch (err) {
+        console.error("Error loading real team:", err);
+        if (stillWanted()) toast.error("Failed to load that team");
+    }
+};
+
+const showRealTeamPicker = ref(false);
+
+// The picker's choice goes through the URL so the link can be shared. Picking
+// the team already in the URL changes nothing there, so it reloads directly.
+const pickRealTeam = (param: string) => {
+    track("real_team_clicked", { team: param });
+    if (route.query.real === param && builderEntry() === "real") {
+        void loadRealTeamFromRoute(param);
+    } else {
+        router.push({ path: "/teambuilder", query: { real: param } });
+    }
+};
+
 // Sign-in is a full-page trip to Logto, which wipes the builder, so the team
 // is stashed first. If it can't be, say so rather than lose it silently.
 const signInToSave = (destination: "/login" | "/sign-up") => {
@@ -870,12 +949,13 @@ const resumePendingSave = async () => {
 // independently - a single getter would return a new array identity on
 // every navigation and fire the callback even when neither param changed.
 // Mirrors the precedence of the watcher below, which decides what the builder
-// loads: team > resume > remix > jersey > new.
-const builderEntry = (): "team" | "resume" | "remix" | "jersey" | "new" => {
-    const { team, remix, resume, jersey } = route.query;
+// loads: team > resume > remix > real > jersey > new.
+const builderEntry = (): "team" | "resume" | "remix" | "real" | "jersey" | "new" => {
+    const { team, remix, resume, real, jersey } = route.query;
     if (typeof team === "string" && team) return "team";
     if (resume === RESUME_SAVE_QUERY) return "resume";
     if (typeof remix === "string" && remix) return "remix";
+    if (typeof real === "string" && real) return "real";
     if (typeof jersey === "string" && jersey) return "jersey";
     return "new";
 };
@@ -901,9 +981,10 @@ watch(
         () => route.query.team,
         () => route.query.remix,
         () => route.query.resume,
+        () => route.query.real,
         () => route.query.jersey,
     ],
-    ([teamUUID, remixUUID, resume, jerseyId], previous) => {
+    ([teamUUID, remixUUID, resume, realTeam, jerseyId], previous) => {
         // Leaving the builder changes the query too (to /login, say); that is
         // not a visit to discard anything for.
         if (route.name !== "teamBuilder") return;
@@ -912,12 +993,13 @@ watch(
         // Dropping it (the nav bar's bare link), Back to the same one, or
         // adding it to a saved team's URL keeps the team on screen. The
         // immediate first run gets [] as `previous`.
-        const [prevTeam, prevRemix, prevResume] = previous ?? [];
+        const [prevTeam, prevRemix, prevResume, prevReal] = previous ?? [];
         const sameEntry =
             previous?.length &&
             teamUUID === prevTeam &&
             remixUUID === prevRemix &&
-            resume === prevResume;
+            resume === prevResume &&
+            realTeam === prevReal;
         // builderEntry() holds the precedence, so this agrees with the dispatch below.
         if (sameEntry && (builderEntry() !== "jersey" || jerseyId === seededJerseyId)) {
             return;
@@ -931,6 +1013,8 @@ watch(
             resumePendingSave();
         } else if (typeof remixUUID === "string" && remixUUID) {
             loadRemixFromRoute(remixUUID);
+        } else if (typeof realTeam === "string" && realTeam) {
+            loadRealTeamFromRoute(realTeam);
         } else {
             clearBuilderState();
             applyJerseyFromRoute(jerseyId);
@@ -972,6 +1056,12 @@ watch(
                     @togglePublish="togglePublish"
                     @share="shareTeam"
                     @downloadCard="downloadCard"
+                    @realTeam="showRealTeamPicker = true"
+                />
+                <RealTeamPicker
+                    v-model:open="showRealTeamPicker"
+                    :has-roster="selectedPlayersData.size > 0"
+                    @pick="pickRealTeam"
                 />
             </div>
 

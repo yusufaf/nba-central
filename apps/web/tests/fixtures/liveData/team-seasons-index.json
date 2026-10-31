@@ -1,0 +1,33 @@
+{
+    "version": 1,
+    "generatedAt": "2026-10-31T00:00:00.000Z",
+    "seasons": [
+        {
+            "league": "NBA",
+            "year": 1998,
+            "label": "1997-98",
+            "path": "team-seasons/NBA-1998.json",
+            "teams": [
+                { "code": "CHI", "franchise": "CHI", "name": "Chicago Bulls" },
+                { "code": "UTA", "franchise": "UTA", "name": "Utah Jazz" }
+            ]
+        },
+        {
+            "league": "NBA",
+            "year": 1997,
+            "label": "1996-97",
+            "path": "team-seasons/NBA-1997.json",
+            "teams": [
+                { "code": "CHI", "franchise": "CHI", "name": "Chicago Bulls" },
+                { "code": "UTA", "franchise": "UTA", "name": "Utah Jazz" }
+            ]
+        },
+        {
+            "league": "NBA",
+            "year": 1996,
+            "label": "1995-96",
+            "path": "team-seasons/NBA-1996.json",
+            "teams": [{ "code": "CHI", "franchise": "CHI", "name": "Chicago Bulls" }]
+        }
+    ]
+}

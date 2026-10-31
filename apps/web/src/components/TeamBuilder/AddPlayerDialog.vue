@@ -3,6 +3,7 @@ import { ref, computed, watch } from 'vue';
 import { useDebounceFn } from '@vueuse/core';
 import type { DrawerSide } from '@/models/types';
 import type { PlayerRecord } from '@/models/api';
+import { toBuilderPlayer } from '@/utils/builderPlayer';
 import { dataApi } from '@/network/api';
 import { ratingTier, ratingSourceLabel } from '@/constants/ratings';
 import { playsPosition } from '@/constants/positions';
@@ -97,28 +98,7 @@ const searchListResults = computed(() => {
     };
   });
 
-  // Map API players
-  const apiResults = searchList.value.map((player: any) => {
-    const {
-      first_name,
-      last_name,
-      height_feet,
-      height_inches,
-      weight_pounds,
-    } = player;
-    const fullName = `${first_name} ${last_name}`;
-    const heightString =
-      height_feet && height_inches
-        ? `${height_feet}' ${height_inches}"`
-        : 'N/A';
-    const weightString = weight_pounds ? `${weight_pounds}lbs` : 'N/A';
-    const heightAndWeight = `${heightString}, ${weightString}`;
-    return {
-      ...player,
-      fullName,
-      heightAndWeight,
-    };
-  });
+  const apiResults = searchList.value.map(toBuilderPlayer);
 
   // Merge custom players at the top
   let results = [...customPlayersMapped, ...apiResults];
