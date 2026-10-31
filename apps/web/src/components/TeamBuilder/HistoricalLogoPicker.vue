@@ -202,8 +202,8 @@ const { collapse } = useExpandablePicker(expanded, pickerRoot, searchField);
     z-index: 60;
     padding: 1.5rem 2rem 2rem;
     gap: 0.875rem;
-    background: hsl(var(--surface-raised) / 0.98);
-    backdrop-filter: blur(0.75rem);
+    /* No backdrop-filter - see HistoricalJerseyPicker. */
+    background: hsl(var(--surface-raised));
     /* This overlay teleports past the dialog's own DOM subtree, so it isn't one
        of reka-ui's registered dismissable layers. A modal Dialog sets
        body { pointer-events: none } and only re-enables pointer-events on

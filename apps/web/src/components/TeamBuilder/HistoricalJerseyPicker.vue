@@ -208,8 +208,10 @@ const handleJerseyClick = (jersey: HistoricalJersey) => {
     z-index: 60;
     padding: 1.5rem 2rem 2rem;
     gap: 0.875rem;
-    background: hsl(var(--surface-raised) / 0.98);
-    backdrop-filter: blur(0.75rem);
+    /* Opaque, with no backdrop-filter: at 98% opacity the blur was invisible,
+       but Firefox re-ran it across the whole viewport on every scroll frame,
+       which made scrolling this grid stutter. */
+    background: hsl(var(--surface-raised));
     /* See HistoricalLogoPicker: a modal Dialog sets body { pointer-events:
        none } and only re-enables it on layers it knows about - this overlay
        isn't one, since it teleported past the dialog's own DOM subtree. */
