@@ -16,3 +16,20 @@ export const toBuilderPlayer = (record: PlayerRecord): Player => {
         heightAndWeight: `${height}, ${weight}`,
     } as Player;
 };
+
+/**
+ * The drawer's Team Name sort. Players on no roster (free agents, retirees,
+ * custom players) sink in both directions, as unrated players do under Rating.
+ */
+export const compareTeamNames = (
+    a: Pick<Player, "team">,
+    b: Pick<Player, "team">,
+    modifier: 1 | -1,
+): number => {
+    const aName = a.team?.full_name || "";
+    const bName = b.team?.full_name || "";
+    if (!aName && !bName) return 0;
+    if (!aName) return 1;
+    if (!bName) return -1;
+    return modifier * aName.localeCompare(bName);
+};
