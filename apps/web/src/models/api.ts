@@ -287,6 +287,9 @@ export type SendFeedbackResponse = ApiResult<{ messageId: string }>;
 
 //#region Data API Types
 export interface GetPlayersParams {
+    // Comma-joined BBRef ids (up to 20): just those players, in that order,
+    // and every other param is ignored.
+    ids?: string;
     search?: string;
     position?: string;
     sort?: 'name' | 'team' | 'rating';

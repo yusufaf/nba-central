@@ -24,6 +24,7 @@ import {
     Link2,
     Share2,
     Download,
+    History,
 } from 'lucide-vue-next';
 
 /* 2-Way Bound Props */
@@ -52,6 +53,7 @@ const emit = defineEmits<{
     togglePublish: [];
     share: [method: 'copy' | 'native'];
     downloadCard: [];
+    realTeam: [];
 }>();
 
 const { shouldConfirm } = useTeamBuilderPreferences();
@@ -204,6 +206,16 @@ const toggleCustomizationDialog = () => {
                         </DropdownMenuContent>
                     </DropdownMenu>
 
+                    <Button
+                        data-testid="real-team-button"
+                        @click="emit('realTeam')"
+                        size="sm"
+                        variant="outline"
+                        title="Start from a real NBA team"
+                    >
+                        <History class="h-4 w-4 mr-2" />
+                        Real team
+                    </Button>
                     <Button
                         data-testid="reset-button"
                         @click="resetClick"
