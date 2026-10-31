@@ -45,3 +45,6 @@ export const FEEDBACK_SES_REGION = "us-east-1";
 export const FEEDBACK_SES_IDENTITY = "auth.yusufaf.dev";
 export const FEEDBACK_FROM_ADDRESS = `feedback@${FEEDBACK_SES_IDENTITY}`;
 export const FEEDBACK_TO_ADDRESS = "yusufafzal12@gmail.com";
+
+// Scheduled-Lambda error alarms email the site owner too.
+export const ALERTS_TO_ADDRESS = FEEDBACK_TO_ADDRESS;

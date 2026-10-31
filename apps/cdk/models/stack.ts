@@ -1,5 +1,12 @@
 import { App, StackProps } from 'aws-cdk-lib';
+import { ITopic } from 'aws-cdk-lib/aws-sns';
+import { IQueue } from 'aws-cdk-lib/aws-sqs';
 import { Construct } from 'constructs';
+
+export interface LambdaAlerts {
+    topic: ITopic;
+    failedEvents: IQueue;
+}
 
 export interface ExtendedStackProps extends StackProps {
     appName?: string;
@@ -18,6 +25,9 @@ export interface ExtendedStackProps extends StackProps {
     // it deletes, and the Lambda role's CreateInvalidation grant is scoped
     // to it.
     assetsDistributionId?: string;
+    // Set by TeamBuilder from TeamBuilderAlerts; TeamBuilderLambda's
+    // `monitor` needs it.
+    alerts?: LambdaAlerts;
 }
 
 export interface StackConstructsProps {

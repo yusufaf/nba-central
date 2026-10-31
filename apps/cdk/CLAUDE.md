@@ -146,6 +146,28 @@ depends on has to be `cdk deploy`ed first, or `/api/scores/*` falls through to
 
 ## Monitoring
 
+Scheduled Lambdas pass `monitor` to `TeamBuilderLambda`. Each gets an
+`<prefix>-<name>-errors` alarm on its `Errors` metric that emails
+`ALERTS_TO_ADDRESS` through the `<prefix>-alerts` topic (`TeamBuilderAlerts`),
+and an event that fails every async retry lands in `<prefix>-failed-events`
+(SQS, kept 14 days) instead of being emailed. The email subscription stays
+pending until its confirmation link is clicked, once per stage after the
+first deploy; until then alarms go nowhere. An alarm fires on one failing
+5-minute period in the last 24 (two hours), or three for `fetchNewsCron`,
+which fails a run when any source or write fails and whose single timeouts
+recover on the next run. There is no OK email, and CloudWatch emails only on
+a state change: while an alarm sits in ALARM, say `fetchNewsCron`'s because
+one Bluesky handle keeps failing, a later full outage sends nothing new until
+it clears, while each failed run still adds a message to the failed-events
+queue (96 a day, bounded by its 14-day retention). `setPlayerStatsData` and
+`setSeasonContextData` alarm only when a run throws or times out (DynamoDB or
+S3 errors, crashes): a BBRef block or a streak of failed careers pauses the
+stats scraper and the run returns normally, and an ESPN dataset that fails
+keeps the previous file, so those show only in the logs (`stoppedBy` in the
+stats run summary, `Kept the previous …` lines). Six alarms in production and
+four in development fill the free tier's 10; another monitored Lambda costs
+$0.10 a month.
+
 Every `TeamBuilderLambda` logs to its own CDK-managed log group with 30-day
 retention (`LAMBDA_LOG_RETENTION`), not Lambda's auto-created
 `/aws/lambda/<name>`, so `aws logs tail /aws/lambda/<name>` shows nothing new

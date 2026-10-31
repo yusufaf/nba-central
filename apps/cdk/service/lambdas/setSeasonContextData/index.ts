@@ -45,6 +45,7 @@ export default ({ props, construct }: LambdaProps) => {
 	const { lambdaFunction } = new TeamBuilderLambda(construct, functionName, {
 		functionName,
 		stackProps: props,
+		monitor: {},
 		memorySize: 512,
 		timeout: SEASON_CONTEXT_TIMEOUT,
 		// The web reads only the production CDN, so a development copy would

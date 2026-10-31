@@ -7,6 +7,8 @@ import { TeamBuilderS3 } from "./team-builder-s3";
 import { TeamBuilderAssetsCdn } from "./team-builder-assets-cdn";
 import { TeamBuilderWeb } from "./team-builder-web";
 import { TeamBuilderDeployRole } from "./team-builder-deploy-role";
+import { TeamBuilderAlerts } from "./team-builder-alerts";
+import { ALERTS_TO_ADDRESS } from "../../constants";
 
 export class TeamBuilder extends Construct {
     appName: string;
@@ -28,9 +30,15 @@ export class TeamBuilder extends Construct {
             { appName, deploymentType, assetsBucket: s3.assetsBucket },
         );
 
+        const alerts = new TeamBuilderAlerts(
+            scope,
+            `${appName}-${deploymentType}-alerts`,
+            { appName, deploymentType, email: ALERTS_TO_ADDRESS },
+        );
+
         // The API's Lambdas are built inside this constructor, so anything
-        // they need in their environment has to exist first — hence S3 and
-        // the assets CDN above it.
+        // they need in their environment has to exist first — hence S3, the
+        // assets CDN and the alerts the scheduled Lambdas report to above it.
         const api = new TeamBuilderAPI(
             scope,
             `${appName}-${deploymentType}-api`,
@@ -38,6 +46,7 @@ export class TeamBuilder extends Construct {
                 ...props,
                 assetsCdnDomain: assetsCdn.distribution.distributionDomainName,
                 assetsDistributionId: assetsCdn.distribution.distributionId,
+                alerts,
             },
         );
         new TeamBuilderDynamoDB(
