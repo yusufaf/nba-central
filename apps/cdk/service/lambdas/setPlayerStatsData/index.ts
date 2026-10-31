@@ -23,6 +23,9 @@ export default ({ props, construct }: LambdaProps) => {
 		monitor: {},
 		memorySize: 1024,
 		timeout: SNAPSHOT_TIMEOUT,
+		// A development copy would run in the same :00/:20/:40 slots as
+		// production's, against BBRef's 20 requests a minute.
+		deployToTypes: ["production"],
 		environment: {
 			BBREF_BASE_URL,
 			MAIN_TABLE_NAME: `${appName}-${deploymentType}-main`,

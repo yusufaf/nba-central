@@ -150,7 +150,7 @@ Entry point: `bin/team-builder-cdk.ts` loads env vars from dotenv.
   runs Mondays 10:14 UTC, in the gap between two snapshot runs; test-invoke
   it by hand only between :13 and :19 (or :33-:39, :53-:59), since it takes
   no lock
-- `setPlayerStatsData` (every 20 min): scrapes the Basketball-Reference
+- `setPlayerStatsData` (every 20 min, production only): scrapes the Basketball-Reference
   careers that are due into that snapshot, ~17 requests a minute, and no
   request past 12 minutes into its :00/:20/:40 slot: missing players first,
   current players weekly, everyone else every 90 days. A 429/403 or a page
