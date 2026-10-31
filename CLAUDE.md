@@ -41,6 +41,7 @@ pnpm --filter cdk refresh-historical-logos  # rewrite historicalLogos.json, uplo
 pnpm --filter cdk refresh-historical-jerseys  # rewrite historicalJerseys.json, upload images to S3
 pnpm --filter cdk refresh-current-logos     # rewrite currentTeamLogos.json from ESPN's teams endpoint
 pnpm --filter cdk refresh-daily-era         # crop Daily Era puzzle images, append them to the puzzle list
+pnpm --filter cdk refresh-team-seasons      # publish finished seasons' rosters to S3 (only seasons not yet published)
 pnpm --filter cdk run refresh-<name> -- --check  # validate against the live source, write nothing
 pnpm --filter cdk upload-hero-video             # upload apps/web's hero clip, rewrite heroMedia.json
 pnpm --filter cdk run upload-hero-video -- --check  # validate the local file, upload nothing

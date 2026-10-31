@@ -26,3 +26,14 @@ export const LIVE_CACHE_MAX_TTL_SECONDS = 86_400;
 // The bucket is versioned and the JSON files are rewritten hourly (injuries
 // every 15 minutes).
 export const LIVE_NONCURRENT_VERSION_DAYS = 7;
+
+// Team-season files. Finished seasons never change, so they sit outside live/
+// under the default cache behavior; the index and the current season are
+// rewritten, so they take live/'s short TTL.
+export const TEAM_SEASONS_PREFIX = "team-seasons/";
+export const TEAM_SEASONS_INDEX_KEY = `${LIVE_PREFIX}team-seasons/index.json`;
+export const CURRENT_TEAM_SEASON_KEY = `${LIVE_PREFIX}team-seasons/current.json`;
+export const teamSeasonKey = (league: string, year: number): string =>
+	`${TEAM_SEASONS_PREFIX}${league}-${year}.json`;
+// A day, so a corrected finished season reaches browsers without an invalidation.
+export const TEAM_SEASON_CACHE_CONTROL = "public, max-age=86400";
