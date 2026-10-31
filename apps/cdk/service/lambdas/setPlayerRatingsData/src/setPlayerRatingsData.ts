@@ -118,116 +118,108 @@ export const handler: Handler = async (
 ): Promise<any> => {
 	console.log(JSON.stringify({ event, context }, null, 4));
 
-	try {
-		const bbrefPlayers = await loadBBRefPlayers();
+	const bbrefPlayers = await loadBBRefPlayers();
 
-		const byName = indexByName(bbrefPlayers);
+	const byName = indexByName(bbrefPlayers);
 
-		const ratings: Record<string, PlayerRating> = {};
-		const unmatchedCurrent: string[] = [];
-		let gameVersion = "";
-		let sourcePlayerCount = 0;
+	const ratings: Record<string, PlayerRating> = {};
+	const unmatchedCurrent: string[] = [];
+	let gameVersion = "";
+	let sourcePlayerCount = 0;
 
-		for (const teamType of TEAM_TYPES) {
-			const twoKPlayers = await fetchTeamType(teamType);
-			sourcePlayerCount += twoKPlayers.length;
+	for (const teamType of TEAM_TYPES) {
+		const twoKPlayers = await fetchTeamType(teamType);
+		sourcePlayerCount += twoKPlayers.length;
 
-			for (const twoKPlayer of twoKPlayers) {
-				if (!gameVersion && twoKPlayer.gameVersion) {
-					gameVersion = twoKPlayer.gameVersion;
-				}
-
-				const candidates =
-					byName.get(normalizeName(twoKPlayer.name)) || [];
-				const match = resolveMatch(candidates, {
-					name: twoKPlayer.name,
-					heightInches: toTotalInches(
-						...parse2KHeight(twoKPlayer.height || ""),
-					),
-					currentOnly: twoKPlayer.teamType === "curr",
-				});
-
-				if (!match) {
-					// Every active NBA player is in players.json, so an
-					// unmatched `curr` entry is a bug worth surfacing rather
-					// than a gap in coverage.
-					if (teamType === "curr") {
-						unmatchedCurrent.push(twoKPlayer.name);
-					}
-					continue;
-				}
-
-				const existing = ratings[match.id];
-
-				// A higher-precedence source already claimed this player.
-				if (existing && existing.ratingSource !== RATING_SOURCE.class) {
-					continue;
-				}
-
-				// Within Classic, a player has one entry per season version -
-				// keep their peak.
-				if (existing && existing.rating >= twoKPlayer.overall) continue;
-
-				const history = twoKPlayer.ratingHistory?.length
-					? twoKPlayer.ratingHistory.map(
-							({ gameVersion: version, overall }) => ({
-								gameVersion: version,
-								overall,
-							}),
-						)
-					: undefined;
-
-				ratings[match.id] = {
-					rating: twoKPlayer.overall,
-					ratingSource: RATING_SOURCE[teamType],
-					slug: twoKPlayer.slug,
-					positions: Array.isArray(twoKPlayer.positions) ? nbaPositions(twoKPlayer.positions) : undefined,
-					history,
-				};
+		for (const twoKPlayer of twoKPlayers) {
+			if (!gameVersion && twoKPlayer.gameVersion) {
+				gameVersion = twoKPlayer.gameVersion;
 			}
+
+			const candidates =
+				byName.get(normalizeName(twoKPlayer.name)) || [];
+			const match = resolveMatch(candidates, {
+				name: twoKPlayer.name,
+				heightInches: toTotalInches(
+					...parse2KHeight(twoKPlayer.height || ""),
+				),
+				currentOnly: twoKPlayer.teamType === "curr",
+			});
+
+			if (!match) {
+				// Every active NBA player is in players.json, so an
+				// unmatched `curr` entry is a bug worth surfacing rather
+				// than a gap in coverage.
+				if (teamType === "curr") {
+					unmatchedCurrent.push(twoKPlayer.name);
+				}
+				continue;
+			}
+
+			const existing = ratings[match.id];
+
+			// A higher-precedence source already claimed this player.
+			if (existing && existing.ratingSource !== RATING_SOURCE.class) {
+				continue;
+			}
+
+			// Within Classic, a player has one entry per season version -
+			// keep their peak.
+			if (existing && existing.rating >= twoKPlayer.overall) continue;
+
+			const history = twoKPlayer.ratingHistory?.length
+				? twoKPlayer.ratingHistory.map(
+						({ gameVersion: version, overall }) => ({
+							gameVersion: version,
+							overall,
+						}),
+					)
+				: undefined;
+
+			ratings[match.id] = {
+				rating: twoKPlayer.overall,
+				ratingSource: RATING_SOURCE[teamType],
+				slug: twoKPlayer.slug,
+				positions: Array.isArray(twoKPlayer.positions) ? nbaPositions(twoKPlayer.positions) : undefined,
+				history,
+			};
 		}
-
-		const matchedCount = Object.keys(ratings).length;
-
-		await s3Client.send(
-			new PutObjectCommand({
-				Bucket: staticDataBucket,
-				Key: "player-ratings.json",
-				Body: JSON.stringify({
-					gameVersion,
-					generated: new Date().toISOString(),
-					sourcePlayerCount,
-					matchedCount,
-					unmatchedCurrent,
-					data: ratings,
-				}),
-				ContentType: "application/json",
-			}),
-		);
-
-		console.log(
-			`Saved ${matchedCount} ratings (${gameVersion}) to ${staticDataBucket}/player-ratings.json; ${unmatchedCurrent.length} unmatched current players`,
-		);
-		if (unmatchedCurrent.length) {
-			console.warn(
-				`Unmatched current players: ${unmatchedCurrent.join(", ")}`,
-			);
-		}
-
-		return {
-			statusCode: 200,
-			body: JSON.stringify({
-				message: "Player ratings saved",
-				gameVersion,
-				matchedCount,
-				unmatchedCurrent: unmatchedCurrent.length,
-			}),
-		};
-	} catch (err) {
-		console.error(err);
-		return {
-			statusCode: 500,
-			body: JSON.stringify({ error: "Failed to fetch player ratings" }),
-		};
 	}
+
+	const matchedCount = Object.keys(ratings).length;
+
+	await s3Client.send(
+		new PutObjectCommand({
+			Bucket: staticDataBucket,
+			Key: "player-ratings.json",
+			Body: JSON.stringify({
+				gameVersion,
+				generated: new Date().toISOString(),
+				sourcePlayerCount,
+				matchedCount,
+				unmatchedCurrent,
+				data: ratings,
+			}),
+			ContentType: "application/json",
+		}),
+	);
+
+	console.log(
+		`Saved ${matchedCount} ratings (${gameVersion}) to ${staticDataBucket}/player-ratings.json; ${unmatchedCurrent.length} unmatched current players`,
+	);
+	if (unmatchedCurrent.length) {
+		console.warn(
+			`Unmatched current players: ${unmatchedCurrent.join(", ")}`,
+		);
+	}
+
+	return {
+		statusCode: 200,
+		body: JSON.stringify({
+			message: "Player ratings saved",
+			gameVersion,
+			matchedCount,
+			unmatchedCurrent: unmatchedCurrent.length,
+		}),
+	};
 };
