@@ -20,32 +20,28 @@ interface NormalizedArticle {
 }
 
 const fetchESPN = async (): Promise<NormalizedArticle[]> => {
-	try {
-		const res = await fetch(ESPN_NEWS_URL);
-		const data = await res.json();
-		return (data.articles || [])
-			.map((article: any): NormalizedArticle | null => {
-				// The URL is the row key, so an article without one can't be
-				// stored (and the card would have nothing to link to anyway).
-				const url = article.links?.web?.href;
-				const id = article.dataSourceIdentifier || url;
-				if (!url || !article.headline || !article.published) return null;
-				return {
-					id,
-					source: "ESPN",
-					headline: article.headline,
-					url,
-					author: article.byline || "ESPN Staff",
-					publishedAt: article.published,
-					thumbnailUrl: article.images?.[0]?.url,
-					summary: article.description,
-				};
-			})
-			.filter((a: NormalizedArticle | null): a is NormalizedArticle => a !== null);
-	} catch (e) {
-		console.error("ESPN Fetch Error", e);
-		return [];
-	}
+	const res = await fetch(ESPN_NEWS_URL);
+	if (!res.ok) throw new Error(`ESPN responded ${res.status}`);
+	const data = await res.json();
+	return (data.articles || [])
+		.map((article: any): NormalizedArticle | null => {
+			// The URL is the row key, so an article without one can't be
+			// stored (and the card would have nothing to link to anyway).
+			const url = article.links?.web?.href;
+			const id = article.dataSourceIdentifier || url;
+			if (!url || !article.headline || !article.published) return null;
+			return {
+				id,
+				source: "ESPN",
+				headline: article.headline,
+				url,
+				author: article.byline || "ESPN Staff",
+				publishedAt: article.published,
+				thumbnailUrl: article.images?.[0]?.url,
+				summary: article.description,
+			};
+		})
+		.filter((a: NormalizedArticle | null): a is NormalizedArticle => a !== null);
 };
 
 // Bluesky's NBA media presence is thin - most league/outlet accounts are
@@ -66,52 +62,42 @@ const truncate = (text: string, max: number): string => {
 	return chars.length > max ? `${chars.slice(0, max).join("")}...` : text;
 };
 
-const fetchBluesky = async (): Promise<NormalizedArticle[]> => {
-	const results = await Promise.all(
-		BLUESKY_NBA_ACCOUNTS.map(async (actor) => {
-			try {
-				const res = await fetch(
-					`https://public.api.bsky.app/xrpc/app.bsky.feed.getAuthorFeed?actor=${actor}&limit=25&filter=posts_no_replies`,
-				);
-				if (!res.ok) return [];
-				const data = await res.json();
-				return (data.feed || [])
-					.map((item: any): NormalizedArticle | null => {
-						// A repost carries the original post's createdAt, so it would
-						// sort into the wrong position in the feed.
-						if (item.reason) return null;
-
-						const post = item.post;
-						const author = post?.author;
-						const record = post?.record;
-						if (!post?.uri || !author?.handle || !record?.createdAt) return null;
-
-						const text: string = record.text || "";
-						const external = post.embed?.external;
-						// Link-only posts carry an empty text field - the embed card
-						// holds the actual headline.
-						const headline = text || external?.title || "Bluesky Post";
-						const summary = text ? external?.description : undefined;
-
-						return {
-							id: post.uri,
-							source: "Bluesky",
-							headline: truncate(headline, 100),
-							url: `https://bsky.app/profile/${author.handle}/post/${post.uri.split("/").pop()}`,
-							author: `@${author.handle}`,
-							publishedAt: record.createdAt,
-							thumbnailUrl: external?.thumb || post.embed?.images?.[0]?.thumb,
-							summary: summary ? truncate(summary, 200) : undefined,
-						};
-					})
-					.filter((a: NormalizedArticle | null): a is NormalizedArticle => a !== null);
-			} catch (e) {
-				console.error(`Bluesky Fetch Error (${actor})`, e);
-				return [];
-			}
-		}),
+const fetchBlueskyAccount = async (actor: string): Promise<NormalizedArticle[]> => {
+	const res = await fetch(
+		`https://public.api.bsky.app/xrpc/app.bsky.feed.getAuthorFeed?actor=${actor}&limit=25&filter=posts_no_replies`,
 	);
-	return results.flat();
+	if (!res.ok) throw new Error(`Bluesky ${actor} responded ${res.status}`);
+	const data = await res.json();
+	return (data.feed || [])
+		.map((item: any): NormalizedArticle | null => {
+			// A repost carries the original post's createdAt, so it would
+			// sort into the wrong position in the feed.
+			if (item.reason) return null;
+
+			const post = item.post;
+			const author = post?.author;
+			const record = post?.record;
+			if (!post?.uri || !author?.handle || !record?.createdAt) return null;
+
+			const text: string = record.text || "";
+			const external = post.embed?.external;
+			// Link-only posts carry an empty text field - the embed card
+			// holds the actual headline.
+			const headline = text || external?.title || "Bluesky Post";
+			const summary = text ? external?.description : undefined;
+
+			return {
+				id: post.uri,
+				source: "Bluesky",
+				headline: truncate(headline, 100),
+				url: `https://bsky.app/profile/${author.handle}/post/${post.uri.split("/").pop()}`,
+				author: `@${author.handle}`,
+				publishedAt: record.createdAt,
+				thumbnailUrl: external?.thumb || post.embed?.images?.[0]?.thumb,
+				summary: summary ? truncate(summary, 200) : undefined,
+			};
+		})
+		.filter((a: NormalizedArticle | null): a is NormalizedArticle => a !== null);
 };
 
 interface RssFeedConfig {
@@ -168,54 +154,58 @@ const asText = (value: any): string => {
 };
 
 const fetchRss = async (feed: RssFeedConfig): Promise<NormalizedArticle[]> => {
-	try {
-		const res = await fetch(feed.url, {
-			headers: { "User-Agent": "team-builder-news-bot/1.0" },
-		});
-		if (!res.ok) {
-			throw new Error(`${feed.source} feed failed: ${res.status}`);
-		}
-		const parsed = xmlParser.parse(await res.text());
-
-		return asArray<any>(parsed?.rss?.channel?.item)
-			.map((item): NormalizedArticle | null => {
-				const url = asText(item.link);
-				const headline = asText(item.title);
-				if (!url || !headline) return null;
-
-				// CBS publishes non-NBA stories to its NBA feed; the section path
-				// in the link is the only reliable discriminator.
-				if (feed.linkMustInclude && !url.includes(feed.linkMustInclude)) {
-					return null;
-				}
-
-				const published = new Date(asText(item.pubDate)).getTime();
-				if (Number.isNaN(published)) return null;
-
-				const enclosure = item.enclosure;
-				const thumbnailUrl = String(enclosure?.["@_type"] || "").startsWith("image/")
-					? enclosure["@_url"]
-					: undefined;
-
-				const summary = stripHtml(asText(item.description));
-
-				return {
-					id: asText(item.guid) || url,
-					source: feed.source,
-					headline: truncate(headline, 120),
-					url,
-					author: asText(item["dc:creator"]) || feed.defaultAuthor,
-					publishedAt: new Date(published).toISOString(),
-					thumbnailUrl,
-					summary: summary ? truncate(summary, 200) : undefined,
-				};
-			})
-			.filter((a): a is NormalizedArticle => a !== null);
-	} catch (e) {
-		console.error(`${feed.source} Fetch Error`, e);
-		return [];
+	const res = await fetch(feed.url, {
+		headers: { "User-Agent": "team-builder-news-bot/1.0" },
+	});
+	if (!res.ok) {
+		throw new Error(`${feed.source} feed failed: ${res.status}`);
 	}
+	const parsed = xmlParser.parse(await res.text());
+
+	return asArray<any>(parsed?.rss?.channel?.item)
+		.map((item): NormalizedArticle | null => {
+			const url = asText(item.link);
+			const headline = asText(item.title);
+			if (!url || !headline) return null;
+
+			// CBS publishes non-NBA stories to its NBA feed; the section path
+			// in the link is the only reliable discriminator.
+			if (feed.linkMustInclude && !url.includes(feed.linkMustInclude)) {
+				return null;
+			}
+
+			const published = new Date(asText(item.pubDate)).getTime();
+			if (Number.isNaN(published)) return null;
+
+			const enclosure = item.enclosure;
+			const thumbnailUrl = String(enclosure?.["@_type"] || "").startsWith("image/")
+				? enclosure["@_url"]
+				: undefined;
+
+			const summary = stripHtml(asText(item.description));
+
+			return {
+				id: asText(item.guid) || url,
+				source: feed.source,
+				headline: truncate(headline, 120),
+				url,
+				author: asText(item["dc:creator"]) || feed.defaultAuthor,
+				publishedAt: new Date(published).toISOString(),
+				thumbnailUrl,
+				summary: summary ? truncate(summary, 200) : undefined,
+			};
+		})
+		.filter((a): a is NormalizedArticle => a !== null);
 };
+
+const NEWS_SOURCES: { name: string; fetch: () => Promise<NormalizedArticle[]> }[] = [
+	{ name: "ESPN", fetch: fetchESPN },
+	...BLUESKY_NBA_ACCOUNTS.map((actor) => ({
+		name: `Bluesky (${actor})`,
+		fetch: () => fetchBlueskyAccount(actor),
+	})),
+	...RSS_FEEDS.map((feed) => ({ name: feed.source, fetch: () => fetchRss(feed) })),
+];
 
 const SEVEN_DAYS_SECONDS = 7 * 24 * 60 * 60;
 
@@ -229,11 +219,20 @@ const normalizeUrl = (url: string): string =>
 export const handler: Handler = async (): Promise<any> => {
 	console.log("Fetching news from all sources...");
 
-	const allNews = await Promise.all([
-		fetchESPN(),
-		fetchBluesky(),
-		...RSS_FEEDS.map(fetchRss),
-	]);
+	// One failed source shouldn't cost the others their articles: save what
+	// arrived, then fail the run below so the error alarm counts it.
+	const settled = await Promise.allSettled(NEWS_SOURCES.map((source) => source.fetch()));
+	const allNews: NormalizedArticle[][] = [];
+	const failedSources: string[] = [];
+	settled.forEach((result, i) => {
+		if (result.status === "fulfilled") {
+			allNews.push(result.value);
+			return;
+		}
+		const { name } = NEWS_SOURCES[i];
+		failedSources.push(name);
+		console.error(`${name} Fetch Error`, result.reason);
+	});
 
 	// Feed endpoints return a fixed page count regardless of recency, so an
 	// account that goes dormant would otherwise keep re-publishing years-old
@@ -275,18 +274,30 @@ export const handler: Handler = async (): Promise<any> => {
 	}));
 
 	let successCount = 0;
+	// Unprocessed items aren't retried: rows are keyed by URL, so the next run
+	// rewrites them.
+	let failedWrites = 0;
+	const totalWrites = Math.ceil(items.length / 25);
 	for (let i = 0; i < items.length; i += 25) {
 		const chunk = items.slice(i, i + 25);
 		try {
-			await docClient.send(
+			const { UnprocessedItems } = await docClient.send(
 				new BatchWriteCommand({
 					RequestItems: {
 						[MAIN_TABLE_NAME]: chunk.map((Item) => ({ PutRequest: { Item } })),
 					},
 				}),
 			);
-			successCount += chunk.length;
+			const unprocessed = UnprocessedItems?.[MAIN_TABLE_NAME]?.length ?? 0;
+			successCount += chunk.length - unprocessed;
+			if (unprocessed) {
+				failedWrites++;
+				console.error(
+					`DynamoDB BatchWrite left ${unprocessed} of ${chunk.length} items unprocessed`,
+				);
+			}
 		} catch (e) {
+			failedWrites++;
 			console.error("DynamoDB BatchWrite Error", e);
 		}
 	}
@@ -299,6 +310,14 @@ export const handler: Handler = async (): Promise<any> => {
 		`Saved ${successCount}/${items.length} articles to ${MAIN_TABLE_NAME}`,
 		JSON.stringify(countsBySource),
 	);
+
+	if (failedSources.length || failedWrites) {
+		const problems = [
+			failedSources.length ? `failed sources ${failedSources.join(", ")}` : "",
+			failedWrites ? `${failedWrites} of ${totalWrites} writes failed` : "",
+		].filter(Boolean);
+		throw new Error(`News run incomplete: ${problems.join("; ")}`);
+	}
 
 	return {
 		statusCode: 200,

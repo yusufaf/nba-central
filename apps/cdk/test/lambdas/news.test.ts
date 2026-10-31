@@ -129,6 +129,59 @@ describe("fetchNewsCron", () => {
 		expect(items).toHaveLength(1);
 		expect(items[0].id).toBe("kept");
 	});
+
+	// Any failure has to reject so the error alarm sees it, but only after the
+	// sources that did answer have been saved.
+	const failWhere = (matches: (url: string) => boolean, response: Record<string, any>) => {
+		const ok = fetchMock.getMockImplementation()!;
+		fetchMock.mockImplementation(async (url: string) =>
+			matches(url) ? response : ok(url),
+		);
+	};
+
+	it("saves the other sources, then rejects naming the source that failed", async () => {
+		stubFeeds([espnArticle()]);
+		failWhere((url) => url.includes("realgm"), { ok: false, status: 503 });
+
+		await expect(fetchNewsCron({}, {} as any, {} as any)).rejects.toThrow(/RealGM/);
+		expect(writtenItems()).toHaveLength(1);
+	});
+
+	it("rejects when ESPN answers non-ok", async () => {
+		stubFeeds([]);
+		failWhere((url) => url === process.env.ESPN_NEWS_URL, {
+			ok: false,
+			status: 500,
+			json: async () => ({}),
+		});
+
+		await expect(fetchNewsCron({}, {} as any, {} as any)).rejects.toThrow(/ESPN/);
+	});
+
+	it("rejects when a Bluesky account answers non-ok", async () => {
+		stubFeeds([]);
+		failWhere((url) => url.includes("bsky.app"), { ok: false, status: 429 });
+
+		await expect(fetchNewsCron({}, {} as any, {} as any)).rejects.toThrow(/Bluesky/);
+	});
+
+	it("rejects when a DynamoDB batch write fails", async () => {
+		stubFeeds([espnArticle()]);
+		send.mockRejectedValue(new Error("throttled"));
+
+		await expect(fetchNewsCron({}, {} as any, {} as any)).rejects.toThrow(
+			/1 of 1 writes failed/,
+		);
+	});
+
+	it("rejects when DynamoDB leaves items unprocessed", async () => {
+		stubFeeds([espnArticle()]);
+		send.mockResolvedValue({ UnprocessedItems: { "main-table": [{}] } });
+
+		await expect(fetchNewsCron({}, {} as any, {} as any)).rejects.toThrow(
+			/1 of 1 writes failed/,
+		);
+	});
 });
 
 describe("getNews", () => {
