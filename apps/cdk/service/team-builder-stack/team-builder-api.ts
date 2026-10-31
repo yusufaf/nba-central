@@ -39,6 +39,7 @@ import fetchNewsCron from "../lambdas/fetchNewsCron";
 import publishCapFive from "../lambdas/publishCapFive";
 import { PUBLIC_ROUTES, PRIVATE_ROUTES } from "./team-builder-api-routes";
 import { mainLambdaPolicyStatements } from "./main-lambda-policy";
+import { throttleDefaultStage } from "./api-throttle";
 
 type CreateLambdaProxyIntegrationProps = {
 	lambda: LambdaFunction;
@@ -130,6 +131,7 @@ export class TeamBuilderAPI extends Construct {
 				authorizerError: "$context.authorizer.error",
 			}),
 		};
+		throttleDefaultStage(api);
 
 		const apiGatewayLogWriterRole = new Role(this, "ApiGWLogWriterRole", {
 			assumedBy: new ServicePrincipal("apigateway.amazonaws.com"),
