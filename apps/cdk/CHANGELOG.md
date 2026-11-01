@@ -1,5 +1,44 @@
 # Changelog
 
+## [0.3.0](https://github.com/yusufaf/nba-central/compare/cdk-v0.2.0...cdk-v0.3.0) (2026-11-01)
+
+
+### Features
+
+* **cdk:** add Daily Era puzzle and guess API ([#173](https://github.com/yusufaf/nba-central/issues/173)) ([1cbf20b](https://github.com/yusufaf/nba-central/commit/1cbf20bfa4922f4f690294a542e4490b12c4133a))
+* **cdk:** add each player's current team to getPlayers ([857d383](https://github.com/yusufaf/nba-central/commit/857d383d61a8ba71b72ee938d9e8bedfb679dacf))
+* **cdk:** add refresh-current-logos script ([f0bda2d](https://github.com/yusufaf/nba-central/commit/f0bda2de41c740a2c9b9374ab0fa2e0ce459c16a))
+* **cdk:** add refresh-daily-era puzzle image pipeline ([#174](https://github.com/yusufaf/nba-central/issues/174)) ([50164e3](https://github.com/yusufaf/nba-central/commit/50164e34737b7a24c50b7ec5ae914cf1088297e7))
+* **cdk:** add the latest draft class to players.json ([03700e3](https://github.com/yusufaf/nba-central/commit/03700e30315d10e5013ca74e64ae60c444007c3d)), closes [#169](https://github.com/yusufaf/nba-central/issues/169)
+* **cdk:** cache ESPN injuries in live/injuries.json every 15 minutes ([#261](https://github.com/yusufaf/nba-central/issues/261)) ([2593652](https://github.com/yusufaf/nba-central/commit/2593652c8d5f5b9108c67858f0c97c877d90dded))
+* **cdk:** cache ESPN standings, schedule and headshots for the web ([#182](https://github.com/yusufaf/nba-central/issues/182)) ([d4fa7d3](https://github.com/yusufaf/nba-central/commit/d4fa7d3f3c9989b977dec4f8f21f026e244a9c2f))
+* **cdk:** email on scheduled Lambda failures and keep failed events ([5d48735](https://github.com/yusufaf/nba-central/commit/5d4873517ee41a3ff17992e4aadb5328b3061722))
+* **cdk:** keep Lambda logs for 30 days ([7b22b78](https://github.com/yusufaf/nba-central/commit/7b22b780dfc9e26431b01871e05238764773c95f))
+* **cdk:** look up players by id in getPlayers ([d456939](https://github.com/yusufaf/nba-central/commit/d456939b9651279e98f51a2cdc2bc0c26582da1f))
+* **cdk:** proxy ESPN scoreboards and box scores through a cached /api/scores route ([#263](https://github.com/yusufaf/nba-central/issues/263)) ([fea6f71](https://github.com/yusufaf/nba-central/commit/fea6f719998d0eff0643aa591ad736914273bf42))
+* **cdk:** publish and serve the Cap Five daily puzzle ([5d701c3](https://github.com/yusufaf/nba-central/commit/5d701c35b94c6d6aa6367ab14993d8ecf464fc6d)), closes [#183](https://github.com/yusufaf/nba-central/issues/183)
+* **cdk:** publish every finished season's team rosters for real-team starts ([7d0626c](https://github.com/yusufaf/nba-central/commit/7d0626c81bd5e39b400d946478cae5c8926bedbc))
+* **cdk:** serve /cap-five from cap-five.html ([f371e78](https://github.com/yusufaf/nba-central/commit/f371e786fced5ad064bf9dc0d954562df4bb0aa0)), closes [#249](https://github.com/yusufaf/nba-central/issues/249)
+* **cdk:** serve /daily's link preview from CloudFront ([a58b893](https://github.com/yusufaf/nba-central/commit/a58b893d70c273883e00075e301b29add8aa3ba7))
+* **cdk:** serve player stats only from the snapshot ([d909e3a](https://github.com/yusufaf/nba-central/commit/d909e3a356355327b44f37753d5feaf524e6cad6)), closes [#180](https://github.com/yusufaf/nba-central/issues/180)
+* **cdk:** snapshot player careers on a schedule ([411e601](https://github.com/yusufaf/nba-central/commit/411e601dfc31b476ef2d0d19b8153355371eb7bd)), closes [#180](https://github.com/yusufaf/nba-central/issues/180)
+* **cdk:** throttle each HTTP API route ([3bfc8ce](https://github.com/yusufaf/nba-central/commit/3bfc8ce905500fa2fb929f6c8f25ee2e061551b2))
+* **cdk:** write the current season's team rosters weekly ([6b8e80c](https://github.com/yusufaf/nba-central/commit/6b8e80cfed27337e1f1910e68d1c1128fe092115))
+* per-PR previews on GitHub Pages ([#224](https://github.com/yusufaf/nba-central/issues/224)) ([38588a1](https://github.com/yusufaf/nba-central/commit/38588a18feebc40f49b562cada89fadfa4f29e24))
+* share/search metadata, robots.txt and sitemap, license, README ([#220](https://github.com/yusufaf/nba-central/issues/220)) ([dc97710](https://github.com/yusufaf/nba-central/commit/dc9771032ac2ed5f09ebe0ae62d82aa912492113))
+
+
+### Bug Fixes
+
+* **cdk:** fail fetchNewsCron when a source or write fails ([56a889d](https://github.com/yusufaf/nba-central/commit/56a889de4be33debdfe78a2a9edd7c3da9c7aaa9))
+* **cdk:** fail setPlayerRatingsData when the refresh fails ([6bd5cad](https://github.com/yusufaf/nba-central/commit/6bd5cad33df376acee0bc145d080a019a032b395))
+* **cdk:** keep last season's players active until November ([a7cc286](https://github.com/yusufaf/nba-central/commit/a7cc2863ba3b0d57f77a4d596aedef7c63bf8ac6)), closes [#193](https://github.com/yusufaf/nba-central/issues/193)
+* **cdk:** keep only real positions from 2K's ratings ([13b99c7](https://github.com/yusufaf/nba-central/commit/13b99c777448fb5b87f04d8ea7b535038415420e))
+* **cdk:** mark players active by NBA season, not calendar year ([0354223](https://github.com/yusufaf/nba-central/commit/03542239f569acb8d903873885f099a7c4d8bf11)), closes [#163](https://github.com/yusufaf/nba-central/issues/163)
+* **cdk:** refuse to overwrite players.json with a partial scrape ([4193788](https://github.com/yusufaf/nba-central/commit/41937886e59d25e3ec3c73ddf08f59cf22150758)), closes [#168](https://github.com/yusufaf/nba-central/issues/168)
+* **cdk:** remove the unused getTeamLogos Lambda and route ([5836743](https://github.com/yusufaf/nba-central/commit/58367436db3eb46ba189a8c43139aa0808332bb2))
+* **cdk:** serve stale player stats when Basketball-Reference fails ([caf2452](https://github.com/yusufaf/nba-central/commit/caf2452b0d02503c06fcf5faebb3accd26be224f)), closes [#166](https://github.com/yusufaf/nba-central/issues/166)
+
 ## [0.2.0](https://github.com/yusufaf/nba-central/compare/cdk-v0.1.1...cdk-v0.2.0) (2026-10-08)
 
 
