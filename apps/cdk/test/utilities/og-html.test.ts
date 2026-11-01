@@ -58,11 +58,12 @@ describe("buildOgTags", () => {
 		expect(tags).toContain('<meta property="og:image:height" content="630">');
 	});
 
-	it("falls back to the hero poster when there is no card", () => {
+	it("falls back to the rendered home preview with explicit dimensions when there is no card", () => {
 		const tags = buildOgTags({ ...team, cardUrl: undefined }, "https://nba.example");
-		expect(tags).toContain('<meta property="og:image" content="https://nba.example/hero/hero-poster.jpg">');
-		expect(tags).not.toContain("og:image:width");
-		expect(tags).not.toContain("og:image:height");
+		expect(tags).toContain('<meta property="og:image" content="https://nba.example/og-image-home.jpg">');
+		expect(tags).toContain('<meta property="og:image:width" content="1200">');
+		expect(tags).toContain('<meta property="og:image:height" content="630">');
+		expect(tags).toContain('<meta property="og:image:alt" content="nba-central home preview">');
 	});
 });
 
