@@ -2,6 +2,7 @@ import { Handler } from "aws-lambda";
 import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
 import { BatchWriteCommand, DynamoDBDocumentClient } from "@aws-sdk/lib-dynamodb";
 import { XMLParser } from "fast-xml-parser";
+import { FETCH_ERROR } from "./logText";
 
 const { ESPN_NEWS_URL = "", MAIN_TABLE_NAME = "" } = process.env;
 
@@ -233,7 +234,7 @@ export const handler: Handler = async (): Promise<any> => {
 		}
 		const { name } = NEWS_SOURCES[i];
 		failedSources.push(name);
-		console.error(`${name} Fetch Error`, result.reason);
+		console.error(`${name} ${FETCH_ERROR}`, result.reason);
 	});
 
 	// Feed endpoints return a fixed page count regardless of recency, so an

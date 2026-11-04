@@ -4,6 +4,7 @@ import { TeamBuilderLambda } from "../../constructs/TeamBuilderLambda";
 import { ESPN_NEWS_URL } from "../../../constants";
 import { Rule, Schedule } from "aws-cdk-lib/aws-events";
 import { LambdaFunction } from "aws-cdk-lib/aws-events-targets";
+import { FETCH_ERROR } from "./src/logText";
 
 export default ({ props, construct }: LambdaProps) => {
 	const functionName = "fetchNewsCron";
@@ -31,7 +32,7 @@ export default ({ props, construct }: LambdaProps) => {
 			// soft-failure metric instead. An isolated timeout still recovers
 			// on the next 15-minute run, so three failed runs within two
 			// hours is a broken cron.
-			monitor: { failuresToAlarm: 3, softFailurePattern: '"Fetch Error"' },
+			monitor: { failuresToAlarm: 3, softFailurePattern: `"${FETCH_ERROR}"` },
 			functionProps: { retryAttempts: 0 },
 		},
 	);
