@@ -138,7 +138,7 @@ describe("fetchNewsCron", () => {
 			matches(url) ? response : ok(url),
 		);
 	};
-	const failedSourcesOf = (result: any) => JSON.parse(result.body).failedSources;
+	const failedSourcesOf = (result: { body: string }) => JSON.parse(result.body).failedSources;
 
 	it("saves the other sources and succeeds when one source fails", async () => {
 		stubFeeds([espnArticle()]);
