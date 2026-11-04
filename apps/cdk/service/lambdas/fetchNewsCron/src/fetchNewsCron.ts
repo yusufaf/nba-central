@@ -219,8 +219,10 @@ const normalizeUrl = (url: string): string =>
 export const handler: Handler = async (): Promise<any> => {
 	console.log("Fetching news from all sources...");
 
-	// One failed source shouldn't cost the others their articles: save what
-	// arrived, then fail the run below so the error alarm counts it.
+	// A source that errors or answers non-ok shouldn't cost the others their
+	// articles, or fail the run: one that stays dead would hold the error alarm
+	// in ALARM and hide a later outage (#278). It's logged as
+	// `<source> Fetch Error` and returned in `failedSources`.
 	const settled = await Promise.allSettled(NEWS_SOURCES.map((source) => source.fetch()));
 	const allNews: NormalizedArticle[][] = [];
 	const failedSources: string[] = [];
@@ -311,7 +313,8 @@ export const handler: Handler = async (): Promise<any> => {
 		JSON.stringify(countsBySource),
 	);
 
-	if (failedSources.length || failedWrites) {
+	const everySourceFailed = failedSources.length === NEWS_SOURCES.length;
+	if (everySourceFailed || failedWrites) {
 		const problems = [
 			failedSources.length ? `failed sources ${failedSources.join(", ")}` : "",
 			failedWrites ? `${failedWrites} of ${totalWrites} writes failed` : "",
@@ -321,6 +324,10 @@ export const handler: Handler = async (): Promise<any> => {
 
 	return {
 		statusCode: 200,
-		body: JSON.stringify({ message: "News fetched successfully", count: successCount }),
+		body: JSON.stringify({
+			message: "News fetched successfully",
+			count: successCount,
+			failedSources,
+		}),
 	};
 };

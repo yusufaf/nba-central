@@ -130,24 +130,32 @@ describe("fetchNewsCron", () => {
 		expect(items[0].id).toBe("kept");
 	});
 
-	// Any failure has to reject so the error alarm sees it, but only after the
-	// sources that did answer have been saved.
+	// A run fails only when it fetched nothing or lost a write. A partial outage
+	// is logged and the run succeeds, so one dead source can't hold the alarm.
 	const failWhere = (matches: (url: string) => boolean, response: Record<string, any>) => {
 		const ok = fetchMock.getMockImplementation()!;
 		fetchMock.mockImplementation(async (url: string) =>
 			matches(url) ? response : ok(url),
 		);
 	};
+	const failedSourcesOf = (result: any) => JSON.parse(result.body).failedSources;
 
-	it("saves the other sources, then rejects naming the source that failed", async () => {
+	it("saves the other sources and succeeds when one source fails", async () => {
 		stubFeeds([espnArticle()]);
 		failWhere((url) => url.includes("realgm"), { ok: false, status: 503 });
+		const errors = vi.spyOn(console, "error").mockImplementation(() => {});
 
-		await expect(fetchNewsCron({}, {} as any, {} as any)).rejects.toThrow(/RealGM/);
+		const result = await fetchNewsCron({}, {} as any, {} as any);
+
+		expect(result.statusCode).toBe(200);
+		expect(failedSourcesOf(result)).toEqual(["RealGM"]);
 		expect(writtenItems()).toHaveLength(1);
+		// The soft-failure metric filter in fetchNewsCron/index.ts matches this text.
+		expect(errors).toHaveBeenCalledWith("RealGM Fetch Error", expect.any(Error));
+		errors.mockRestore();
 	});
 
-	it("rejects when ESPN answers non-ok", async () => {
+	it("reports ESPN as failed when it answers non-ok", async () => {
 		stubFeeds([]);
 		failWhere((url) => url === process.env.ESPN_NEWS_URL, {
 			ok: false,
@@ -155,14 +163,43 @@ describe("fetchNewsCron", () => {
 			json: async () => ({}),
 		});
 
-		await expect(fetchNewsCron({}, {} as any, {} as any)).rejects.toThrow(/ESPN/);
+		const result = await fetchNewsCron({}, {} as any, {} as any);
+
+		expect(result.statusCode).toBe(200);
+		expect(failedSourcesOf(result)).toEqual(["ESPN"]);
 	});
 
-	it("rejects when a Bluesky account answers non-ok", async () => {
+	it("reports each Bluesky account that answers non-ok", async () => {
 		stubFeeds([]);
 		failWhere((url) => url.includes("bsky.app"), { ok: false, status: 429 });
 
-		await expect(fetchNewsCron({}, {} as any, {} as any)).rejects.toThrow(/Bluesky/);
+		const result = await fetchNewsCron({}, {} as any, {} as any);
+
+		expect(result.statusCode).toBe(200);
+		expect(failedSourcesOf(result)).toEqual([
+			"Bluesky (insidenbanews.bsky.social)",
+			"Bluesky (hoopsrumors.bsky.social)",
+			"Bluesky (nba.com)",
+		]);
+	});
+
+	it("rejects naming every source when all of them fail", async () => {
+		fetchMock.mockRejectedValue(new TypeError("fetch failed"));
+
+		await expect(fetchNewsCron({}, {} as any, {} as any)).rejects.toThrow(
+			/News run incomplete: failed sources ESPN, .*RealGM/,
+		);
+		expect(send).not.toHaveBeenCalled();
+	});
+
+	it("rejects on a failed write even when a source also failed", async () => {
+		stubFeeds([espnArticle()]);
+		failWhere((url) => url.includes("realgm"), { ok: false, status: 503 });
+		send.mockRejectedValue(new Error("throttled"));
+
+		await expect(fetchNewsCron({}, {} as any, {} as any)).rejects.toThrow(
+			/failed sources RealGM; 1 of 1 writes failed/,
+		);
 	});
 
 	it("rejects when a DynamoDB batch write fails", async () => {
