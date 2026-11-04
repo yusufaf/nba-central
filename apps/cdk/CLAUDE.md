@@ -162,12 +162,11 @@ in ALARM. A source that hangs past the 30 s Lambda timeout still fails the
 run (the fetches have no timeout of their own). `monitor.softFailurePattern`
 counts those lines in the `TeamBuilder/SoftFailures` metric named after the
 function (one custom metric per stage, so 2 of the free tier's 10; no
-alarm), so check
-that metric or search the logs for `Fetch Error` to find a source that stays
-dead. There is no OK email, and CloudWatch emails only on a state change, so
-an alarm that stays in ALARM sends nothing new until it clears. `setPlayerStatsData` and
-`setSeasonContextData` alarm only when a run throws or times out (DynamoDB or
-S3 errors, crashes): a BBRef block or a streak of failed careers pauses the
+alarm), so check that metric or search the logs for `Fetch Error` to find a
+source that stays dead. There is no OK email, and CloudWatch emails only on a
+state change, so an alarm that stays in ALARM sends nothing new until it
+clears. `setPlayerStatsData` and `setSeasonContextData` alarm only when a run
+throws or times out (DynamoDB or S3 errors, crashes): a BBRef block or a streak of failed careers pauses the
 stats scraper and the run returns normally, and an ESPN dataset that fails
 keeps the previous file, so those show only in the logs (`stoppedBy` in the
 stats run summary, `Kept the previous …` lines). Six alarms in production and
