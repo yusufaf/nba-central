@@ -32,7 +32,7 @@ vi.mock("../../service/constructs/TeamBuilderLambda", async (importOriginal) => 
 });
 
 type MonitorConfig = {
-	monitor?: { failuresToAlarm?: number };
+	monitor?: { failuresToAlarm?: number; softFailurePattern?: string };
 	functionProps?: { retryAttempts?: number };
 };
 
@@ -65,9 +65,11 @@ describe("scheduled Lambda monitoring", () => {
 	});
 
 	// An isolated timeout or flaky feed recovers on the next 15-minute run.
-	it("fetchNewsCron alarms only after three failed runs and doesn't retry", () => {
+	// The pattern has to match the handler's `<source> Fetch Error` line, which
+	// news.test.ts pins on the handler side.
+	it("fetchNewsCron alarms only after three failed runs, counts failed sources and doesn't retry", () => {
 		const config = configOf(fetchNewsCron);
-		expect(config.monitor).toEqual({ failuresToAlarm: 3 });
+		expect(config.monitor).toEqual({ failuresToAlarm: 3, softFailurePattern: '"Fetch Error"' });
 		expect(config.functionProps?.retryAttempts).toBe(0);
 	});
 

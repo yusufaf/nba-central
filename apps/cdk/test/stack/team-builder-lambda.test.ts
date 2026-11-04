@@ -74,6 +74,27 @@ describe("TeamBuilderLambda", () => {
 		);
 	});
 
+	it("counts each log line matching softFailurePattern, without an alarm of its own", () => {
+		const template = build({ monitor: { softFailurePattern: '"Fetch Error"' } });
+		template.resourceCountIs("AWS::Logs::MetricFilter", 1);
+		template.hasResourceProperties("AWS::Logs::MetricFilter", {
+			FilterPattern: '"Fetch Error"',
+			LogGroupName: { Ref: Match.stringLikeRegexp("logs") },
+			MetricTransformations: [
+				{
+					MetricNamespace: "TeamBuilder/SoftFailures",
+					MetricName: "team-builder-development-fetchNewsCron",
+					MetricValue: "1",
+				},
+			],
+		});
+		template.resourceCountIs("AWS::CloudWatch::Alarm", 1);
+	});
+
+	it("adds no metric filter without softFailurePattern", () => {
+		build({ monitor: {} }).resourceCountIs("AWS::Logs::MetricFilter", 0);
+	});
+
 	it("sends events that fail every retry to the failed-events queue, keeping retryAttempts", () => {
 		const template = build({ monitor: {}, functionProps: { retryAttempts: 0 } });
 		template.resourceCountIs("AWS::Lambda::EventInvokeConfig", 1);

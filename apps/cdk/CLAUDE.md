@@ -154,12 +154,17 @@ and an event that fails every async retry lands in `<prefix>-failed-events`
 pending until its confirmation link is clicked, once per stage after the
 first deploy; until then alarms go nowhere. An alarm fires on one failing
 5-minute period in the last 24 (two hours), or three for `fetchNewsCron`,
-which fails a run when any source or write fails and whose single timeouts
-recover on the next run. There is no OK email, and CloudWatch emails only on
-a state change: while an alarm sits in ALARM, say `fetchNewsCron`'s because
-one Bluesky handle keeps failing, a later full outage sends nothing new until
-it clears, while each failed run still adds a message to the failed-events
-queue (96 a day, bounded by its 14-day retention). `setPlayerStatsData` and
+whose single timeouts recover on the next run. `fetchNewsCron` fails a run
+only when every source fails or a DynamoDB write fails. One source that fails
+with an error or a non-ok response (a renamed Bluesky handle, a retired feed)
+logs `<source> Fetch Error` and the run succeeds, so it can't hold the alarm
+in ALARM. A source that hangs past the 30 s Lambda timeout still fails the
+run (the fetches have no timeout of their own). `monitor.softFailurePattern`
+counts those lines in the `TeamBuilder/SoftFailures` metric named after the
+function (free: a custom metric, 2 of the free tier's 10; no alarm), so check
+that metric or search the logs for `Fetch Error` to find a source that stays
+dead. There is no OK email, and CloudWatch emails only on a state change, so
+an alarm that stays in ALARM sends nothing new until it clears. `setPlayerStatsData` and
 `setSeasonContextData` alarm only when a run throws or times out (DynamoDB or
 S3 errors, crashes): a BBRef block or a streak of failed careers pauses the
 stats scraper and the run returns normally, and an ESPN dataset that fails
