@@ -161,7 +161,8 @@ logs `<source> Fetch Error` and the run succeeds, so it can't hold the alarm
 in ALARM. A source that hangs past the 30 s Lambda timeout still fails the
 run (the fetches have no timeout of their own). `monitor.softFailurePattern`
 counts those lines in the `TeamBuilder/SoftFailures` metric named after the
-function (free: a custom metric, 2 of the free tier's 10; no alarm), so check
+function (one custom metric per stage, so 2 of the free tier's 10; no
+alarm), so check
 that metric or search the logs for `Fetch Error` to find a source that stays
 dead. There is no OK email, and CloudWatch emails only on a state change, so
 an alarm that stays in ALARM sends nothing new until it clears. `setPlayerStatsData` and

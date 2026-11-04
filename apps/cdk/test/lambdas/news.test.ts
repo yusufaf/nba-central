@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi, beforeEach, onTestFinished } from "vitest";
 
 const send = vi.fn();
 
@@ -144,15 +144,15 @@ describe("fetchNewsCron", () => {
 		stubFeeds([espnArticle()]);
 		failWhere((url) => url.includes("realgm"), { ok: false, status: 503 });
 		const errors = vi.spyOn(console, "error").mockImplementation(() => {});
+		onTestFinished(() => errors.mockRestore());
 
 		const result = await fetchNewsCron({}, {} as any, {} as any);
 
 		expect(result.statusCode).toBe(200);
 		expect(failedSourcesOf(result)).toEqual(["RealGM"]);
 		expect(writtenItems()).toHaveLength(1);
-		// The soft-failure metric filter in fetchNewsCron/index.ts matches this text.
+		// The soft-failure metric filter counts lines containing FETCH_ERROR.
 		expect(errors).toHaveBeenCalledWith("RealGM Fetch Error", expect.any(Error));
-		errors.mockRestore();
 	});
 
 	it("reports ESPN as failed when it answers non-ok", async () => {
