@@ -12,7 +12,7 @@ import {
 	NodejsFunctionProps,
 } from "aws-cdk-lib/aws-lambda-nodejs";
 import { SqsDestination } from "aws-cdk-lib/aws-lambda-destinations";
-import { LogGroup, RetentionDays } from "aws-cdk-lib/aws-logs";
+import { FilterPattern, LogGroup, RetentionDays } from "aws-cdk-lib/aws-logs";
 import { Construct } from "constructs";
 import path from "path";
 import { ExtendedStackProps, LambdaAlerts } from "../../models/stack";
@@ -27,6 +27,8 @@ export const ERROR_ALARM_PERIOD = Duration.minutes(5);
 // minutes at worst: fetchNewsCron, or setSeasonContextData's injuries rule
 // if it keeps crashing) holds one alarm instead of re-alarming per run.
 export const ERROR_ALARM_EVALUATION_PERIODS = 24;
+
+export const SOFT_FAILURE_NAMESPACE = "TeamBuilder/SoftFailures";
 
 export type LambdaSchedule = { rate: Duration } | { cron: CronOptions };
 
@@ -67,8 +69,12 @@ export interface TeamBuilderLambdaConfig {
 	 * five-minute periods, and sends an event that fails every retry to
 	 * `stackProps.alerts.failedEvents`. API Lambdas are invoked synchronously,
 	 * so neither applies to them.
+	 *
+	 * `softFailurePattern` is a CloudWatch Logs filter pattern for a failure
+	 * the handler logs and survives. Each matching event adds 1 to
+	 * `SOFT_FAILURE_NAMESPACE` / `<function name>`: a metric only, no alarm.
 	 */
-	monitor?: { failuresToAlarm?: number };
+	monitor?: { failuresToAlarm?: number; softFailurePattern?: string };
 }
 
 export class TeamBuilderLambda extends Construct {
@@ -176,6 +182,15 @@ export class TeamBuilderLambda extends Construct {
 				config.stackProps.alerts!,
 				config.monitor.failuresToAlarm ?? 1,
 			);
+		}
+
+		if (config.monitor?.softFailurePattern) {
+			logGroup.addMetricFilter(`${functionName}-soft-failures`, {
+				filterPattern: FilterPattern.literal(config.monitor.softFailurePattern),
+				metricNamespace: SOFT_FAILURE_NAMESPACE,
+				metricName: functionName,
+				metricValue: "1",
+			});
 		}
 
 		// Add CloudWatch Event Rule if schedule is specified

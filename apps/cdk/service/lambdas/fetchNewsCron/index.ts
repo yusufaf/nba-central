@@ -25,10 +25,13 @@ export default ({ props, construct }: LambdaProps) => {
 				ESPN_NEWS_URL,
 				MAIN_TABLE_NAME: mainTableName,
 			},
-			// An isolated timeout or flaky feed recovers on the next
-			// 15-minute run, so neither a retry nor one failure is worth an
-			// email; three failed runs within two hours is a broken cron.
-			monitor: { failuresToAlarm: 3 },
+			// Only a run that fetches nothing or loses a write throws. One
+			// source that errors or answers non-ok is logged as
+			// `<source> Fetch Error` (the handler's line) and counted by the
+			// soft-failure metric instead. An isolated timeout still recovers
+			// on the next 15-minute run, so three failed runs within two
+			// hours is a broken cron.
+			monitor: { failuresToAlarm: 3, softFailurePattern: '"Fetch Error"' },
 			functionProps: { retryAttempts: 0 },
 		},
 	);
