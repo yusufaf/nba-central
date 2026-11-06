@@ -16,6 +16,12 @@ const PRESETS: Record<CameraPreset, { position: [number, number, number]; target
     creator: { position: [0, 1.25, 3.6], target: [0, 1.05, 0] },
 };
 
+// What the framed presets must keep in view, in metres around the target.
+const FRAMED: Partial<Record<CameraPreset, { halfWidth: number; halfHeight: number }>> = {
+    team: { halfWidth: 4.9, halfHeight: 1.3 },
+    creator: { halfWidth: 0.75, halfHeight: 1.1 },
+};
+
 export interface FrameStats {
     calls: number;
     triangles: number;
@@ -46,6 +52,7 @@ export class SpikeScene {
     private frameRequested = false;
     private container: HTMLElement;
     private resizeObserver: ResizeObserver;
+    private preset: CameraPreset = 'team';
     firstFrameAt: number | null = null;
     onRender: ((stats: FrameStats) => void) | null = null;
 
@@ -76,13 +83,28 @@ export class SpikeScene {
         this.renderer.setSize(width, height, false);
         this.camera.aspect = width / height;
         this.camera.updateProjectionMatrix();
+        if (FRAMED[this.preset]) this.setPreset(this.preset);
         this.requestRender();
     }
 
     setPreset(preset: CameraPreset) {
+        this.preset = preset;
         const { position, target } = PRESETS[preset];
         this.camera.position.set(...position);
         this.controls.target.set(...target);
+        const portrait = this.camera.aspect < 1;
+        this.camera.fov = portrait ? 50 : 40;
+        this.camera.updateProjectionMatrix();
+        const subject = portrait && preset === 'team' ? { halfWidth: 2.7, halfHeight: 1.5 } : FRAMED[preset];
+        if (subject) {
+            // Back the camera off until the subject fits both ways, so a
+            // portrait phone still sees the whole row.
+            const vertical = Math.tan((this.camera.fov * Math.PI) / 360);
+            const horizontal = vertical * this.camera.aspect;
+            const distance = 1.08 * Math.max(subject.halfWidth / horizontal, subject.halfHeight / vertical);
+            const direction = this.camera.position.clone().sub(this.controls.target).normalize();
+            this.camera.position.copy(this.controls.target).addScaledVector(direction, distance);
+        }
         this.controls.update();
         this.requestRender();
     }
@@ -103,9 +125,18 @@ export class SpikeScene {
         disposeTree(this.people);
         this.people = new Group();
         let triangles = 0;
-        built.forEach((character, i) => {
-            const x = (i - (built.length - 1) / 2) * spacing;
-            character.root.position.set(x, 0, i % 2 === 0 ? 0 : -0.35);
+        // Portrait screens can't fit seven across without backing into the
+        // stands, so stand them in two rows there.
+        const rows = this.camera.aspect < 1 && built.length > 4 ? [built.slice(0, 4), built.slice(4)] : [built];
+        const placed = rows.flatMap((row, r) =>
+            row.map((character, i) => ({
+                character,
+                x: (i - (row.length - 1) / 2) * spacing,
+                z: rows.length > 1 ? (r === 0 ? 0.9 : -0.7) : i % 2 === 0 ? 0 : -0.35,
+            })),
+        );
+        placed.forEach(({ character, x, z }) => {
+            character.root.position.set(x, 0, z);
             this.people.add(character.root);
             const shadow = blobShadow(0.45);
             shadow.position.x = x;
