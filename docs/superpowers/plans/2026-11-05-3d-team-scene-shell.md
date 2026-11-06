@@ -8,7 +8,9 @@
 
 **Tech Stack:** three 0.187.0 (plain, no TresJS), Vue 3.5, html-to-image (already a dependency), Vitest (jsdom), Playwright.
 
-**Spec:** `docs/superpowers/specs/2026-11-05-3d-builders-design.md`. Spike to learn from (throwaway, never copy wholesale): branch `feat/3d-spike`, `apps/web/src/three/spike/` (PR #284).
+**Spec:** `docs/superpowers/specs/2026-11-05-3d-builders-design.md`.
+
+**Scope:** #286 is the first slice of the spec's Phase 1. The rest of Phase 1 is tracked elsewhere and not in this plan: people, the asset script, `THIRD_PARTY_NOTICES.md` and sampled uniform colours are in #287, and the builder's entry point is in #288. Spike to learn from (throwaway, never copy wholesale): branch `feat/3d-spike`, `apps/web/src/three/spike/` (PR #284).
 
 ## Global Constraints
 
@@ -45,6 +47,7 @@
 **Interfaces:**
 - Produces:
   - `isWebGLAvailable(): boolean` in `src/utils/webgl.ts`. Imports nothing from three; safe in the entry chunk.
+  - `SCENE_CHUNK_MARKER = 'nba-central-3d-chunk'` in `src/three/renderer/shared.ts`. `getSharedRenderer` writes it to `renderer.domElement.dataset.chunk`, so the literal survives minification and marks the 3D chunk for `check:bundle`.
   - `MAX_PIXEL_RATIO = 1.5`, `getSharedRenderer(): WebGLRenderer`, `onContextChange(listener: (lost: boolean) => void): () => void` (returns an unsubscribe), `disposeObject(root: Object3D): void` in `src/three/renderer/shared.ts`.
 
 - [ ] **Step 1: Write the failing tests**
@@ -76,13 +79,17 @@ Run: same as step 2. Expected: PASS.
 
 - [ ] **Step 6: Add the lint boundary**
 
-New flat-config block `app/three-boundary`: for `src/**/*.{ts,vue}` excluding `src/three/**`, `no-restricted-imports` with `patterns` banning `three` and `three/*` ("three.js stays inside src/three, behind a lazy import"); excluding also `src/components/scene3d/**`, banning `@/three/*` ("import the lazy scene3d component instead").
+Two flat-config blocks. In flat config a later block's `no-restricted-imports` **replaces** an earlier one for the same file, so each block lists its full pattern set and the two blocks' `files` never overlap:
+- `app/three-boundary`: `files: ['src/**/*.{ts,vue}']`, `ignores: ['src/three/**', 'src/components/scene3d/**']`, banning `three`, `three/*` and `@/three/*` ("3D code stays behind the lazy scene3d component").
+- `app/three-boundary-scene3d`: `files: ['src/components/scene3d/**']`, banning `three` and `three/*` ("go through @/three modules").
+
+Prove both bans fire: temporarily add `import 'three'` to `src/views/Home.vue` and to a scene3d file; `pnpm --filter web lint` must report one error each; then remove them.
 
 Run: `pnpm --filter web lint`. Expected: 0 errors.
 
 - [ ] **Step 7: Write `scripts/check-bundle.mjs`**
 
-Reads `dist/index.html`, collects every `<script type="module" src>` and `<link rel="modulepreload" href>`, and fails (exit 1, naming the file) if any contains `WebGLRenderer`. Then finds the `dist/assets/*.js` chunk that does contain it, gzips it with `node:zlib`, prints its size, and fails above 300 × 1024 bytes. No such chunk yet is a pass. Add `"check:bundle": "node scripts/check-bundle.mjs"`.
+Reads `dist/index.html`, collects every `<script type="module" src>` and `<link rel="modulepreload" href>`, and fails (exit 1, naming the file) if any contains the `SCENE_CHUNK_MARKER` string or `WebGLRenderer`. Then finds the `dist/assets/*.js` chunk containing the marker, gzips it with `node:zlib`, prints its size, and fails above 300 × 1024 bytes. With `--require-3d`, finding no such chunk is a failure; without it, that is a pass, which only Tasks 1 to 4 need. Add `"check:bundle": "node scripts/check-bundle.mjs"`.
 
 Run: `pnpm --filter web build && pnpm --filter web check:bundle`. Expected: passes and reports no 3D chunk.
 
@@ -109,9 +116,9 @@ Base values (from the spike): team `(0, 1.5, 9.5)` → `(0, 1.1, 0)`; courtside 
 
 - [ ] **Step 1: Write the failing tests**
 
-- `team at 16:9 keeps the spike's framing`: distance from target within 0.5 of the formula's value; `fov` 40.
-- `team in portrait widens the lens and never passes the bowl`: aspect 0.46 gives `fov` 50 and a distance at most `MAX_FRAMING_DISTANCE`.
-- `team at aspect 0.75 fits without the cap`: distance below `MAX_FRAMING_DISTANCE`.
+- `team at 16:9 uses the fit formula`: distance from target within 0.01 of `1.08 × max(4.9 / tan(hfov/2), 1.3 / tan(20°))`; `fov` 40.
+- `team in portrait widens the lens and fits the whole row`: at aspect 0.625 (the narrowest the viewport allows, see Task 4) `fov` is 50, the distance is below `MAX_FRAMING_DISTANCE`, and the visible half-width at the target, `distance × tan(hfov/2)`, is at least 2.7.
+- `narrower than the viewport allows is capped, not pushed into the stands`: aspect 0.46 gives a distance of exactly `MAX_FRAMING_DISTANCE`.
 - `fixed presets ignore aspect`: courtside at aspects 0.5 and 2 has the same position and target.
 - `every preset has a label`: `CAMERA_PRESETS.every((p) => PRESET_LABELS[p])`.
 
@@ -175,7 +182,7 @@ Run: `pnpm --filter web exec vitest run tests/three/cameraPresets.test.ts`. Expe
 - Create: `apps/web/src/components/scene3d/TeamScene3D.vue`
 - Create: `apps/web/src/components/scene3d/Scene3DUnavailable.vue`
 - Create: `apps/web/src/components/scene3d/index.ts`
-- Modify: `apps/web/src/lib/analytics.ts` (add `scene3d_preset` to `ACTION_EVENTS`)
+- Modify: `apps/web/src/lib/analytics.ts` (add `scene3d_preset` and `scene3d_view_clicked` to `ACTION_EVENTS`; `scene3d_opened` and `scene3d_failed` stay passive, since a shared `?view=3d` link opens the scene without any action)
 - Test: `apps/web/tests/components/TeamScene3D.test.ts`, `apps/web/tests/three/rasteriseCourt.test.ts`
 
 **Interfaces:**
@@ -184,17 +191,19 @@ Run: `pnpm --filter web exec vitest run tests/three/cameraPresets.test.ts`. Expe
   - `rasteriseCourt(node: HTMLElement): Promise<HTMLCanvasElement | null>`: html-to-image `toCanvas(node, { pixelRatio: 2, cacheBust: true })`, then reads one pixel with `getImageData` to prove the canvas isn't tainted. Any throw returns `null`.
   - `class TeamScene { constructor(container: HTMLElement); setArena(court: HTMLCanvasElement | null, capacity: number | null): void; setPreset(preset: CameraPreset): void; readonly renderCount: number; onRender: (() => void) | null; dispose(): void }`. `setArena` disposes the previous arena group before adding the new one. `dispose` removes the canvas from the container but keeps the shared renderer alive.
   - `TeamScene3D.vue` props: `{ court: CourtDesign | null; logoUrl?: string; drawingUrl?: string; capacity: number | null; label: string }`; emits `failed: [reason: 'context-lost']`.
+  - `Scene3DUnavailable.vue` props: `{ reason: 'load' | 'no-webgl' }`.
   - `index.ts`: `TeamScene3DAsync`, a `defineAsyncComponent` with `errorComponent: Scene3DUnavailable` and `timeout: 20000`, whose loader catches, calls `track('scene3d_failed', { reason: 'load' })`, and rethrows.
 
 `TeamScene3D.vue` behaviour:
 - An off-screen host (fixed, `-left-[200rem]`, `w-[65rem]`, `aria-hidden`) renders `CourtFloor` for `court ?? defaultCourt`. `defaultCourt` is `{ ...newCourt(''), centerLogo: 'none' }`.
-- On mount and whenever `court`, `logoUrl`, `drawingUrl` or `capacity` change: rasterise. If that returns `null` and a `logoUrl` was set, re-render without the logo and try once more. Then `scene.setArena`.
-- The viewport is `h-[min(70vh,40rem)]`, wrapping the canvas in `role="img"` with `:aria-label="label"` and `:data-render-count="renderCount"`.
+- On mount and whenever `court`, `logoUrl`, `drawingUrl` or `capacity` change: rasterise, stepping down on each `null`: all images, then without the logo, then without the drawing too. Only if all three fail does the scene get `null` (the default court). Then `scene.setArena`.
+- Every rasterise run takes a token from a counter. Before `setArena` it checks that its token is still the latest and the component isn't unmounted; otherwise it drops its canvas. So a slow run for an old court never lands over a newer one or on a disposed scene.
+- The viewport is `h-[min(70vh,40rem,160vw)]`, which keeps its aspect at 0.625 or wider so the portrait team fits, wrapping the canvas in `role="img"` with `:aria-label="label"` and `:data-render-count="renderCount"`.
 - The HUD has one `Button` per `CAMERA_PRESETS` entry, using `PRESET_LABELS`, with `aria-pressed` on the active one. A click calls `setPreset` and `track('scene3d_preset', { preset })`. Presets jump; there is no camera tween in this slice.
 - Context lost shows "3D view paused" over the canvas, emits `failed('context-lost')` and tracks `scene3d_failed { reason: 'context-lost' }`. Restore hides the message and requests a render.
 - Unmount disposes the scene and unsubscribes.
 
-`Scene3DUnavailable.vue`: a short card, "The 3D view couldn't load. Everything below is the regular team page."
+`Scene3DUnavailable.vue`: a short card. For `load`: "The 3D view couldn't load. Everything below is the regular team page." For `no-webgl`: "This browser can't show the 3D view. Everything below is the regular team page." The async component's `errorComponent` is a wrapper rendering it with `reason="load"`.
 
 - [ ] **Step 1: Write the failing tests**
 
@@ -207,6 +216,9 @@ Run: `pnpm --filter web exec vitest run tests/three/cameraPresets.test.ts`. Expe
 - `renders one button per preset and marks the active one`.
 - `clicking a preset sets it and tracks scene3d_preset`.
 - `falls back to the court without its logo when the first rasterise fails`: the first call returns `null` and the second returns a canvas; `setArena` gets the second; `CourtFloor` re-rendered without `logo-url`.
+- `falls back to the court without its drawing when the logo wasn't the problem`: the first two calls return `null` and the third returns a canvas; `CourtFloor` has neither `logo-url` nor `drawing-url`; `setArena` gets the canvas.
+- `a stale rasterise never lands`: hold the first call's promise; change `court`; resolve the second, then the first; `setArena` was called once, with the second canvas.
+- `a rasterise finishing after unmount is dropped`: unmount while the call is pending; resolve it; `setArena` is never called.
 - `uses the default court when court is null`: the off-screen `CourtFloor` receives `centerLogo: 'none'`.
 - `a context loss shows the paused message and emits failed`: invoke the listener passed to a mocked `onContextChange` with `true`.
 - `unmount disposes the scene`.
@@ -235,9 +247,9 @@ Run: `pnpm --filter web exec vitest run tests/three/cameraPresets.test.ts`. Expe
 
 Behaviour in `PublicTeam.vue`:
 - `show3d = computed(() => route.query.view === '3d')`.
-- The action row gains a button: "View in 3D" when off, "Hide 3D" when on. It toggles with `router.replace`, keeping the other query params.
+- The action row gains a button: "View in 3D" when off, "Hide 3D" when on. It toggles with `router.replace`, keeping the other query params, and tracks `scene3d_view_clicked { on }`.
 - When `show3d` is on and the team has loaded, a section above "Starting five" holds `TeamScene3DAsync`, keyed by `teamUUID` so a new team remounts it. Props: `court: arena?.court ?? null`, `logo-url: courtLogoUrl`, `drawing-url: arena?.drawingUrl`, `capacity: arena?.capacity ?? null`, and a label like "3D view of {title}'s court".
-- When WebGL isn't available, the section shows `Scene3DUnavailable` instead, and tracks `scene3d_failed { reason: 'no-webgl' }` once.
+- When WebGL isn't available, the section shows `Scene3DUnavailable` with `reason="no-webgl"` instead, and tracks `scene3d_failed { reason: 'no-webgl' }` once.
 - `scene3d_opened { page: 'public' }` fires once per team load while `show3d` is on.
 - Everything else on the page is untouched.
 
@@ -258,12 +270,14 @@ Behaviour in `PublicTeam.vue`:
 
 - [ ] **Step 2: Run them to verify they fail.** `pnpm --filter web exec vitest run tests/views/PublicTeam3d.test.ts` (FAIL), and `pnpm --filter web test:visual -- scene3d.spec.ts` (FAIL).
 
-- [ ] **Step 3: Implement the page change, the stub extraction and the config change.**
+- [ ] **Step 3: Implement the page change, the stub extraction and the config change.** Also change the CI step from Task 1 to `pnpm --filter web check:bundle --require-3d`.
+
+- [ ] **Step 3b: Update the `public-team` baseline on purpose.** The new button changes that full-page screenshot. Run `pnpm --filter web test:visual:update -- routes.spec.ts`, check that the only difference in `public-team.png` (desktop and mobile) is the button, and commit the new images.
 
 - [ ] **Step 4: Run the full gate**
 
-Run: `pnpm --filter web lint && pnpm --filter web type-check && pnpm --filter web check:styles && pnpm --filter web test && pnpm --filter web build && pnpm --filter web check:bundle && pnpm --filter web test:visual`
-Expected: all pass. `check:bundle` reports the 3D chunk at or below 300 KB gzipped. The existing `public-team` visual baseline is unchanged.
+Run: `pnpm --filter web lint && pnpm --filter web type-check && pnpm --filter web check:styles && pnpm --filter web test && pnpm --filter web build && pnpm --filter web check:bundle --require-3d && pnpm --filter web test:visual`
+Expected: all pass. `check:bundle --require-3d` finds the 3D chunk and reports it at or below 300 KB gzipped. The only baseline that changed is `public-team`, from Step 3b.
 
 - [ ] **Step 5: Commit** `feat(web): show the 3D team scene at ?view=3d on public team pages`
 
