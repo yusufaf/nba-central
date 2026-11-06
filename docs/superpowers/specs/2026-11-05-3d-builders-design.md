@@ -258,6 +258,12 @@ is missing, that save publishes the 2D card and the team keeps
 as today; the render runs after the save itself succeeds, so a slow render
 never blocks or fails the save.
 
+The card render never touches the visible scene: it draws into its own
+1200x630 `WebGLRenderTarget` with its own camera, reads the pixels back
+(`readRenderTargetPixels`) into a 2D canvas, and leaves the shared
+renderer's size, pixel ratio and viewport alone. A 3D view open during the
+save doesn't flicker or resize.
+
 The spike's 1200x630 frames were 191–405 KB as PNG, well under
 `publishTeam`'s 2 MB limit, so PNG stays.
 
