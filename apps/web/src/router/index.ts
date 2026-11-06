@@ -118,6 +118,10 @@ const router = createRouter({
             component: Callback,
         },
         ...(IS_PREVIEW ? [{ path: '/sign-in-off', name: 'sign-in-off', component: SignInOff }] : []),
+        // Throwaway 3D spike (#119): dev server and PR previews only.
+        ...(import.meta.env.DEV || IS_PREVIEW
+            ? [{ path: '/dev/3d-spike', name: 'three-spike', component: () => import('@/views/dev/ThreeSpike.vue') }]
+            : []),
         // Anything no route above matches. Rendered in place, not redirected,
         // so the URL stays what was asked for. No `indexable`, so noindex.
         {
