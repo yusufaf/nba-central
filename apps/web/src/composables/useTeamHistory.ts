@@ -111,6 +111,8 @@ export interface LoadedTeam {
     uuid: string | null;
     isPublic: boolean;
     cardUrl: string | null;
+    // The link preview chosen at publish (CardStyle in models/api).
+    cardStyle: '2d' | '3d';
     owner: string;
 }
 
@@ -168,7 +170,7 @@ export const restoreBuilder = <P>(current: BuilderState<P>, snapshot: BuilderSta
         cardsFlipped,
         comparison,
         details: { ...snapshot.details },
-        // isPublic, cardUrl and owner are the server's record of the loaded
+        // isPublic, cardUrl, cardStyle and owner are the server's record of the loaded
         // team, not builder edits - publishing isn't undoable, so they only
         // rewind when the team itself does (undoing Clear Team).
         loadedTeam:

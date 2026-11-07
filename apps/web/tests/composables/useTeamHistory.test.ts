@@ -349,7 +349,7 @@ const builder = (): BuilderState<object> => ({
         arena: { name: "Moda Center" },
         gm: { name: "Joe Cronin" },
     },
-    loadedTeam: { uuid: "team-a", isPublic: true, cardUrl: "https://cdn/card.png", owner: "yusuf" },
+    loadedTeam: { uuid: "team-a", isPublic: true, cardUrl: "https://cdn/card.png", cardStyle: "2d", owner: "yusuf" },
 });
 
 // What Clear Team leaves behind (TeamBuilder's wipeBuilder).
@@ -368,7 +368,7 @@ const cleared = (): BuilderState<object> => ({
         arena: null,
         gm: null,
     },
-    loadedTeam: { uuid: null, isPublic: false, cardUrl: null, owner: "" },
+    loadedTeam: { uuid: null, isPublic: false, cardUrl: null, cardStyle: "2d", owner: "" },
 });
 
 describe("snapshotBuilder / restoreBuilder", () => {
@@ -481,6 +481,7 @@ describe("snapshotBuilder / restoreBuilder", () => {
                 uuid: "team-a",
                 isPublic: true,
                 cardUrl: "https://cdn/card.png",
+                cardStyle: "2d",
                 owner: "yusuf",
             });
         });
@@ -517,7 +518,26 @@ describe("snapshotBuilder / restoreBuilder", () => {
             uuid: "team-a",
             isPublic: true,
             cardUrl: "https://cdn/card-2.png",
+            cardStyle: "2d",
             owner: "yusuf",
         });
+    });
+
+    // The link preview choice isn't undoable either.
+    it("keeps the current card style while the loaded team is unchanged", () => {
+        const state = builder();
+        const snapshot = snapshotBuilder(state);
+        state.details.name = "Renamed";
+        state.loadedTeam.cardStyle = "3d";
+
+        expect(restoreBuilder(state, snapshot).loadedTeam.cardStyle).toBe("3d");
+    });
+
+    it("takes the snapshot's card style when undoing back to another team", () => {
+        const before = builder();
+        before.loadedTeam.cardStyle = "3d";
+        const snapshot = snapshotBuilder(before);
+
+        expect(restoreBuilder(cleared(), snapshot).loadedTeam.cardStyle).toBe("3d");
     });
 });

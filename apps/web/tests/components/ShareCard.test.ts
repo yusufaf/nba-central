@@ -81,4 +81,37 @@ describe("ShareCard", () => {
         const without = mount(ShareCard, { props: { ...props, court } });
         expect(without.find('[data-part="drawing"]').exists()).toBe(false);
     });
+
+    describe("with a 3D team photo", () => {
+        const background = "data:image/png;base64,AAAA";
+
+        it("draws the photo instead of the flat court, under the title and names", () => {
+            const wrapper = mount(ShareCard, { props: { ...props, court, background } });
+            expect(wrapper.find('[data-testid="share-photo"]').attributes("src")).toBe(background);
+            expect(wrapper.find('[data-testid="share-court"]').exists()).toBe(false);
+            expect(wrapper.text()).toContain("Sharers");
+            for (const { fullName } of props.starters) expect(wrapper.text()).toContain(fullName);
+        });
+
+        it("lists the starters in a slim strip with position and rating", () => {
+            const wrapper = mount(ShareCard, { props: { ...props, background } });
+            const strip = wrapper.find('[data-testid="share-strip"]');
+            expect(strip.exists()).toBe(true);
+            expect(strip.text()).toContain("SG · 99");
+            expect(strip.text()).toContain("C");
+        });
+
+        it("leaves out a rating that is null", () => {
+            const starters = [{ fullName: "No Rating", position: "PG", rating: null as unknown as undefined }];
+            const wrapper = mount(ShareCard, { props: { ...props, starters, background } });
+            expect(wrapper.find('[data-testid="share-strip"] li').text()).toBe("No RatingPG");
+        });
+
+        it("keeps today's card without one", () => {
+            const wrapper = mount(ShareCard, { props: { ...props, court } });
+            expect(wrapper.find('[data-testid="share-photo"]').exists()).toBe(false);
+            expect(wrapper.find('[data-testid="share-strip"]').exists()).toBe(false);
+            expect(wrapper.find('[data-testid="share-court"]').exists()).toBe(true);
+        });
+    });
 });

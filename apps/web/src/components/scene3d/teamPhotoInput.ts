@@ -1,0 +1,33 @@
+import type { CourtDesign } from '@/models/api';
+import type { ScenePerson } from './people';
+
+// Everything the share card's 3D team photo is drawn from. The same fields
+// as the live 3D view's props.
+export interface TeamPhotoInput {
+    court: CourtDesign | null;
+    logoUrl?: string;
+    drawingUrl?: string;
+    capacity: number | null;
+    people: ScenePerson[];
+    jerseyUrl?: string;
+    teamName: string;
+}
+
+// Equal keys mean the photo would come out the same, so it can be reused.
+export const teamPhotoKey = (input: TeamPhotoInput): string =>
+    JSON.stringify([
+        input.court,
+        input.logoUrl ?? null,
+        input.drawingUrl ?? null,
+        input.capacity,
+        input.jerseyUrl ?? null,
+        input.teamName,
+        input.people.map((person) => [
+            person.id,
+            person.name,
+            person.role,
+            person.position ?? null,
+            person.heightInches,
+            person.weightPounds,
+        ]),
+    ]);

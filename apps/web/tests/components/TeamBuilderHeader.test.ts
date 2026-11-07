@@ -8,21 +8,56 @@ import { settingsSync } from "@/composables/useSettingsSync";
 
 const mountHeader = (props: Record<string, unknown>) =>
     mount(TeamBuilderHeader, {
-        props: { teamUuid: null, isPublic: false, publishing: false, cardUrl: null, ...props },
-        global: { stubs: { TeamCustomizationDialog: true, ConfirmDialog: true } },
+        props: { teamUuid: null, isPublic: false, publishing: false, cardUrl: null, cardStyle: "2d", ...props },
+        global: { stubs: { TeamCustomizationDialog: true, ConfirmDialog: true, PublishDialog: true } },
+        attachTo: document.body,
     });
 
+const publishDialog = (wrapper: ReturnType<typeof mountHeader>) => wrapper.findComponent({ name: "PublishDialog" });
+
 describe("TeamBuilderHeader publish controls", () => {
+    afterEach(() => {
+        document.body.innerHTML = "";
+    });
+
     it("disables Publish until the team has been saved", () => {
         const wrapper = mountHeader({});
         const button = wrapper.find('[data-testid="publish-button"]');
         expect(button.attributes("disabled")).toBeDefined();
     });
 
-    it("emits togglePublish when enabled and clicked", async () => {
-        const wrapper = mountHeader({ teamUuid: "t1" });
+    it("asks which link preview to publish with, then emits publish with it", async () => {
+        const wrapper = mountHeader({ teamUuid: "t1", cardStyle: "3d" });
+        expect(publishDialog(wrapper).props("open")).toBe(false);
         await wrapper.find('[data-testid="publish-button"]').trigger("click");
-        expect(wrapper.emitted("togglePublish")).toHaveLength(1);
+        expect(publishDialog(wrapper).props()).toMatchObject({ open: true, mode: "publish", cardStyle: "3d" });
+        expect(wrapper.emitted("publish")).toBeUndefined();
+
+        publishDialog(wrapper).vm.$emit("confirm", "3d");
+        expect(wrapper.emitted("publish")).toEqual([["3d"]]);
+    });
+
+    it("unpublishes straight away when public", async () => {
+        const wrapper = mountHeader({ teamUuid: "t1", isPublic: true });
+        await wrapper.find('[data-testid="publish-button"]').trigger("click");
+        expect(wrapper.emitted("unpublish")).toHaveLength(1);
+        expect(publishDialog(wrapper).props("open")).toBe(false);
+    });
+
+    it("changes the link preview from the Share menu", async () => {
+        const wrapper = mountHeader({ teamUuid: "t1", isPublic: true, cardStyle: "3d" });
+        const share = wrapper.find('[data-testid="share-button"]');
+        await share.trigger("keydown", { key: "Enter" });
+        await nextTick();
+        await nextTick();
+        const item = document.querySelector('[data-testid="change-preview"]') as HTMLElement;
+        expect(item).not.toBeNull();
+        item.click();
+        await nextTick();
+        expect(publishDialog(wrapper).props()).toMatchObject({ open: true, mode: "change", cardStyle: "3d" });
+
+        publishDialog(wrapper).vm.$emit("confirm", "2d");
+        expect(wrapper.emitted("publish")).toEqual([["2d"]]);
     });
 
     it("shows Unpublish and the share button once public", () => {
