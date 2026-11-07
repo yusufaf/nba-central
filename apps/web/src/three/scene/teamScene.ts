@@ -55,6 +55,7 @@ export class TeamScene {
         this.observer = new ResizeObserver(() => this.resize());
         this.observer.observe(container);
         this.resize();
+        this.frame();
     }
 
     setArena(court: HTMLCanvasElement | null, capacity: number | null): void {
@@ -95,7 +96,9 @@ export class TeamScene {
         this.renderer.domElement.removeEventListener('wheel', this.onWheel, { capture: true });
         disposeObject(this.scene);
         this.arena = null;
-        this.renderer.domElement.remove();
+        // The canvas is shared: if another scene has already taken it, leave it.
+        const canvas = this.renderer.domElement;
+        if (canvas.parentElement === this.container) canvas.remove();
     }
 
     private readonly onWheel = (event: WheelEvent) => {
@@ -107,7 +110,11 @@ export class TeamScene {
         if (!width || !height) return;
         this.renderer.setSize(width, height, false);
         this.camera.aspect = width / height;
-        this.frame();
+        // Keep wherever the user has orbited to: a phone's URL bar collapsing
+        // on scroll resizes the view. Only the lens follows the new shape.
+        this.camera.fov = framePreset(this.preset, this.camera.aspect).fov;
+        this.camera.updateProjectionMatrix();
+        this.requestRender();
     }
 
     private frame(): void {
