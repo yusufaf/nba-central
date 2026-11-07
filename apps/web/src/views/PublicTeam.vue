@@ -7,10 +7,10 @@ let requestSeq = 0;
 
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue';
-import { useRouter } from 'vue-router';
+import { useRoute, useRouter } from 'vue-router';
 import { useMediaQuery } from '@vueuse/core';
 import { toast } from 'vue-sonner';
-import { Download, Link2, Share2, Sparkles } from 'lucide-vue-next';
+import { Box, Download, Link2, Share2, Sparkles } from 'lucide-vue-next';
 import PageShell from '@/layouts/PageShell.vue';
 import { Button, buttonVariants } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -25,9 +25,12 @@ import { arenaDetails, backfillArena } from '@/utils/arenaDetails';
 import { centreLogoUrl } from '@/utils/court';
 import CourtFloor from '@/components/court/CourtFloor.vue';
 import CourtStage from '@/components/court/CourtStage.vue';
+import { Scene3DUnavailable, TeamScene3DAsync } from '@/components/scene3d';
+import { isWebGLAvailable } from '@/utils/webgl';
 
 const props = defineProps<{ teamUUID: string }>();
 const router = useRouter();
+const route = useRoute();
 
 const team = ref<PublicTeam | null>(null);
 const loading = ref(true);
@@ -88,6 +91,30 @@ const load = async (teamUUID: string) => {
 };
 
 watch(() => props.teamUUID, load, { immediate: true });
+
+// The 3D view (#286) is an extra on top of the page, at ?view=3d so the link
+// can be shared. Its code loads only when it is shown.
+const show3d = computed(() => route.query.view === '3d');
+const webglAvailable = isWebGLAvailable();
+const toggle3d = () => {
+    const { view: _view, ...rest } = route.query;
+    const on = !show3d.value;
+    track('scene3d_view_clicked', { on });
+    router.replace({ query: on ? { ...rest, view: '3d' } : rest });
+};
+let noWebglTracked = false;
+watch(
+    () => [team.value?.teamUUID, show3d.value] as const,
+    ([loadedUUID, on]) => {
+        if (!loadedUUID || !on) return;
+        if (!webglAvailable) {
+            if (!noWebglTracked) track('scene3d_failed', { reason: 'no-webgl' });
+            noWebglTracked = true;
+            return;
+        }
+        track('scene3d_opened', { page: 'public' });
+    },
+);
 
 const share = async (method: 'copy' | 'native') => {
     const url = shareUrlFor(props.teamUUID);
@@ -155,7 +182,21 @@ const remix = () => {
                     <Button v-if="canShareNatively" variant="outline" size="sm" @click="share('native')"><Share2 class="mr-2 h-4 w-4" />Share…</Button>
                     <Button data-testid="download-card-button" variant="outline" size="sm" :disabled="!team.cardUrl" @click="downloadCard"><Download class="mr-2 h-4 w-4" />Download card</Button>
                     <Button data-testid="remix-button" size="sm" @click="remix"><Sparkles class="mr-2 h-4 w-4" />Remix this team</Button>
+                    <Button data-testid="view-3d-button" variant="outline" size="sm" :aria-pressed="show3d ? 'true' : 'false'" @click="toggle3d"><Box class="mr-2 h-4 w-4" />{{ show3d ? 'Hide 3D' : 'View in 3D' }}</Button>
                 </div>
+
+                <section v-if="show3d" aria-label="3D view" data-testid="scene3d-section">
+                    <TeamScene3DAsync
+                        v-if="webglAvailable"
+                        :key="team.teamUUID"
+                        :court="arena?.court ?? null"
+                        :logo-url="courtLogoUrl"
+                        :drawing-url="arena?.drawingUrl"
+                        :capacity="arena?.capacity ?? null"
+                        :label="`3D view of ${team.title}'s court`"
+                    />
+                    <Scene3DUnavailable v-else reason="no-webgl" />
+                </section>
 
                 <section>
                     <div class="mb-3 flex items-baseline justify-between">

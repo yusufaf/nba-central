@@ -88,7 +88,8 @@ export default defineConfigWithVueTs(
   // three.js is ~180 KB gzipped; it must only ever load behind the lazy 3D
   // component. A later block's no-restricted-imports replaces an earlier
   // one for the same file, so these two never overlap and each lists its
-  // whole set. scripts/check-bundle.mjs backs this up after the build.
+  // whole set. Regexes, not globs: a gitignore-style "three/*" also matches
+  // "@/three/...". scripts/check-bundle.mjs backs this up after the build.
   {
     name: "app/three-boundary",
     files: ["src/**/*.{ts,vue}"],

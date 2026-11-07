@@ -5,7 +5,7 @@ vi.mock("@/network/api", () => ({
     teamApi: { getPublicTeam: vi.fn() },
 }));
 const push = vi.fn();
-vi.mock("vue-router", () => ({ useRouter: () => ({ push }) }));
+vi.mock("vue-router", () => ({ useRouter: () => ({ push, replace: vi.fn() }), useRoute: () => ({ query: {} }) }));
 const { toast, downloadUrlAsFile } = vi.hoisted(() => ({
     toast: { success: vi.fn(), error: vi.fn(), warning: vi.fn() },
     downloadUrlAsFile: vi.fn(),

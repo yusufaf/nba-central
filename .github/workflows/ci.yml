@@ -80,7 +80,7 @@ jobs:
 
       # three.js stays out of the entry chunk, and the lazy 3D chunk stays
       # within budget (scripts/check-bundle.mjs).
-      - run: pnpm --filter web check:bundle
+      - run: pnpm --filter web check:bundle --require-3d
 
   cdk:
     needs: changes

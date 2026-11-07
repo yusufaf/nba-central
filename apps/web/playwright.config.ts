@@ -46,11 +46,16 @@ export default defineConfig({
     projects: [
         {
             name: 'desktop',
-            use: { ...devices['Desktop Chrome'], viewport: { width: 1440, height: 900 } },
+            use: {
+                ...devices['Desktop Chrome'],
+                viewport: { width: 1440, height: 900 },
+                // Software WebGL for the 3D view; Chrome no longer falls back to it by itself.
+                launchOptions: { args: ['--enable-unsafe-swiftshader'] },
+            },
         },
         {
             name: 'mobile',
-            use: { ...devices['Pixel 7'] },
+            use: { ...devices['Pixel 7'], launchOptions: { args: ['--enable-unsafe-swiftshader'] } },
         },
     ],
 
