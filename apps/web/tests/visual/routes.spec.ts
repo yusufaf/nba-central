@@ -658,4 +658,77 @@ test.describe('3D team scene', () => {
         // A restored context recompiles every shader, slow under software WebGL.
         await expect.poll(() => renders(page), { timeout: 20000 }).toBeGreaterThan(before);
     });
+
+    // "View in 3D" from the builder (#288): a sheet over the builder, for the
+    // team as it is being edited.
+    const sheet = (page: Page) => page.getByRole('dialog', { name: /in 3D/ });
+    const openBuilder = async (page: Page) => {
+        await stubNetwork(page);
+        // The fixture was made for the public page, which needs only fullName;
+        // the builder's cards also read first_name and last_name, as every
+        // real player has. Registered after stubNetwork, so it wins.
+        await page.route('**/api/teams/public/visual-team', (route) =>
+            route.fulfill({
+                status: 200,
+                contentType: 'application/json',
+                body: JSON.stringify({
+                    ...publicTeamFixture,
+                    data: {
+                        ...publicTeamFixture.data,
+                        roster: publicTeamFixture.data.roster.map((entry) => {
+                            const [first, ...rest] = entry.player.fullName.split(' ');
+                            return { ...entry, player: { ...entry.player, first_name: first, last_name: rest.join(' ') } };
+                        }),
+                    },
+                }),
+            }),
+        );
+        await page.goto('/teambuilder?remix=visual-team');
+        await settle(page);
+    };
+
+    test('builder: opens over the builder and closes back to the button', async ({ page }) => {
+        await openBuilder(page);
+        const button = page.getByTestId('view-3d-button');
+        await button.scrollIntoViewIfNeeded();
+        const scrollY = await page.evaluate(() => window.scrollY);
+        const url = page.url();
+        await button.click();
+        await expect(sheet(page)).toBeVisible();
+        await expect.poll(() => renders(page), { timeout: 15000 }).toBeGreaterThanOrEqual(1);
+        await expect(page.getByTestId('name-chip')).toHaveCount(7, { timeout: 20000 });
+        await page.keyboard.press('Escape');
+        await expect(sheet(page)).toHaveCount(0);
+        await expect(page.locator('[role="img"] canvas')).toHaveCount(0);
+        await expect(button).toBeFocused();
+        expect(await page.evaluate(() => window.scrollY)).toBe(scrollY);
+        expect(page.url()).toBe(url);
+    });
+
+    test('builder: reflects an unsaved roster change', async ({ page }) => {
+        await openBuilder(page);
+        await page.locator('.player-card-wrapper').first().locator('button.text-destructive-strong').click();
+        await page.getByTestId('view-3d-button').click();
+        await expect(page.getByTestId('name-chip')).toHaveCount(6, { timeout: 20000 });
+    });
+
+    test('builder: usable at 390px', async ({ page }) => {
+        await page.setViewportSize({ width: 390, height: 844 });
+        await openBuilder(page);
+        const header = page.locator('.section-header').first();
+        expect(await header.evaluate((el) => el.scrollWidth <= el.clientWidth)).toBe(true);
+        await page.getByTestId('view-3d-button').click();
+        const dialog = sheet(page);
+        await expect(dialog).toBeVisible();
+        expect((await dialog.boundingBox())!.width).toBeLessThanOrEqual(390);
+        expect(await dialog.evaluate((el) => el.scrollWidth <= el.clientWidth)).toBe(true);
+        await expect(page.getByTestId('name-chip')).toHaveCount(7, { timeout: 20000 });
+        for (const name of ['Team photo', 'Courtside', 'Broadcast', 'Rafters']) {
+            await expect(dialog.getByRole('button', { name })).toBeVisible();
+        }
+        const before = await renders(page);
+        await dialog.getByRole('button', { name: 'Broadcast' }).click();
+        await expect.poll(() => renders(page)).toBeGreaterThan(before);
+    });
 });
+

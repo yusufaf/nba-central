@@ -11,6 +11,9 @@ import PageTitle from "@/components/PageTitle.vue";
 import PageShell from "@/layouts/PageShell.vue";
 import TeamBuilderHeader from "@/components/TeamBuilder/TeamBuilderHeader.vue";
 import RosterSection from "@/components/TeamBuilder/RosterSection.vue";
+import TeamScene3DDialog from "@/components/TeamBuilder/TeamScene3DDialog.vue";
+import { scenePeople } from "@/components/scene3d/people";
+import { parseCapacity } from "@/utils/arenaDetails";
 import AddPlayerDialog from "@/components/TeamBuilder/AddPlayerDialog.vue";
 import PlayerStatsDialog from "@/components/TeamBuilder/PlayerStatsDialog.vue";
 import CoachSection from "@/components/TeamBuilder/CoachSection.vue";
@@ -150,6 +153,21 @@ const landedPlayers = computed(() => {
     for (const slot of pendingPlayers.value.keys()) landed.delete(slot);
     return landed;
 });
+// "View in 3D" (#288) shows the team as it is being edited, unsaved changes
+// included: the starters on the board in slot order, then the staff.
+const STARTER_SLOTS = [1, 2, 3, 4, 5];
+const people3d = computed(() =>
+    scenePeople(
+        STARTER_SLOTS.flatMap((slot) => {
+            const player = landedPlayers.value.get(slot);
+            return player ? [{ slot, player }] : [];
+        }),
+        { coach: teamCoach.value, gm: teamGM.value },
+    ),
+);
+// The whole arena falls back, as the arena card does, so a cleared capacity
+// on your own arena shows none in both.
+const sceneCapacity = computed(() => parseCapacity((liveArena.value ?? teamArena.value)?.capacity) ?? null);
 const showPlayerStatsDialog = ref<boolean>(false);
 
 const selectedView = ref<string>("Default");
@@ -1090,7 +1108,19 @@ watch(
                 @drop-slot="dropOnSlot"
                 @pickup="togglePickup"
                 @cancel-pickup="cancelPickup"
-            />
+            >
+                <template #lineup-actions>
+                    <TeamScene3DDialog
+                        :court="liveArena?.court ?? null"
+                        :logo-url="courtLogoUrl"
+                        :drawing-url="liveArena?.drawingUrl"
+                        :capacity="sceneCapacity"
+                        :people="people3d"
+                        :jersey-url="teamJersey || undefined"
+                        :team-name="teamName"
+                    />
+                </template>
+            </RosterSection>
 
             <!-- Team Staff Section -->
             <div class="staff-section">

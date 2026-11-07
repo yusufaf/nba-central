@@ -6,8 +6,8 @@ const props = defineProps<{ reason: 'load' | 'no-webgl' }>();
 
 const message = computed(() =>
     props.reason === 'no-webgl'
-        ? "This browser can't show the 3D view. Everything below is the regular team page."
-        : "The 3D view couldn't load. Everything below is the regular team page.",
+        ? "This browser can't show the 3D view. Everything else still works."
+        : "The 3D view couldn't load. Everything else still works.",
 );
 </script>
 

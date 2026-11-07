@@ -129,6 +129,7 @@ const onKeydown = (event: KeyboardEvent) => {
             <span class="team-rating-label">OVR</span>
           </div>
           <div class="starter-count">{{ starterCount }}/5</div>
+          <slot name="lineup-actions" />
         </div>
       </div>
       <CourtStage :court="court" :logo-url="courtLogoUrl" :drawing-url="courtDrawingUrl" :tilted="startersInOneRow">
@@ -214,6 +215,8 @@ const onKeydown = (event: KeyboardEvent) => {
 
 .section-header {
   display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 0.75rem;
   align-items: center;
   justify-content: space-between;
   padding-bottom: 0.75rem;
