@@ -614,6 +614,18 @@ test.describe('3D team scene', () => {
         expect(first?.canvases).toBe(1);
     });
 
+    test('the wheel and vertical swipes over the scene scroll the page', async ({ page }) => {
+        await stubNetwork(page);
+        await page.goto('/t/visual-team?view=3d');
+        await expect.poll(() => renders(page), { timeout: 15000 }).toBeGreaterThanOrEqual(1);
+        const canvas = page.locator('[role="img"] canvas');
+        await expect(canvas).toHaveCSS('touch-action', 'pan-y');
+        const box = (await canvas.boundingBox())!;
+        await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+        await page.mouse.wheel(0, 300);
+        await expect.poll(() => page.evaluate(() => window.scrollY)).toBeGreaterThan(0);
+    });
+
     test('context loss shows paused and recovers', async ({ page }) => {
         await stubNetwork(page);
         await page.goto('/t/visual-team?view=3d');

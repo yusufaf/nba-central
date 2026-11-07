@@ -5,6 +5,7 @@
 import { nextTick, onBeforeUnmount, onMounted, ref, shallowRef, watch } from 'vue';
 import CourtFloor from '@/components/court/CourtFloor.vue';
 import { Button } from '@/components/ui/button';
+import Scene3DUnavailable from './Scene3DUnavailable.vue';
 import { track } from '@/lib/analytics';
 import type { CourtDesign } from '@/models/api';
 import { newCourt } from '@/utils/court';
@@ -31,6 +32,9 @@ const scene = shallowRef<TeamScene | null>(null);
 const preset = ref<CameraPreset>('team');
 const renderCount = ref(0);
 const paused = ref(false);
+// The page's probe can pass and context creation still fail (a blocklisted
+// driver, too many live contexts).
+const unavailable = ref(false);
 
 // What the off-screen CourtFloor draws. The fallback steps drop images that
 // block cross-origin reads.
@@ -76,7 +80,14 @@ let stopContext: (() => void) | null = null;
 
 onMounted(() => {
     if (!viewport.value) return;
-    const created = new TeamScene(viewport.value);
+    let created: TeamScene;
+    try {
+        created = new TeamScene(viewport.value);
+    } catch {
+        unavailable.value = true;
+        track('scene3d_failed', { reason: 'no-webgl' });
+        return;
+    }
     created.onRender = () => (renderCount.value = created.renderCount);
     scene.value = created;
     stopContext = onContextChange((lost) => {
@@ -102,7 +113,8 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-    <div class="flex flex-col gap-3">
+    <Scene3DUnavailable v-if="unavailable" reason="no-webgl" />
+    <div v-else class="flex flex-col gap-3">
         <div class="relative h-[min(70vh,40rem,160vw)] overflow-hidden rounded-xl border border-border bg-card">
             <div ref="viewport" class="absolute inset-0" role="img" :aria-label="label" :data-render-count="renderCount" />
             <p

@@ -37,6 +37,12 @@ export class TeamScene {
         this.controls = new OrbitControls(this.camera, canvas);
         Object.assign(this.controls, ORBIT_LIMITS);
         this.controls.addEventListener('change', () => this.requestRender());
+        // The scene fills most of a phone screen, so it must not trap the page:
+        // vertical swipes scroll (OrbitControls sets touch-action: none), and the
+        // wheel scrolls unless Ctrl or Cmd is held, which zooms. The capture
+        // listener runs before OrbitControls' own wheel handler on this element.
+        canvas.style.touchAction = 'pan-y';
+        canvas.addEventListener('wheel', this.onWheel, { capture: true });
 
         // Dev-only probe for the Playwright memory check (tests/visual).
         if (import.meta.env.DEV) {
@@ -86,10 +92,15 @@ export class TeamScene {
         this.disposed = true;
         this.observer.disconnect();
         this.controls.dispose();
+        this.renderer.domElement.removeEventListener('wheel', this.onWheel, { capture: true });
         disposeObject(this.scene);
         this.arena = null;
         this.renderer.domElement.remove();
     }
+
+    private readonly onWheel = (event: WheelEvent) => {
+        if (!event.ctrlKey && !event.metaKey) event.stopImmediatePropagation();
+    };
 
     private resize(): void {
         const { clientWidth: width, clientHeight: height } = this.container;

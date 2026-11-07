@@ -95,7 +95,8 @@ watch(() => props.teamUUID, load, { immediate: true });
 // The 3D view (#286) is an extra on top of the page, at ?view=3d so the link
 // can be shared. Its code loads only when it is shown.
 const show3d = computed(() => route.query.view === '3d');
-const webglAvailable = isWebGLAvailable();
+// Probed only once 3D is opened: the probe costs a GPU context.
+const webglAvailable = computed(() => show3d.value && isWebGLAvailable());
 const toggle3d = () => {
     const { view: _view, ...rest } = route.query;
     const on = !show3d.value;
@@ -107,7 +108,7 @@ watch(
     () => [team.value?.teamUUID, show3d.value] as const,
     ([loadedUUID, on]) => {
         if (!loadedUUID || !on) return;
-        if (!webglAvailable) {
+        if (!webglAvailable.value) {
             if (!noWebglTracked) track('scene3d_failed', { reason: 'no-webgl' });
             noWebglTracked = true;
             return;
