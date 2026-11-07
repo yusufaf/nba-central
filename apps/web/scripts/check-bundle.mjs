@@ -5,13 +5,16 @@
 //
 //   node scripts/check-bundle.mjs              # no 3D chunk yet is fine
 //   node scripts/check-bundle.mjs --require-3d # the 3D chunk must exist
+//   node scripts/check-bundle.mjs --dist <dir> # check another build (tests)
 import { readFileSync, readdirSync } from 'node:fs';
 import { gzipSync } from 'node:zlib';
 import { join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 const MARKER = 'nba-central-3d-chunk';
 const BUDGET = 300 * 1024;
-const dist = new URL('../dist/', import.meta.url).pathname.replace(/^\/([A-Za-z]:)/, '$1');
+const distFlag = process.argv.indexOf('--dist');
+const dist = distFlag > -1 ? process.argv[distFlag + 1] : fileURLToPath(new URL('../dist/', import.meta.url));
 const requireChunk = process.argv.includes('--require-3d');
 
 const fail = (message) => {
@@ -24,6 +27,9 @@ const eager = [
     ...html.matchAll(/<script[^>]*type="module"[^>]*src="([^"]+)"/g),
     ...html.matchAll(/<link[^>]*rel="modulepreload"[^>]*href="([^"]+)"/g),
 ].map((match) => match[1].split('/').pop());
+
+// A check that found nothing to check must not pass.
+if (eager.length === 0) fail('no entry scripts found in index.html; the build layout may have changed.');
 
 for (const file of eager) {
     const code = readFileSync(join(dist, 'assets', file), 'utf8');
