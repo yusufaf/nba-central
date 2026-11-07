@@ -38,6 +38,14 @@ export class TeamScene {
         Object.assign(this.controls, ORBIT_LIMITS);
         this.controls.addEventListener('change', () => this.requestRender());
 
+        // Dev-only probe for the Playwright memory check (tests/visual).
+        if (import.meta.env.DEV) {
+            (window as unknown as { __scene3dInfo?: () => object }).__scene3dInfo = () => ({
+                ...this.renderer.info.memory,
+                canvases: document.querySelectorAll('canvas').length,
+            });
+        }
+
         this.observer = new ResizeObserver(() => this.resize());
         this.observer.observe(container);
         this.resize();

@@ -571,3 +571,71 @@ test.describe('light theme', () => {
         await expect(sheet).toHaveScreenshot('light-sheet-add-player.png');
     });
 });
+
+// The 3D view at ?view=3d (#286). WebGL output differs by GPU, so these check
+// behaviour, not pixels.
+test.describe('3D team scene', () => {
+    const renders = (page: Page) =>
+        page.locator('[role="img"][data-render-count]').evaluate((el) => Number(el.getAttribute('data-render-count')));
+    const memory = (page: Page) =>
+        // Null until the lazy 3D chunk has loaded and set the probe.
+        page.evaluate(
+            () =>
+                (window as unknown as { __scene3dInfo?: () => { geometries: number; textures: number; canvases: number } })
+                    .__scene3dInfo?.() ?? null,
+        );
+
+    test('renders a frame without errors', async ({ page }) => {
+        const errors: string[] = [];
+        page.on('console', (message) => message.type() === 'error' && errors.push(message.text()));
+        page.on('pageerror', (error) => errors.push(error.message));
+        await stubNetwork(page);
+        await page.goto('/t/visual-team?view=3d');
+        await expect.poll(() => renders(page), { timeout: 15000 }).toBeGreaterThanOrEqual(1);
+        expect(errors).toEqual([]);
+    });
+
+    test('toggling five times keeps one canvas and steady memory', async ({ page }) => {
+        await stubNetwork(page);
+        // The arena lands after the court is rasterised, a beat after the first
+        // frame, so wait for its geometry before comparing.
+        const arenaReady = () =>
+            expect.poll(async () => (await memory(page))?.geometries ?? 0, { timeout: 15000 }).toBeGreaterThan(0);
+        await page.goto('/t/visual-team?view=3d');
+        await arenaReady();
+        const first = await memory(page);
+        for (let i = 0; i < 5; i++) {
+            await page.getByTestId('view-3d-button').click();
+            await expect(page.getByTestId('scene3d-section')).toHaveCount(0);
+            await page.getByTestId('view-3d-button').click();
+            await arenaReady();
+        }
+        await expect.poll(() => memory(page)).toEqual(first);
+        expect(first?.canvases).toBe(1);
+    });
+
+    test('context loss shows paused and recovers', async ({ page }) => {
+        await stubNetwork(page);
+        await page.goto('/t/visual-team?view=3d');
+        await expect.poll(() => renders(page), { timeout: 15000 }).toBeGreaterThanOrEqual(1);
+        // A lost context returns null from getExtension, so the extension is
+        // kept from before the loss.
+        type Probe = { __loseContext?: WEBGL_lose_context | null };
+        const lose = (method: 'loseContext' | 'restoreContext') =>
+            page.evaluate((m) => {
+                const probe = window as unknown as Probe;
+                if (!probe.__loseContext) {
+                    const canvas = document.querySelector('[role="img"] canvas') as HTMLCanvasElement;
+                    const gl = canvas.getContext('webgl2') ?? canvas.getContext('webgl');
+                    probe.__loseContext = gl?.getExtension('WEBGL_lose_context');
+                }
+                probe.__loseContext?.[m]();
+            }, method);
+        await lose('loseContext');
+        await expect(page.getByText('3D view paused')).toBeVisible();
+        const before = await renders(page);
+        await lose('restoreContext');
+        await expect(page.getByText('3D view paused')).toHaveCount(0);
+        await expect.poll(() => renders(page)).toBeGreaterThan(before);
+    });
+});
