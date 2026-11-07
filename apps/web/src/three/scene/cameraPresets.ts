@@ -16,6 +16,11 @@ export const ORBIT_LIMITS = { minDistance: 1.5, maxDistance: 45, maxPolarAngle: 
 // Past this the camera would sit inside the lower bowl's first rows.
 export const MAX_FRAMING_DISTANCE = 10.5;
 
+// Below this aspect seven people can't stand in one row and still fit the
+// team-photo shot inside MAX_FRAMING_DISTANCE, so they stand in two. The
+// layout (layout.ts, via TeamScene) and the framing here share it.
+export const TWO_ROWS_BELOW_ASPECT = 1.4;
+
 type Vec3 = [number, number, number];
 
 const BASE: Record<CameraPreset, { position: Vec3; target: Vec3 }> = {
@@ -25,11 +30,11 @@ const BASE: Record<CameraPreset, { position: Vec3; target: Vec3 }> = {
     rafters: { position: [0.01, 30, 6], target: [0, 0, 0] },
 };
 
-// What the team-photo shot keeps in view, in metres around its target. On a
-// portrait screen the team stands in two rows, so the shot is narrower.
+// What the team-photo shot keeps in view, in metres around its target: one
+// row of seven, or two rows when the view is narrower.
 const TEAM_SUBJECT = {
-    landscape: { halfWidth: 4.9, halfHeight: 1.3 },
-    portrait: { halfWidth: 2.7, halfHeight: 1.5 },
+    oneRow: { halfWidth: 4.9, halfHeight: 1.3 },
+    twoRows: { halfWidth: 2.7, halfHeight: 1.5 },
 };
 
 export const framePreset = (
@@ -41,7 +46,7 @@ export const framePreset = (
     const { position, target } = BASE[preset];
     if (preset !== 'team') return { position: [...position], target: [...target], fov };
 
-    const subject = portrait ? TEAM_SUBJECT.portrait : TEAM_SUBJECT.landscape;
+    const subject = aspect < TWO_ROWS_BELOW_ASPECT ? TEAM_SUBJECT.twoRows : TEAM_SUBJECT.oneRow;
     const tanV = Math.tan((fov * Math.PI) / 360);
     const tanH = tanV * aspect;
     const fit = 1.08 * Math.max(subject.halfWidth / tanH, subject.halfHeight / tanV);

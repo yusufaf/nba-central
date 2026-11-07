@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { CAMERA_PRESETS, MAX_FRAMING_DISTANCE, PRESET_LABELS, framePreset } from '@/three/scene/cameraPresets';
+import { CAMERA_PRESETS, MAX_FRAMING_DISTANCE, PRESET_LABELS, TWO_ROWS_BELOW_ASPECT, framePreset } from '@/three/scene/cameraPresets';
 
 const deg = (d: number) => (d * Math.PI) / 180;
 const distance = (frame: ReturnType<typeof framePreset>) =>
@@ -36,5 +36,19 @@ describe('framePreset', () => {
 
     it('every preset has a label', () => {
         expect(CAMERA_PRESETS.every((preset) => PRESET_LABELS[preset])).toBe(true);
+    });
+
+    it('a near-square view frames the two-row team in full', () => {
+        for (const aspect of [1, 1.1, TWO_ROWS_BELOW_ASPECT - 0.01]) {
+            const frame = framePreset('team', aspect);
+            expect(distance(frame)).toBeLessThan(MAX_FRAMING_DISTANCE);
+            expect(distance(frame) * Math.tan(halfFovH(frame.fov, aspect))).toBeGreaterThanOrEqual(2.7);
+        }
+    });
+
+    it('a wide view frames the one-row team in full', () => {
+        const aspect = TWO_ROWS_BELOW_ASPECT;
+        const frame = framePreset('team', aspect);
+        expect(distance(frame) * Math.tan(halfFovH(frame.fov, aspect))).toBeGreaterThanOrEqual(4.9);
     });
 });

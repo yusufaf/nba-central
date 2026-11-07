@@ -10,12 +10,16 @@ const mocks = vi.hoisted(() => ({
         dispose: ReturnType<typeof vi.fn>;
         renderCount: number;
         onRender: (() => void) | null;
+        setPeople: ReturnType<typeof vi.fn>;
     }>,
+    anchors: [] as Array<{ id: string; x: number; y: number; visible: boolean }>,
+    kit: { primary: '#123456', secondary: '#654321', trim: '#ffffff' },
     rasterise: vi.fn(),
     track: vi.fn(),
     contextListener: null as ((lost: boolean) => void) | null,
     unsubscribe: vi.fn(),
     failToStart: false,
+    failPeople: false,
 }));
 
 vi.mock('@/three/scene/teamScene', () => ({
@@ -24,6 +28,10 @@ vi.mock('@/three/scene/teamScene', () => ({
         setPreset = vi.fn();
         requestRender = vi.fn();
         dispose = vi.fn();
+        setPeople = vi.fn(async () => {
+            if (mocks.failPeople) throw new Error('body.glb failed to load');
+        });
+        labelAnchors = () => mocks.anchors;
         renderCount = 0;
         onRender: (() => void) | null = null;
         constructor() {
@@ -40,6 +48,7 @@ vi.mock('@/three/renderer/shared', () => ({
     },
 }));
 vi.mock('@/lib/analytics', () => ({ track: mocks.track }));
+vi.mock('@/three/character/jerseyColours', () => ({ loadJerseyColours: async () => mocks.kit }));
 
 import TeamScene3D from '@/components/scene3d/TeamScene3D.vue';
 import CourtFloor from '@/components/court/CourtFloor.vue';
@@ -81,6 +90,7 @@ describe('TeamScene3D', () => {
         mocks.unsubscribe.mockReset();
         mocks.contextListener = null;
         mocks.failToStart = false;
+        mocks.failPeople = false;
     });
     afterEach(() => {
         wrapper?.unmount();
@@ -208,5 +218,87 @@ describe('TeamScene3D', () => {
         wrapper = null;
         expect(created.dispose).toHaveBeenCalledTimes(1);
         expect(mocks.unsubscribe).toHaveBeenCalledTimes(1);
+    });
+
+    it('passes people and the sampled kit to the scene', async () => {
+        mocks.rasterise.mockResolvedValue(canvas('a'));
+        const people = [{ id: 'player-1', name: 'Vance', role: 'player', position: 'PG', heightInches: 75, weightPounds: 190 }];
+        mountScene({ people, jerseyUrl: 'https://cdn/jersey.png', teamName: 'Owls' });
+        await flushPromises();
+        expect(scene().setPeople).toHaveBeenCalledWith(people, { colours: mocks.kit, teamName: 'Owls' });
+    });
+
+    it('renders a chip per visible anchor and none for hidden ones', async () => {
+        mocks.rasterise.mockResolvedValue(canvas('a'));
+        mocks.anchors = [
+            { id: 'player-1', x: 100, y: 50, visible: true },
+            { id: 'coach', x: 0, y: 0, visible: false },
+        ];
+        const people = [
+            { id: 'player-1', name: 'Jordan Vance', role: 'player', position: 'PG', heightInches: 75, weightPounds: 190 },
+            { id: 'coach', name: 'Hale', role: 'coach', heightInches: null, weightPounds: null },
+        ];
+        const w = mountScene({ people, teamName: 'Owls' });
+        await flushPromises();
+        scene().onRender?.();
+        await flushPromises();
+        const chips = w.findAll('[data-testid="name-chip"]');
+        expect(chips.map((c) => c.text())).toEqual(['Jordan Vance · PG']);
+        mocks.anchors = [];
+    });
+
+    it('shows surnames only when the view is phone-narrow', async () => {
+        mocks.rasterise.mockResolvedValue(canvas('a'));
+        mocks.anchors = [{ id: 'player-1', x: 10, y: 10, visible: true }];
+        const people = [{ id: 'player-1', name: 'Jordan Vance', role: 'player', position: 'PG', heightInches: 75, weightPounds: 190 }];
+        const w = mountScene({ people, teamName: 'Owls' });
+        await flushPromises();
+        Object.defineProperty(w.find('[role="img"]').element, 'clientWidth', { configurable: true, value: 390 });
+        scene().onRender?.();
+        await flushPromises();
+        expect(w.find('[data-testid="name-chip"]').text()).toBe('Vance');
+        mocks.anchors = [];
+    });
+
+    it('truncates long names', async () => {
+        mocks.rasterise.mockResolvedValue(canvas('a'));
+        mocks.anchors = [{ id: 'player-1', x: 10, y: 10, visible: true }];
+        const people = [{ id: 'player-1', name: 'A Very Long Player Name Indeed', role: 'player', position: 'SF', heightInches: null, weightPounds: null }];
+        const w = mountScene({ people, teamName: 'Owls' });
+        await flushPromises();
+        scene().onRender?.();
+        await flushPromises();
+        const chip = w.find('[data-testid="name-chip"]');
+        expect(chip.classes()).toEqual(expect.arrayContaining(['truncate', 'max-w-[9rem]']));
+        mocks.anchors = [];
+    });
+
+    it('strips a name suffix from the compact chip', async () => {
+        mocks.rasterise.mockResolvedValue(canvas('a'));
+        mocks.anchors = [
+            { id: 'player-1', x: 10, y: 10, visible: true },
+            { id: 'player-2', x: 60, y: 10, visible: true },
+        ];
+        const people = [
+            { id: 'player-1', name: 'Jaren Jackson Jr.', role: 'player', position: 'PF', heightInches: 82, weightPounds: 242 },
+            { id: 'player-2', name: 'Gary Payton II', role: 'player', position: 'SG', heightInches: 75, weightPounds: 195 },
+        ];
+        const w = mountScene({ people, teamName: 'Owls' });
+        await flushPromises();
+        Object.defineProperty(w.find('[role="img"]').element, 'clientWidth', { configurable: true, value: 390 });
+        scene().onRender?.();
+        await flushPromises();
+        expect(w.findAll('[data-testid="name-chip"]').map((c) => c.text())).toEqual(['Jackson', 'Payton']);
+        mocks.anchors = [];
+    });
+
+    it('a failed people build tracks scene3d_failed and keeps the arena', async () => {
+        mocks.rasterise.mockResolvedValue(canvas('a'));
+        const people = [{ id: 'player-1', name: 'Vance', role: 'player', position: 'PG', heightInches: 75, weightPounds: 190 }];
+        mocks.failPeople = true;
+        const w = mountScene({ people, teamName: 'Owls' });
+        await flushPromises();
+        expect(mocks.track).toHaveBeenCalledWith('scene3d_failed', { reason: 'people' });
+        expect(w.find('[role="img"]').exists()).toBe(true);
     });
 });

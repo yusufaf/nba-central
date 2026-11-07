@@ -27,6 +27,7 @@ import CourtFloor from '@/components/court/CourtFloor.vue';
 import CourtStage from '@/components/court/CourtStage.vue';
 import { Scene3DUnavailable, TeamScene3DAsync } from '@/components/scene3d';
 import { isWebGLAvailable } from '@/utils/webgl';
+import { snapshotSize } from '@/utils/playerSize';
 
 const props = defineProps<{ teamUUID: string }>();
 const router = useRouter();
@@ -95,6 +96,22 @@ watch(() => props.teamUUID, load, { immediate: true });
 // The 3D view (#286) is an extra on top of the page, at ?view=3d so the link
 // can be shared. Its code loads only when it is shown.
 const show3d = computed(() => route.query.view === '3d');
+// Who stands in the 3D scene: the starters in slot order, then the staff.
+const people3d = computed(() => [
+    ...starters.value.map(({ slot, player }) => ({
+        id: `player-${slot}`,
+        name: player.fullName,
+        role: 'player' as const,
+        position: player.position,
+        ...snapshotSize(player),
+    })),
+    ...(team.value?.coach ? [{ id: 'coach', name: team.value.coach.name, role: 'coach' as const, heightInches: null, weightPounds: null }] : []),
+    ...(team.value?.gm ? [{ id: 'gm', name: team.value.gm.name, role: 'gm' as const, heightInches: null, weightPounds: null }] : []),
+]);
+const sceneLabel = computed(() => {
+    const names = people3d.value.map((person) => person.name).join(', ');
+    return `3D view of ${team.value?.title ?? 'the team'}'s court${names ? `: ${names}` : ''}`;
+});
 // Probed only once 3D is opened: the probe costs a GPU context.
 const webglAvailable = computed(() => show3d.value && isWebGLAvailable());
 const toggle3d = () => {
@@ -194,7 +211,10 @@ const remix = () => {
                         :logo-url="courtLogoUrl"
                         :drawing-url="arena?.drawingUrl"
                         :capacity="arena?.capacity ?? null"
-                        :label="`3D view of ${team.title}'s court`"
+                        :label="sceneLabel"
+                        :people="people3d"
+                        :jersey-url="team.jerseyUrl || undefined"
+                        :team-name="team.title"
                     />
                     <Scene3DUnavailable v-else reason="no-webgl" />
                 </section>

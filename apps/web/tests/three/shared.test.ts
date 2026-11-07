@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { BoxGeometry, Group, Mesh, MeshBasicMaterial, MeshStandardMaterial, Object3D, Texture } from 'three';
+import { Bone, BoxGeometry, Group, Mesh, MeshBasicMaterial, MeshStandardMaterial, Object3D, Skeleton, SkinnedMesh, Texture } from 'three';
 import { disposeObject } from '@/three/renderer/shared';
 
 describe('disposeObject', () => {
@@ -16,6 +16,28 @@ describe('disposeObject', () => {
         disposeObject(group);
 
         for (const spy of spies) expect(spy).toHaveBeenCalledTimes(1);
+    });
+
+    it('disposes textures a material keeps only for its shader', () => {
+        const kit = new Texture();
+        const material = new MeshStandardMaterial();
+        material.userData.textures = [kit];
+        const spy = vi.spyOn(kit, 'dispose');
+        disposeObject(new Mesh(new BoxGeometry(), material));
+        expect(spy).toHaveBeenCalledTimes(1);
+    });
+
+    it("disposes each skinned mesh's skeleton once, which frees its bone texture", () => {
+        const skeleton = new Skeleton([new Bone()]);
+        const group = new Group();
+        for (let i = 0; i < 2; i++) {
+            const mesh = new SkinnedMesh(new BoxGeometry(), new MeshStandardMaterial());
+            mesh.bind(skeleton);
+            group.add(mesh);
+        }
+        const spy = vi.spyOn(skeleton, 'dispose');
+        disposeObject(group);
+        expect(spy).toHaveBeenCalledTimes(1);
     });
 
     it('ignores non-mesh nodes', () => {

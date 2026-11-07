@@ -592,15 +592,22 @@ test.describe('3D team scene', () => {
         await stubNetwork(page);
         await page.goto('/t/visual-team?view=3d');
         await expect.poll(() => renders(page), { timeout: 15000 }).toBeGreaterThanOrEqual(1);
+        // The fixture's five starters, coach and GM, each with a name chip.
+        await expect(page.getByTestId('name-chip')).toHaveCount(7, { timeout: 20000 });
         expect(errors).toEqual([]);
     });
 
     test('toggling five times keeps one canvas and steady memory', async ({ page }) => {
+        // Seven characters are rebuilt on each open, under software WebGL here.
+        test.setTimeout(120000);
         await stubNetwork(page);
         // The arena lands after the court is rasterised, a beat after the first
         // frame, so wait for its geometry before comparing.
-        const arenaReady = () =>
-            expect.poll(async () => (await memory(page))?.geometries ?? 0, { timeout: 15000 }).toBeGreaterThan(0);
+        const arenaReady = async () => {
+            await expect.poll(async () => (await memory(page))?.geometries ?? 0, { timeout: 15000 }).toBeGreaterThan(0);
+            // People arrive after the arena; all seven chips mean all are placed.
+            await expect(page.getByTestId('name-chip')).toHaveCount(7, { timeout: 20000 });
+        };
         await page.goto('/t/visual-team?view=3d');
         await arenaReady();
         const first = await memory(page);
@@ -648,6 +655,7 @@ test.describe('3D team scene', () => {
         const before = await renders(page);
         await lose('restoreContext');
         await expect(page.getByText('3D view paused')).toHaveCount(0);
-        await expect.poll(() => renders(page)).toBeGreaterThan(before);
+        // A restored context recompiles every shader, slow under software WebGL.
+        await expect.poll(() => renders(page), { timeout: 20000 }).toBeGreaterThan(before);
     });
 });

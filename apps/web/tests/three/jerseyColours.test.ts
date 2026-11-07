@@ -30,7 +30,30 @@ describe('sampleJerseyColours', () => {
             if (x === 2 || y === 2 || x === 17 || y === 17) return RED;
             return WHITE;
         });
-        expect(sampleJerseyColours(jersey)).toMatchObject({ primary: hex(WHITE), secondary: hex(RED) });
+        // The red outline is the coloured kit; the white inside it survives.
+        expect(sampleJerseyColours(jersey)).toMatchObject({ primary: hex(RED), secondary: hex(WHITE) });
+    });
+
+    it('ignores a team-coloured gradient background, as in the jersey database', () => {
+        // Light-blue gradient backdrop, a white home kit on the left and a teal
+        // road kit on the right, like the bballjerseys.com images.
+        const jersey = image(40, (x, y) => {
+            const inLeft = x >= 4 && x < 18 && y >= 8 && y < 34;
+            const inRight = x >= 22 && x < 36 && y >= 8 && y < 34;
+            if (inLeft) return WHITE;
+            if (inRight) return TEAL;
+            const shade = 150 + Math.round((y / 40) * 20);
+            return [shade - 20, shade + 30, 234, 255];
+        });
+        expect(sampleJerseyColours(jersey)).toMatchObject({ primary: hex(TEAL) });
+    });
+
+    it('prefers the coloured kit over a white one as the primary', () => {
+        const jersey = image(40, (x, y) => {
+            if (x < 2 || y < 2 || x > 37 || y > 37) return [30, 30, 30, 255];
+            return x < 24 ? WHITE : GOLD;
+        });
+        expect(sampleJerseyColours(jersey)).toMatchObject({ primary: hex(GOLD) });
     });
 
     it('gives null for a transparent image', () => {
@@ -38,7 +61,7 @@ describe('sampleJerseyColours', () => {
     });
 
     it('picks a trim that contrasts with the primary', () => {
-        const dark = sampleJerseyColours(image(10, () => TEAL));
+        const dark = sampleJerseyColours(image(10, (x, y) => (x < 2 || y < 2 || x > 7 || y > 7 ? WHITE : TEAL)));
         expect(dark?.trim).toBe('#ffffff');
     });
 });
