@@ -1,14 +1,9 @@
-import { Color, Fog, Group, PerspectiveCamera, Scene, Vector3 } from 'three';
+import { Group, PerspectiveCamera, Vector3 } from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
-import { buildBowl, bowlLayout } from '@/three/arena/bowl';
-import { buildCourt, courtTexture } from '@/three/arena/court';
-import { broadcastLighting } from '@/three/arena/lighting';
-import { FOG, SCENE_COLOURS } from '@/three/arena/palette';
-import { blobShadow } from '@/three/arena/shadow';
 import { buildPerson, type PersonInput } from '@/three/character/person';
 import type { KitColours } from '@/three/character/jerseyColours';
 import { disposeObject, getSharedRenderer } from '@/three/renderer/shared';
-import { layoutPeople } from './layout';
+import { buildArena, createStage, placeInRows } from './stage';
 import { ORBIT_LIMITS, TWO_ROWS_BELOW_ASPECT, framePreset, type CameraPreset } from './cameraPresets';
 
 export interface LabelAnchor {
@@ -28,7 +23,7 @@ export class TeamScene {
     onRender: (() => void) | null = null;
 
     private readonly renderer = getSharedRenderer();
-    private readonly scene = new Scene();
+    private readonly scene = createStage();
     private readonly camera = new PerspectiveCamera(40, 1, 0.1, 200);
     private readonly controls: OrbitControls;
     private readonly observer: ResizeObserver;
@@ -49,9 +44,6 @@ export class TeamScene {
         canvas.style.height = '100%';
         container.appendChild(canvas);
 
-        this.scene.background = new Color(SCENE_COLOURS.background);
-        this.scene.fog = new Fog(SCENE_COLOURS.background, FOG.near, FOG.far);
-        this.scene.add(broadcastLighting());
         this.scene.add(this.peopleGroup);
 
         this.controls = new OrbitControls(this.camera, canvas);
@@ -84,9 +76,7 @@ export class TeamScene {
             this.scene.remove(this.arena);
             disposeObject(this.arena);
         }
-        const arena = new Group();
-        arena.add(buildCourt(court ? courtTexture(court, this.renderer) : null));
-        arena.add(buildBowl(bowlLayout(capacity), SCENE_COLOURS.seat));
+        const arena = buildArena(court, capacity, this.renderer);
         this.arena = arena;
         this.scene.add(arena);
         this.requestRender();
@@ -170,17 +160,11 @@ export class TeamScene {
 
     private placePeople(): void {
         this.twoRows = this.camera.aspect < TWO_ROWS_BELOW_ASPECT;
-        // People are reused across layouts; their shadows are rebuilt.
-        for (const child of this.peopleGroup.children) if (child.name === 'shadow') disposeObject(child);
-        this.peopleGroup.clear();
-        const spots = layoutPeople(this.people.length, this.twoRows);
-        this.people.forEach(({ root }, i) => {
-            const { x, z } = spots[i];
-            root.position.set(x, 0, z);
-            const shadow = blobShadow(0.45);
-            shadow.position.set(x, 0.005, z);
-            this.peopleGroup.add(root, shadow);
-        });
+        placeInRows(
+            this.peopleGroup,
+            this.people.map(({ root }) => root),
+            this.twoRows,
+        );
         this.requestRender();
     }
 
