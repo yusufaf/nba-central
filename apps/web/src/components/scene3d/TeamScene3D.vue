@@ -6,9 +6,9 @@ import { computed, nextTick, onBeforeUnmount, onMounted, ref, shallowRef, watch 
 import CourtFloor from '@/components/court/CourtFloor.vue';
 import { Button } from '@/components/ui/button';
 import Scene3DUnavailable from './Scene3DUnavailable.vue';
+import { DEFAULT_COURT, courtAttempts } from './courtRaster';
 import { track } from '@/lib/analytics';
 import type { CourtDesign } from '@/models/api';
-import { newCourt } from '@/utils/court';
 import { rasteriseCourt } from '@/three/arena/rasteriseCourt';
 import { loadJerseyColours, type KitColours } from '@/three/character/jerseyColours';
 import type { PersonInput } from '@/three/character/person';
@@ -30,9 +30,6 @@ const props = withDefaults(
     { logoUrl: undefined, drawingUrl: undefined, people: () => [], jerseyUrl: undefined, teamName: '' },
 );
 const emit = defineEmits<{ failed: [reason: 'context-lost'] }>();
-
-// Teams on a built-in arena (or none) get a plain court, never an NBA replica.
-const DEFAULT_COURT: CourtDesign = { ...newCourt(''), centerLogo: 'none' };
 
 const viewport = ref<HTMLElement | null>(null);
 const courtHost = ref<HTMLElement | null>(null);
@@ -95,16 +92,8 @@ let unmounted = false;
 const rasterise = async () => {
     const token = ++latest;
     const current = () => token === latest && !unmounted;
-    const attempts = [
-        { logo: props.logoUrl, drawing: props.drawingUrl },
-        { logo: undefined, drawing: props.drawingUrl },
-        { logo: undefined, drawing: undefined },
-    ].filter(
-        (attempt, i, all) =>
-            i === 0 || attempt.logo !== all[i - 1].logo || attempt.drawing !== all[i - 1].drawing,
-    );
     let canvas: HTMLCanvasElement | null = null;
-    for (const attempt of attempts) {
+    for (const attempt of courtAttempts(props.logoUrl, props.drawingUrl)) {
         rasterCourt.value = props.court ?? DEFAULT_COURT;
         rasterLogo.value = attempt.logo;
         rasterDrawing.value = attempt.drawing;
