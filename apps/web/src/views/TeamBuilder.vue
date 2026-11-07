@@ -52,7 +52,9 @@ import { useDetailEdits, type DetailField } from "@/composables/useDetailEdits";
 import { usePendingPlayers } from "@/composables/usePendingPlayers";
 import { dataApi, teamApi } from "@/network/api";
 import { useUserTeamsStore } from "@/stores/userTeams";
-import { renderShareCard, toShareCardProps } from "@/composables/useShareCard";
+import { toShareCardProps } from "@/composables/useShareCard";
+import { renderTeamCard } from "@/composables/teamCard";
+import type { TeamPhotoInput } from "@/components/scene3d/teamPhotoInput";
 import { customArenasKey, findLiveArena, useCustomArenas } from "@/composables/useCustomArenas";
 import { centreLogoUrl } from "@/utils/court";
 import { shareUrlFor } from "@/utils/shareUrl";
@@ -64,6 +66,7 @@ import { toBuilderPlayer } from "@/utils/builderPlayer";
 import { track } from "@/lib/analytics";
 import { landingSource } from "@/lib/attribution";
 import type { DrawerSide, NBA2KRating, Player } from "@/models/types";
+import type { CardStyle } from "@/models/api";
 
 const route = useRoute();
 const router = useRouter();
@@ -84,6 +87,7 @@ const loadedTeamUUID = ref<string | null>(null);
 const isPublic = ref(false);
 const cardUrl = ref<string | null>(null);
 const publishing = ref(false);
+const cardStyle = ref<CardStyle>("2d");
 const teamOwner = ref("");
 
 /* Team Metadata */
@@ -168,6 +172,16 @@ const people3d = computed(() =>
 // The whole arena falls back, as the arena card does, so a cleared capacity
 // on your own arena shows none in both.
 const sceneCapacity = computed(() => parseCapacity((liveArena.value ?? teamArena.value)?.capacity) ?? null);
+// What the 3D view and the share card's 3D team photo are drawn from.
+const photoInput = computed<TeamPhotoInput>(() => ({
+    court: liveArena.value?.court ?? null,
+    logoUrl: courtLogoUrl.value,
+    drawingUrl: liveArena.value?.drawingUrl,
+    capacity: sceneCapacity.value,
+    people: people3d.value,
+    jerseyUrl: teamJersey.value || undefined,
+    teamName: teamName.value,
+}));
 const showPlayerStatsDialog = ref<boolean>(false);
 
 const selectedView = ref<string>("Default");
@@ -318,6 +332,7 @@ const builderState = (): BuilderState => ({
         uuid: loadedTeamUUID.value,
         isPublic: isPublic.value,
         cardUrl: cardUrl.value,
+        cardStyle: cardStyle.value,
         owner: teamOwner.value,
     },
 });
@@ -341,6 +356,7 @@ const history = useTeamHistory<BuilderState>({
         loadedTeamUUID.value = next.loadedTeam.uuid;
         isPublic.value = next.loadedTeam.isPublic;
         cardUrl.value = next.loadedTeam.cardUrl;
+        cardStyle.value = next.loadedTeam.cardStyle;
         teamOwner.value = next.loadedTeam.owner;
     },
 });
@@ -559,6 +575,7 @@ const wipeBuilder = () => {
     loadedTeamUUID.value = null;
     isPublic.value = false;
     cardUrl.value = null;
+    cardStyle.value = "2d";
     teamOwner.value = "";
 };
 
@@ -606,8 +623,10 @@ const saveTeam = async () => {
 
     const existingUUID = loadedTeamUUID.value;
 
-    toast.promise(
-        async () => {
+    // The share card is refreshed only once the save has gone through, and
+    // outside the toast: a 3D card can take seconds and must never hold the
+    // save up or fail it.
+    const saving = (async (): Promise<boolean> => {
             const saved = existingUUID
                 ? await userTeamsStore.update({ ...payload, teamUUID: existingUUID })
                 : await userTeamsStore.save(payload);
@@ -634,15 +653,19 @@ const saveTeam = async () => {
                     },
                 });
             }
-            if (isPublic.value) {
-                await setPublished(true, { silent: true });
-            }
+            return isPublic.value;
+    })();
+    toast.promise(() => saving, {
+        loading: existingUUID ? 'Saving team...' : 'Creating team...',
+        success: existingUUID ? 'Team saved!' : 'Team created!',
+        error: existingUUID ? 'Failed to save team' : 'Failed to create team',
+    });
+    // The toast reports a failed save.
+    saving.then(
+        (republish) => {
+            if (republish) void setPublished(true, { silent: true });
         },
-        {
-            loading: existingUUID ? 'Saving team...' : 'Creating team...',
-            success: existingUUID ? 'Team saved!' : 'Team created!',
-            error: existingUUID ? 'Failed to save team' : 'Failed to create team',
-        }
+        () => {},
     );
 };
 
@@ -661,17 +684,6 @@ const currentCardProps = () =>
         arena: liveArena.value,
     });
 
-// A failed render must not block publishing: the page falls back to the
-// site poster for og:image and the owner gets told.
-const tryRenderCard = async (): Promise<string | null> => {
-    try {
-        return await renderShareCard(currentCardProps());
-    } catch (err) {
-        console.error("Share card render failed:", err);
-        return null;
-    }
-};
-
 const copyShareLink = async (): Promise<boolean> => {
     if (!loadedTeamUUID.value) return false;
     try {
@@ -683,43 +695,106 @@ const copyShareLink = async (): Promise<boolean> => {
     }
 };
 
+// Publishing, per team. A 3D card can take seconds to render, so calls can
+// overlap: a save's refresh, an Unpublish, a new link preview. Renders run
+// side by side, but each team's requests go out one at a time, and a request
+// is sent only if its call is still the newest for that team when its turn
+// comes. So the server always ends on what was asked for last.
+let publishSeq = 0;
+let userPublishes = 0;
+const latestPublish = new Map<string, { seq: number; public: boolean; style: CardStyle }>();
+const publishTail = new Map<string, Promise<unknown>>();
+
 // `silent` is the re-publish after a save of an already-public team: the
 // card is refreshed so unfurls never show a stale roster, without toasting
-// twice.
-const setPublished = async (nextPublic: boolean, { silent = false } = {}) => {
+// twice. A failed render never blocks publishing: a 3D card falls back to the
+// 2D one, and with no card at all the page falls back to the site poster for
+// og:image.
+const setPublished = async (
+    nextPublic: boolean,
+    { silent = false, style }: { silent?: boolean; style?: CardStyle } = {},
+) => {
     const teamUUID = loadedTeamUUID.value;
     if (!teamUUID) throw new Error("Cannot publish an unsaved team");
-    publishing.value = true;
+    const pending = latestPublish.get(teamUUID);
+    // A save that lands while this team is being unpublished must not
+    // publish it again.
+    if (silent && pending?.public === false) return;
+    // A save during a new link preview's render publishes the new choice.
+    const chosen = style ?? pending?.style ?? cardStyle.value;
+    const seq = ++publishSeq;
+    latestPublish.set(teamUUID, { seq, public: nextPublic, style: chosen });
+    const isLatest = () => latestPublish.get(teamUUID)?.seq === seq;
+    // Clear Team, another team loaded, undo: the builder holds another team
+    // now, so this one's result must not land in it.
+    const stillLoaded = () => loadedTeamUUID.value === teamUUID;
+    // A silent refresh never disables the header's Publish button.
+    if (!silent) publishing.value = ++userPublishes > 0;
+    const card = currentCardProps();
+    const photo = toRaw(photoInput.value);
     try {
-        const cardPng = nextPublic ? await tryRenderCard() : null;
-        const saved = await userTeamsStore.publish({ teamUUID, public: nextPublic, cardPng });
+        const { png: cardPng, rendered } = nextPublic
+            ? await renderTeamCard(chosen, card, photo)
+            : { png: null, rendered: null };
+        const request = (publishTail.get(teamUUID) ?? Promise.resolve())
+            .catch(() => undefined)
+            .then(() =>
+                isLatest()
+                    ? userTeamsStore.publish({
+                          teamUUID,
+                          public: nextPublic,
+                          cardPng,
+                          ...(nextPublic && { cardStyle: chosen }),
+                      })
+                    : null,
+            );
+        publishTail.set(teamUUID, request);
+        const saved = await request;
+        // Superseded before it was sent: the newer call owns the outcome.
+        if (saved === null) return;
+        track("team_published", {
+            public: nextPublic,
+            hasCard: cardPng !== null,
+            silent,
+            cardStyle: chosen,
+            cardRendered: rendered ?? "none",
+        });
+        if (!stillLoaded()) return;
+        // Requests settle in order, so the last write-back is the server's
+        // final state.
         isPublic.value = saved.public;
         cardUrl.value = saved.cardUrl ?? null;
-        track("team_published", { public: nextPublic, hasCard: cardPng !== null, silent });
+        cardStyle.value = saved.cardStyle ?? chosen;
         if (silent) return;
         if (nextPublic) {
             const copied = await copyShareLink();
-            toast.success(
-                copied
-                    ? (cardPng ? "Published — link copied" : "Published without a preview image — link copied")
-                    : "Published — copy the link from Share",
-            );
+            const fellBack = chosen === "3d" && rendered === "2d";
+            const what = !cardPng
+                ? "Published without a preview image"
+                : fellBack
+                  ? "Published with the 2D card. The 3D photo couldn't be drawn here."
+                  : "Published";
+            toast.success(copied ? `${what} — link copied` : `${what} — copy the link from Share`);
         } else {
             toast.success("Team is private again");
         }
     } catch (err) {
         console.error("Publish failed:", err);
+        if (!stillLoaded()) return;
         if (silent) {
             toast.warning("Saved, but the share preview could not be refreshed");
         } else {
             toast.error(nextPublic ? "Failed to publish team" : "Failed to unpublish team");
         }
     } finally {
-        publishing.value = false;
+        if (!silent) publishing.value = --userPublishes > 0;
+        // Nothing of this team is on the wire any more.
+        if (isLatest()) {
+            latestPublish.delete(teamUUID);
+            publishTail.delete(teamUUID);
+        }
     }
 };
-
-const togglePublish = () => setPublished(!isPublic.value);
 
 const shareTeam = async (method: "copy" | "native") => {
     if (!loadedTeamUUID.value) return;
@@ -782,6 +857,7 @@ const loadTeamFromRoute = async (teamUUID: string) => {
         loadedTeamUUID.value = response.data.teamUUID;
         isPublic.value = response.data.public ?? false;
         cardUrl.value = response.data.cardUrl ?? null;
+        cardStyle.value = response.data.cardStyle ?? "2d";
         teamOwner.value = response.data.username ?? "";
         applyHydratedTeam(hydrated);
 
@@ -1069,9 +1145,11 @@ watch(
                     :is-public="isPublic"
                     :publishing="publishing"
                     :card-url="cardUrl"
+                    :card-style="cardStyle"
                     @saveTeam="saveTeam"
                     @reset="resetTeam"
-                    @togglePublish="togglePublish"
+                    @publish="(style: CardStyle) => setPublished(true, { style })"
+                    @unpublish="setPublished(false)"
                     @share="shareTeam"
                     @downloadCard="downloadCard"
                     @realTeam="showRealTeamPicker = true"
@@ -1110,15 +1188,7 @@ watch(
                 @cancel-pickup="cancelPickup"
             >
                 <template #lineup-actions>
-                    <TeamScene3DDialog
-                        :court="liveArena?.court ?? null"
-                        :logo-url="courtLogoUrl"
-                        :drawing-url="liveArena?.drawingUrl"
-                        :capacity="sceneCapacity"
-                        :people="people3d"
-                        :jersey-url="teamJersey || undefined"
-                        :team-name="teamName"
-                    />
+                    <TeamScene3DDialog v-bind="photoInput" />
                 </template>
             </RosterSection>
 

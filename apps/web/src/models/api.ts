@@ -156,6 +156,17 @@ export interface ResolvedArena extends TeamArenaRef {
     missing?: true;
 }
 
+// Which share card a published team uses. Absent = 2D.
+export type CardStyle = '2d' | '3d';
+
+// The owner's uniform colours for the 3D scene, each #rrggbb. Absent = the
+// colours sampled from the jersey image.
+export interface TeamUniform {
+    primary: string;
+    secondary: string;
+    trim: string;
+}
+
 export interface SaveTeamPayload {
     title: string;
     description?: string;
@@ -167,6 +178,9 @@ export interface SaveTeamPayload {
     coach: EntityRef | null;
     gm: EntityRef | null;
     arena: TeamArenaRef | null;
+    // Absent leaves the stored value alone; a null uniform removes it.
+    cardStyle?: CardStyle;
+    uniform?: TeamUniform | null;
 }
 
 export interface UpdateTeamPayload extends SaveTeamPayload {
@@ -195,6 +209,8 @@ export interface SavedTeam {
     public: boolean;
     publishedAt?: number;
     cardUrl?: string;
+    cardStyle?: CardStyle;
+    uniform?: TeamUniform;
     lastViewed: number;
     createdAt: number;
     updatedAt: number;
@@ -226,6 +242,8 @@ export interface PublishTeamPayload {
     // Base64 PNG (no data: prefix) from useShareCard; null when the render
     // failed or when unpublishing.
     cardPng?: string | null;
+    // The team's choice, stored even when this publish fell back to the 2D card.
+    cardStyle?: CardStyle;
 }
 
 export type PublishTeamResponse = ApiResult<SavedTeam>;

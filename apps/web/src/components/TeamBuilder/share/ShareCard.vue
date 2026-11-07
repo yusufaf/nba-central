@@ -24,6 +24,9 @@ export interface ShareCardProps {
     courtLogoUrl?: string;
     courtDrawingUrl?: string;
     arenaName?: string;
+    // The 3D team photo (a data URL): drawn behind everything in place of the
+    // flat court, with the starters as a strip of names so the figures show.
+    background?: string;
 }
 
 const props = defineProps<ShareCardProps>();
@@ -38,11 +41,14 @@ const monogram = computed(() => (props.title.trim()[0] || '?').toUpperCase());
 const average = computed(() => averageRating(props.starters.map((p) => p.rating)));
 const tier = computed(() => (average.value === null ? 'average' : ratingTier(average.value)));
 const location = computed(() => [props.city, props.country].filter(Boolean).join(', '));
+const detail = (player: ShareCardPlayer) =>
+    [player.position || '—', player.rating].filter((part) => part != null).join(' · ');
 </script>
 
 <template>
     <div
-        class="share-card dark relative flex flex-col justify-between overflow-hidden bg-background p-12 text-foreground"
+        class="share-card dark relative flex flex-col overflow-hidden bg-background p-12 text-foreground"
+        :class="{ 'justify-between': !background }"
         style="width: 1200px; height: 630px; font-size: 16px"><!-- style-guard-allow: px-unit -->
         <!-- .dark: the card is a published image other people see, so it
              keeps one brand look whatever theme its author happens to use. -->
@@ -58,7 +64,11 @@ const location = computed(() => [props.city, props.country].filter(Boolean).join
              inlines, as is the drawing over it; renderShareCard drops either
              if it fails. Cropped from
              the top, so the sideline text along the bottom stays whole. -->
-        <template v-if="court">
+        <template v-if="background">
+            <img data-testid="share-photo" :src="background" alt="" class="absolute inset-0 h-full w-full object-cover" />
+            <div class="share-scrim-photo absolute inset-0" />
+        </template>
+        <template v-else-if="court">
             <div class="absolute inset-0" data-testid="share-court">
                 <CourtFloor
                     :court="court"
@@ -101,7 +111,13 @@ const location = computed(() => [props.city, props.country].filter(Boolean).join
             />
         </header>
 
-        <ul class="relative grid grid-cols-5 gap-4">
+        <ul v-if="background" class="relative mt-auto grid grid-cols-5 gap-4" data-testid="share-strip">
+            <li v-for="(player, i) in starters.slice(0, 5)" :key="i" class="min-w-0 rounded-lg bg-background/75 px-4 py-2">
+                <span class="block truncate text-xl font-semibold">{{ player.fullName }}</span>
+                <span class="block text-sm text-muted-foreground">{{ detail(player) }}</span>
+            </li>
+        </ul>
+        <ul v-else class="relative grid grid-cols-5 gap-4">
             <li
                 v-for="(player, i) in starters.slice(0, 5)"
                 :key="i"
@@ -115,7 +131,7 @@ const location = computed(() => [props.city, props.country].filter(Boolean).join
             </li>
         </ul>
 
-        <footer class="relative flex items-end justify-between">
+        <footer class="relative flex items-end justify-between" :class="{ 'mt-6': background }">
             <div>
                 <span class="text-xl text-muted-foreground">Starting five</span>
                 <div v-if="average !== null" class="mt-1 text-5xl font-bold" :data-tier="tier">{{ average }}</div>
@@ -152,6 +168,17 @@ const location = computed(() => [props.city, props.country].filter(Boolean).join
         hsl(var(--background) / 0.85),
         hsl(var(--background) / 0.55) 35%,
         hsl(var(--background) / 0.55) 65%,
+        hsl(var(--background) / 0.85)
+    );
+}
+
+/* The photo stays clear through the middle, where the team stands. */
+.share-scrim-photo {
+    background: linear-gradient(
+        to bottom,
+        hsl(var(--background) / 0.85),
+        hsl(var(--background) / 0) 30%,
+        hsl(var(--background) / 0) 70%,
         hsl(var(--background) / 0.85)
     );
 }

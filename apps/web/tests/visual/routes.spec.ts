@@ -597,6 +597,79 @@ test.describe('3D team scene', () => {
         expect(errors).toEqual([]);
     });
 
+    // #289: the share card's 3D team photo is drawn into an sRGB render target.
+    // A plain one would read back linear, too dark: mid grey comes out near 55.
+    test('offscreen render target writes sRGB', async ({ page }) => {
+        test.setTimeout(120000);
+        await stubNetwork(page);
+        await page.goto('/t/visual-team');
+        const pixel = await page.evaluate(async () => {
+            const { getSharedRenderer } = await import('/src/three/renderer/shared.ts');
+            const { renderToImageData, solidColourProbe } = await import('/src/three/renderer/offscreen.ts');
+            const { scene, camera } = solidColourProbe('#808080');
+            const image = renderToImageData(getSharedRenderer(), scene, camera, 64, 64);
+            const i = (32 * 64 + 32) * 4;
+            return Array.from(image.data.slice(i, i + 3));
+        });
+        for (const channel of pixel) expect(Math.abs(channel - 128)).toBeLessThanOrEqual(3);
+    });
+
+    test('3D share card renders under 2 MB', async ({ page }, testInfo) => {
+        test.setTimeout(120000);
+        await stubNetwork(page);
+        await page.goto('/t/visual-team');
+        const result = await page.evaluate(async (team) => {
+            const { renderTeamCard } = await import('/src/composables/teamCard.ts');
+            const { toShareCardProps } = await import('/src/composables/useShareCard.ts');
+            const { scenePeople } = await import('/src/components/scene3d/people.ts');
+            const starters = team.roster.filter((entry) => entry.slot >= 1 && entry.slot <= 5).sort((a, b) => a.slot - b.slot);
+            const card = toShareCardProps({
+                title: team.title,
+                city: team.city,
+                country: team.country,
+                logoUrl: team.logoUrl,
+                jerseyUrl: team.jerseyUrl,
+                username: team.username,
+                roster: team.roster,
+                arena: team.arena,
+            } as never);
+            const photo = {
+                court: null,
+                capacity: null,
+                people: scenePeople(starters as never, { coach: team.coach, gm: team.gm } as never),
+                jerseyUrl: team.jerseyUrl || undefined,
+                teamName: team.title,
+            };
+            const { png, rendered } = await renderTeamCard('3d', card, photo, { timeoutMs: 60000 });
+            if (!png) return { rendered, png: null, mean: 0, spread: 0 };
+            // The photo band: under the header, above the name strip.
+            const image = new Image();
+            image.src = `data:image/png;base64,${png}`;
+            await image.decode();
+            const canvas = document.createElement('canvas');
+            canvas.width = 1200;
+            canvas.height = 630;
+            const context = canvas.getContext('2d')!;
+            context.drawImage(image, 0, 0);
+            const { data } = context.getImageData(0, 220, 1200, 180);
+            const lumas: number[] = [];
+            for (let i = 0; i < data.length; i += 4) lumas.push(0.2126 * data[i] + 0.7152 * data[i + 1] + 0.0722 * data[i + 2]);
+            const mean = lumas.reduce((a, b) => a + b, 0) / lumas.length;
+            const spread = Math.sqrt(lumas.reduce((a, b) => a + (b - mean) ** 2, 0) / lumas.length);
+            return { rendered, png, mean, spread };
+        }, publicTeamFixture.data);
+
+        expect(result.rendered).toBe('3d');
+        const bytes = Buffer.from(result.png!, 'base64');
+        await testInfo.attach('3d-share-card', { body: bytes, contentType: 'image/png' });
+        expect(bytes.subarray(0, 8)).toEqual(Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]));
+        expect(bytes.length).toBeLessThan(2 * 1024 * 1024);
+        // Not near-black: the background alone is luma ~12.
+        expect(result.mean).toBeGreaterThan(20);
+        // Something was drawn, not a flat fill.
+        expect(result.spread).toBeGreaterThan(10);
+    });
+
     test('toggling five times keeps one canvas and steady memory', async ({ page }) => {
         // Seven characters are rebuilt on each open, under software WebGL here.
         test.setTimeout(120000);

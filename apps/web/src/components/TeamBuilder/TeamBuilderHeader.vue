@@ -2,6 +2,7 @@
 import { ref } from 'vue';
 import { VIEW_OPTIONS, DRAWER_OPTIONS } from '@/constants/constants';
 import TeamCustomizationDialog from './TeamCustomizationDialog.vue';
+import PublishDialog from './share/PublishDialog.vue';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -15,6 +16,7 @@ import {
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { useTeamBuilderPreferences } from '@/composables/useTeamBuilderPreferences';
 import type { DrawerSide } from '@/models/types';
+import type { CardStyle } from '@/models/api';
 import {
     MoreVertical,
     RotateCcw,
@@ -25,6 +27,7 @@ import {
     Share2,
     Download,
     History,
+    Image,
 } from 'lucide-vue-next';
 
 /* 2-Way Bound Props */
@@ -45,12 +48,14 @@ defineProps<{
     isPublic: boolean;
     publishing: boolean;
     cardUrl: string | null;
+    cardStyle: CardStyle;
 }>();
 
 const emit = defineEmits<{
     reset: [];
     saveTeam: [];
-    togglePublish: [];
+    publish: [style: CardStyle];
+    unpublish: [];
     share: [method: 'copy' | 'native'];
     downloadCard: [];
     realTeam: [];
@@ -60,6 +65,19 @@ const { shouldConfirm } = useTeamBuilderPreferences();
 
 const showConfirm = ref<boolean>(false);
 const showTeamCustomizationDialog = ref<boolean>(false);
+
+// Publishing asks which link preview to use; so does changing it later.
+const publishDialogOpen = ref(false);
+const publishDialogMode = ref<'publish' | 'change'>('publish');
+const openPublishDialog = (mode: 'publish' | 'change') => {
+    publishDialogMode.value = mode;
+    publishDialogOpen.value = true;
+};
+
+const publishClick = (isPublic: boolean) => {
+    if (isPublic) emit('unpublish');
+    else openPublishDialog('publish');
+};
 
 const canShareNatively = typeof navigator !== 'undefined' && typeof navigator.share === 'function';
 
@@ -181,7 +199,7 @@ const toggleCustomizationDialog = () => {
                         :variant="isPublic ? 'outline' : 'secondary'"
                         :disabled="!teamUuid || publishing"
                         :title="teamUuid ? (isPublic ? 'Make this team private' : 'Publish a public link (shows your username)') : 'Save the team first'"
-                        @click="emit('togglePublish')"
+                        @click="publishClick(isPublic)"
                     >
                         <Globe class="h-4 w-4 mr-2" />
                         {{ publishing ? 'Working…' : isPublic ? 'Unpublish' : 'Publish' }}
@@ -202,6 +220,13 @@ const toggleCustomizationDialog = () => {
                             </DropdownMenuItem>
                             <DropdownMenuItem :disabled="!cardUrl" @click="emit('downloadCard')">
                                 <Download class="h-4 w-4 mr-2" /> Download card
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                                data-testid="change-preview"
+                                :disabled="publishing"
+                                @click="openPublishDialog('change')"
+                            >
+                                <Image class="h-4 w-4 mr-2" /> Change link preview…
                             </DropdownMenuItem>
                         </DropdownMenuContent>
                     </DropdownMenu>
@@ -239,6 +264,13 @@ const toggleCustomizationDialog = () => {
                 </div>
             </div>
         </div>
+
+        <PublishDialog
+            v-model:open="publishDialogOpen"
+            :card-style="cardStyle"
+            :mode="publishDialogMode"
+            @confirm="(style) => emit('publish', style)"
+        />
 
         <!-- Confirm Dialog -->
         <ConfirmDialog
