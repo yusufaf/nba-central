@@ -7,6 +7,7 @@ const mocks = vi.hoisted(() => ({
     replace: vi.fn(),
     track: vi.fn(),
     webgl: true,
+    probe: vi.fn(),
     sceneMounts: 0,
     sceneProps: [] as Record<string, unknown>[],
 }));
@@ -18,7 +19,12 @@ vi.mock('vue-router', () => ({
 }));
 vi.mock('vue-sonner', () => ({ toast: { success: vi.fn(), error: vi.fn(), warning: vi.fn() } }));
 vi.mock('@/lib/analytics', () => ({ track: mocks.track }));
-vi.mock('@/utils/webgl', () => ({ isWebGLAvailable: () => mocks.webgl }));
+vi.mock('@/utils/webgl', () => ({
+    isWebGLAvailable: () => {
+        mocks.probe();
+        return mocks.webgl;
+    },
+}));
 vi.mock('@/components/scene3d', async () => {
     const { defineComponent: define, h: render } = await import('vue');
     return {
@@ -90,6 +96,12 @@ beforeEach(() => {
 });
 
 describe('PublicTeam ?view=3d', () => {
+    it('does not probe WebGL for visitors who never open 3D', async () => {
+        mountView();
+        await flushPromises();
+        expect(mocks.probe).not.toHaveBeenCalled();
+    });
+
     it('shows no scene without ?view=3d', async () => {
         const wrapper = mountView();
         await flushPromises();

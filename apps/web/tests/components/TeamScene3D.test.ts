@@ -15,6 +15,7 @@ const mocks = vi.hoisted(() => ({
     track: vi.fn(),
     contextListener: null as ((lost: boolean) => void) | null,
     unsubscribe: vi.fn(),
+    failToStart: false,
 }));
 
 vi.mock('@/three/scene/teamScene', () => ({
@@ -26,6 +27,7 @@ vi.mock('@/three/scene/teamScene', () => ({
         renderCount = 0;
         onRender: (() => void) | null = null;
         constructor() {
+            if (mocks.failToStart) throw new Error('Error creating WebGL context.');
             mocks.scenes.push(this);
         }
     },
@@ -78,6 +80,7 @@ describe('TeamScene3D', () => {
         mocks.track.mockReset();
         mocks.unsubscribe.mockReset();
         mocks.contextListener = null;
+        mocks.failToStart = false;
     });
     afterEach(() => {
         wrapper?.unmount();
@@ -183,6 +186,17 @@ describe('TeamScene3D', () => {
         await flushPromises();
         expect(w.text()).not.toContain('3D view paused');
         expect(scene().requestRender).toHaveBeenCalled();
+    });
+
+    it('a renderer that cannot start shows the unavailable card and tracks no-webgl', async () => {
+        mocks.failToStart = true;
+        mocks.rasterise.mockResolvedValue(canvas('a'));
+        const w = mountScene();
+        await flushPromises();
+        expect(w.text()).toContain("This browser can't show the 3D view.");
+        expect(w.findAll('button')).toHaveLength(0);
+        expect(mocks.track).toHaveBeenCalledWith('scene3d_failed', { reason: 'no-webgl' });
+        expect(mocks.rasterise).not.toHaveBeenCalled();
     });
 
     it('unmount disposes the scene', async () => {
