@@ -9,7 +9,7 @@ import { buildPerson, type PersonInput } from '@/three/character/person';
 import type { KitColours } from '@/three/character/jerseyColours';
 import { disposeObject, getSharedRenderer } from '@/three/renderer/shared';
 import { layoutPeople } from './layout';
-import { ORBIT_LIMITS, framePreset, type CameraPreset } from './cameraPresets';
+import { ORBIT_LIMITS, TWO_ROWS_BELOW_ASPECT, framePreset, type CameraPreset } from './cameraPresets';
 
 export interface LabelAnchor {
     id: string;
@@ -39,7 +39,7 @@ export class TeamScene {
     private peopleGroup = new Group();
     private people: { id: string; root: Group; head: number }[] = [];
     private peopleRequest = 0;
-    private portrait = false;
+    private twoRows = false;
     private anchors: LabelAnchor[] = [];
 
     constructor(private readonly container: HTMLElement) {
@@ -155,20 +155,25 @@ export class TeamScene {
         if (!width || !height) return;
         this.renderer.setSize(width, height, false);
         this.camera.aspect = width / height;
-        if (this.camera.aspect < 1 !== this.portrait) this.placePeople();
-        // Keep wherever the user has orbited to: a phone's URL bar collapsing
-        // on scroll resizes the view. Only the lens follows the new shape.
+        // A change of rows moves everyone, so the shot is framed afresh.
+        if (this.camera.aspect < TWO_ROWS_BELOW_ASPECT !== this.twoRows) {
+            this.placePeople();
+            this.frame();
+            return;
+        }
+        // Otherwise keep wherever the user has orbited to: a phone's URL bar
+        // collapsing on scroll resizes the view. Only the lens follows the new shape.
         this.camera.fov = framePreset(this.preset, this.camera.aspect).fov;
         this.camera.updateProjectionMatrix();
         this.requestRender();
     }
 
     private placePeople(): void {
-        this.portrait = this.camera.aspect < 1;
+        this.twoRows = this.camera.aspect < TWO_ROWS_BELOW_ASPECT;
         // People are reused across layouts; their shadows are rebuilt.
         for (const child of this.peopleGroup.children) if (child.name === 'shadow') disposeObject(child);
         this.peopleGroup.clear();
-        const spots = layoutPeople(this.people.length, this.portrait);
+        const spots = layoutPeople(this.people.length, this.twoRows);
         this.people.forEach(({ root }, i) => {
             const { x, z } = spots[i];
             root.position.set(x, 0, z);

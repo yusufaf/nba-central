@@ -74,6 +74,12 @@ export const buildPerson = async (
     // Figurines have no eyes or brows.
     for (const mesh of meshes) if (mesh !== body) mesh.visible = false;
 
+    // Reshape first: the kit shader reads the reshaped rest positions, so its
+    // landmarks have to come from the same body.
+    const size = bodySize(input);
+    reshapeBody(character, { girth: girthFor(size), shoulders: 1, wingspan: WINGSPAN });
+    character.updateMatrixWorld(true);
+
     addRegions(body);
     const landmarks = findLandmarks(body);
     const kind = input.role === 'player' ? 'player' : 'suit';
@@ -85,9 +91,6 @@ export const buildPerson = async (
         vinyl: VINYL,
         texture,
     });
-
-    const size = bodySize(input);
-    reshapeBody(character, { girth: girthFor(size), shoulders: 1, wingspan: WINGSPAN });
 
     // Face down +z, toward the team-photo camera.
     const root = new Group();

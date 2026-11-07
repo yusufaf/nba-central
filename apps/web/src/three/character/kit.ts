@@ -103,8 +103,9 @@ export const kitTexture = (kit: { kind: KitKind; teamName: string; trim: string;
         context.strokeStyle = kit.secondary;
         context.fillStyle = kit.trim;
         const name = kit.teamName.toUpperCase().slice(0, 14);
-        context.strokeText(name, 256, 250, 460);
-        context.fillText(name, 256, 250, 460);
+        // Narrower than the half it sits in: the chest is narrower than the box.
+        context.strokeText(name, 256, 250, 320);
+        context.fillText(name, 256, 250, 320);
     }
     const texture = new CanvasTexture(canvas);
     texture.colorSpace = SRGBColorSpace;
@@ -238,5 +239,7 @@ export const applyKitMaterial = (source: MeshStandardMaterial, options: KitMater
             );
     };
     material.customProgramCacheKey = () => `kit-${kind}`;
+    // The kit texture is only a shader uniform; disposeObject finds it here.
+    material.userData.textures = [options.texture];
     return material;
 };

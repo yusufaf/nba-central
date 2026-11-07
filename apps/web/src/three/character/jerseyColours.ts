@@ -9,9 +9,17 @@ export interface KitColours {
     trim: string;
 }
 
-// A plain home kit, for teams with no jersey or one that can't be read.
-export const HOME_KIT: KitColours = { primary: '#f4f4f2', secondary: '#1d2a44', trim: '#1d2a44' };
+// A plain kit for teams with no jersey or one that can't be read. Royal blue,
+// not white: a white kit barely shows on the light grey figurines.
+export const HOME_KIT: KitColours = { primary: '#2f5d9b', secondary: '#f4f4f2', trim: '#ffffff' };
 
+// A backdrop pixel's neighbour joins the backdrop if every channel is within
+// this of it, which follows the database's soft gradients.
+const BACKDROP_STEP = 12;
+// A bucket whose mean colour spreads less than this across its channels is a
+// neutral (white, grey, black): a kit colour only if nothing more colourful is.
+const MIN_CHROMA = 40;
+const MIN_COLOURED_SHARE = 0.06;
 const TRIM_LIGHT = '#ffffff';
 const TRIM_DARK = '#111418';
 const MIN_DISTANCE = 60;
@@ -38,38 +46,47 @@ const contrast = (a: number[], b: number[]) => {
     return (hi + 0.05) / (lo + 0.05);
 };
 
-const isBackdrop = (data: Uint8ClampedArray, i: number) => {
-    const [r, g, b, a] = [data[i], data[i + 1], data[i + 2], data[i + 3]];
-    return a < 16 || (r >= 235 && g >= 235 && b >= 235) || (r <= 25 && g <= 25 && b <= 25);
-};
+const close = (data: Uint8ClampedArray, i: number, j: number) =>
+    Math.abs(data[i] - data[j]) <= BACKDROP_STEP &&
+    Math.abs(data[i + 1] - data[j + 1]) <= BACKDROP_STEP &&
+    Math.abs(data[i + 2] - data[j + 2]) <= BACKDROP_STEP;
+const clear = (data: Uint8ClampedArray, i: number) => data[i + 3] < 16;
+const chroma = (rgb: number[]) => Math.max(...rgb) - Math.min(...rgb);
 
 export const sampleJerseyColours = ({ data, width, height }: Pixels): KitColours | null => {
-    // Flood fill the backdrop inward from the edge, so white or black inside
-    // the jersey's own art is kept.
+    // Flood fill the backdrop inward from every edge pixel, stepping to any
+    // neighbour close to the pixel it came from: plain, transparent and
+    // gradient backdrops all go, while colour inside the art (including a white
+    // kit behind its outline) is kept.
     const backdrop = new Uint8Array(width * height);
     const queue: number[] = [];
-    const visit = (x: number, y: number) => {
+    const seed = (x: number, y: number) => {
         const p = y * width + x;
-        if (backdrop[p] || !isBackdrop(data, p * 4)) return;
+        if (backdrop[p]) return;
         backdrop[p] = 1;
         queue.push(p);
     };
     for (let x = 0; x < width; x++) {
-        visit(x, 0);
-        visit(x, height - 1);
+        seed(x, 0);
+        seed(x, height - 1);
     }
     for (let y = 0; y < height; y++) {
-        visit(0, y);
-        visit(width - 1, y);
+        seed(0, y);
+        seed(width - 1, y);
     }
     while (queue.length) {
         const p = queue.pop()!;
         const x = p % width;
         const y = (p - x) / width;
-        if (x > 0) visit(x - 1, y);
-        if (x < width - 1) visit(x + 1, y);
-        if (y > 0) visit(x, y - 1);
-        if (y < height - 1) visit(x, y + 1);
+        for (const [nx, ny] of [[x - 1, y], [x + 1, y], [x, y - 1], [x, y + 1]]) {
+            if (nx < 0 || ny < 0 || nx >= width || ny >= height) continue;
+            const q = ny * width + nx;
+            if (backdrop[q]) continue;
+            if (clear(data, q * 4) || (!clear(data, p * 4) && close(data, p * 4, q * 4))) {
+                backdrop[q] = 1;
+                queue.push(q);
+            }
+        }
     }
 
     // Count what's left in coarse buckets, keeping each bucket's mean colour.
@@ -79,7 +96,7 @@ export const sampleJerseyColours = ({ data, width, height }: Pixels): KitColours
         const i = p * 4;
         if (backdrop[p] || data[i + 3] < 128) continue;
         kept++;
-        const key = ((data[i] >> 3) << 10) | ((data[i + 1] >> 3) << 5) | (data[i + 2] >> 3);
+        const key = ((data[i] >> 4) << 8) | ((data[i + 1] >> 4) << 4) | (data[i + 2] >> 4);
         const bucket = buckets.get(key) ?? { count: 0, sum: [0, 0, 0] };
         bucket.count++;
         bucket.sum[0] += data[i];
@@ -91,10 +108,14 @@ export const sampleJerseyColours = ({ data, width, height }: Pixels): KitColours
 
     const ranked = [...buckets.values()]
         .sort((a, b) => b.count - a.count)
-        .map(({ count, sum }) => sum.map((s) => s / count));
-    const primary = ranked[0];
+        .map(({ count, sum }) => ({ count, rgb: sum.map((s) => s / count) }));
+    // Most jerseys come as a white home kit beside a coloured road kit; the
+    // coloured one says more about the team, so it leads when it's big enough.
+    const coloured = ranked.find(({ count, rgb }) => chroma(rgb) >= MIN_CHROMA && count >= kept * MIN_COLOURED_SHARE);
+    const primary = (coloured ?? ranked[0]).rgb;
     const secondary =
-        ranked.find((rgb) => Math.hypot(...rgb.map((c, k) => c - primary[k])) >= MIN_DISTANCE) ?? primary.map((c) => c * 0.6);
+        ranked.find(({ rgb }) => Math.hypot(...rgb.map((c, k) => c - primary[k])) >= MIN_DISTANCE)?.rgb ??
+        primary.map((c) => c * 0.6);
     const light = [255, 255, 255];
     const dark = [17, 20, 24];
     return {

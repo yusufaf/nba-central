@@ -29,6 +29,7 @@ vi.mock('@/three/character/person', async () => {
 });
 
 import { TeamScene } from '@/three/scene/teamScene';
+import { framePreset } from '@/three/scene/cameraPresets';
 import type { PersonInput } from '@/three/character/person';
 import { HOME_KIT } from '@/three/character/jerseyColours';
 
@@ -142,6 +143,32 @@ describe('TeamScene', () => {
             expect(anchor.x).toBeLessThanOrEqual(width);
             expect(anchor.y).toBeGreaterThanOrEqual(0);
         }
+        scene.dispose();
+    });
+
+    it('a near-square view stands seven people in two rows', async () => {
+        width = 712;
+        height = 640;
+        const scene = new TeamScene(container);
+        await scene.setPeople(['a', 'b', 'c', 'd', 'e', 'f', 'g'].map(person), KIT);
+        const group = (scene as unknown as { peopleGroup: { children: { name: string; position: { z: number } }[] } }).peopleGroup;
+        const rows = new Set(group.children.filter((c) => c.name !== 'shadow').map((c) => c.position.z));
+        expect(rows).toEqual(new Set([0.9, -0.7]));
+        scene.dispose();
+    });
+
+    it('turning the view into two rows reframes the team photo', async () => {
+        const scene = new TeamScene(container);
+        await scene.setPeople(['a', 'b', 'c', 'd', 'e', 'f', 'g'].map(person), KIT);
+        const camera = cameraOf(scene);
+        camera.position.set(3, 4, 5);
+        width = 712;
+        height = 640;
+        resizeCallback?.();
+        const expected = framePreset('team', 712 / 640).position;
+        expect(camera.position.x).toBeCloseTo(expected[0], 5);
+        expect(camera.position.y).toBeCloseTo(expected[1], 5);
+        expect(camera.position.z).toBeCloseTo(expected[2], 5);
         scene.dispose();
     });
 });

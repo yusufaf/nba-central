@@ -50,13 +50,20 @@ const loader = new GLTFLoader().setMeshoptDecoder(MeshoptDecoder);
 const bodies = new Map<string, Promise<Object3D>>();
 
 // Each body file loads and dequantizes once per page; characters are clones.
+// A failed load is forgotten, so the next scene tries the file again.
 export const loadBody = (url: string): Promise<Object3D> => {
     let pending = bodies.get(url);
     if (!pending) {
-        pending = loader.loadAsync(url).then((gltf) => {
-            dequantizeSkinned(gltf.scene);
-            return gltf.scene;
-        });
+        pending = loader.loadAsync(url).then(
+            (gltf) => {
+                dequantizeSkinned(gltf.scene);
+                return gltf.scene;
+            },
+            (error: unknown) => {
+                bodies.delete(url);
+                throw error;
+            },
+        );
         bodies.set(url, pending);
     }
     return pending;

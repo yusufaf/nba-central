@@ -30,7 +30,7 @@ vi.mock('@/components/scene3d', async () => {
     return {
         TeamScene3DAsync: define({
             name: 'TeamScene3DStub',
-            props: ['court', 'logoUrl', 'drawingUrl', 'capacity', 'label'],
+            props: ['court', 'logoUrl', 'drawingUrl', 'capacity', 'label', 'people', 'jerseyUrl', 'teamName'],
             setup(props) {
                 mocks.sceneMounts++;
                 mocks.sceneProps.push({ ...props });
@@ -167,5 +167,47 @@ describe('PublicTeam ?view=3d', () => {
             ['scene3d_opened', { page: 'public' }],
             ['scene3d_opened', { page: 'public' }],
         ]);
+    });
+
+    it('builds people from starters, coach and GM in order', async () => {
+        vi.mocked(teamApi.getPublicTeam).mockResolvedValue({
+            success: true,
+            data: {
+                ...teamWith('t1', 'maple'),
+                roster: [
+                    { slot: 6, player: { fullName: 'Bench Guy' } },
+                    { slot: 2, player: { fullName: 'Two', position: 'SG', height_feet: 6, height_inches: 5, weight_pounds: 205 } },
+                    { slot: 1, player: { fullName: 'One', position: 'PG', heightFeet: 6, heightInches: 1, weightPounds: 180 } },
+                ],
+                coach: { name: 'Hale', isCustom: true },
+                gm: { name: 'Ortiz', isCustom: false },
+            } as never,
+        });
+        mocks.route.query = { view: '3d' };
+        mountView();
+        await flushPromises();
+        expect(mocks.sceneProps.at(-1)?.people).toEqual([
+            { id: 'player-1', name: 'One', role: 'player', position: 'PG', heightInches: 73, weightPounds: 180 },
+            { id: 'player-2', name: 'Two', role: 'player', position: 'SG', heightInches: 77, weightPounds: 205 },
+            { id: 'coach', name: 'Hale', role: 'coach', heightInches: null, weightPounds: null },
+            { id: 'gm', name: 'Ortiz', role: 'gm', heightInches: null, weightPounds: null },
+        ]);
+    });
+
+    it('a roster with two starters and no staff gives two people', async () => {
+        vi.mocked(teamApi.getPublicTeam).mockResolvedValue({
+            success: true,
+            data: {
+                ...teamWith('t1', 'maple'),
+                roster: [
+                    { slot: 1, player: { fullName: 'One' } },
+                    { slot: 3, player: { fullName: 'Three' } },
+                ],
+            } as never,
+        });
+        mocks.route.query = { view: '3d' };
+        mountView();
+        await flushPromises();
+        expect((mocks.sceneProps.at(-1)?.people as unknown[]).length).toBe(2);
     });
 });

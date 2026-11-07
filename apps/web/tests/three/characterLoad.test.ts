@@ -1,4 +1,5 @@
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import {
     Bone,
     BufferAttribute,
@@ -11,7 +12,7 @@ import {
     Vector3,
     type Object3D,
 } from 'three';
-import { cloneCharacter, dequantizeSkinned } from '@/three/character/load';
+import { cloneCharacter, dequantizeSkinned, loadBody } from '@/three/character/load';
 
 // Two bones, one vertex on each, positions stored at 1/100 scale with the
 // x100 hidden in the inverse bind matrices: what gltf-transform's meshopt
@@ -90,5 +91,20 @@ describe('cloneCharacter', () => {
         const second = cloneCharacter(root);
         skinnedOf(first).geometry.getAttribute('position').setX(0, 42);
         expect(skinnedOf(second).geometry.getAttribute('position').getX(0)).not.toBe(42);
+    });
+});
+
+describe('loadBody', () => {
+    afterEach(() => vi.restoreAllMocks());
+
+    it('tries again after a failed load instead of keeping the failure', async () => {
+        const load = vi
+            .spyOn(GLTFLoader.prototype, 'loadAsync')
+            .mockRejectedValueOnce(new Error('network'))
+            .mockResolvedValueOnce({ scene: new Group() } as never);
+        const url = 'https://cdn/retry-body.glb';
+        await expect(loadBody(url)).rejects.toThrow('network');
+        await expect(loadBody(url)).resolves.toBeInstanceOf(Group);
+        expect(load).toHaveBeenCalledTimes(2);
     });
 });
