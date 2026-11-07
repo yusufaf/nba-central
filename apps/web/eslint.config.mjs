@@ -85,6 +85,46 @@ export default defineConfigWithVueTs(
     languageOptions: { globals: globals.node },
   },
 
+  // three.js is ~180 KB gzipped; it must only ever load behind the lazy 3D
+  // component. A later block's no-restricted-imports replaces an earlier
+  // one for the same file, so these two never overlap and each lists its
+  // whole set. scripts/check-bundle.mjs backs this up after the build.
+  {
+    name: "app/three-boundary",
+    files: ["src/**/*.{ts,vue}"],
+    ignores: ["src/three/**", "src/components/scene3d/**"],
+    rules: {
+      "no-restricted-imports": [
+        "error",
+        {
+          patterns: [
+            {
+              group: ["three", "three/*", "@/three/*"],
+              message: "3D code stays behind the lazy scene3d component.",
+            },
+          ],
+        },
+      ],
+    },
+  },
+  {
+    name: "app/three-boundary-scene3d",
+    files: ["src/components/scene3d/**"],
+    rules: {
+      "no-restricted-imports": [
+        "error",
+        {
+          patterns: [
+            {
+              group: ["three", "three/*"],
+              message: "Go through the @/three modules.",
+            },
+          ],
+        },
+      ],
+    },
+  },
+
   // Must stay last: turns off the stylistic rules that would otherwise
   // disagree with .prettierrc.
   skipFormatting,
