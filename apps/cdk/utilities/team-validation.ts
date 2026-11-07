@@ -1,4 +1,29 @@
-import { isRecord } from "./type-guards";
+import { CARD_STYLES, TeamUniform } from "../models/api/teams-api";
+import { HEX_COLOUR } from "./custom-entities-validation";
+import { isOneOf, isRecord } from "./type-guards";
+
+const UNIFORM_FIELDS = ["primary", "secondary", "trim"] as const;
+
+export const cardStyleError = (value: unknown): string | null =>
+	isOneOf(CARD_STYLES, value) ? null : "cardStyle must be 2d or 3d";
+
+export const uniformError = (value: unknown): string | null => {
+	if (!isRecord(value)) return "uniform must be null or {primary, secondary, trim}";
+	for (const field of UNIFORM_FIELDS) {
+		const colour = value[field];
+		if (typeof colour !== "string" || !HEX_COLOUR.test(colour)) {
+			return `uniform ${field} must be a #rrggbb colour`;
+		}
+	}
+	return null;
+};
+
+// Known keys only, so nothing else a client sends reaches the item.
+export const toUniform = (value: Record<string, unknown>): TeamUniform => ({
+	primary: value.primary as string,
+	secondary: value.secondary as string,
+	trim: value.trim as string,
+});
 
 const isEntityRef = (value: unknown): boolean => {
 	if (value === null) return true;
@@ -98,6 +123,16 @@ export const validateTeamData = (data: unknown): { valid: boolean; error?: strin
 			valid: false,
 			error: "arena must be null or {name, location?, capacity?, openedYear?, imgLink?, isCustom?, arenaUUID?}",
 		};
+	}
+
+	if (data.cardStyle !== undefined) {
+		const error = cardStyleError(data.cardStyle);
+		if (error) return { valid: false, error };
+	}
+
+	if (data.uniform !== undefined && data.uniform !== null) {
+		const error = uniformError(data.uniform);
+		if (error) return { valid: false, error };
 	}
 
 	return { valid: true };

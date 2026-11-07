@@ -10,7 +10,8 @@ import { AuthorizerContext } from "models/auth";
 import { removeKeys } from "resources/dynamo/utilities";
 import { teamGsiKey, PRIVATE_SK2 } from "resources/dynamo/teams";
 import { CreateTeamResponse, SaveTeamPayload, SavedTeam } from "models/api/teams-api";
-import { validateTeamData } from "utilities/team-validation";
+import { toUniform, validateTeamData } from "utilities/team-validation";
+import { isRecord } from "utilities/type-guards";
 import { toStoredArenaRef } from "resources/dynamo/arenas";
 
 const { mainTable = "" } = process.env;
@@ -67,6 +68,8 @@ export const handler: Handler = async (
 			favorited: false,
 			label: "",
 			public: false,
+			...(payload.cardStyle !== undefined && { cardStyle: payload.cardStyle }),
+			...(isRecord(payload.uniform) && { uniform: toUniform(payload.uniform) }),
 			lastViewed: timestamp,
 			createdAt: timestamp,
 			updatedAt: timestamp,

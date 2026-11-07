@@ -366,3 +366,94 @@ describe("listTeams projection", () => {
 		expect(input.ExpressionAttributeNames["#pub"]).toBe("public");
 	});
 });
+
+describe("team card style and uniform", () => {
+	const uniform = { primary: "#112233", secondary: "#445566", trim: "#778899" };
+
+	it("updateTeam stores cardStyle and the uniform's three colours", async () => {
+		send.mockResolvedValueOnce({ Attributes: { teamUUID: "t1", title: "x" } });
+		const result: any = await updateTeamHandler(
+			authorizerEvent({
+				body: validTeamBody({ teamUUID: "t1", cardStyle: "3d", uniform: { ...uniform, extra: "x" } }),
+			}),
+			{} as any,
+			{} as any,
+		);
+		expect(result.statusCode).toBe(200);
+		const input = send.mock.calls[0][0].input;
+		expect(input.UpdateExpression).toContain("cardStyle = :cardStyle");
+		expect(input.UpdateExpression).toContain("uniform = :uniform");
+		expect(input.ExpressionAttributeValues[":cardStyle"]).toBe("3d");
+		expect(input.ExpressionAttributeValues[":uniform"]).toEqual(uniform);
+	});
+
+	it("updateTeam leaves both alone when the payload omits them", async () => {
+		send.mockResolvedValueOnce({ Attributes: { teamUUID: "t1", title: "x" } });
+		await updateTeamHandler(
+			authorizerEvent({ body: validTeamBody({ teamUUID: "t1" }) }),
+			{} as any,
+			{} as any,
+		);
+		const input = send.mock.calls[0][0].input;
+		expect(input.UpdateExpression).not.toContain("cardStyle");
+		expect(input.UpdateExpression).not.toContain("uniform");
+		expect(input.ExpressionAttributeValues).not.toHaveProperty(":cardStyle");
+		expect(input.ExpressionAttributeValues).not.toHaveProperty(":uniform");
+	});
+
+	it("updateTeam removes the uniform on null", async () => {
+		send.mockResolvedValueOnce({ Attributes: { teamUUID: "t1", title: "x" } });
+		await updateTeamHandler(
+			authorizerEvent({ body: validTeamBody({ teamUUID: "t1", uniform: null }) }),
+			{} as any,
+			{} as any,
+		);
+		const input = send.mock.calls[0][0].input;
+		expect(input.UpdateExpression).toMatch(/ REMOVE uniform$/);
+		expect(input.ExpressionAttributeValues).not.toHaveProperty(":uniform");
+	});
+
+	it("updateTeam 400s on a bad uniform without calling Dynamo", async () => {
+		const result: any = await updateTeamHandler(
+			authorizerEvent({ body: validTeamBody({ teamUUID: "t1", uniform: { ...uniform, trim: "red" } }) }),
+			{} as any,
+			{} as any,
+		);
+		expect(result.statusCode).toBe(400);
+		expect(send).not.toHaveBeenCalled();
+	});
+
+	it("createTeam stores cardStyle and the uniform when given", async () => {
+		send.mockResolvedValueOnce({});
+		await createTeamHandler(
+			authorizerEvent({ body: validTeamBody({ cardStyle: "3d", uniform: { ...uniform, extra: 1 } }) }),
+			{} as any,
+			{} as any,
+		);
+		const item = send.mock.calls[0][0].input.Item;
+		expect(item.cardStyle).toBe("3d");
+		expect(item.uniform).toEqual(uniform);
+	});
+
+	it("createTeam omits both when absent", async () => {
+		send.mockResolvedValueOnce({});
+		await createTeamHandler(authorizerEvent({ body: validTeamBody() }), {} as any, {} as any);
+		const item = send.mock.calls[0][0].input.Item;
+		expect(item).not.toHaveProperty("cardStyle");
+		expect(item).not.toHaveProperty("uniform");
+	});
+
+	it("getTeam returns a stored cardStyle and uniform", async () => {
+		send.mockResolvedValueOnce({
+			Attributes: { PK: "x", SK: "y", teamUUID: "t1", cardStyle: "3d", uniform },
+		});
+		const result: any = await getTeamHandler(
+			authorizerEvent({ pathParameters: { teamUUID: "t1" } }),
+			{} as any,
+			{} as any,
+		);
+		const { data } = parseBody(result);
+		expect(data.cardStyle).toBe("3d");
+		expect(data.uniform).toEqual(uniform);
+	});
+});

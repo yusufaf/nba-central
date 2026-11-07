@@ -12,11 +12,13 @@ import {
 import { PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
 import { AuthorizerContext } from "models/auth";
 import {
+	CardStyle,
 	PublishTeamPayload,
 	PublishTeamResponse,
 	SavedTeam,
 } from "models/api/teams-api";
 import { removeKeys } from "resources/dynamo/utilities";
+import { cardStyleError } from "utilities/team-validation";
 import { PRIVATE_SK2, PUBLIC_SK2, teamGsiKey } from "resources/dynamo/teams";
 
 const { mainTable = "", assetsBucket = "", assetsCdnDomain = "" } = process.env;
@@ -42,11 +44,17 @@ const parsePayload = (raw: string | undefined): PublishTeamPayload | null => {
 		return null;
 	}
 	if (typeof parsed !== "object" || parsed === null) return null;
-	const { teamUUID, public: isPublic, cardPng } = parsed as Record<string, unknown>;
+	const { teamUUID, public: isPublic, cardPng, cardStyle } = parsed as Record<string, unknown>;
 	if (typeof teamUUID !== "string" || !teamUUID || teamUUID.includes("/")) return null;
 	if (typeof isPublic !== "boolean") return null;
 	if (cardPng !== undefined && cardPng !== null && typeof cardPng !== "string") return null;
-	return { teamUUID, public: isPublic, cardPng: cardPng as string | null | undefined };
+	if (cardStyle !== undefined && cardStyleError(cardStyle)) return null;
+	return {
+		teamUUID,
+		public: isPublic,
+		cardPng: cardPng as string | null | undefined,
+		cardStyle: cardStyle as CardStyle | undefined,
+	};
 };
 
 const decodeCard = (cardPng: string): Buffer | null => {
@@ -66,7 +74,10 @@ export const handler: Handler = async (
 
 	const payload = parsePayload(event.body);
 	if (!payload) {
-		return fail(400, "teamUUID (string) and public (boolean) are required");
+		return fail(
+			400,
+			"teamUUID (string) and public (boolean) are required; cardStyle must be 2d or 3d",
+		);
 	}
 
 	const key = { PK: `userUUID#${userUUID}`, SK: `team#${payload.teamUUID}` };
@@ -125,6 +136,10 @@ export const handler: Handler = async (
 		if (cardUrl) {
 			setClauses.push("cardUrl = :cardUrl");
 			values[":cardUrl"] = cardUrl;
+		}
+		if (payload.cardStyle) {
+			setClauses.push("cardStyle = :cardStyle");
+			values[":cardStyle"] = payload.cardStyle;
 		}
 
 		const updated = await docClient.send(

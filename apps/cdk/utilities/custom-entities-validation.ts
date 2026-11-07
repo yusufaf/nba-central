@@ -125,7 +125,7 @@ export const validatePlayerData = (data: unknown): { valid: boolean; error?: str
 	return { valid: true };
 };
 
-const HEX_COLOUR = /^#[0-9a-fA-F]{6}$/;
+export const HEX_COLOUR = /^#[0-9a-fA-F]{6}$/;
 
 const isWholeNumberIn = (value: unknown, min: number, max: number) =>
 	Number.isInteger(value) && (value as number) >= min && (value as number) <= max;
