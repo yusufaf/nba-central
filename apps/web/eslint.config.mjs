@@ -99,7 +99,7 @@ export default defineConfigWithVueTs(
         {
           patterns: [
             {
-              group: ["three", "three/*", "@/three/*"],
+              regex: "^(three|@/three)(/|$)",
               message: "3D code stays behind the lazy scene3d component.",
             },
           ],
@@ -116,7 +116,7 @@ export default defineConfigWithVueTs(
         {
           patterns: [
             {
-              group: ["three", "three/*"],
+              regex: "^three(/|$)",
               message: "Go through the @/three modules.",
             },
           ],
