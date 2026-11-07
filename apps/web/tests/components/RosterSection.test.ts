@@ -44,6 +44,17 @@ const court = {
 };
 
 describe("RosterSection", () => {
+    it("renders lineup-actions in the Starting Lineup header only", () => {
+        const wrapper = mount(RosterSection, {
+            props: { selectedPlayers: new Map(), cardsFlipped: new Map<number, boolean>() },
+            slots: { "lineup-actions": '<button data-testid="x">3D</button>' },
+            global: { stubs: { PlayerSlot: true } },
+        });
+        const actions = wrapper.findAll('[data-testid="x"]');
+        expect(actions).toHaveLength(1);
+        expect(wrapper.findAll(".section-header")[0].find('[data-testid="x"]').exists()).toBe(true);
+    });
+
     it("renders 0 counts for an empty roster", () => {
         const wrapper = mountRoster(new Map());
         const counts = wrapper.findAll(".starter-count").map((n) => n.text());
