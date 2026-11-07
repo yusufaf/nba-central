@@ -314,3 +314,54 @@ describe("publishTeam", () => {
 		expect(update.UpdateExpression).not.toContain("cardUrl");
 	});
 });
+
+describe("publishTeam cardStyle", () => {
+	it("stores the chosen card style", async () => {
+		send.mockResolvedValueOnce({ Item: { teamUUID: "t1" } });
+		s3Send.mockResolvedValueOnce({});
+		send.mockResolvedValueOnce({ Attributes: { teamUUID: "t1", public: true, cardStyle: "3d" } });
+		const result: any = await publishTeamHandler(
+			ownerEvent({ teamUUID: "t1", public: true, cardPng: TINY_PNG_B64, cardStyle: "3d" }),
+			{} as any,
+			{} as any,
+		);
+		expect(result.statusCode).toBe(200);
+		const update = send.mock.calls[1][0].input;
+		expect(update.UpdateExpression).toContain("cardStyle = :cardStyle");
+		expect(update.ExpressionAttributeValues[":cardStyle"]).toBe("3d");
+		expect(parseBody(result).data.cardStyle).toBe("3d");
+	});
+
+	it("400s on an unknown card style before any Dynamo call", async () => {
+		const result: any = await publishTeamHandler(
+			ownerEvent({ teamUUID: "t1", public: true, cardStyle: "4d" }),
+			{} as any,
+			{} as any,
+		);
+		expect(result.statusCode).toBe(400);
+		expect(parseBody(result).error).toContain("cardStyle must be 2d or 3d");
+		expect(send).not.toHaveBeenCalled();
+	});
+
+	it("leaves the card style alone when the payload omits it", async () => {
+		send.mockResolvedValueOnce({ Item: { teamUUID: "t1" } });
+		send.mockResolvedValueOnce({ Attributes: { teamUUID: "t1", public: false } });
+		await publishTeamHandler(ownerEvent({ teamUUID: "t1", public: false }), {} as any, {} as any);
+		const update = send.mock.calls[1][0].input;
+		expect(update.UpdateExpression).not.toContain("cardStyle");
+		expect(update.ExpressionAttributeValues).not.toHaveProperty(":cardStyle");
+	});
+});
+
+describe("getPublicTeam card fields", () => {
+	it("returns cardStyle and uniform and still strips owner fields", async () => {
+		const uniform = { primary: "#112233", secondary: "#445566", trim: "#778899" };
+		send.mockResolvedValueOnce({ Items: [{ ...storedPublicTeam, cardStyle: "3d", uniform }] });
+		const result: any = await getPublicTeamHandler(anonymousEvent("t1"), {} as any, {} as any);
+		const { data } = parseBody(result);
+		expect(data.cardStyle).toBe("3d");
+		expect(data.uniform).toEqual(uniform);
+		expect(data).not.toHaveProperty("userUUID");
+		expect(data).not.toHaveProperty("label");
+	});
+});

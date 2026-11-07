@@ -7,7 +7,8 @@ import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
 import { DynamoDBDocumentClient, UpdateCommand } from "@aws-sdk/lib-dynamodb";
 import { AuthorizerContext } from "models/auth";
 import { UpdateTeamPayload, UpdateTeamResponse, SavedTeam } from "models/api/teams-api";
-import { validateTeamData } from "utilities/team-validation";
+import { toUniform, validateTeamData } from "utilities/team-validation";
+import { isRecord } from "utilities/type-guards";
 import { removeKeys } from "resources/dynamo/utilities";
 import { teamGsiKey, PRIVATE_SK2 } from "resources/dynamo/teams";
 import { toStoredArenaRef } from "resources/dynamo/arenas";
@@ -54,6 +55,20 @@ export const handler: Handler = async (
 		const arena = await toStoredArenaRef(docClient, mainTable, userUUID, payload.arena);
 		const timestamp = new Date().getTime();
 
+		// cardStyle and uniform are optional: a client that leaves them out
+		// never wipes what's stored.
+		const extraSets: string[] = [];
+		const extraValues: Record<string, unknown> = {};
+		if (payload.cardStyle !== undefined) {
+			extraSets.push("cardStyle = :cardStyle");
+			extraValues[":cardStyle"] = payload.cardStyle;
+		}
+		if (isRecord(payload.uniform)) {
+			extraSets.push("uniform = :uniform");
+			extraValues[":uniform"] = toUniform(payload.uniform);
+		}
+		const remove = payload.uniform === null ? " REMOVE uniform" : "";
+
 		const updateCommand = new UpdateCommand({
 			TableName: mainTable,
 			Key: {
@@ -67,8 +82,11 @@ export const handler: Handler = async (
 				"roster = :roster, coach = :coach, gm = :gm, arena = :arena, " +
 				// Rows saved before the share loop have no GSI keys; give them
 				// one on the next save without touching an existing visibility.
-				"PK2 = :pk2, SK2 = if_not_exists(SK2, :sk2Default)",
+				"PK2 = :pk2, SK2 = if_not_exists(SK2, :sk2Default)" +
+				extraSets.map((clause) => `, ${clause}`).join("") +
+				remove,
 			ExpressionAttributeValues: {
+				...extraValues,
 				":updatedAt": timestamp,
 				":title": payload.title.trim(),
 				":description": payload.description || "",
