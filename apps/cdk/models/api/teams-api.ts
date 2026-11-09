@@ -35,6 +35,8 @@ export interface PlayerSnapshot {
 export interface TeamRosterEntry {
 	slot: number;
 	player: PlayerSnapshot;
+	// Owner-set jersey number, "0"-"99" or "00". It wins over a custom player's own (#291).
+	number?: string | null;
 }
 
 // Coaches/GMs from the checked-in JSON are only identified by name; custom

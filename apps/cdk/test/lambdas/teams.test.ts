@@ -456,4 +456,32 @@ describe("team card style and uniform", () => {
 		expect(data.cardStyle).toBe("3d");
 		expect(data.uniform).toEqual(uniform);
 	});
+
+	it("updateTeam stores roster numbers as sent", async () => {
+		send.mockResolvedValueOnce({ Attributes: { teamUUID: "t1", title: "x" } });
+		const result: any = await updateTeamHandler(
+			authorizerEvent({
+				body: validTeamBody({
+					teamUUID: "t1",
+					roster: [{ slot: 1, player: { fullName: "LeBron James" }, number: "00" }],
+				}),
+			}),
+			{} as any,
+			{} as any,
+		);
+		expect(result.statusCode).toBe(200);
+		expect(send.mock.calls[0][0].input.ExpressionAttributeValues[":roster"][0].number).toBe("00");
+	});
+
+	it("createTeam 400s on a bad roster number without calling Dynamo", async () => {
+		const result: any = await createTeamHandler(
+			authorizerEvent({
+				body: validTeamBody({ roster: [{ slot: 1, player: { fullName: "LeBron James" }, number: "07" }] }),
+			}),
+			{} as any,
+			{} as any,
+		);
+		expect(result.statusCode).toBe(400);
+		expect(send).not.toHaveBeenCalled();
+	});
 });

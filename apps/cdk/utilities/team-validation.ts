@@ -4,6 +4,8 @@ import { isOneOf, isRecord } from "./type-guards";
 
 const UNIFORM_FIELDS = ["primary", "secondary", "trim"] as const;
 
+export const JERSEY_NUMBER = /^(?:00|0|[1-9][0-9]?)$/;
+
 export const cardStyleError = (value: unknown): string | null =>
 	isOneOf(CARD_STYLES, value) ? null : "cardStyle must be 2d or 3d";
 
@@ -107,6 +109,10 @@ export const validateTeamData = (data: unknown): { valid: boolean; error?: strin
 		}
 		if (!isPlayerSnapshot(entry.player)) {
 			return { valid: false, error: "Each roster entry must have a valid player" };
+		}
+		const number = entry.number;
+		if (number != null && (typeof number !== "string" || !JERSEY_NUMBER.test(number))) {
+			return { valid: false, error: "Roster numbers must be 0-99 or 00" };
 		}
 	}
 
