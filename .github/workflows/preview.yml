@@ -22,8 +22,9 @@ concurrency: preview-${{ github.event.number }}
 jobs:
   # Not named changes/web/cdk: those are the required checks on main.
   preview:
-    # Fork and Dependabot PRs get a read-only token and can't push to gh-pages.
-    if: github.event.pull_request.head.repo.full_name == github.repository && github.actor != 'dependabot[bot]'
+    # Fork and Dependabot PRs get a read-only token and can't push to gh-pages;
+    # Renovate dependency bumps don't need a preview.
+    if: github.event.pull_request.head.repo.full_name == github.repository && github.actor != 'dependabot[bot]' && github.actor != 'renovate[bot]'
     runs-on: ubuntu-latest
     permissions:
       contents: write
