@@ -228,6 +228,26 @@ describe('TeamScene3D', () => {
         expect(scene().setPeople).toHaveBeenCalledWith(people, { colours: mocks.kit, teamName: 'Owls' });
     });
 
+    it('uses the uniform override instead of the sampled kit', async () => {
+        mocks.rasterise.mockResolvedValue(canvas('a'));
+        const uniform = { primary: '#aa0000', secondary: '#ffffff', trim: '#000000' };
+        const people = [{ id: 'player-1', name: 'Vance', role: 'player', position: 'PG', heightInches: 75, weightPounds: 190 }];
+        mountScene({ people, jerseyUrl: 'https://cdn/jersey.png', teamName: 'Owls', uniform });
+        await flushPromises();
+        expect(scene().setPeople).toHaveBeenCalledWith(people, { colours: uniform, teamName: 'Owls' });
+    });
+
+    it('a uniform change re-places people', async () => {
+        mocks.rasterise.mockResolvedValue(canvas('a'));
+        const people = [{ id: 'player-1', name: 'Vance', role: 'player', position: 'PG', heightInches: 75, weightPounds: 190 }];
+        const w = mountScene({ people, teamName: 'Owls' });
+        await flushPromises();
+        const uniform = { primary: '#aa0000', secondary: '#ffffff', trim: '#000000' };
+        await w.setProps({ uniform });
+        await flushPromises();
+        expect(scene().setPeople).toHaveBeenLastCalledWith(people, { colours: uniform, teamName: 'Owls' });
+    });
+
     it('renders a chip per visible anchor and none for hidden ones', async () => {
         mocks.rasterise.mockResolvedValue(canvas('a'));
         mocks.anchors = [

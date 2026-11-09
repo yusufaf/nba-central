@@ -30,7 +30,7 @@ vi.mock('@/components/scene3d', async () => {
     return {
         TeamScene3DAsync: define({
             name: 'TeamScene3DStub',
-            props: ['court', 'logoUrl', 'drawingUrl', 'capacity', 'label', 'people', 'jerseyUrl', 'teamName'],
+            props: ['court', 'logoUrl', 'drawingUrl', 'capacity', 'label', 'people', 'jerseyUrl', 'teamName', 'uniform'],
             setup(props) {
                 mocks.sceneMounts++;
                 mocks.sceneProps.push({ ...props });
@@ -192,6 +192,34 @@ describe('PublicTeam ?view=3d', () => {
             { id: 'coach', name: 'Hale', role: 'coach', heightInches: null, weightPounds: null },
             { id: 'gm', name: 'Ortiz', role: 'gm', heightInches: null, weightPounds: null },
         ]);
+    });
+
+    it("passes the stored uniform and each starter's number to the scene", async () => {
+        const uniform = { primary: '#aa0000', secondary: '#ffffff', trim: '#000000' };
+        vi.mocked(teamApi.getPublicTeam).mockResolvedValue({
+            success: true,
+            data: {
+                ...teamWith('t1', 'maple'),
+                roster: [
+                    { slot: 1, player: { fullName: 'One' }, number: '00' },
+                    { slot: 2, player: { fullName: 'Two' } },
+                ],
+                uniform,
+            } as never,
+        });
+        mocks.route.query = { view: '3d' };
+        mountView();
+        await flushPromises();
+        const props = mocks.sceneProps.at(-1)!;
+        expect(props.uniform).toEqual(uniform);
+        expect((props.people as { number?: string }[]).map((person) => person.number)).toEqual(['00', undefined]);
+    });
+
+    it('passes no uniform for a team without one', async () => {
+        mocks.route.query = { view: '3d' };
+        mountView();
+        await flushPromises();
+        expect(mocks.sceneProps.at(-1)?.uniform).toBeNull();
     });
 
     it('a roster with two starters and no staff gives two people', async () => {

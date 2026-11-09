@@ -39,7 +39,10 @@ const courtCanvas = async (input: TeamPhotoInput): Promise<HTMLCanvasElement | n
 
 // The share card's 3D team photo, as a PNG data URL.
 export const renderTeamPhoto = async (input: TeamPhotoInput): Promise<string> => {
-    const [court, colours] = await Promise.all([courtCanvas(input), loadJerseyColours(input.jerseyUrl)]);
+    const [court, colours] = await Promise.all([
+        courtCanvas(input),
+        input.uniform ?? loadJerseyColours(input.jerseyUrl),
+    ]);
     const canvas = await renderTeamPhotoFrame({
         court,
         capacity: input.capacity,

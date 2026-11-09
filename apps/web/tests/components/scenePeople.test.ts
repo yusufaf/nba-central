@@ -23,6 +23,16 @@ describe('scenePeople', () => {
         expect(scenePeople([], {}).length).toBe(0);
     });
 
+    it('carries a valid roster number', () => {
+        const [person] = scenePeople([{ slot: 1, player: { fullName: 'One' }, number: '00' }], {});
+        expect(person.number).toBe('00');
+    });
+
+    it('drops an invalid roster number', () => {
+        const [person] = scenePeople([{ slot: 1, player: { fullName: 'One' }, number: '07' }], {});
+        expect(person).not.toHaveProperty('number');
+    });
+
     it('a starter without size fields gets null sizes', () => {
         const [person] = scenePeople([{ slot: 3, player: { fullName: 'Three' } }], {});
         expect(person).toMatchObject({ id: 'player-3', heightInches: null, weightPounds: null });

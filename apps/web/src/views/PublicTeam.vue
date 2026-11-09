@@ -28,6 +28,7 @@ import CourtStage from '@/components/court/CourtStage.vue';
 import { Scene3DUnavailable, TeamScene3DAsync } from '@/components/scene3d';
 import { isWebGLAvailable } from '@/utils/webgl';
 import { sceneLabel, scenePeople } from '@/components/scene3d/people';
+import { parseUniform } from '@/utils/jerseyColours';
 
 const props = defineProps<{ teamUUID: string }>();
 const router = useRouter();
@@ -39,8 +40,13 @@ const notFound = ref(false);
 
 const STARTER_SLOTS = [1, 2, 3, 4, 5];
 
-const bySlot = computed(() => new Map((team.value?.roster ?? []).map((e) => [e.slot, e.player])));
-const starters = computed(() => STARTER_SLOTS.flatMap((s) => (bySlot.value.get(s) ? [{ slot: s, player: bySlot.value.get(s)! }] : [])));
+const bySlot = computed(() => new Map((team.value?.roster ?? []).map((e) => [e.slot, e])));
+const starters = computed(() =>
+    STARTER_SLOTS.flatMap((s) => {
+        const entry = bySlot.value.get(s);
+        return entry ? [{ slot: s, player: entry.player, number: entry.number }] : [];
+    }),
+);
 const bench = computed(() => (team.value?.roster ?? []).filter((e) => e.slot > 5).sort((a, b) => a.slot - b.slot));
 const ratingOf = (player: { rating?: number; overallRating?: number }) => player.rating ?? player.overallRating;
 const average = computed(() => averageRating(starters.value.map((s) => ratingOf(s.player))));
@@ -99,6 +105,8 @@ const show3d = computed(() => route.query.view === '3d');
 // Who stands in the 3D scene: the starters in slot order, then the staff.
 const people3d = computed(() => scenePeople(starters.value, { coach: team.value?.coach, gm: team.value?.gm }));
 const label3d = computed(() => sceneLabel(team.value?.title, people3d.value));
+// Parsed once per load: a new object on every render would rebuild the figures.
+const uniform3d = computed(() => parseUniform(team.value?.uniform));
 // Probed only once 3D is opened: the probe costs a GPU context.
 const webglAvailable = computed(() => show3d.value && isWebGLAvailable());
 const toggle3d = () => {
@@ -202,6 +210,7 @@ const remix = () => {
                         :people="people3d"
                         :jersey-url="team.jerseyUrl || undefined"
                         :team-name="team.title"
+                        :uniform="uniform3d"
                     />
                     <Scene3DUnavailable v-else reason="no-webgl" />
                 </section>

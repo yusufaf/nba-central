@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { HOME_KIT, loadJerseyColours, sampleJerseyColours } from '@/utils/jerseyColours';
+import { HOME_KIT, loadJerseyColours, parseUniform, sampleJerseyColours } from '@/utils/jerseyColours';
 
 type RGBA = [number, number, number, number];
 const WHITE: RGBA = [255, 255, 255, 255];
@@ -102,5 +102,23 @@ describe('loadJerseyColours', () => {
             },
         } as unknown as CanvasRenderingContext2D);
         await expect(loadJerseyColours('https://cdn/jersey.png')).resolves.toEqual(HOME_KIT);
+    });
+});
+
+describe('parseUniform', () => {
+    const uniform = { primary: '#112233', secondary: '#AABBCC', trim: '#ffffff' };
+
+    it('keeps the three colours of a valid uniform', () => {
+        expect(parseUniform({ ...uniform, extra: 'x' })).toEqual(uniform);
+    });
+
+    it.for([
+        ['null', null],
+        ['an array', [uniform]],
+        ['a missing field', { primary: '#112233', secondary: '#445566' }],
+        ['a short hex', { ...uniform, trim: '#fff' }],
+        ['a colour name', { ...uniform, primary: 'red' }],
+    ] as const)('gives null for %s', ([, value]) => {
+        expect(parseUniform(value)).toBeNull();
     });
 });

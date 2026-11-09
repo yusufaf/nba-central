@@ -16,7 +16,11 @@ import {
 import { ref, watch } from "vue";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 
-withDefaults(defineProps<{ selected?: boolean }>(), { selected: false });
+withDefaults(defineProps<{ selected?: boolean; label?: string; disabled?: boolean }>(), {
+    selected: false,
+    label: "Custom color",
+    disabled: false,
+});
 
 const modelValue = defineModel<string>({ required: true });
 
@@ -53,8 +57,9 @@ const handleHexUpdate = (hex: string) => {
                 class="color-picker-trigger"
                 :class="{ selected }"
                 :style="{ backgroundColor: modelValue }"
-                aria-label="Custom color"
-                title="Custom color"
+                :aria-label="label"
+                :title="label"
+                :disabled="disabled"
             />
         </PopoverTrigger>
 
@@ -113,6 +118,11 @@ const handleHexUpdate = (hex: string) => {
 
 .color-picker-trigger:hover {
     border-color: hsl(var(--primary) / 0.6);
+}
+
+.color-picker-trigger:disabled {
+    cursor: not-allowed;
+    opacity: 0.5;
 }
 
 .color-picker-trigger.selected {

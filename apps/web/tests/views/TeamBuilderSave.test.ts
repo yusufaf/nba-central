@@ -222,6 +222,32 @@ describe('Save, signed in', () => {
     });
 });
 
+describe('Save, a remix', () => {
+    it('the first save of a remix sends the numbers and the uniform', async () => {
+        signedIn.value = true;
+        const uniform = { primary: '#aa0000', secondary: '#ffffff', trim: '#000000' };
+        const base = draft();
+        vi.mocked(teamApi.getPublicTeam).mockResolvedValue({
+            success: true,
+            data: { ...base, teamUUID: 'p-1', roster: [{ ...base.roster[0], number: '23' }], uniform } as never,
+        });
+        await mountAt('/teambuilder?remix=p-1');
+
+        await saveClicked();
+
+        const sent = vi.mocked(teamApi.createTeam).mock.calls[0][0];
+        expect(sent.roster[0].number).toBe('23');
+        expect(sent.uniform).toEqual(uniform);
+    });
+
+    it('a team with no override saves uniform null', async () => {
+        signedIn.value = true;
+        await mountAt('/teambuilder');
+        await saveClicked();
+        expect(vi.mocked(teamApi.createTeam).mock.calls[0][0].uniform).toBeNull();
+    });
+});
+
 describe('Returning from sign-in (?resume=save)', () => {
     beforeEach(() => {
         signedIn.value = true;
@@ -238,6 +264,18 @@ describe('Returning from sign-in (?resume=save)', () => {
         expect(sent.roster.map((entry) => entry.player.id)).toEqual(['jamesle01']);
         expect(hasPendingSave()).toBe(false);
         expect(router.currentRoute.value.query).toEqual({ team: 'team-1' });
+    });
+
+    it('a resumed draft saves its numbers and uniform', async () => {
+        const uniform = { primary: '#aa0000', secondary: '#ffffff', trim: '#000000' };
+        const base = draft();
+        stashPendingSave(draft({ roster: [{ ...base.roster[0], number: '00' }], uniform }));
+
+        await mountAt('/teambuilder?resume=save');
+
+        const sent = vi.mocked(teamApi.createTeam).mock.calls[0][0];
+        expect(sent.roster[0].number).toBe('00');
+        expect(sent.uniform).toEqual(uniform);
     });
 
     it('waits for the session to finish loading before deciding who is signed in', async () => {

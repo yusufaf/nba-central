@@ -16,6 +16,7 @@ export interface PersonInput {
     position?: string;
     heightInches: number | null;
     weightPounds: number | null;
+    number?: string | null;
 }
 
 // Real people are figurines (spec decision 3); in this slice everyone is.
@@ -83,7 +84,13 @@ export const buildPerson = async (
     addRegions(body);
     const landmarks = findLandmarks(body);
     const kind = input.role === 'player' ? 'player' : 'suit';
-    const texture = kitTexture({ kind, teamName: kit.teamName, trim: kit.colours.trim, secondary: kit.colours.secondary });
+    const texture = kitTexture({
+        kind,
+        teamName: kit.teamName,
+        number: input.number ?? null,
+        trim: kit.colours.trim,
+        secondary: kit.colours.secondary,
+    });
     body.material = applyKitMaterial(body.material as MeshStandardMaterial, {
         kind,
         colours: kit.colours,

@@ -3,11 +3,20 @@
 // on a plain background, so the background (white, black or transparent,
 // connected to the image's edge) is ignored before counting colours.
 
-export interface KitColours {
-    primary: string;
-    secondary: string;
-    trim: string;
-}
+import type { TeamUniform } from '@/models/api';
+
+export type KitColours = TeamUniform;
+
+const HEX = /^#[0-9a-fA-F]{6}$/;
+
+/** A stored uniform override, or null when it's missing or malformed. */
+export const parseUniform = (value: unknown): TeamUniform | null => {
+    if (typeof value !== 'object' || value === null || Array.isArray(value)) return null;
+    const { primary, secondary, trim } = value as Record<string, unknown>;
+    const colours = [primary, secondary, trim];
+    if (!colours.every((colour) => typeof colour === 'string' && HEX.test(colour))) return null;
+    return { primary, secondary, trim } as TeamUniform;
+};
 
 // A plain kit for teams with no jersey or one that can't be read. Royal blue,
 // not white: a white kit barely shows on the light grey figurines.

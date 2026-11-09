@@ -447,3 +447,64 @@ describe("hydrateTeam from a stashed save", () => {
         expect(hydrated.teamGM).toBeNull();
     });
 });
+
+describe("jersey numbers and the uniform override", () => {
+    const state = (overrides: Record<string, unknown> = {}) => ({
+        teamName: "Numbers",
+        teamDescription: "",
+        teamCity: "",
+        teamCountry: "",
+        teamLogo: "",
+        teamJersey: "",
+        selectedPlayersData: new Map<number, Player>([
+            [2, apiPlayer({ id: "b" }) as unknown as Player],
+            [1, apiPlayer({ id: "a" }) as unknown as Player],
+        ]),
+        teamCoach: null,
+        teamArena: null,
+        teamGM: null,
+        ...overrides,
+    });
+    const uniform = { primary: "#112233", secondary: "#445566", trim: "#ffffff" };
+
+    it("serializes each slot's number and omits it for a slot without one", () => {
+        const { roster } = serializeTeam(state({ teamNumbers: { 1: "00" } }));
+        expect(roster[0]).toMatchObject({ slot: 1, number: "00" });
+        expect(roster[1]).not.toHaveProperty("number");
+    });
+
+    it("sends uniform null when not overridden and the colours when set", () => {
+        expect(serializeTeam(state()).uniform).toBeNull();
+        expect(serializeTeam(state({ teamUniform: uniform })).uniform).toEqual(uniform);
+    });
+
+    it("hydrates valid numbers and the uniform", () => {
+        const hydrated = hydrateTeam({
+            title: "x",
+            roster: [
+                { slot: 1, player: snapshotPlayer() as never, number: "23" },
+                { slot: 2, player: snapshotPlayer() as never },
+            ],
+            uniform,
+        });
+        expect(hydrated.teamNumbers).toEqual({ 1: "23" });
+        expect(hydrated.teamUniform).toEqual(uniform);
+    });
+
+    it("drops an invalid number and a malformed uniform", () => {
+        const hydrated = hydrateTeam({
+            title: "x",
+            roster: [{ slot: 1, player: snapshotPlayer() as never, number: "07" }],
+            uniform: { primary: "red" } as never,
+        });
+        expect(hydrated.teamNumbers).toEqual({});
+        expect(hydrated.teamUniform).toBeNull();
+    });
+
+    it("round-trips numbers and the uniform through serialize -> hydrate", () => {
+        const saved = serializeTeam(state({ teamNumbers: { 1: "0", 2: "99" }, teamUniform: uniform }));
+        const hydrated = hydrateTeam(JSON.parse(JSON.stringify(saved)));
+        expect(hydrated.teamNumbers).toEqual({ 1: "0", 2: "99" });
+        expect(hydrated.teamUniform).toEqual(uniform);
+    });
+});

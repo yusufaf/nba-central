@@ -23,7 +23,7 @@ vi.mock('@/components/scene3d', async () => {
     return {
         TeamScene3DAsync: defineComponent({
             name: 'TeamScene3DStub',
-            props: ['court', 'logoUrl', 'drawingUrl', 'capacity', 'label', 'people', 'jerseyUrl', 'teamName'],
+            props: ['court', 'logoUrl', 'drawingUrl', 'capacity', 'label', 'people', 'jerseyUrl', 'teamName', 'uniform'],
             setup(props) {
                 mocks.mounts++;
                 // The live reactive props, so later prop changes are visible.
@@ -65,6 +65,7 @@ const PROPS = {
     people: PEOPLE,
     jerseyUrl: 'https://cdn/jersey.png',
     teamName: 'Owls',
+    uniform: { primary: '#aa0000', secondary: '#ffffff', trim: '#000000' },
 };
 
 let wrapper: VueWrapper | null = null;
@@ -119,6 +120,7 @@ describe('TeamScene3DDialog', () => {
             people: PEOPLE,
             jerseyUrl: 'https://cdn/jersey.png',
             teamName: 'Owls',
+            uniform: { primary: '#aa0000', secondary: '#ffffff', trim: '#000000' },
             logoUrl: 'https://cdn/logo.png',
             label: sceneLabel('Owls', PEOPLE),
         });

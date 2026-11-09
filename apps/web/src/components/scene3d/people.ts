@@ -3,6 +3,7 @@
 // through index.ts, so pages that mock the 3D module still get it.
 import type { PersonInput } from '@/three/character/person';
 import { snapshotSize, type SizeFields } from '@/utils/playerSize';
+import { isJerseyNumber } from '@/utils/rosterNumbers';
 
 export type ScenePerson = PersonInput;
 export type ScenePlayer = { fullName?: string; position?: string } & SizeFields;
@@ -10,15 +11,17 @@ export type ScenePlayer = { fullName?: string; position?: string } & SizeFields;
 type Staff = { name?: string } | null | undefined;
 
 export const scenePeople = (
-    starters: { slot: number; player: ScenePlayer }[],
+    starters: { slot: number; player: ScenePlayer; number?: unknown }[],
     staff: { coach?: Staff; gm?: Staff },
 ): ScenePerson[] => [
-    ...starters.map(({ slot, player }) => ({
+    ...starters.map(({ slot, player, number }) => ({
         id: `player-${slot}`,
         name: player.fullName ?? '',
         role: 'player' as const,
         position: player.position,
         ...snapshotSize(player),
+        // The roster's number. A custom player's own (#291) will be the fallback.
+        ...(isJerseyNumber(number) && { number }),
     })),
     ...(['coach', 'gm'] as const).flatMap((role) => {
         const name = staff[role]?.name?.trim();
