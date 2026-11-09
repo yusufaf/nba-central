@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import Scene3DUnavailable from './Scene3DUnavailable.vue';
 import { DEFAULT_COURT, courtAttempts } from './courtRaster';
 import { track } from '@/lib/analytics';
-import type { CourtDesign } from '@/models/api';
+import type { CourtDesign, TeamUniform } from '@/models/api';
 import { rasteriseCourt } from '@/three/arena/rasteriseCourt';
 import { loadJerseyColours, type KitColours } from '@/utils/jerseyColours';
 import type { PersonInput } from '@/three/character/person';
@@ -26,8 +26,9 @@ const props = withDefaults(
         people?: PersonInput[];
         jerseyUrl?: string;
         teamName?: string;
+        uniform?: TeamUniform | null;
     }>(),
-    { logoUrl: undefined, drawingUrl: undefined, people: () => [], jerseyUrl: undefined, teamName: '' },
+    { logoUrl: undefined, drawingUrl: undefined, people: () => [], jerseyUrl: undefined, teamName: '', uniform: null },
 );
 const emit = defineEmits<{ failed: [reason: 'context-lost'] }>();
 
@@ -64,13 +65,17 @@ const chips = computed(() => {
     });
 });
 
-// The team's people, in uniform colours read off its jersey (once per URL).
+// The team's people, in the owner's uniform colours or ones read off its
+// jersey (once per URL).
 let kitFor: { url: string | undefined; colours: Promise<KitColours> } | null = null;
 const placePeople = async () => {
     const current = scene.value;
     if (!current) return;
-    if (!kitFor || kitFor.url !== props.jerseyUrl) kitFor = { url: props.jerseyUrl, colours: loadJerseyColours(props.jerseyUrl) };
-    const colours = await kitFor.colours;
+    let colours = props.uniform;
+    if (!colours) {
+        if (!kitFor || kitFor.url !== props.jerseyUrl) kitFor = { url: props.jerseyUrl, colours: loadJerseyColours(props.jerseyUrl) };
+        colours = await kitFor.colours;
+    }
     if (scene.value !== current) return;
     // The arena stays up without them; a later prop change tries again.
     try {
@@ -143,7 +148,7 @@ onMounted(() => {
     void placePeople();
 });
 
-watch([() => props.people, () => props.jerseyUrl, () => props.teamName], () => void placePeople());
+watch([() => props.people, () => props.jerseyUrl, () => props.teamName, () => props.uniform], () => void placePeople());
 
 watch(() => [props.court, props.logoUrl, props.drawingUrl, props.capacity], () => void rasterise());
 

@@ -1,4 +1,6 @@
 import { computed, shallowRef } from "vue";
+import type { TeamUniform } from "@/models/api";
+import type { RosterNumbers } from "@/utils/rosterNumbers";
 
 export interface HistoryAction {
     // Toast text for undoing and redoing this change, e.g. "Restored X to PG"
@@ -103,6 +105,8 @@ export interface TeamDetails {
     coach: unknown;
     arena: unknown;
     gm: unknown;
+    uniform: TeamUniform | null;
+    numbers: RosterNumbers;
 }
 
 // Which saved team the builder is editing - Save updates that team in place,

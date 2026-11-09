@@ -11,11 +11,11 @@
     "jerseyUrl": "",
     "playerCount": 7,
     "roster": [
-      { "slot": 1, "player": { "fullName": "Michael Jordan", "position": "SG", "rating": 99 } },
-      { "slot": 2, "player": { "fullName": "Scottie Pippen", "position": "SF", "rating": 95 } },
-      { "slot": 3, "player": { "fullName": "Dennis Rodman", "position": "PF", "rating": 88 } },
-      { "slot": 4, "player": { "fullName": "Toni Kukoc", "position": "SF", "rating": 84 } },
-      { "slot": 5, "player": { "fullName": "Luc Longley", "position": "C", "rating": 76 } },
+      { "slot": 1, "player": { "fullName": "Michael Jordan", "position": "SG", "rating": 99 }, "number": "23" },
+      { "slot": 2, "player": { "fullName": "Scottie Pippen", "position": "SF", "rating": 95 }, "number": "33" },
+      { "slot": 3, "player": { "fullName": "Dennis Rodman", "position": "PF", "rating": 88 }, "number": "91" },
+      { "slot": 4, "player": { "fullName": "Toni Kukoc", "position": "SF", "rating": 84 }, "number": "7" },
+      { "slot": 5, "player": { "fullName": "Luc Longley", "position": "C", "rating": 76 }, "number": "13" },
       { "slot": 6, "player": { "fullName": "Steve Kerr", "position": "PG", "rating": 78 } },
       { "slot": 7, "player": { "fullName": "Ron Harper", "position": "PG" } }
     ],

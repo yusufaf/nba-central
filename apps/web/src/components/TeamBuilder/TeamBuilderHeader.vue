@@ -16,7 +16,8 @@ import {
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { useTeamBuilderPreferences } from '@/composables/useTeamBuilderPreferences';
 import type { DrawerSide } from '@/models/types';
-import type { CardStyle } from '@/models/api';
+import type { CardStyle, TeamUniform } from '@/models/api';
+import type { RosterNumbers, RosterRow } from '@/utils/rosterNumbers';
 import {
     MoreVertical,
     RotateCcw,
@@ -41,15 +42,21 @@ const teamCountry = defineModel<string>('teamCountry');
 const selectedView = defineModel<string>('selectedView');
 const teamLogo = defineModel<string>('teamLogo');
 const teamJersey = defineModel<string>('teamJersey');
+const teamUniform = defineModel<TeamUniform | null>('teamUniform', { default: null });
+const teamNumbers = defineModel<RosterNumbers>('teamNumbers', { default: () => ({}) });
 const drawerSide = defineModel<DrawerSide>('drawerSide');
 
-defineProps<{
-    teamUuid: string | null;
-    isPublic: boolean;
-    publishing: boolean;
-    cardUrl: string | null;
-    cardStyle: CardStyle;
-}>();
+withDefaults(
+    defineProps<{
+        teamUuid: string | null;
+        isPublic: boolean;
+        publishing: boolean;
+        cardUrl: string | null;
+        cardStyle: CardStyle;
+        roster?: RosterRow[];
+    }>(),
+    { roster: () => [] },
+);
 
 const emit = defineEmits<{
     reset: [];
@@ -290,6 +297,9 @@ const toggleCustomizationDialog = () => {
         v-model:teamCountry="teamCountry"
         v-model:teamLogo="teamLogo"
         v-model:teamJersey="teamJersey"
+        v-model:teamUniform="teamUniform"
+        v-model:teamNumbers="teamNumbers"
+        :roster="roster"
     />
 </template>
 

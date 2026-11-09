@@ -14,7 +14,7 @@ import {
     DialogTrigger,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import type { CourtDesign } from '@/models/api';
+import type { CourtDesign, TeamUniform } from '@/models/api';
 import { Scene3DUnavailable, TeamScene3DAsync } from '@/components/scene3d';
 import { sceneLabel, type ScenePerson } from '@/components/scene3d/people';
 import { isWebGLAvailable } from '@/utils/webgl';
@@ -28,6 +28,7 @@ const props = defineProps<{
     people: ScenePerson[];
     jerseyUrl?: string;
     teamName: string;
+    uniform?: TeamUniform | null;
 }>();
 
 const open = ref(false);
@@ -69,6 +70,7 @@ watch(open, (now) => {
                     :people="people"
                     :jersey-url="jerseyUrl"
                     :team-name="teamName"
+                    :uniform="uniform"
                 />
                 <Scene3DUnavailable v-else reason="no-webgl" />
             </div>

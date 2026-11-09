@@ -25,6 +25,8 @@ const initialDetails = (): TeamDetails => ({
     coach: billups,
     arena: null,
     gm: null,
+    uniform: null,
+    numbers: {},
 });
 
 const scopes: ReturnType<typeof effectScope>[] = [];
@@ -330,6 +332,49 @@ describe("useDetailEdits", () => {
             [6, duckworth],
         ]);
         expect(state.details).toMatchObject({ name: "Blazers", coach: jackson });
+    });
+
+    describe("uniform and jersey numbers", () => {
+        const red = { primary: "#aa0000", secondary: "#ffffff", trim: "#000000" };
+
+        it("merges uniform edits within one focus", async () => {
+            const { state, history, edit } = setup();
+            focusInDialog("uniform-primary");
+            edit("uniform", red);
+            edit("uniform", { ...red, primary: "#bb0000" });
+            await nextTick();
+            edit("uniform", { ...red, primary: "#cc0000" });
+            await nextTick();
+
+            const entry = history.undo();
+            expect(entry?.redoLabel).toBe("Changed uniform colours");
+            expect(entry?.undoLabel).toBe("Restored uniform colours");
+            expect(state.details.uniform).toBeNull();
+            expect(history.canUndo.value).toBe(false);
+        });
+
+        it("labels a uniform reset", async () => {
+            const { history, edit } = setup();
+            edit("uniform", red);
+            await nextTick();
+            focusInDialog("reset");
+            edit("uniform", null);
+            await nextTick();
+            expect(history.undo()?.redoLabel).toBe("Reset uniform colours");
+        });
+
+        it("labels a number change and merges typing in one field", async () => {
+            const { state, history, edit } = setup();
+            focusInDialog("number-1");
+            edit("numbers", { 1: "2" });
+            edit("numbers", { 1: "23" });
+            await nextTick();
+
+            const entry = history.undo();
+            expect(entry?.redoLabel).toBe("Changed jersey numbers");
+            expect(entry?.undoLabel).toBe("Restored jersey numbers");
+            expect(state.details.numbers).toEqual({});
+        });
     });
 
     it("leaves the roster and the loaded team alone when undoing a detail edit", async () => {

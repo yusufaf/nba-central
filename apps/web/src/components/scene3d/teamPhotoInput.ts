@@ -1,4 +1,4 @@
-import type { CourtDesign } from '@/models/api';
+import type { CourtDesign, TeamUniform } from '@/models/api';
 import type { ScenePerson } from './people';
 
 // Everything the share card's 3D team photo is drawn from. The same fields
@@ -11,6 +11,8 @@ export interface TeamPhotoInput {
     people: ScenePerson[];
     jerseyUrl?: string;
     teamName: string;
+    // The owner's colours; null or absent samples them from the jersey.
+    uniform?: TeamUniform | null;
 }
 
 // Equal keys mean the photo would come out the same, so it can be reused.
@@ -22,6 +24,7 @@ export const teamPhotoKey = (input: TeamPhotoInput): string =>
         input.capacity,
         input.jerseyUrl ?? null,
         input.teamName,
+        input.uniform ? [input.uniform.primary, input.uniform.secondary, input.uniform.trim] : null,
         input.people.map((person) => [
             person.id,
             person.name,
@@ -29,5 +32,6 @@ export const teamPhotoKey = (input: TeamPhotoInput): string =>
             person.position ?? null,
             person.heightInches,
             person.weightPounds,
+            person.number ?? null,
         ]),
     ]);

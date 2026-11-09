@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, watch, toRaw, provide, onMounted, type Ref } from "vue";
+import { ref, shallowRef, computed, watch, toRaw, provide, onMounted, type Ref } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { toast } from 'vue-sonner';
 import axios from 'axios';
@@ -14,6 +14,7 @@ import RosterSection from "@/components/TeamBuilder/RosterSection.vue";
 import TeamScene3DDialog from "@/components/TeamBuilder/TeamScene3DDialog.vue";
 import { scenePeople } from "@/components/scene3d/people";
 import { parseCapacity } from "@/utils/arenaDetails";
+import { swapNumbers, withNumber, type RosterNumbers } from "@/utils/rosterNumbers";
 import AddPlayerDialog from "@/components/TeamBuilder/AddPlayerDialog.vue";
 import PlayerStatsDialog from "@/components/TeamBuilder/PlayerStatsDialog.vue";
 import CoachSection from "@/components/TeamBuilder/CoachSection.vue";
@@ -66,7 +67,7 @@ import { toBuilderPlayer } from "@/utils/builderPlayer";
 import { track } from "@/lib/analytics";
 import { landingSource } from "@/lib/attribution";
 import type { DrawerSide, NBA2KRating, Player } from "@/models/types";
-import type { CardStyle } from "@/models/api";
+import type { CardStyle, TeamUniform } from "@/models/api";
 
 const route = useRoute();
 const router = useRouter();
@@ -112,6 +113,11 @@ const courtLogoUrl = computed(() =>
     centreLogoUrl(liveArena.value?.court, { teamLogo: teamLogo.value, uploadedLogo: liveArena.value?.logoUrl }),
 );
 const teamGM = ref<any>(null);
+// The 3D uniform override (null: colours sampled from the jersey) and the
+// owner's jersey numbers by slot. Shallow, so saves and the 3D view get plain
+// objects; each edit replaces the whole value.
+const teamUniform = shallowRef<TeamUniform | null>(null);
+const teamNumbers = shallowRef<RosterNumbers>({});
 
 const detailRefs: Record<DetailField, Ref<unknown>> = {
     name: teamName,
@@ -123,6 +129,8 @@ const detailRefs: Record<DetailField, Ref<unknown>> = {
     coach: teamCoach,
     arena: teamArena,
     gm: teamGM,
+    uniform: teamUniform,
+    numbers: teamNumbers,
 };
 
 const showPlayerDialog = ref<boolean>(false);
@@ -164,7 +172,7 @@ const people3d = computed(() =>
     scenePeople(
         STARTER_SLOTS.flatMap((slot) => {
             const player = landedPlayers.value.get(slot);
-            return player ? [{ slot, player }] : [];
+            return player ? [{ slot, player, number: teamNumbers.value[slot] }] : [];
         }),
         { coach: teamCoach.value, gm: teamGM.value },
     ),
@@ -181,7 +189,14 @@ const photoInput = computed<TeamPhotoInput>(() => ({
     people: people3d.value,
     jerseyUrl: teamJersey.value || undefined,
     teamName: teamName.value,
+    uniform: teamUniform.value,
 }));
+// Who can be given a number in the customization dialog, in slot order.
+const rosterForNumbers = computed(() =>
+    [...selectedPlayersData.value.entries()]
+        .sort(([a], [b]) => a - b)
+        .map(([slot, player]) => ({ slot, label: slot <= 5 ? slotLabel(slot) : "Bench", name: player.fullName ?? "" })),
+);
 const showPlayerStatsDialog = ref<boolean>(false);
 
 const selectedView = ref<string>("Default");
@@ -293,6 +308,8 @@ const addPlayerFromDialog = (player: any) => {
         redoLabel: `Added ${playerName} to ${where}`,
     });
     const { player: added, done } = loadPlayerIntoSlot(playerIndex, player);
+    // A number belongs to the player who had the slot, not to whoever replaces them.
+    teamNumbers.value = withNumber(teamNumbers.value, playerIndex, null);
     track("player_added", {
         from: player.isCustom ? "custom" : "search",
         slot: playerIndex <= 5 ? "starter" : "bench",
@@ -327,6 +344,8 @@ const builderState = (): BuilderState => ({
         coach: teamCoach.value,
         arena: teamArena.value,
         gm: teamGM.value,
+        uniform: teamUniform.value,
+        numbers: teamNumbers.value,
     },
     loadedTeam: {
         uuid: loadedTeamUUID.value,
@@ -353,6 +372,8 @@ const history = useTeamHistory<BuilderState>({
         teamCoach.value = next.details.coach;
         teamArena.value = next.details.arena;
         teamGM.value = next.details.gm;
+        teamUniform.value = next.details.uniform;
+        teamNumbers.value = next.details.numbers;
         loadedTeamUUID.value = next.loadedTeam.uuid;
         isPublic.value = next.loadedTeam.isPublic;
         cardUrl.value = next.loadedTeam.cardUrl;
@@ -435,6 +456,7 @@ const deletePlayer = (index: number) => {
     selectedPlayersData.value.delete(index);
     cardsFlipped.value.delete(index);
     selectedPlayersForComparison.value.delete(index);
+    teamNumbers.value = withNumber(teamNumbers.value, index, null);
 
     showUndoToast(`Removed ${player.fullName} from team`, entryId);
 };
@@ -470,6 +492,7 @@ const swapSlots = (from: number, to: number) => {
     swapMapEntries(players, from, to);
     swapMapEntries(cardsFlipped.value, from, to);
     swapSetMembers(selectedPlayersForComparison.value, from, to);
+    teamNumbers.value = swapNumbers(teamNumbers.value, from, to);
 };
 
 const slotLabel = (slot: number) =>
@@ -572,6 +595,8 @@ const wipeBuilder = () => {
     teamCountry.value = "";
     teamLogo.value = "";
     teamJersey.value = "";
+    teamUniform.value = null;
+    teamNumbers.value = {};
     loadedTeamUUID.value = null;
     isPublic.value = false;
     cardUrl.value = null;
@@ -608,6 +633,8 @@ const buildSavePayload = () =>
         teamCoach: teamCoach.value,
         teamArena: teamArena.value,
         teamGM: teamGM.value,
+        teamUniform: teamUniform.value,
+        teamNumbers: teamNumbers.value,
     });
 
 const saveTeam = async () => {
@@ -838,6 +865,8 @@ const applyHydratedTeam = (hydrated: HydratedTeam, name = hydrated.teamName) => 
     teamCoach.value = hydrated.teamCoach;
     teamArena.value = hydrated.teamArena;
     teamGM.value = hydrated.teamGM;
+    teamUniform.value = hydrated.teamUniform;
+    teamNumbers.value = hydrated.teamNumbers;
 };
 
 // restores synchronously; each roster slot then streams its career stats in
@@ -1139,6 +1168,11 @@ watch(
                     @update:teamLogo="customize('logo', $event)"
                     :teamJersey="teamJersey"
                     @update:teamJersey="customize('jersey', $event)"
+                    :teamUniform="teamUniform"
+                    @update:teamUniform="customize('uniform', $event)"
+                    :teamNumbers="teamNumbers"
+                    @update:teamNumbers="customize('numbers', $event)"
+                    :roster="rosterForNumbers"
                     v-model:drawerSide="selectedDrawerSide"
                     v-model:selectedView="selectedView"
                     :team-uuid="loadedTeamUUID"

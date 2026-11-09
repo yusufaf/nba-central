@@ -14,6 +14,10 @@ import HistoricalTeamCombobox from './HistoricalTeamCombobox.vue';
 import HistoricalLogoPicker from './HistoricalLogoPicker.vue';
 import HistoricalJerseyPicker from './HistoricalJerseyPicker.vue';
 import JerseyDrawingCanvas from './JerseyDrawingCanvas.vue';
+import UniformColourFields from './UniformColourFields.vue';
+import RosterNumberFields from './RosterNumberFields.vue';
+import type { TeamUniform } from '@/models/api';
+import type { RosterNumbers, RosterRow } from '@/utils/rosterNumbers';
 import type { CurrentTeamLogo } from '@/models/types';
 import currentTeamLogosData from '@/assets/data/currentTeamLogos.json';
 
@@ -33,6 +37,9 @@ const teamCity = defineModel<string>('teamCity');
 const teamCountry = defineModel<string>('teamCountry');
 const teamLogo = defineModel<string>('teamLogo');
 const teamJersey = defineModel<string>('teamJersey');
+const teamUniform = defineModel<TeamUniform | null>('teamUniform', { default: null });
+const teamNumbers = defineModel<RosterNumbers>('teamNumbers', { default: () => ({}) });
+withDefaults(defineProps<{ roster?: RosterRow[] }>(), { roster: () => [] });
 const selectedFile = ref<File | null>(null);
 
 /**
@@ -193,6 +200,18 @@ const handleFileChange = (event: Event) => {
                             <JerseyDrawingCanvas v-model:teamJersey="teamJersey" />
                         </TabsContent>
                     </Tabs>
+                </div>
+
+                <div class="space-y-2">
+                    <h3 class="text-base font-semibold text-foreground">Uniform Colours</h3>
+                    <p class="text-sm text-muted-foreground">Shown in the 3D view and on the 3D share card.</p>
+                    <UniformColourFields v-model:uniform="teamUniform" :jersey-url="teamJersey" />
+                </div>
+
+                <div class="space-y-2">
+                    <h3 class="text-base font-semibold text-foreground">Jersey Numbers</h3>
+                    <p class="text-sm text-muted-foreground">Shown in the 3D view and on the 3D share card.</p>
+                    <RosterNumberFields v-model:numbers="teamNumbers" :roster="roster" />
                 </div>
             </div>
         </DialogContent>

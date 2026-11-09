@@ -87,9 +87,17 @@ export const findLandmarks = (mesh: SkinnedMesh): Landmarks => {
     };
 };
 
-// The front of the jersey on the canvas's left half. The back (right half)
-// stays empty until roster numbers arrive (#290).
-export const kitTexture = (kit: { kind: KitKind; teamName: string; trim: string; secondary: string }): CanvasTexture => {
+// The jersey's lettering on a 1024x512 canvas: the front on the left half,
+// the back on the right (mirrored in the shader, so text drawn normally reads
+// correctly from behind). The front has the team name, with the number under
+// it when there is one; the back has only the number.
+export const kitTexture = (kit: {
+    kind: KitKind;
+    teamName: string;
+    number?: string | null;
+    trim: string;
+    secondary: string;
+}): CanvasTexture => {
     const canvas = document.createElement('canvas');
     canvas.width = 1024;
     canvas.height = 512;
@@ -98,14 +106,23 @@ export const kitTexture = (kit: { kind: KitKind; teamName: string; trim: string;
         context.clearRect(0, 0, 1024, 512);
         context.textAlign = 'center';
         context.textBaseline = 'middle';
-        context.font = '800 96px Inter, sans-serif';
-        context.lineWidth = 8;
         context.strokeStyle = kit.secondary;
         context.fillStyle = kit.trim;
+        const draw = (text: string, x: number, y: number, size: number, maxWidth: number) => {
+            context.font = `800 ${size}px Inter, sans-serif`;
+            context.lineWidth = Math.max(6, size / 12);
+            context.strokeText(text, x, y, maxWidth);
+            context.fillText(text, x, y, maxWidth);
+        };
         const name = kit.teamName.toUpperCase().slice(0, 14);
         // Narrower than the half it sits in: the chest is narrower than the box.
-        context.strokeText(name, 256, 250, 320);
-        context.fillText(name, 256, 250, 320);
+        if (kit.number) {
+            draw(name, 256, 190, 60, 280);
+            draw(kit.number, 256, 360, 150, 190);
+            draw(kit.number, 768, 250, 280, 300);
+        } else {
+            draw(name, 256, 250, 96, 320);
+        }
     }
     const texture = new CanvasTexture(canvas);
     texture.colorSpace = SRGBColorSpace;

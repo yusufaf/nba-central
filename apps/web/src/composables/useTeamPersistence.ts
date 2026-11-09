@@ -1,6 +1,8 @@
 import type { Arena, Coach, GM, Player } from "@/models/types";
 import { resolveLegacyLogoUrl } from "@/utils/historicalLogoUrl";
 import { backfillArena, parseCapacity } from "@/utils/arenaDetails";
+import { parseUniform } from "@/utils/jerseyColours";
+import { rosterNumbers, type RosterNumbers } from "@/utils/rosterNumbers";
 import type {
     CustomArena,
     EntityRef,
@@ -10,6 +12,7 @@ import type {
     SaveTeamPayload,
     TeamArenaRef,
     TeamRosterEntry,
+    TeamUniform,
 } from "@/models/api";
 
 // What the builder can hold as its arena: a row from arenas.json, one of the
@@ -27,6 +30,8 @@ interface BuilderState {
     teamCoach: Coach | null;
     teamArena: BuilderArena | null;
     teamGM: GM | null;
+    teamUniform?: TeamUniform | null;
+    teamNumbers?: RosterNumbers;
 }
 
 // Career stats/rating history are fetched per slot (fetchStatsDetails)
@@ -80,11 +85,16 @@ const toArenaRef = (arena: BuilderArena | null): TeamArenaRef | null => {
  * reordered roster in the order the players happened to be added.
  */
 export const serializeTeam = (state: BuilderState): SaveTeamPayload => {
+    const numbers = state.teamNumbers ?? {};
     const roster: TeamRosterEntry[] = Array.from(
         state.selectedPlayersData.entries(),
     )
         .sort(([a], [b]) => a - b)
-        .map(([slot, player]) => ({ slot, player: toSnapshot(player) }));
+        .map(([slot, player]) => ({
+            slot,
+            player: toSnapshot(player),
+            ...(numbers[slot] && { number: numbers[slot] }),
+        }));
 
     return {
         title: state.teamName,
@@ -97,6 +107,8 @@ export const serializeTeam = (state: BuilderState): SaveTeamPayload => {
         coach: toEntityRef(state.teamCoach),
         gm: toEntityRef(state.teamGM),
         arena: toArenaRef(state.teamArena),
+        // Always sent, so resetting to the sampled colours removes the override.
+        uniform: state.teamUniform ?? null,
     };
 };
 
@@ -111,6 +123,8 @@ export interface HydratedTeam {
     teamCoach: EntityRef | null;
     teamArena: ResolvedArena | null;
     teamGM: EntityRef | null;
+    teamUniform: TeamUniform | null;
+    teamNumbers: RosterNumbers;
 }
 
 // What hydrateTeam reads: a loaded team, or the payload a signed-out Save
@@ -135,6 +149,8 @@ export const hydrateTeam = (saved: HydrateSource): HydratedTeam => {
         teamCoach: saved.coach ?? null,
         teamArena: backfillArena(saved.arena ?? null),
         teamGM: saved.gm ?? null,
+        teamUniform: parseUniform(saved.uniform),
+        teamNumbers: rosterNumbers(saved.roster ?? []),
     };
 };
 

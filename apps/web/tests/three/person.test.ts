@@ -12,7 +12,7 @@ import {
 } from 'three';
 import type { Landmarks } from '@/three/character/kit';
 
-const mocks = vi.hoisted(() => ({ landmarks: [] as Landmarks[] }));
+const mocks = vi.hoisted(() => ({ landmarks: [] as Landmarks[], kitTexture: vi.fn(() => null) }));
 
 vi.mock('@/three/character/load', async (original) => ({
     ...(await original<typeof import('@/three/character/load')>()),
@@ -22,7 +22,7 @@ vi.mock('@/three/character/kit', async (original) => {
     const actual = await original<typeof import('@/three/character/kit')>();
     return {
         ...actual,
-        kitTexture: () => null,
+        kitTexture: mocks.kitTexture,
         applyKitMaterial: (material: MeshStandardMaterial, options: { landmarks: Landmarks }) => {
             mocks.landmarks.push(options.landmarks);
             return material;
@@ -105,5 +105,13 @@ describe('buildPerson', () => {
         expect(after.shoulderX).not.toBeCloseTo(before.shoulderX, 3);
         expect(mocks.landmarks[0].shoulderX).toBeCloseTo(after.shoulderX, 5);
         expect(mocks.landmarks[0].frontZ).toBeCloseTo(after.frontZ, 5);
+    });
+
+    it("passes the person's number to the kit texture", async () => {
+        mocks.kitTexture.mockClear();
+        const kit = { colours: { primary: '#123456', secondary: '#ffffff', trim: '#ffffff' }, teamName: 'Owls' };
+        await buildPerson({ id: 'a', name: 'A', role: 'player', heightInches: 78, weightPounds: 210, number: '00' }, kit);
+        await buildPerson({ id: 'b', name: 'B', role: 'player', heightInches: 78, weightPounds: 210 }, kit);
+        expect(mocks.kitTexture.mock.calls.map(([options]) => (options as { number: unknown }).number)).toEqual(['00', null]);
     });
 });

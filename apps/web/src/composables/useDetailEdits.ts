@@ -5,7 +5,16 @@ export type DetailField = keyof TeamDetails;
 
 type Labels = Pick<HistoryAction, "undoLabel" | "redoLabel">;
 
-const TEXT_FIELDS: ReadonlySet<DetailField> = new Set(["name", "description", "city", "country"]);
+// One undo step per focus: typing, and the colour picker, which emits on
+// every pointer move of a drag.
+const FOCUS_MERGED: ReadonlySet<DetailField> = new Set([
+    "name",
+    "description",
+    "city",
+    "country",
+    "uniform",
+    "numbers",
+]);
 const STAFF_ROLES: Partial<Record<DetailField, string>> = { coach: "coach", arena: "arena", gm: "GM" };
 const NOUNS: Record<DetailField, string> = {
     name: "team name",
@@ -17,6 +26,8 @@ const NOUNS: Record<DetailField, string> = {
     coach: "coach",
     arena: "arena",
     gm: "GM",
+    uniform: "uniform colours",
+    numbers: "jersey numbers",
 };
 
 // JerseyDrawingCanvas writes the finished drawing as a data: URL after every
@@ -38,7 +49,8 @@ const describeField = (field: DetailField, before: unknown, after: unknown): Lab
 
     const noun = NOUNS[field];
     let redoLabel: string;
-    if (!after) redoLabel = field === "logo" || field === "jersey" ? `Removed ${noun}` : `Cleared ${noun}`;
+    if (!after && field === "uniform") redoLabel = `Reset ${noun}`;
+    else if (!after) redoLabel = field === "logo" || field === "jersey" ? `Removed ${noun}` : `Cleared ${noun}`;
     else if (field === "name") redoLabel = `Renamed team to ${after}`;
     else if (field === "city" || field === "country") redoLabel = `Changed ${noun} to ${after}`;
     else redoLabel = `Changed ${noun}`;
@@ -109,7 +121,7 @@ export const useDetailEdits = ({ details, apply, record, baseFor }: DetailEditsO
     });
 
     const mergeKeyFor = (field: DetailField, value: unknown) => {
-        if (TEXT_FIELDS.has(field)) return `${field}:${focusSession}`;
+        if (FOCUS_MERGED.has(field)) return `${field}:${focusSession}`;
         if (field === "jersey" && isDrawnJersey(value)) return `jersey:drawing:${pageFocusSession}`;
         return `${field}#${editCount}`;
     };

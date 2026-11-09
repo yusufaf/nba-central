@@ -29,6 +29,35 @@ describe('kitTexture', () => {
         expect(call).toBeDefined();
         expect(call![1]).toBeLessThan(512);
     });
+
+    const spyFillText = () => {
+        const fillText = vi.fn();
+        vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue(
+            new Proxy({ fillText }, { get: (target, key) => (key in target ? target[key as 'fillText'] : () => {}) }) as unknown as CanvasRenderingContext2D,
+        );
+        return fillText;
+    };
+
+    it('draws the number on the front and back halves', () => {
+        const fillText = spyFillText();
+        kitTexture({ kind: 'player', teamName: 'Night Owls', number: '23', trim: '#ffffff', secondary: '#c9a227' });
+        const xs = fillText.mock.calls.filter(([text]) => text === '23').map(([, x]) => x as number);
+        expect(xs.some((x) => x < 512)).toBe(true);
+        expect(xs.some((x) => x >= 512)).toBe(true);
+        expect(fillText.mock.calls.some(([text]) => String(text).includes('NIGHT OWLS'))).toBe(true);
+    });
+
+    it('leaves the back empty without a number', () => {
+        const fillText = spyFillText();
+        kitTexture({ kind: 'player', teamName: 'Night Owls', number: null, trim: '#ffffff', secondary: '#c9a227' });
+        expect(fillText.mock.calls.every(([, x]) => (x as number) < 512)).toBe(true);
+    });
+
+    it('draws nothing for a suit', () => {
+        const fillText = spyFillText();
+        kitTexture({ kind: 'suit', teamName: 'Night Owls', number: '23', trim: '#ffffff', secondary: '#c9a227' });
+        expect(fillText).not.toHaveBeenCalled();
+    });
 });
 
 describe('applyKitMaterial', () => {
