@@ -1,6 +1,6 @@
 import { Group, PerspectiveCamera } from 'three';
 import { buildPerson, type PersonInput } from '@/three/character/person';
-import type { KitColours } from '@/three/character/jerseyColours';
+import type { KitColours } from '@/utils/jerseyColours';
 import { renderToImageData } from '@/three/renderer/offscreen';
 import { disposeObject, getSharedRenderer } from '@/three/renderer/shared';
 import { TWO_ROWS_BELOW_ASPECT, framePreset } from './cameraPresets';

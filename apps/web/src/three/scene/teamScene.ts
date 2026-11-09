@@ -1,7 +1,7 @@
 import { Group, PerspectiveCamera, Vector3 } from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { buildPerson, type PersonInput } from '@/three/character/person';
-import type { KitColours } from '@/three/character/jerseyColours';
+import type { KitColours } from '@/utils/jerseyColours';
 import { disposeObject, getSharedRenderer } from '@/three/renderer/shared';
 import { buildArena, createStage, placeInRows } from './stage';
 import { ORBIT_LIMITS, TWO_ROWS_BELOW_ASPECT, framePreset, type CameraPreset } from './cameraPresets';

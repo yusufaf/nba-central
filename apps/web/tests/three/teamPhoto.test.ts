@@ -41,7 +41,7 @@ vi.mock('@/three/scene/stage', async (importOriginal) => {
 
 import { CARD_SIZE, renderTeamPhotoFrame } from '@/three/scene/teamPhoto';
 import { framePreset } from '@/three/scene/cameraPresets';
-import { HOME_KIT } from '@/three/character/jerseyColours';
+import { HOME_KIT } from '@/utils/jerseyColours';
 import type { PersonInput } from '@/three/character/person';
 
 const person = (id: string): PersonInput => ({ id, name: id, role: 'player', heightInches: 79, weightPounds: 220 });

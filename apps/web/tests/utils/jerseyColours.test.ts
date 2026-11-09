@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { HOME_KIT, loadJerseyColours, sampleJerseyColours } from '@/three/character/jerseyColours';
+import { HOME_KIT, loadJerseyColours, sampleJerseyColours } from '@/utils/jerseyColours';
 
 type RGBA = [number, number, number, number];
 const WHITE: RGBA = [255, 255, 255, 255];

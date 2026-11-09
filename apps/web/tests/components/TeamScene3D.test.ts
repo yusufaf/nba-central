@@ -48,7 +48,7 @@ vi.mock('@/three/renderer/shared', () => ({
     },
 }));
 vi.mock('@/lib/analytics', () => ({ track: mocks.track }));
-vi.mock('@/three/character/jerseyColours', () => ({ loadJerseyColours: async () => mocks.kit }));
+vi.mock('@/utils/jerseyColours', () => ({ loadJerseyColours: async () => mocks.kit }));
 
 import TeamScene3D from '@/components/scene3d/TeamScene3D.vue';
 import CourtFloor from '@/components/court/CourtFloor.vue';

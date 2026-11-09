@@ -14,7 +14,7 @@ import {
     type SkinnedMesh,
     type WebGLProgramParametersWithUniforms,
 } from 'three';
-import type { KitColours } from './jerseyColours';
+import type { KitColours } from '@/utils/jerseyColours';
 
 export type KitKind = 'player' | 'suit';
 
