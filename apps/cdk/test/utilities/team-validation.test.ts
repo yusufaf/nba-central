@@ -107,4 +107,27 @@ describe("validateTeamData", () => {
     it("keeps only the three colours of a uniform", () => {
         expect(toUniform({ ...uniform, extra: "x" })).toEqual(uniform);
     });
+
+    it.for(["0", "00", "7", "23", "99"])("accepts roster number %s", (number) => {
+        expect(validateTeamData({ ...valid, roster: [{ slot: 0, player, number }] })).toEqual({
+            valid: true,
+        });
+    });
+
+    it("accepts a null or absent roster number", () => {
+        expect(validateTeamData({ ...valid, roster: [{ slot: 0, player, number: null }] })).toEqual({
+            valid: true,
+        });
+        expect(validateTeamData(valid)).toEqual({ valid: true });
+    });
+
+    it.for(["100", "07", "-1", "", "1a", " 7", 23, true].map((n) => ({ n })))(
+        "rejects roster number $n",
+        ({ n }) => {
+            expect(validateTeamData({ ...valid, roster: [{ slot: 0, player, number: n }] })).toEqual({
+                valid: false,
+                error: "Roster numbers must be 0-99 or 00",
+            });
+        },
+    );
 });
