@@ -1,7 +1,7 @@
 import { createApp, h, nextTick } from 'vue';
 import CourtFloor from '@/components/court/CourtFloor.vue';
 import { rasteriseCourt } from '@/three/arena/rasteriseCourt';
-import { loadJerseyColours } from '@/three/character/jerseyColours';
+import { loadJerseyColours } from '@/utils/jerseyColours';
 import { renderTeamPhotoFrame } from '@/three/scene/teamPhoto';
 import { DEFAULT_COURT, courtAttempts } from './courtRaster';
 import type { TeamPhotoInput } from './teamPhotoInput';

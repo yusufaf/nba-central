@@ -10,7 +10,7 @@ import { DEFAULT_COURT, courtAttempts } from './courtRaster';
 import { track } from '@/lib/analytics';
 import type { CourtDesign } from '@/models/api';
 import { rasteriseCourt } from '@/three/arena/rasteriseCourt';
-import { loadJerseyColours, type KitColours } from '@/three/character/jerseyColours';
+import { loadJerseyColours, type KitColours } from '@/utils/jerseyColours';
 import type { PersonInput } from '@/three/character/person';
 import { onContextChange } from '@/three/renderer/shared';
 import { CAMERA_PRESETS, PRESET_LABELS, type CameraPreset } from '@/three/scene/cameraPresets';

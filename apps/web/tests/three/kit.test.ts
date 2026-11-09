@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { CanvasTexture, MeshStandardMaterial } from 'three';
 import { applyKitMaterial, kitTexture, type Landmarks } from '@/three/character/kit';
-import { HOME_KIT } from '@/three/character/jerseyColours';
+import { HOME_KIT } from '@/utils/jerseyColours';
 
 const LANDMARKS: Landmarks = {
     hipY: 0.95,

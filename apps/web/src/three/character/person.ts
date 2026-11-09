@@ -4,7 +4,7 @@
 import { Bone, Group, Quaternion, Vector3, type MeshStandardMaterial, type Object3D, type SkinnedMesh } from 'three';
 import bodyUrl from '../assets/athletic-male.glb?url';
 import { bodySize, girthFor, type Role } from './body';
-import type { KitColours } from './jerseyColours';
+import type { KitColours } from '@/utils/jerseyColours';
 import { addRegions, applyKitMaterial, findLandmarks, kitTexture } from './kit';
 import { cloneCharacter, loadBody } from './load';
 import { reshapeBody } from './reshape';

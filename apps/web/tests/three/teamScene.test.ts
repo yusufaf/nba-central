@@ -31,7 +31,7 @@ vi.mock('@/three/character/person', async () => {
 import { TeamScene } from '@/three/scene/teamScene';
 import { framePreset } from '@/three/scene/cameraPresets';
 import type { PersonInput } from '@/three/character/person';
-import { HOME_KIT } from '@/three/character/jerseyColours';
+import { HOME_KIT } from '@/utils/jerseyColours';
 
 const KIT = { colours: HOME_KIT, teamName: 'Owls' };
 const person = (id: string): PersonInput => ({ id, name: id, role: 'player', position: 'SF', heightInches: 79, weightPounds: 220 });
