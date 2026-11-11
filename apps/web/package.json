@@ -3,7 +3,7 @@
   "version": "0.4.0",
   "private": true,
   "type": "module",
-  "packageManager": "pnpm@10.24.0",
+  "packageManager": "pnpm@10.34.9",
   "scripts": {
     "start": "vite",
     "preview": "vite preview",
@@ -39,7 +39,7 @@
     "tailwindcss": "^4.3.3",
     "three": "0.187.0",
     "v-calendar": "^3.1.2",
-    "vue": "3.5.43",
+    "vue": "3.5.45",
     "vue-router": "^5.3.1",
     "vue-sonner": "^2.0.9",
     "vuedraggable": "^4.1.0"
