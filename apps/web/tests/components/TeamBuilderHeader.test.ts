@@ -88,6 +88,9 @@ describe("TeamBuilderHeader reset", () => {
 
     it("resets straight away with confirmations off, since a reset can be undone", async () => {
         useTeamBuilderPreferences().preferences.value.confirmDestructive = false;
+        // useStorage writes localStorage from a watcher, so let it flush before the
+        // header's own instance reads the setting at mount.
+        await nextTick();
         const wrapper = mountHeader({});
         await wrapper.find('[data-testid="reset-button"]').trigger("click");
 
