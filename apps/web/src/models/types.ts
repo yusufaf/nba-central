@@ -1,3 +1,5 @@
+import type { PersonAppearance } from "@/constants/appearance";
+
 export type CustomizationKey =
     | "shortNames"
     | "hideScores";
@@ -147,6 +149,8 @@ export type Player = {
     heightInches?: number;
     weightPounds?: number;
     overallRating?: number;
+    // How a custom player looks in 3D; never honoured on a real player.
+    appearance?: PersonAppearance;
 };
 
 // "unavailable": the stats snapshot hasn't reached this player yet.

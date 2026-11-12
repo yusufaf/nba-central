@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { teamPhotoKey, type TeamPhotoInput } from '@/components/scene3d/teamPhotoInput';
 import { newCourt } from '@/utils/court';
+import { DEFAULT_APPEARANCE } from '@/utils/appearance';
 
 const base = (): TeamPhotoInput => ({
     court: newCourt('Owls'),
@@ -29,6 +30,7 @@ describe('teamPhotoKey', () => {
         ['the capacity', (input) => void (input.capacity = 12000)],
         ['the uniform', (input) => void (input.uniform = { primary: '#111111', secondary: '#222222', trim: '#333333' })],
         ["a person's number", (input) => void (input.people[0].number = '23')],
+        ["a person's appearance", (input) => void (input.people[0].appearance = DEFAULT_APPEARANCE)],
     ])('changes with %s', (_, change) => {
         const changed = base();
         change(changed);

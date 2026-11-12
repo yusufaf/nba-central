@@ -3,6 +3,7 @@ import { toast } from 'vue-sonner';
 import { customPlayerApi } from '@/network/api';
 import { getApiErrorMessage } from '@/composables/useApiErrorMessage';
 import { useCurrentUser } from '@/composables/useCurrentUser';
+import type { PersonAppearance } from '@/constants/appearance';
 import type { Player } from '@/models/types';
 
 export function useCustomPlayers() {
@@ -39,6 +40,7 @@ export function useCustomPlayers() {
         heightInches: number;
         weightPounds: number;
         overallRating: number;
+        appearance?: PersonAppearance | null;
     }) => {
         loading.value = true;
         error.value = null;
@@ -72,6 +74,7 @@ export function useCustomPlayers() {
         heightInches: number;
         weightPounds: number;
         overallRating: number;
+        appearance?: PersonAppearance | null;
     }) => {
         loading.value = true;
         error.value = null;

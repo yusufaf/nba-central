@@ -34,6 +34,7 @@ vi.mock('@/network/api', () => ({
         getPublicTeam: vi.fn(),
     },
     customArenaApi: { list: vi.fn(async () => ({ success: true, data: { customArenas: [] } })) },
+    customPlayerApi: { list: vi.fn() },
 }));
 vi.mock('@/composables/useCurrentUser', async () => {
     const { ref } = await import('vue');
@@ -42,7 +43,7 @@ vi.mock('@/composables/useCurrentUser', async () => {
 vi.mock('@/lib/analytics', () => ({ track: vi.fn() }));
 
 import TeamBuilder from '@/views/TeamBuilder.vue';
-import { dataApi, teamApi } from '@/network/api';
+import { customPlayerApi, dataApi, teamApi } from '@/network/api';
 import { stashPendingSave, hasPendingSave } from '@/composables/usePendingSave';
 import { toast } from 'vue-sonner';
 import type { SaveTeamPayload } from '@/models/api';
@@ -245,6 +246,47 @@ describe('Save, a remix', () => {
         await mountAt('/teambuilder');
         await saveClicked();
         expect(vi.mocked(teamApi.createTeam).mock.calls[0][0].uniform).toBeNull();
+    });
+});
+
+describe("Save, the owner's team with a custom player", () => {
+    const look = (hair: string) => ({
+        version: 1,
+        frame: 'm',
+        skin: '#8d5a3b',
+        hair: { style: hair, color: '#1b1512' },
+        facialHair: { style: 'none', color: '#1b1512' },
+        build: { girth: 0, shoulders: 0, wingspan: 0 },
+        accessories: [],
+        pose: 'relaxed',
+    });
+    const openTeam = async () => {
+        const base = draft();
+        const nova = { fullName: 'Nova Reyes', name: 'Nova Reyes', isCustom: true, playerUUID: 'p1', position: 'PG', appearance: look('parted') };
+        vi.mocked(teamApi.getTeam).mockResolvedValue({
+            success: true,
+            data: { ...base, teamUUID: 't1', roster: [{ slot: 0, player: nova }] } as never,
+        });
+        vi.mocked(teamApi.updateTeam).mockResolvedValue({ success: true, data: { teamUUID: 't1' } as never });
+        signedIn.value = true;
+        await mountAt('/teambuilder?team=t1');
+        await saveClicked();
+        return vi.mocked(teamApi.updateTeam).mock.calls[0]?.[0] as SaveTeamPayload | undefined;
+    };
+
+    it("wears the player's current look, so the save stores it", async () => {
+        vi.mocked(customPlayerApi.list).mockResolvedValue({
+            success: true,
+            data: { customPlayers: [{ playerUUID: 'p1', name: 'Nova Reyes', appearance: look('buzzed') }] },
+        });
+        const sent = await openTeam();
+        expect(sent?.roster[0].player.appearance?.hair.style).toBe('buzzed');
+    });
+
+    it('still opens and saves with the old look when the list fails', async () => {
+        vi.mocked(customPlayerApi.list).mockRejectedValue(new Error('offline'));
+        const sent = await openTeam();
+        expect(sent?.roster[0].player.appearance?.hair.style).toBe('parted');
     });
 });
 

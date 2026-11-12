@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { sceneLabel, scenePeople } from '@/components/scene3d/people';
+import { DEFAULT_APPEARANCE } from '@/utils/appearance';
 
 describe('scenePeople', () => {
     it('maps starters in the given order, then coach and GM', () => {
@@ -31,6 +32,34 @@ describe('scenePeople', () => {
     it('drops an invalid roster number', () => {
         const [person] = scenePeople([{ slot: 1, player: { fullName: 'One' }, number: '07' }], {});
         expect(person).not.toHaveProperty('number');
+    });
+
+    describe("a custom player's look", () => {
+        const LOOK = { ...DEFAULT_APPEARANCE, skin: '#f1c7a5', hair: { style: 'parted', color: '#3b2a1e' } };
+
+        it('carries the parsed appearance of a custom player', () => {
+            const [person] = scenePeople([{ slot: 1, player: { fullName: 'Nova', isCustom: true, appearance: LOOK } }], {});
+            expect(person.appearance).toEqual(LOOK);
+        });
+
+        it('ignores an appearance on a real player', () => {
+            const [person] = scenePeople([{ slot: 1, player: { fullName: 'Real', appearance: LOOK } }], {});
+            expect(person).not.toHaveProperty('appearance');
+        });
+
+        it("wears the player's own number when the roster gives none", () => {
+            const player = { fullName: 'Nova', isCustom: true, appearance: { ...LOOK, jerseyNumber: '8' } };
+            expect(scenePeople([{ slot: 1, player }], {})[0].number).toBe('8');
+            expect(scenePeople([{ slot: 1, player, number: '23' }], {})[0].number).toBe('23');
+        });
+
+        it('fills a malformed appearance with defaults', () => {
+            const [person] = scenePeople(
+                [{ slot: 1, player: { fullName: 'Nova', isCustom: true, appearance: { skin: 'pink', hair: 3 } } }],
+                {},
+            );
+            expect(person.appearance).toEqual(DEFAULT_APPEARANCE);
+        });
     });
 
     it('a starter without size fields gets null sizes', () => {

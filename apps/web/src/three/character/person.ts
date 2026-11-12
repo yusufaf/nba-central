@@ -1,12 +1,15 @@
 // One person in the team scene: the CC0 body, cloned, painted with the
 // team's uniform (or a suit for staff) as a neutral figurine, sized from
 // their height and weight, arms relaxed, facing the camera.
-import { Bone, Group, Quaternion, Vector3, type MeshStandardMaterial, type Object3D, type SkinnedMesh } from 'three';
+import { Group, Vector3, type MeshStandardMaterial, type Object3D, type SkinnedMesh } from 'three';
 import bodyUrl from '../assets/athletic-male.glb?url';
+import type { PersonAppearance } from '@/constants/appearance';
+import { attachHair, FACIAL_HAIR_ASSETS, HAIR_ASSETS } from './appearance';
 import { bodySize, girthFor, type Role } from './body';
 import type { KitColours } from '@/utils/jerseyColours';
 import { addRegions, applyKitMaterial, findLandmarks, kitTexture } from './kit';
 import { cloneCharacter, loadBody } from './load';
+import { POSE_BUILDERS } from './poses';
 import { reshapeBody } from './reshape';
 
 export interface PersonInput {
@@ -17,9 +20,11 @@ export interface PersonInput {
     heightInches: number | null;
     weightPounds: number | null;
     number?: string | null;
+    /** A custom person's look; without one they're a figurine. */
+    appearance?: PersonAppearance | null;
 }
 
-// Real people are figurines (spec decision 3); in this slice everyone is.
+// Real people are figurines (spec decision 3).
 const VINYL = '#c8c3ba';
 const INCH = 0.0254;
 const WINGSPAN = 1.03;
@@ -32,37 +37,6 @@ const skinnedIn = (root: Object3D): SkinnedMesh[] => {
     return meshes;
 };
 
-const bone = (root: Object3D, name: string) => root.getObjectByName(name) as Bone | undefined;
-
-// Turns a bone in world space so its child points along `target`, which
-// works whatever the bone's roll.
-const point = (parent: Bone, child: Bone, target: Vector3) => {
-    parent.updateMatrixWorld(true);
-    const from = child.getWorldPosition(new Vector3()).sub(parent.getWorldPosition(new Vector3())).normalize();
-    const turn = new Quaternion().setFromUnitVectors(from, target.clone().normalize());
-    const world = parent.getWorldQuaternion(new Quaternion());
-    const above = parent.parent ? parent.parent.getWorldQuaternion(new Quaternion()) : new Quaternion();
-    parent.quaternion.copy(above.invert().multiply(turn).multiply(world));
-    parent.updateMatrixWorld(true);
-};
-
-// The model is in a T-pose: arms down by the sides, a slight bend at the elbow.
-const relaxArms = (root: Object3D, forward: Vector3) => {
-    root.updateMatrixWorld(true);
-    const chest = bone(root, 'spine_03');
-    for (const side of ['l', 'r']) {
-        const upper = bone(root, `upperarm_${side}`);
-        const lower = bone(root, `lowerarm_${side}`);
-        const hand = bone(root, `hand_${side}`);
-        if (!chest || !upper || !lower || !hand) continue;
-        const outward = upper.getWorldPosition(new Vector3()).sub(chest.getWorldPosition(new Vector3()));
-        outward.y = 0;
-        outward.normalize();
-        point(upper, lower, new Vector3(0, -1, 0).addScaledVector(outward, 0.16));
-        point(lower, hand, new Vector3(0, -1, 0).addScaledVector(outward, 0.1).addScaledVector(forward, 0.22));
-    }
-};
-
 export const buildPerson = async (
     input: PersonInput,
     kit: { colours: KitColours; teamName: string },
@@ -72,8 +46,31 @@ export const buildPerson = async (
     const body = meshes.reduce((a, b) =>
         a.geometry.getAttribute('position').count >= b.geometry.getAttribute('position').count ? a : b,
     );
-    // Figurines have no eyes or brows.
-    for (const mesh of meshes) if (mesh !== body) mesh.visible = false;
+    const look = input.appearance ?? null;
+    if (look) {
+        // Eyes and brows stay; the brows take the hair colour.
+        for (const mesh of meshes) {
+            const material = mesh.material as MeshStandardMaterial;
+            if (mesh !== body && /hair/i.test(material.name)) material.color.set(look.hair.color);
+        }
+        const attached = await Promise.allSettled([
+            look.hair.style !== 'none' && attachHair(character, body, HAIR_ASSETS[look.hair.style], look.hair.color, 'hair'),
+            look.facialHair.style !== 'none' &&
+                attachHair(character, body, FACIAL_HAIR_ASSETS[look.facialHair.style], look.facialHair.color, 'facialHair'),
+        ]);
+        for (const result of attached) {
+            if (result.status === 'rejected') console.warn('Could not load hair for', input.name, result.reason);
+        }
+        // The pack's one body texture is a dark tone, so skin is a flat
+        // colour; the normal and roughness maps keep the form.
+        const skin = body.material as MeshStandardMaterial;
+        skin.map = null;
+        skin.color.set(look.skin);
+        skin.needsUpdate = true;
+    } else {
+        // Figurines have no eyes or brows.
+        for (const mesh of meshes) if (mesh !== body) mesh.visible = false;
+    }
 
     // Reshape first: the kit shader reads the reshaped rest positions, so its
     // landmarks have to come from the same body.
@@ -95,7 +92,7 @@ export const buildPerson = async (
         kind,
         colours: kit.colours,
         landmarks,
-        vinyl: VINYL,
+        vinyl: look ? null : VINYL,
         texture,
     });
 
@@ -106,7 +103,7 @@ export const buildPerson = async (
     const facing = new Vector3(0, 0, landmarks.front).transformDirection(body.bindMatrix);
     character.rotation.y = -Math.atan2(facing.x, facing.z);
     character.updateMatrixWorld(true);
-    relaxArms(character, new Vector3(0, 0, 1));
+    POSE_BUILDERS[look?.pose ?? 'relaxed'](character, new Vector3(0, 0, 1));
 
     // Metres, from the body's rest height.
     body.geometry.computeBoundingBox();

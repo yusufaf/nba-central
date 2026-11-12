@@ -47,6 +47,7 @@ import type {
     SubmitCapFiveResponse,
 } from '@/models/api';
 import type { SettingsMap } from '@/constants/settings';
+import type { PersonAppearance } from '@/constants/appearance';
 
 export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '';
 
@@ -362,6 +363,7 @@ export const customPlayerApi = {
         heightInches: number;
         weightPounds: number;
         overallRating: number;
+        appearance?: PersonAppearance | null;
     }) => {
         const response = await api.post('/api/custom-entities/player/create', data);
         return response.data;
@@ -377,6 +379,7 @@ export const customPlayerApi = {
         heightInches: number;
         weightPounds: number;
         overallRating: number;
+        appearance?: PersonAppearance | null;
     }) => {
         const response = await api.put('/api/custom-entities/player/update', { playerUUID, ...data });
         return response.data;

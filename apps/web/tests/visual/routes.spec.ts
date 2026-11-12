@@ -597,6 +597,74 @@ test.describe('3D team scene', () => {
         expect(errors).toEqual([]);
     });
 
+    // #291: a custom player wears their own look (skin, hair, beard).
+    test("renders a custom player's look", async ({ page }) => {
+        test.setTimeout(90000);
+        const problems: string[] = [];
+        page.on('console', (message) => {
+            if (message.type() === 'error' || (message.type() === 'warning' && /hair/i.test(message.text()))) {
+                problems.push(message.text());
+            }
+        });
+        page.on('pageerror', (error) => problems.push(error.message));
+        await stubNetwork(page);
+
+        // The plain fixture first: seven figurines, no hair.
+        await page.goto('/t/visual-team?view=3d');
+        await expect(page.getByTestId('name-chip')).toHaveCount(7, { timeout: 20000 });
+        await expect.poll(() => renders(page), { timeout: 15000 }).toBeGreaterThanOrEqual(1);
+        const baseline = (await memory(page))!;
+        expect(baseline).not.toBeNull();
+
+        await page.route('**/api/teams/public/visual-team', (route) =>
+            route.fulfill({
+                status: 200,
+                contentType: 'application/json',
+                body: JSON.stringify({
+                    ...publicTeamFixture,
+                    data: {
+                        ...publicTeamFixture.data,
+                        roster: publicTeamFixture.data.roster.map((entry) =>
+                            entry.slot === 1
+                                ? {
+                                      ...entry,
+                                      player: {
+                                          fullName: 'Nova Reyes',
+                                          isCustom: true,
+                                          playerUUID: 'p1',
+                                          position: 'PG',
+                                          heightFeet: 6,
+                                          heightInches: 3,
+                                          weightPounds: 195,
+                                          appearance: {
+                                              version: 1,
+                                              frame: 'm',
+                                              skin: '#8d5a3b',
+                                              hair: { style: 'parted', color: '#3b2a1e' },
+                                              facialHair: { style: 'beard', color: '#3b2a1e' },
+                                              build: { girth: 0, shoulders: 0, wingspan: 0 },
+                                              accessories: [],
+                                              pose: 'relaxed',
+                                          },
+                                      },
+                                  }
+                                : entry,
+                        ),
+                    },
+                }),
+            }),
+        );
+        await page.goto('/t/visual-team?view=3d');
+        await expect(page.getByText('Nova Reyes').first()).toBeVisible({ timeout: 20000 });
+        await expect(page.getByTestId('name-chip')).toHaveCount(7, { timeout: 20000 });
+        await expect.poll(() => renders(page), { timeout: 15000 }).toBeGreaterThanOrEqual(1);
+        // Hair, beard, eyes and brows add geometry; the hair adds its texture.
+        await expect.poll(async () => (await memory(page))?.geometries ?? 0, { timeout: 15000 }).toBeGreaterThan(baseline.geometries);
+        await expect.poll(async () => (await memory(page))?.textures ?? 0, { timeout: 15000 }).toBeGreaterThan(baseline.textures);
+        await page.locator('[role="img"][data-render-count]').screenshot({ path: test.info().outputPath('custom-look.png') });
+        expect(problems).toEqual([]);
+    });
+
     // #289: the share card's 3D team photo is drawn into an sRGB render target.
     // A plain one would read back linear, too dark: mid grey comes out near 55.
     test('offscreen render target writes sRGB', async ({ page }) => {
