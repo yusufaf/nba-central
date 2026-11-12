@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { toUniform, validateTeamData } from "../../utilities/team-validation";
+import { toRoster, toUniform, validateTeamData } from "../../utilities/team-validation";
 
 describe("validateTeamData", () => {
     const player = { fullName: "Gary Payton" };
@@ -130,4 +130,48 @@ describe("validateTeamData", () => {
             });
         },
     );
+});
+
+describe("roster appearances", () => {
+    const LOOK = {
+        version: 1,
+        frame: "m",
+        skin: "#8d5a3b",
+        hair: { style: "parted", color: "#3b2a1e" },
+        facialHair: { style: "beard", color: "#3b2a1e" },
+        build: { girth: 0, shoulders: 0, wingspan: 0 },
+        accessories: [],
+        pose: "relaxed",
+    };
+    const nova = { fullName: "Nova ", isCustom: true, playerUUID: "p1", appearance: LOOK };
+    const team = (player: Record<string, unknown>) => ({ title: "Sonics", roster: [{ slot: 0, player }] });
+
+    it("accepts a custom player with a valid look", () => {
+        expect(validateTeamData(team(nova))).toEqual({ valid: true });
+    });
+
+    it("rejects a custom player's invalid look, naming them", () => {
+        expect(validateTeamData(team({ ...nova, appearance: { ...LOOK, hair: { style: "parted", color: "brown" } } }))).toEqual({
+            valid: false,
+            error: "Nova's look is invalid: Appearance hair color must be a #rrggbb colour",
+        });
+    });
+
+    it("never rejects a real player for a look, and drops it", () => {
+        const real = { fullName: "Gary Payton", appearance: { skin: "pink" } };
+        expect(validateTeamData(team(real))).toEqual({ valid: true });
+        expect(toRoster([{ slot: 0, player: real } as never])[0].player).toEqual({ fullName: "Gary Payton" });
+    });
+
+    it("keeps only the known keys of a custom player's look", () => {
+        const [entry] = toRoster([
+            { slot: 0, number: "8", player: { ...nova, appearance: { ...LOOK, secret: 1, hair: { ...LOOK.hair, extra: 2 } } } } as never,
+        ]);
+        expect(entry).toEqual({ slot: 0, number: "8", player: nova });
+    });
+
+    it("leaves an entry without a look as it is", () => {
+        const entry = { slot: 0, player: { fullName: "Gary Payton" } };
+        expect(toRoster([entry])[0]).toBe(entry);
+    });
 });

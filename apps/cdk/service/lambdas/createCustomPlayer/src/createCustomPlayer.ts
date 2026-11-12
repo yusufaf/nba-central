@@ -12,7 +12,8 @@ import {
 	CreateCustomPlayerPayload,
 	CreateCustomPlayerResponse,
 } from "models/api/custom-entities-api";
-import { validatePlayerData } from "utilities/custom-entities-validation";
+import { toAppearance, validatePlayerData } from "utilities/custom-entities-validation";
+import { isRecord } from "utilities/type-guards";
 
 const { mainTable = "" } = process.env;
 
@@ -58,6 +59,7 @@ export const handler: Handler = async (
 			heightInches: payload.heightInches,
 			weightPounds: payload.weightPounds,
 			overallRating: payload.overallRating,
+			...(isRecord(payload.appearance) && { appearance: toAppearance(payload.appearance) }),
 			createdBy: username,
 		};
 
@@ -79,6 +81,7 @@ export const handler: Handler = async (
 				weightPounds: item.weightPounds,
 				overallRating: item.overallRating,
 				created: item.created,
+				...(item.appearance && { appearance: item.appearance }),
 			},
 		};
 		return {

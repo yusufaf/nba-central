@@ -26,6 +26,36 @@ export interface CustomCoachItem {
 	createdBy: string;
 }
 
+// A custom person's look (spec: docs/superpowers/specs/2026-11-05-3d-builders-design.md).
+// Real people never have one: they render as figurines. apps/web keeps a copy
+// of these arrays in src/constants/appearance.ts; test/utilities/appearance.test.ts
+// fails if the two drift. A new id ships here (and is deployed) before the web.
+export const APPEARANCE_FRAMES = ["m", "f"] as const;
+export const HAIR_STYLES = ["none", "buzzed", "parted"] as const;
+export const FACIAL_HAIR_STYLES = ["none", "beard"] as const;
+export const ACCESSORIES = ["headband", "armSleeve", "goggles", "glasses"] as const;
+export const POSES = ["relaxed"] as const;
+export const MAX_ACCESSORIES = 4;
+
+export type AppearanceFrame = (typeof APPEARANCE_FRAMES)[number];
+export type HairStyleId = (typeof HAIR_STYLES)[number];
+export type FacialHairId = (typeof FACIAL_HAIR_STYLES)[number];
+export type AccessoryId = (typeof ACCESSORIES)[number];
+export type PoseId = (typeof POSES)[number];
+
+export interface PersonAppearance {
+	version: 1;
+	frame: AppearanceFrame;
+	skin: string;
+	hair: { style: HairStyleId; color: string };
+	facialHair: { style: FacialHairId; color: string };
+	build: { girth: number; shoulders: number; wingspan: number };
+	accessories: { id: AccessoryId; color: string }[];
+	// Worn when the team gives the player no roster number.
+	jerseyNumber?: string;
+	pose: PoseId;
+}
+
 export interface CustomPlayerItem {
 	PK: string;
 	SK: string;
@@ -39,6 +69,7 @@ export interface CustomPlayerItem {
 	heightInches: number;
 	weightPounds: number;
 	overallRating: number;
+	appearance?: PersonAppearance;
 	createdBy: string;
 }
 

@@ -485,3 +485,48 @@ describe("team card style and uniform", () => {
 		expect(send).not.toHaveBeenCalled();
 	});
 });
+
+describe("team roster appearances", () => {
+	const look = {
+		version: 1,
+		frame: "m",
+		skin: "#8d5a3b",
+		hair: { style: "parted", color: "#3b2a1e" },
+		facialHair: { style: "none", color: "#3b2a1e" },
+		build: { girth: 0, shoulders: 0, wingspan: 0 },
+		accessories: [],
+		pose: "relaxed",
+	};
+	const nova = (appearance: unknown) => ({ fullName: "Nova", isCustom: true, playerUUID: "p1", appearance });
+
+	it("createTeam stores a custom player's look without unknown keys", async () => {
+		send.mockResolvedValueOnce({});
+		await createTeamHandler(
+			authorizerEvent({ body: validTeamBody({ roster: [{ slot: 1, player: nova({ ...look, extra: 1 }) }] }) }),
+			{} as never,
+			{} as never,
+		);
+		expect(send.mock.calls[0][0].input.Item.roster[0].player.appearance).toEqual(look);
+	});
+
+	it("updateTeam stores a custom player's look without unknown keys", async () => {
+		send.mockResolvedValueOnce({ Attributes: { teamUUID: "t1", title: "x" } });
+		await updateTeamHandler(
+			authorizerEvent({ body: validTeamBody({ teamUUID: "t1", roster: [{ slot: 1, player: nova({ ...look, extra: 1 }) }] }) }),
+			{} as never,
+			{} as never,
+		);
+		expect(send.mock.calls[0][0].input.ExpressionAttributeValues[":roster"][0].player.appearance).toEqual(look);
+	});
+
+	it("updateTeam 400s on an invalid look without calling Dynamo", async () => {
+		const result = (await updateTeamHandler(
+			authorizerEvent({ body: validTeamBody({ teamUUID: "t1", roster: [{ slot: 1, player: nova({ ...look, pose: "x" }) }] }) }),
+			{} as never,
+			{} as never,
+		)) as { statusCode: number; body: string };
+		expect(result.statusCode).toBe(400);
+		expect(parseBody(result).error).toBe("Nova's look is invalid: Appearance pose must be one of relaxed");
+		expect(send).not.toHaveBeenCalled();
+	});
+});

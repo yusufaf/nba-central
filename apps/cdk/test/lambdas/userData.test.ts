@@ -320,6 +320,17 @@ describe("exportUserData", () => {
 		expect(data.other).toEqual([]);
 	});
 
+	it("includes custom players' looks, on the item and in team rosters", async () => {
+		const look = { version: 1, frame: "m", skin: "#8d5a3b", hair: { style: "parted", color: "#000000" } };
+		db.main.push({ ...entity(ME, "customPlayer", 0), appearance: look });
+		db.main.push(team(ME, 0, { roster: [{ slot: 0, player: { fullName: "Nova", isCustom: true, appearance: look } }] }));
+
+		const { data } = parseBody(await runExport());
+
+		expect(data.customPlayers[0].appearance).toEqual(look);
+		expect(data.teams[0].roster[0].player.appearance).toEqual(look);
+	});
+
 	it("includes full rosters and published metadata, without table keys", async () => {
 		seed({ teams: 1, published: 1 });
 

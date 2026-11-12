@@ -1,4 +1,15 @@
-import { COURT_CENTER_LOGOS, COURT_WOODS, CourtDesign } from "../models/custom-entities";
+import {
+	ACCESSORIES,
+	APPEARANCE_FRAMES,
+	COURT_CENTER_LOGOS,
+	COURT_WOODS,
+	CourtDesign,
+	FACIAL_HAIR_STYLES,
+	HAIR_STYLES,
+	MAX_ACCESSORIES,
+	PersonAppearance,
+	POSES,
+} from "../models/custom-entities";
 import { isOneOf, isRecord } from "./type-guards";
 
 export const validateGMData = (data: unknown): { valid: boolean; error?: string } => {
@@ -122,10 +133,85 @@ export const validatePlayerData = (data: unknown): { valid: boolean; error?: str
 		return { valid: false, error: "Overall rating must be between 0 and 99" };
 	}
 
+	if (data.appearance != null) {
+		const error = appearanceError(data.appearance);
+		if (error) return { valid: false, error };
+	}
+
 	return { valid: true };
 };
 
 export const HEX_COLOUR = /^#[0-9a-fA-F]{6}$/;
+
+// "0" to "99" and "00"; a leading zero on anything else ("07") isn't a real
+// jersey number. apps/web's src/utils/rosterNumbers.ts has the same pattern.
+export const JERSEY_NUMBER = /^(?:00|0|[1-9][0-9]?)$/;
+
+const isHex = (value: unknown): value is string => typeof value === "string" && HEX_COLOUR.test(value);
+const BUILD_FIELDS = ["girth", "shoulders", "wingspan"] as const;
+
+const styledError = (
+	label: string,
+	value: unknown,
+	styles: readonly string[],
+): string | null => {
+	if (!isRecord(value)) return `Appearance ${label} must be {style, color}`;
+	if (!isOneOf(styles, value.style)) return `Appearance ${label} style must be one of ${styles.join(", ")}`;
+	if (!isHex(value.color)) return `Appearance ${label} color must be a #rrggbb colour`;
+	return null;
+};
+
+/** Why a stored look is invalid, or null. Every key is checked; unknown ones are ignored here and dropped by toAppearance. */
+export const appearanceError = (value: unknown): string | null => {
+	if (!isRecord(value)) return "Appearance must be an object";
+	if (value.version !== 1) return "Appearance version must be 1";
+	if (!isOneOf(APPEARANCE_FRAMES, value.frame)) return `Appearance frame must be one of ${APPEARANCE_FRAMES.join(", ")}`;
+	if (!isHex(value.skin)) return "Appearance skin must be a #rrggbb colour";
+	const hair = styledError("hair", value.hair, HAIR_STYLES);
+	if (hair) return hair;
+	const facialHair = styledError("facial hair", value.facialHair, FACIAL_HAIR_STYLES);
+	if (facialHair) return facialHair;
+	if (!isRecord(value.build)) return "Appearance build must be {girth, shoulders, wingspan}";
+	for (const field of BUILD_FIELDS) {
+		const slider = value.build[field];
+		if (typeof slider !== "number" || !Number.isFinite(slider) || slider < -1 || slider > 1) {
+			return `Appearance build ${field} must be a number from -1 to 1`;
+		}
+	}
+	if (!Array.isArray(value.accessories)) return "Appearance accessories must be an array";
+	if (value.accessories.length > MAX_ACCESSORIES) return `Appearance can have at most ${MAX_ACCESSORIES} accessories`;
+	const seen = new Set<unknown>();
+	for (const accessory of value.accessories as unknown[]) {
+		if (!isRecord(accessory) || !isOneOf(ACCESSORIES, accessory.id)) {
+			return `Appearance accessories must be one of ${ACCESSORIES.join(", ")}`;
+		}
+		if (!isHex(accessory.color)) return "Appearance accessory color must be a #rrggbb colour";
+		if (seen.has(accessory.id)) return "Appearance accessories must not repeat";
+		seen.add(accessory.id);
+	}
+	const number = value.jerseyNumber;
+	if (number != null && (typeof number !== "string" || !JERSEY_NUMBER.test(number))) {
+		return "Appearance jersey number must be 0-99 or 00";
+	}
+	if (!isOneOf(POSES, value.pose)) return `Appearance pose must be one of ${POSES.join(", ")}`;
+	return null;
+};
+
+/** The known keys of a look that passed appearanceError, rebuilt so nothing else is stored. */
+export const toAppearance = (value: Record<string, unknown>): PersonAppearance => {
+	const look = value as unknown as PersonAppearance;
+	return {
+		version: 1,
+		frame: look.frame,
+		skin: look.skin,
+		hair: { style: look.hair.style, color: look.hair.color },
+		facialHair: { style: look.facialHair.style, color: look.facialHair.color },
+		build: { girth: look.build.girth, shoulders: look.build.shoulders, wingspan: look.build.wingspan },
+		accessories: look.accessories.map(({ id, color }) => ({ id, color })),
+		...(typeof look.jerseyNumber === "string" && { jerseyNumber: look.jerseyNumber }),
+		pose: look.pose,
+	};
+};
 
 const isWholeNumberIn = (value: unknown, min: number, max: number) =>
 	Number.isInteger(value) && (value as number) >= min && (value as number) <= max;

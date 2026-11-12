@@ -10,7 +10,7 @@ import { AuthorizerContext } from "models/auth";
 import { removeKeys } from "resources/dynamo/utilities";
 import { teamGsiKey, PRIVATE_SK2 } from "resources/dynamo/teams";
 import { CreateTeamResponse, SaveTeamPayload, SavedTeam } from "models/api/teams-api";
-import { toUniform, validateTeamData } from "utilities/team-validation";
+import { toRoster, toUniform, validateTeamData } from "utilities/team-validation";
 import { isRecord } from "utilities/type-guards";
 import { toStoredArenaRef } from "resources/dynamo/arenas";
 
@@ -61,7 +61,7 @@ export const handler: Handler = async (
 			logoUrl: payload.logoUrl || "",
 			jerseyUrl: payload.jerseyUrl || "",
 			playerCount: payload.roster.length,
-			roster: payload.roster,
+			roster: toRoster(payload.roster),
 			coach: payload.coach ?? null,
 			gm: payload.gm ?? null,
 			arena: arena.stored,

@@ -1,10 +1,8 @@
-import { CARD_STYLES, TeamUniform } from "../models/api/teams-api";
-import { HEX_COLOUR } from "./custom-entities-validation";
+import { CARD_STYLES, TeamRosterEntry, TeamUniform } from "../models/api/teams-api";
+import { appearanceError, HEX_COLOUR, JERSEY_NUMBER, toAppearance } from "./custom-entities-validation";
 import { isOneOf, isRecord } from "./type-guards";
 
 const UNIFORM_FIELDS = ["primary", "secondary", "trim"] as const;
-
-export const JERSEY_NUMBER = /^(?:00|0|[1-9][0-9]?)$/;
 
 export const cardStyleError = (value: unknown): string | null =>
 	isOneOf(CARD_STYLES, value) ? null : "cardStyle must be 2d or 3d";
@@ -114,6 +112,12 @@ export const validateTeamData = (data: unknown): { valid: boolean; error?: strin
 		if (number != null && (typeof number !== "string" || !JERSEY_NUMBER.test(number))) {
 			return { valid: false, error: "Roster numbers must be 0-99 or 00" };
 		}
+		// Only a custom player's look is checked; any other player's is dropped by toRoster.
+		const player = entry.player as Record<string, unknown>;
+		if (player.isCustom === true && player.appearance != null) {
+			const error = appearanceError(player.appearance);
+			if (error) return { valid: false, error: `${(player.fullName as string).trim()}'s look is invalid: ${error}` };
+		}
 	}
 
 	if (data.coach !== undefined && !isEntityRef(data.coach)) {
@@ -143,3 +147,15 @@ export const validateTeamData = (data: unknown): { valid: boolean; error?: strin
 
 	return { valid: true };
 };
+
+/**
+ * The roster as stored: a custom player keeps only the known keys of their
+ * look, and no other player keeps one at all (real people are figurines).
+ */
+export const toRoster = (roster: TeamRosterEntry[]): TeamRosterEntry[] =>
+	roster.map((entry) => {
+		const { appearance, ...player } = entry.player as TeamRosterEntry["player"] & { appearance?: unknown };
+		if (appearance === undefined) return entry;
+		const keep = player.isCustom === true && isRecord(appearance);
+		return { ...entry, player: keep ? { ...player, appearance: toAppearance(appearance) } : player };
+	});
