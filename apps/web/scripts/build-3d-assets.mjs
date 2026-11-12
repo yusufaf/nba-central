@@ -7,6 +7,10 @@
 // The output is committed; this only needs running when the source changes.
 // It uses @gltf-transform/cli through pnpm dlx, so the repo takes no new
 // dependency: prune, meshopt compression, WebP textures at 1024 px.
+//
+// The hair GLBs in src/three/assets/hair/ were not produced by this script:
+// they were optimised with gltf-transform on feat/3d-spike (commit 99c0653f)
+// from the same pack's hair GLTFs and copied verbatim.
 import { copyFileSync, existsSync, readFileSync, statSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
 import { dirname, join } from 'node:path';

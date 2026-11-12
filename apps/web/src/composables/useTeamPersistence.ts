@@ -1,6 +1,7 @@
 import type { Arena, Coach, GM, Player } from "@/models/types";
 import { resolveLegacyLogoUrl } from "@/utils/historicalLogoUrl";
 import { backfillArena, parseCapacity } from "@/utils/arenaDetails";
+import { parseAppearance } from "@/utils/appearance";
 import { parseUniform } from "@/utils/jerseyColours";
 import { rosterNumbers, type RosterNumbers } from "@/utils/rosterNumbers";
 import type {
@@ -45,9 +46,33 @@ const toSnapshot = (player: Player): PlayerSnapshot => {
         ratingHistory: _ratingHistory,
         heightAndWeight: _heightAndWeight,
         statsStatus: _statsStatus,
+        appearance,
         ...snapshot
     } = player;
-    return snapshot as PlayerSnapshot;
+    // Only a custom player keeps a look, and only a well-formed one, so a
+    // save is never rejected for it.
+    const look = snapshot.isCustom === true ? parseAppearance(appearance) : null;
+    return (look ? { ...snapshot, appearance: look } : snapshot) as PlayerSnapshot;
+};
+
+/**
+ * The roster with each of the owner's custom players wearing the look their
+ * item has now, so the next save stores it. Only the look changes: name,
+ * size and rating stay as saved. A player whose item is gone keeps theirs.
+ */
+export const refreshCustomAppearances = (
+    roster: TeamRosterEntry[],
+    mine: readonly { playerUUID?: string; appearance?: unknown }[],
+): TeamRosterEntry[] => {
+    const byUUID = new Map(mine.flatMap((item) => (item.playerUUID ? [[item.playerUUID, item] as const] : [])));
+    return roster.map((entry) => {
+        const player = entry.player;
+        const item = player?.isCustom === true && player.playerUUID ? byUUID.get(player.playerUUID) : undefined;
+        if (!item) return entry;
+        const { appearance: _old, ...rest } = player;
+        const look = parseAppearance(item.appearance);
+        return { ...entry, player: (look ? { ...rest, appearance: look } : rest) as PlayerSnapshot };
+    });
 };
 
 const toEntityRef = (entity: Coach | GM | null): EntityRef | null => {

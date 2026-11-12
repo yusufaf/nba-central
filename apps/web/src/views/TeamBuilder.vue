@@ -30,6 +30,7 @@ import {
 import {
     serializeTeam,
     hydrateTeam,
+    refreshCustomAppearances,
     remixTitle,
     type HydratedTeam,
 } from "@/composables/useTeamPersistence";
@@ -51,7 +52,7 @@ import { useUndoToast } from "@/composables/useUndoToast";
 import { useTeamBuilderPreferences } from "@/composables/useTeamBuilderPreferences";
 import { useDetailEdits, type DetailField } from "@/composables/useDetailEdits";
 import { usePendingPlayers } from "@/composables/usePendingPlayers";
-import { dataApi, teamApi } from "@/network/api";
+import { customPlayerApi, dataApi, teamApi } from "@/network/api";
 import { useUserTeamsStore } from "@/stores/userTeams";
 import { toShareCardProps } from "@/composables/useShareCard";
 import { renderTeamCard } from "@/composables/teamCard";
@@ -871,16 +872,30 @@ const applyHydratedTeam = (hydrated: HydratedTeam, name = hydrated.teamName) => 
 
 // restores synchronously; each roster slot then streams its career stats in
 // through loadPlayerIntoSlot, same as adding a player fresh.
+// The owner's custom players, for their current looks. A team still opens,
+// with the looks it was saved with, if this fails.
+const listMyCustomPlayers = async (): Promise<{ playerUUID?: string; appearance?: unknown }[]> => {
+    try {
+        const response = await customPlayerApi.list();
+        return response?.success ? response.data?.customPlayers ?? [] : [];
+    } catch {
+        return [];
+    }
+};
+
 const loadTeamFromRoute = async (teamUUID: string) => {
     forgetHistory();
     try {
-        const response = await teamApi.getTeam(teamUUID);
+        const [response, mine] = await Promise.all([teamApi.getTeam(teamUUID), listMyCustomPlayers()]);
         if (!response.success) {
             toast.error(response.error || "Failed to load team");
             return;
         }
 
-        const hydrated = hydrateTeam(response.data);
+        const hydrated = hydrateTeam({
+            ...response.data,
+            roster: refreshCustomAppearances(response.data.roster ?? [], mine),
+        });
         // Anything done while the team was on its way is overwritten here.
         forgetHistory();
         loadedTeamUUID.value = response.data.teamUUID;

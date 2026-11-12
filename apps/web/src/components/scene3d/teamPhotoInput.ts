@@ -33,5 +33,6 @@ export const teamPhotoKey = (input: TeamPhotoInput): string =>
             person.heightInches,
             person.weightPounds,
             person.number ?? null,
+            person.appearance ?? null,
         ]),
     ]);

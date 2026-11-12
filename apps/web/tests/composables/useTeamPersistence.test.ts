@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
-import { serializeTeam, hydrateTeam, remixTitle } from "@/composables/useTeamPersistence";
-import type { SavedTeam } from "@/models/api";
+import { serializeTeam, hydrateTeam, refreshCustomAppearances, remixTitle } from "@/composables/useTeamPersistence";
+import { DEFAULT_APPEARANCE } from "@/utils/appearance";
+import type { SavedTeam, TeamRosterEntry } from "@/models/api";
 import historicalLogosData from "@/assets/data/historicalLogos.json";
 import type { Arena, Coach, HistoricalLogo, Player } from "@/models/types";
 
@@ -506,5 +507,71 @@ describe("jersey numbers and the uniform override", () => {
         const hydrated = hydrateTeam(JSON.parse(JSON.stringify(saved)));
         expect(hydrated.teamNumbers).toEqual({ 1: "0", 2: "99" });
         expect(hydrated.teamUniform).toEqual(uniform);
+    });
+});
+
+describe("custom player appearances", () => {
+    const LOOK_A = { ...DEFAULT_APPEARANCE, hair: { style: "parted" as const, color: "#3b2a1e" } };
+    const LOOK_B = { ...DEFAULT_APPEARANCE, hair: { style: "buzzed" as const, color: "#aa5500" } };
+    const builderState = (players: [number, Record<string, unknown>][]) => ({
+        teamName: "T",
+        teamDescription: "",
+        teamCity: "",
+        teamCountry: "",
+        teamLogo: "",
+        teamJersey: "",
+        selectedPlayersData: new Map(players as [number, Player][]),
+        teamCoach: null,
+        teamArena: null,
+        teamGM: null,
+    });
+
+    it("saves a custom player's malformed look normalised", () => {
+        const payload = serializeTeam(builderState([[0, customPlayer({ appearance: { skin: "pink", hair: { style: "parted", color: "#3b2a1e" } } })]]));
+        expect(payload.roster[0].player.appearance).toEqual({ ...DEFAULT_APPEARANCE, hair: { style: "parted", color: "#3b2a1e" } });
+    });
+
+    it("never saves a look on a real player", () => {
+        const payload = serializeTeam(builderState([[0, apiPlayer({ appearance: LOOK_A })]]));
+        expect(payload.roster[0].player).not.toHaveProperty("appearance");
+    });
+
+    describe("refreshCustomAppearances", () => {
+        const entry = (player: Record<string, unknown>, slot = 0) => ({ slot, player }) as unknown as TeamRosterEntry;
+        const nova = entry(customPlayer({ playerUUID: "p1", appearance: LOOK_A }));
+
+        it("puts the owner's current look on the player", () => {
+            const [refreshed] = refreshCustomAppearances([nova], [{ playerUUID: "p1", appearance: LOOK_B }]);
+            expect(refreshed.player.appearance).toEqual(LOOK_B);
+            expect(refreshed.player.fullName).toBe("My Custom Guy");
+            expect(refreshed).not.toHaveProperty("appearance");
+        });
+
+        it("puts a malformed current look on the player as parsed", () => {
+            const [refreshed] = refreshCustomAppearances([nova], [{ playerUUID: "p1", appearance: { skin: "pink", secret: 1 } }]);
+            expect(refreshed.player.appearance).toEqual(DEFAULT_APPEARANCE);
+        });
+
+        it("removes the look when the item has none", () => {
+            const [refreshed] = refreshCustomAppearances([nova], [{ playerUUID: "p1" }]);
+            expect(refreshed.player).not.toHaveProperty("appearance");
+        });
+
+        it("keeps the look of a player whose item is gone, as the same entry", () => {
+            const roster = [nova];
+            const refreshed = refreshCustomAppearances(roster, [{ playerUUID: "other", appearance: LOOK_B }]);
+            expect(refreshed[0]).toBe(nova);
+        });
+
+        it("leaves a real player alone, even if a UUID collides", () => {
+            const real = entry(apiPlayer({ playerUUID: "p1" }));
+            expect(refreshCustomAppearances([real], [{ playerUUID: "p1", appearance: LOOK_B }])[0]).toBe(real);
+        });
+
+        it("does not change the roster it was given", () => {
+            const before = JSON.stringify([nova]);
+            refreshCustomAppearances([nova], [{ playerUUID: "p1", appearance: LOOK_B }]);
+            expect(JSON.stringify([nova])).toBe(before);
+        });
     });
 });

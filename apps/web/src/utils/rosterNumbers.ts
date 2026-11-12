@@ -1,6 +1,6 @@
 // Jersey numbers the owner sets per roster slot. "0" to "99" and "00"; a
 // leading zero on anything else ("07") isn't a real jersey number. The server
-// checks the same pattern (apps/cdk utilities/team-validation.ts).
+// checks the same pattern (apps/cdk utilities/custom-entities-validation.ts).
 export const JERSEY_NUMBER = /^(?:00|0|[1-9][0-9]?)$/;
 
 export const isJerseyNumber = (value: unknown): value is string =>

@@ -122,7 +122,8 @@ link preview, so the 3D share card comes right after the scene.
     or the camera backs into the stands (seen in the spike).
 23. **Parts the free kit lacks are simple code-built geometry.** The kit
     has hair (buzzed, buzzed F, parted, long, buns), one beard and two
-    brows. Glasses, goggles, a headband and an arm sleeve are small
+    brows. Buzzed F, long and buns fit only the female head, so they ship
+    with the female body (#292). Glasses, goggles, a headband and an arm sleeve are small
     procedural meshes parented to the head or forearm bone, in the same
     stylized look. Facial hair is "none" or "beard" only. The age look
     changes hair colour (grey at "veteran", streaked at "prime") and adds a
