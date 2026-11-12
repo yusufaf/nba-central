@@ -1,4 +1,4 @@
-import type { ArenaImageSlot, CourtDesign } from "../custom-entities";
+import type { ArenaImageSlot, CourtDesign, PersonAppearance } from "../custom-entities";
 
 // Generic API response wrapper with discriminated union for type safety
 export type ApiResponse<T = void> =
@@ -123,6 +123,7 @@ export interface CreateCustomPlayerPayload {
 	heightInches: number;
 	weightPounds: number;
 	overallRating: number;
+	appearance?: PersonAppearance | null;
 }
 
 export interface UpdateCustomPlayerPayload {
@@ -133,6 +134,8 @@ export interface UpdateCustomPlayerPayload {
 	heightInches: number;
 	weightPounds: number;
 	overallRating: number;
+	// Absent leaves a stored look alone; null removes it.
+	appearance?: PersonAppearance | null;
 }
 
 // Response data structures
@@ -145,6 +148,7 @@ export interface CustomPlayerData {
 	weightPounds: number;
 	overallRating: number;
 	created: string;
+	appearance?: PersonAppearance;
 }
 
 export interface UpdatedCustomPlayerData {
@@ -156,6 +160,7 @@ export interface UpdatedCustomPlayerData {
 	weightPounds: number;
 	overallRating: number;
 	updated: string;
+	appearance?: PersonAppearance;
 }
 
 export interface CustomPlayerListItem {
@@ -168,6 +173,7 @@ export interface CustomPlayerListItem {
 	overallRating: number;
 	created: string;
 	isCustom: true;
+	appearance?: PersonAppearance;
 }
 
 export interface ListCustomPlayersData {

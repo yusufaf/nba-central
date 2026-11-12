@@ -7,7 +7,7 @@ import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
 import { DynamoDBDocumentClient, UpdateCommand } from "@aws-sdk/lib-dynamodb";
 import { AuthorizerContext } from "models/auth";
 import { UpdateTeamPayload, UpdateTeamResponse, SavedTeam } from "models/api/teams-api";
-import { toUniform, validateTeamData } from "utilities/team-validation";
+import { toRoster, toUniform, validateTeamData } from "utilities/team-validation";
 import { isRecord } from "utilities/type-guards";
 import { removeKeys } from "resources/dynamo/utilities";
 import { teamGsiKey, PRIVATE_SK2 } from "resources/dynamo/teams";
@@ -95,7 +95,7 @@ export const handler: Handler = async (
 				":logoUrl": payload.logoUrl || "",
 				":jerseyUrl": payload.jerseyUrl || "",
 				":playerCount": payload.roster.length,
-				":roster": payload.roster,
+				":roster": toRoster(payload.roster),
 				":coach": payload.coach ?? null,
 				":gm": payload.gm ?? null,
 				":arena": arena.stored,

@@ -1,5 +1,5 @@
 import { ApiResponse } from "./custom-entities-api";
-import type { CourtDesign } from "../custom-entities";
+import type { CourtDesign, PersonAppearance } from "../custom-entities";
 
 // A player record as embedded in a saved team - a snapshot so a team
 // renders exactly as it was saved, independent of later roster/rating
@@ -30,6 +30,8 @@ export interface PlayerSnapshot {
 	heightInches?: number;
 	weightPounds?: number;
 	overallRating?: number;
+	// A custom player's look; the server drops it from any other player.
+	appearance?: PersonAppearance;
 }
 
 export interface TeamRosterEntry {

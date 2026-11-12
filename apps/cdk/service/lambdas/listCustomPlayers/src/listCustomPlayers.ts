@@ -49,6 +49,7 @@ export const handler: Handler = async (
 			weightPounds: item.weightPounds,
 			overallRating: item.overallRating,
 			created: item.created,
+			...(item.appearance && { appearance: item.appearance }),
 			isCustom: true as const,
 		}));
 

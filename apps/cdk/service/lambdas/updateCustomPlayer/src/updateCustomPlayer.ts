@@ -10,7 +10,8 @@ import {
 	UpdateCustomPlayerPayload,
 	UpdateCustomPlayerResponse,
 } from "models/api/custom-entities-api";
-import { validatePlayerData } from "utilities/custom-entities-validation";
+import { toAppearance, validatePlayerData } from "utilities/custom-entities-validation";
+import { isRecord } from "utilities/type-guards";
 
 const { mainTable = "" } = process.env;
 
@@ -53,16 +54,22 @@ export const handler: Handler = async (
 
 		const timestamp = new Date().toISOString();
 
+		// Absent leaves a stored look alone, null removes it, an object replaces it.
+		const look = payload.appearance;
+		const setLook = isRecord(look) ? ", #appearance = :appearance" : "";
+		const removeLook = look === null ? " REMOVE #appearance" : "";
+
 		const updateCommand = new UpdateCommand({
 			TableName: mainTable,
 			Key: {
 				PK: `userUUID#${userUUID}`,
 				SK: `customPlayer#${payload.playerUUID}`,
 			},
-			UpdateExpression: "SET updated = :updated, #name = :name, #position = :position, heightFeet = :heightFeet, heightInches = :heightInches, weightPounds = :weightPounds, overallRating = :overallRating",
+			UpdateExpression: `SET updated = :updated, #name = :name, #position = :position, heightFeet = :heightFeet, heightInches = :heightInches, weightPounds = :weightPounds, overallRating = :overallRating${setLook}${removeLook}`,
 			ExpressionAttributeNames: {
 				"#name": "name",
 				"#position": "position",
+				...((setLook || removeLook) && { "#appearance": "appearance" }),
 			},
 			ExpressionAttributeValues: {
 				":updated": timestamp,
@@ -72,6 +79,7 @@ export const handler: Handler = async (
 				":heightInches": payload.heightInches,
 				":weightPounds": payload.weightPounds,
 				":overallRating": payload.overallRating,
+				...(isRecord(look) && { ":appearance": toAppearance(look) }),
 			},
 			ConditionExpression: "attribute_exists(PK) AND attribute_exists(SK)",
 			ReturnValues: "ALL_NEW",
@@ -98,6 +106,7 @@ export const handler: Handler = async (
 				weightPounds: attributes.weightPounds,
 				overallRating: attributes.overallRating,
 				updated: attributes.updated,
+				...(attributes.appearance && { appearance: attributes.appearance }),
 			},
 		};
 		return {
