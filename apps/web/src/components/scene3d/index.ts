@@ -16,6 +16,17 @@ export const TeamScene3DAsync = defineAsyncComponent({
     timeout: 20000,
 });
 
+// The player creator's preview, in the same lazy chunk.
+export const PersonPreview3DAsync = defineAsyncComponent({
+    loader: () =>
+        import('./PersonPreview3D.vue').catch((error: unknown) => {
+            track('scene3d_failed', { reason: 'load', page: 'creator' });
+            throw error;
+        }),
+    errorComponent: defineComponent({ name: 'PersonPreviewLoadFailed', setup: () => () => h(Scene3DUnavailable, { reason: 'load' }) }),
+    timeout: 20000,
+});
+
 export { Scene3DUnavailable };
 
 // The share card's 3D team photo (a PNG data URL), loaded the same lazy way.

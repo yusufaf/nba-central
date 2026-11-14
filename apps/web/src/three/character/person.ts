@@ -2,10 +2,10 @@
 // team's uniform (or a suit for staff) as a neutral figurine, sized from
 // their height and weight, arms relaxed, facing the camera.
 import { Group, Vector3, type MeshStandardMaterial, type Object3D, type SkinnedMesh } from 'three';
-import bodyUrl from '../assets/athletic-male.glb?url';
 import type { PersonAppearance } from '@/constants/appearance';
-import { attachHair, FACIAL_HAIR_ASSETS, HAIR_ASSETS } from './appearance';
-import { bodySize, girthFor, type Role } from './body';
+import { facialHairFits, fits } from '@/utils/appearanceOptions';
+import { attachHair, BODY_ASSETS, FACIAL_HAIR_ASSETS, HAIR_ASSETS } from './appearance';
+import { bodySize, shapeFor, type Role } from './body';
 import type { KitColours } from '@/utils/jerseyColours';
 import { addRegions, applyKitMaterial, findLandmarks, kitTexture } from './kit';
 import { cloneCharacter, loadBody } from './load';
@@ -27,7 +27,6 @@ export interface PersonInput {
 // Real people are figurines (spec decision 3).
 const VINYL = '#c8c3ba';
 const INCH = 0.0254;
-const WINGSPAN = 1.03;
 
 const skinnedIn = (root: Object3D): SkinnedMesh[] => {
     const meshes: SkinnedMesh[] = [];
@@ -41,22 +40,29 @@ export const buildPerson = async (
     input: PersonInput,
     kit: { colours: KitColours; teamName: string },
 ): Promise<{ root: Group; headHeight: number }> => {
-    const character = cloneCharacter(await loadBody(bodyUrl));
+    const look = input.appearance ?? null;
+    // Figurines are always the male frame.
+    const character = cloneCharacter(await loadBody(BODY_ASSETS[look?.frame ?? 'm']));
     const meshes = skinnedIn(character);
     const body = meshes.reduce((a, b) =>
         a.geometry.getAttribute('position').count >= b.geometry.getAttribute('position').count ? a : b,
     );
-    const look = input.appearance ?? null;
     if (look) {
         // Eyes and brows stay; the brows take the hair colour.
         for (const mesh of meshes) {
             const material = mesh.material as MeshStandardMaterial;
             if (mesh !== body && /hair/i.test(material.name)) material.color.set(look.hair.color);
         }
+        // A cut shaped for the other head is skipped: the creator never
+        // offers one, so only a hand-made look can carry it.
+        const { hair, facialHair } = look;
         const attached = await Promise.allSettled([
-            look.hair.style !== 'none' && attachHair(character, body, HAIR_ASSETS[look.hair.style], look.hair.color, 'hair'),
-            look.facialHair.style !== 'none' &&
-                attachHair(character, body, FACIAL_HAIR_ASSETS[look.facialHair.style], look.facialHair.color, 'facialHair'),
+            hair.style !== 'none' &&
+                fits(look.frame, hair.style) &&
+                attachHair(character, body, HAIR_ASSETS[hair.style], hair.color, 'hair'),
+            facialHair.style !== 'none' &&
+                facialHairFits(look.frame, facialHair.style) &&
+                attachHair(character, body, FACIAL_HAIR_ASSETS[facialHair.style], facialHair.color, 'facialHair'),
         ]);
         for (const result of attached) {
             if (result.status === 'rejected') console.warn('Could not load hair for', input.name, result.reason);
@@ -75,7 +81,7 @@ export const buildPerson = async (
     // Reshape first: the kit shader reads the reshaped rest positions, so its
     // landmarks have to come from the same body.
     const size = bodySize(input);
-    reshapeBody(character, { girth: girthFor(size), shoulders: 1, wingspan: WINGSPAN });
+    reshapeBody(character, shapeFor(size, look?.build));
     character.updateMatrixWorld(true);
 
     addRegions(body);

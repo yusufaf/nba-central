@@ -18,6 +18,17 @@ describe('disposeObject', () => {
         for (const spy of spies) expect(spy).toHaveBeenCalledTimes(1);
     });
 
+    it('keeps a texture a cached file shares with every clone', () => {
+        const shared = new Texture();
+        shared.userData.shared = true;
+        const own = new Texture();
+        const keep = vi.spyOn(shared, 'dispose');
+        const free = vi.spyOn(own, 'dispose');
+        disposeObject(new Mesh(new BoxGeometry(), new MeshStandardMaterial({ normalMap: shared, map: own })));
+        expect(keep).not.toHaveBeenCalled();
+        expect(free).toHaveBeenCalledTimes(1);
+    });
+
     it('disposes textures a material keeps only for its shader', () => {
         const kit = new Texture();
         const material = new MeshStandardMaterial();

@@ -3,10 +3,10 @@
 // Keep this file free of imports: that test loads it outside Vite.
 
 export const APPEARANCE_FRAMES = ['m', 'f'] as const;
-export const HAIR_STYLES = ['none', 'buzzed', 'parted'] as const;
+export const HAIR_STYLES = ['none', 'buzzed', 'parted', 'buzzedFemale', 'long', 'buns'] as const;
 export const FACIAL_HAIR_STYLES = ['none', 'beard'] as const;
 export const ACCESSORIES = ['headband', 'armSleeve', 'goggles', 'glasses'] as const;
-export const POSES = ['relaxed'] as const;
+export const POSES = ['relaxed', 'handsOnHips', 'armsCrossed', 'celebrate'] as const;
 export const MAX_ACCESSORIES = 4;
 
 export type AppearanceFrame = (typeof APPEARANCE_FRAMES)[number];

@@ -873,3 +873,247 @@ test.describe('3D team scene', () => {
     });
 });
 
+
+// #292: a female custom player in the team scene. Named to run with -g "3D team scene".
+test.describe('3D team scene, female look', () => {
+    const renders = (page: Page) =>
+        page.locator('[role="img"][data-render-count]').evaluate((el) => Number(el.getAttribute('data-render-count')));
+
+    test("renders a female custom player's look", async ({ page }) => {
+        test.setTimeout(90000);
+        const problems: string[] = [];
+        page.on('console', (message) => {
+            if (message.type() === 'error' || (message.type() === 'warning' && /hair/i.test(message.text()))) {
+                problems.push(message.text());
+            }
+        });
+        page.on('pageerror', (error) => problems.push(error.message));
+        await stubNetwork(page);
+        await page.route('**/api/teams/public/visual-team', (route) =>
+            route.fulfill({
+                status: 200,
+                contentType: 'application/json',
+                body: JSON.stringify({
+                    ...publicTeamFixture,
+                    data: {
+                        ...publicTeamFixture.data,
+                        roster: publicTeamFixture.data.roster.map((entry) =>
+                            entry.slot === 1
+                                ? {
+                                      ...entry,
+                                      player: {
+                                          fullName: 'Nova Reyes',
+                                          isCustom: true,
+                                          playerUUID: 'p1',
+                                          position: 'PG',
+                                          heightFeet: 6,
+                                          heightInches: 0,
+                                          weightPounds: 170,
+                                          appearance: {
+                                              version: 1,
+                                              frame: 'f',
+                                              skin: '#b6825c',
+                                              hair: { style: 'long', color: '#3b2a1e' },
+                                              facialHair: { style: 'none', color: '#3b2a1e' },
+                                              build: { girth: 0, shoulders: 0, wingspan: 0.3 },
+                                              accessories: [],
+                                              pose: 'handsOnHips',
+                                          },
+                                      },
+                                  }
+                                : entry,
+                        ),
+                    },
+                }),
+            }),
+        );
+        // The files themselves, not the dev server's `?url` module imports.
+        const file = (pattern: RegExp) => (request: { url: () => string }) => {
+            const url = new URL(request.url());
+            return !url.search && pattern.test(url.pathname);
+        };
+        const female = page.waitForRequest(file(/athletic-female[^/]*\.glb$/));
+        const long = page.waitForRequest(file(/\/hair\/long[^/]*\.glb$/));
+        await page.goto('/t/visual-team?view=3d');
+        await female;
+        await long;
+        await expect(page.getByTestId('name-chip')).toHaveCount(7, { timeout: 20000 });
+        await expect.poll(() => renders(page), { timeout: 15000 }).toBeGreaterThanOrEqual(1);
+        await page.locator('[role="img"][data-render-count]').screenshot({ path: test.info().outputPath('female-look.png') });
+        expect(problems).toEqual([]);
+    });
+});
+
+// #292: the custom player creator. WebGL output differs by GPU, so the canvas
+// is masked in screenshots and the checks are about behaviour.
+test.describe('player creator', () => {
+    const preview = (page: Page) => page.locator('[role="img"][data-render-count]');
+    const renders = (page: Page) => preview(page).evaluate((el) => Number(el.getAttribute('data-render-count')));
+    const openCreator = async (page: Page) => {
+        await page.getByRole('button', { name: /add player/i }).first().click();
+        await page.getByRole('button', { name: 'Create Custom Player' }).click();
+        await expect.poll(() => renders(page), { timeout: 30000 }).toBeGreaterThanOrEqual(1);
+    };
+    const openTab = (page: Page, name: string) => page.getByRole('tab', { name, exact: true }).click();
+    const choose = (page: Page, name: string) => page.getByRole('dialog').last().getByRole('button', { name, exact: true }).click();
+    // Which body and hair files a request is for, e.g. "athletic-male", "hair/long".
+    const glbName = (url: string): string | null => {
+        const path = new URL(url).pathname;
+        const hair = path.match(/\/hair\/([^/]+?)(-[\w-]+)?\.glb$/);
+        if (hair) return `hair/${hair[1]}`;
+        const body = path.match(/(athletic-(?:male|female))[^/]*\.glb$/);
+        return body ? body[1] : null;
+    };
+
+    test.beforeEach(async ({ page }) => {
+        test.setTimeout(90000);
+        await stubNetwork(page);
+    });
+
+    test('loads only the body and hair in use', async ({ page }) => {
+        const fetched = new Set<string>();
+        page.on('request', (request) => {
+            // The files themselves, not the dev server's `?url` module imports.
+            if (new URL(request.url()).search) return;
+            const name = glbName(request.url());
+            if (name) fetched.add(name);
+        });
+        await page.goto('/teambuilder');
+        await settle(page);
+        await openCreator(page);
+        // The first frame can be the empty stage, before the person lands.
+        await expect.poll(() => [...fetched].sort()).toEqual(['athletic-male', 'hair/buzzed']);
+
+        await openTab(page, 'Body');
+        await choose(page, 'Athletic F');
+        await expect.poll(() => [...fetched].sort()).toEqual(['athletic-female', 'athletic-male', 'hair/buzzed', 'hair/buzzedFemale']);
+
+        await openTab(page, 'Hair');
+        await choose(page, 'Long');
+        await expect.poll(() => fetched.has('hair/long')).toBe(true);
+        for (const never of ['hair/parted', 'hair/buns', 'hair/beard']) expect(fetched.has(never)).toBe(false);
+    });
+
+    test('works from the keyboard', async ({ page }) => {
+        await page.goto('/teambuilder');
+        await settle(page);
+        await openCreator(page);
+
+        await page.getByRole('tab', { name: 'Profile', exact: true }).focus();
+        // Arrows walk the tabs; Home goes back (the vendored TabsList doesn't wrap).
+        for (const [key, name] of [
+            ['ArrowRight', 'Body'],
+            ['ArrowRight', 'Face'],
+            ['ArrowRight', 'Hair'],
+            ['ArrowRight', 'Gear'],
+            ['ArrowRight', 'Pose'],
+            ['Home', 'Profile'],
+            ['ArrowRight', 'Body'],
+        ]) {
+            await page.keyboard.press(key);
+            await expect(page.getByRole('tab', { name, exact: true })).toHaveAttribute('aria-selected', 'true');
+        }
+
+        const girth = page.getByRole('slider', { name: 'Girth' });
+        let presses = 0;
+        while (!(await girth.evaluate((el) => el === document.activeElement))) {
+            expect(++presses, 'Girth is reachable by Tab').toBeLessThanOrEqual(25);
+            await page.keyboard.press('Tab');
+        }
+        const before = await renders(page);
+        for (let i = 0; i < 3; i++) await page.keyboard.press('ArrowRight');
+        await expect(girth).toHaveAttribute('aria-valuenow', '0.3');
+        await expect(page.getByText('+0.3')).toBeVisible();
+        await expect.poll(() => renders(page)).toBeGreaterThan(before);
+
+        const rotated = await renders(page);
+        await page.getByRole('button', { name: 'Rotate right' }).focus();
+        await page.keyboard.press('Enter');
+        await expect.poll(() => renders(page)).toBeGreaterThan(rotated);
+
+        await page.keyboard.press('Escape');
+        await expect(page.getByRole('heading', { name: 'Create player' })).toHaveCount(0);
+    });
+
+    test('saves the look it shows', async ({ page }) => {
+        let body: { appearance?: Record<string, unknown> } | null = null;
+        await page.route('**/api/custom-entities/player/create', async (route) => {
+            body = route.request().postDataJSON();
+            await route.fulfill({
+                status: 200,
+                contentType: 'application/json',
+                body: JSON.stringify({ success: true, data: { playerUUID: 'p1', ...body } }),
+            });
+        });
+        await page.goto('/teambuilder');
+        await settle(page);
+        await openCreator(page);
+
+        await page.locator('#creator-name').fill('Nova Reyes');
+        await openTab(page, 'Body');
+        await choose(page, 'Athletic F');
+        await openTab(page, 'Hair');
+        await choose(page, 'Long');
+        await page.getByLabel('Hair colour hex').fill('#aa5500');
+        await openTab(page, 'Pose');
+        await choose(page, 'Celebrate');
+        await page.getByRole('button', { name: 'Create player' }).click();
+
+        await expect.poll(() => body).not.toBeNull();
+        expect(body!.appearance).toMatchObject({ frame: 'f', hair: { style: 'long', color: '#aa5500' }, pose: 'celebrate' });
+    });
+
+    test('desktop layout puts the preview beside the controls', async ({ page }, testInfo) => {
+        test.skip(testInfo.project.name !== 'desktop', 'the side-by-side layout needs the desktop width');
+        for (const scheme of ['dark', 'light'] as const) {
+            await page.emulateMedia({ colorScheme: scheme });
+            await page.goto('/teambuilder');
+            await settle(page);
+            await openCreator(page);
+            const canvas = await preview(page).boundingBox();
+            const tabs = await page.getByRole('tablist').boundingBox();
+            expect(tabs!.x).toBeGreaterThanOrEqual(canvas!.x + canvas!.width);
+            await expect(page.getByRole('dialog').last()).toHaveScreenshot(scheme === 'dark' ? 'creator-desktop.png' : 'light-creator-desktop.png', {
+                mask: [page.locator('canvas')],
+            });
+            await page.screenshot({ path: testInfo.outputPath(`creator-desktop-${scheme}.png`) });
+        }
+    });
+
+    test.describe('at 390 px', () => {
+        test.use({ viewport: { width: 390, height: 844 } });
+
+        for (const scheme of ['dark', 'light'] as const) {
+            test(`fits and keeps focus in view, ${scheme}`, async ({ page }, testInfo) => {
+                await page.emulateMedia({ colorScheme: scheme });
+                await page.goto('/teambuilder');
+                await settle(page);
+                await openCreator(page);
+
+                expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(390);
+                for (const name of ['Profile', 'Body', 'Face', 'Hair', 'Gear', 'Pose']) {
+                    await expect(page.getByRole('tab', { name, exact: true })).toBeInViewport();
+                }
+                await expect(page.getByRole('button', { name: 'Create player' })).toBeInViewport();
+
+                await expect(page.getByRole('dialog').last()).toHaveScreenshot(scheme === 'dark' ? 'creator-390.png' : 'light-creator-390.png', {
+                    mask: [page.locator('canvas')],
+                });
+                await page.screenshot({ path: testInfo.outputPath(`creator-390-${scheme}.png`) });
+
+                // Shift+Tab back up the Body tab: nothing focused hides under
+                // the pinned preview and tab list.
+                await openTab(page, 'Body');
+                await page.getByTestId('creator-scroller').evaluate((el) => el.scrollTo(0, el.scrollHeight));
+                await page.getByLabel('Skin hex').focus();
+                const tablist = page.getByRole('tablist');
+                for (let i = 0; i < 6; i++) {
+                    await page.keyboard.press('Shift+Tab');
+                    const top = await page.evaluate(() => (document.activeElement as HTMLElement).getBoundingClientRect().top);
+                    const list = (await tablist.boundingBox())!;
+                    expect(top, `focus ${i + 1} sits below the tab list`).toBeGreaterThanOrEqual(list.y + list.height - 1);
+                }
+            });
+        }
+    });
+});

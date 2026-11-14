@@ -23,6 +23,7 @@ export const ACTION_EVENTS: ReadonlySet<string> = new Set([
     "card_downloaded",
     "scene3d_preset",
     "scene3d_view_clicked",
+    "creator_saved",
     "remix_clicked",
     "real_team_clicked",
     "daily_era_guessed",

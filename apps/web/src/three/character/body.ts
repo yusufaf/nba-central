@@ -1,5 +1,7 @@
 // How big each person in the 3D scene is. Real players carry BBRef's
 // snake_case sizes, custom ones camelCase; either can be missing.
+import type { PersonAppearance } from '@/constants/appearance';
+import type { BodyShape } from './reshape';
 
 export type Role = 'player' | 'coach' | 'gm';
 
@@ -44,4 +46,20 @@ export const bodySize = (input: {
 export const girthFor = ({ heightInches, weightPounds }: BodySize): number => {
     const bmi = (703 * weightPounds) / (heightInches * heightInches);
     return Math.min(1.3, Math.max(0.86, 1 + (bmi - 25) * 0.035));
+};
+
+const WINGSPAN = 1.03;
+
+/**
+ * The reshape for a body: girth from the weight, then a custom look's build
+ * sliders (-1..1) on top. A zero build is the figurine shape, so real people
+ * don't change.
+ */
+export const shapeFor = (size: BodySize, build?: PersonAppearance['build'] | null): BodyShape => {
+    const { girth = 0, shoulders = 0, wingspan = 0 } = build ?? {};
+    return {
+        girth: Math.min(1.45, Math.max(0.8, girthFor(size) * (1 + 0.15 * girth))),
+        shoulders: 1 + 0.15 * shoulders,
+        wingspan: WINGSPAN * (1 + 0.05 * wingspan),
+    };
 };

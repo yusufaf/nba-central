@@ -3,12 +3,15 @@ import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import {
     Bone,
     BufferAttribute,
+    BoxGeometry,
     BufferGeometry,
     Group,
     Matrix4,
+    Mesh,
     MeshStandardMaterial,
     Skeleton,
     SkinnedMesh,
+    Texture,
     Vector3,
     type Object3D,
 } from 'three';
@@ -96,6 +99,17 @@ describe('cloneCharacter', () => {
 
 describe('loadBody', () => {
     afterEach(() => vi.restoreAllMocks());
+
+    it("marks the file's textures shared, and clones keep pointing at them", async () => {
+        const normalMap = new Texture();
+        const scene = new Group();
+        scene.add(new Mesh(new BoxGeometry(), new MeshStandardMaterial({ normalMap })));
+        vi.spyOn(GLTFLoader.prototype, 'loadAsync').mockResolvedValueOnce({ scene } as never);
+        await loadBody('https://cdn/shared-textures.glb');
+        expect(normalMap.userData.shared).toBe(true);
+        const clone = (scene.children[0] as Mesh<BoxGeometry, MeshStandardMaterial>).material.clone();
+        expect(clone.normalMap).toBe(normalMap);
+    });
 
     it('tries again after a failed load instead of keeping the failure', async () => {
         const load = vi

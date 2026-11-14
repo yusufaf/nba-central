@@ -60,3 +60,29 @@ export const framePreset = (
         fov,
     };
 };
+
+// The player creator's preview: one person, head to toe, with room above the
+// head for raised hands (Celebrate reaches about 1.21 of their height) and
+// below the feet for the shadow.
+const PERSON_FOV = 30;
+const PERSON_TOP = 1.3;
+const PERSON_BOTTOM = -0.05;
+const PERSON_SPAN = 1.45; // the 1.35 above plus a margin
+// Narrower than this, the width (arms out) sets the distance.
+const PERSON_MIN_ASPECT = 0.75;
+
+export const PREVIEW_ORBIT = {
+    minDistance: 1.2,
+    maxDistance: 12,
+    minPolarAngle: Math.PI * 0.2,
+    maxPolarAngle: Math.PI * 0.55,
+    enablePan: false,
+};
+
+export const framePerson = (heightMetres: number, aspect: number): { position: Vec3; target: Vec3; fov: number } => {
+    const h = heightMetres;
+    const centre = ((PERSON_TOP + PERSON_BOTTOM) / 2) * h;
+    let distance = (PERSON_SPAN * h) / 2 / Math.tan((PERSON_FOV * Math.PI) / 360);
+    if (aspect < PERSON_MIN_ASPECT) distance /= aspect / PERSON_MIN_ASPECT;
+    return { position: [0, centre + 0.025 * h, distance], target: [0, centre, 0], fov: PERSON_FOV };
+};

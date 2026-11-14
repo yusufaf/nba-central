@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { FACIAL_HAIR_STYLES, HAIR_STYLES, POSES } from '@/constants/appearance';
-import { FACIAL_HAIR_ASSETS, HAIR_ASSETS } from '@/three/character/appearance';
+import { APPEARANCE_FRAMES, FACIAL_HAIR_STYLES, HAIR_STYLES, POSES } from '@/constants/appearance';
+import { BODY_ASSETS, FACIAL_HAIR_ASSETS, HAIR_ASSETS } from '@/three/character/appearance';
 import { POSE_BUILDERS } from '@/three/character/poses';
 
 const WEB = join(__dirname, '../..');
@@ -20,8 +20,14 @@ const fileFor = (url: string, id: string) => {
 };
 
 describe('3D assets', () => {
-    it('the body asset is a GLB within budget', () => {
-        expectGlb(join(WEB, 'src/three/assets/athletic-male.glb'), 600);
+    it.for(['athletic-male', 'athletic-female'])('the body asset %s is a GLB within budget', (name) => {
+        expectGlb(join(WEB, `src/three/assets/${name}.glb`), 600);
+    });
+
+    it('has a body for every frame', () => {
+        expect(Object.keys(BODY_ASSETS).sort()).toEqual([...APPEARANCE_FRAMES].sort());
+        expect(BODY_ASSETS.f).toContain('athletic-female.glb');
+        expect(BODY_ASSETS.m).toContain('athletic-male.glb');
     });
 
     it.for(HAIR_STYLES.filter((id) => id !== 'none'))('hair style %s has a GLB', (id) => {

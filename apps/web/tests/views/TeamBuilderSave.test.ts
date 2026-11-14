@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { ref } from 'vue';
+import { defineComponent, h, ref } from 'vue';
 import { shallowMount, flushPromises, type VueWrapper } from '@vue/test-utils';
 import { createPinia, setActivePinia } from 'pinia';
 import { createRouter, createMemoryHistory } from 'vue-router';
@@ -82,7 +82,7 @@ const makeRouter = () =>
 
 let wrapper: VueWrapper | null = null;
 
-const mountAt = async (url: string) => {
+const mountAt = async (url: string, stubs: Record<string, unknown> = {}) => {
     const router = makeRouter();
     await router.push(url);
     await router.isReady();
@@ -91,6 +91,7 @@ const mountAt = async (url: string) => {
             plugins: [createPinia(), router],
             // The sign-in prompt's "Create an account" link lives in the dialog's slot.
             renderStubDefaultSlot: true,
+            stubs,
         },
     });
     await flushPromises();
@@ -408,5 +409,75 @@ describe('A draft that nobody resumed', () => {
 
         expect(teamApi.createTeam).not.toHaveBeenCalled();
         expect(hasPendingSave()).toBe(false);
+    });
+});
+
+// #292: a custom player edited in the add-player dialog.
+describe('A custom player edited while their team is open', () => {
+    const look = (hair: string, frame = 'm') => ({
+        version: 1,
+        frame,
+        skin: '#8d5a3b',
+        hair: { style: hair, color: '#1b1512' },
+        facialHair: { style: 'none', color: '#1b1512' },
+        build: { girth: 0, shoulders: 0, wingspan: 0 },
+        accessories: [],
+        pose: 'relaxed',
+    });
+    const openTeam = async () => {
+        const nova = { fullName: 'Nova Reyes', name: 'Nova Reyes', isCustom: true, playerUUID: 'p1', position: 'PG', appearance: look('parted') };
+        vi.mocked(customPlayerApi.list).mockRejectedValue(new Error('offline'));
+        vi.mocked(teamApi.getTeam).mockResolvedValue({
+            success: true,
+            data: { ...draft(), teamUUID: 't1', roster: [{ slot: 1, player: nova }] } as never,
+        });
+        vi.mocked(teamApi.updateTeam).mockResolvedValue({ success: true, data: { teamUUID: 't1' } as never });
+        signedIn.value = true;
+        // RosterSection renders only the slot that holds the 3D dialog.
+        const RosterStub = defineComponent({
+            name: 'RosterSection',
+            emits: ['removePlayer', 'addPlayer', 'pickup'],
+            setup: (_, { slots }) => () => h('div', slots['lineup-actions']?.()),
+        });
+        await mountAt('/teambuilder?team=t1', { RosterSection: RosterStub });
+    };
+    const edited = async (playerUUID: string, appearance: object) => {
+        wrapper!.findComponent({ name: 'AddPlayerDialog' }).vm.$emit('customPlayerSaved', { playerUUID, appearance });
+        await flushPromises();
+    };
+    const scenePeople = () => wrapper!.findComponent({ name: 'TeamScene3DDialog' }).props('people') as { appearance?: { hair: { style: string } } }[];
+    const saved = async () => {
+        await saveClicked();
+        return vi.mocked(teamApi.updateTeam).mock.calls[0]?.[0] as SaveTeamPayload | undefined;
+    };
+
+    it('wears the new look in the 3D view at once, and the save stores it', async () => {
+        await openTeam();
+        expect(scenePeople()[0].appearance?.hair.style).toBe('parted');
+        await edited('p1', look('long', 'f'));
+        expect(scenePeople()[0].appearance?.hair.style).toBe('long');
+        expect((await saved())?.roster.find((entry) => entry.slot === 1)?.player.appearance).toMatchObject({ frame: 'f', hair: { style: 'long' } });
+    });
+
+    it("leaves the team alone for someone who isn't on it", async () => {
+        await openTeam();
+        await edited('p2', look('long', 'f'));
+        expect(scenePeople()[0].appearance?.hair.style).toBe('parted');
+    });
+});
+
+describe('Adding a custom player', () => {
+    it('names them in the toast', async () => {
+        await mountAt('/teambuilder');
+        wrapper!.findComponent({ name: 'RosterSection' }).vm.$emit('addPlayer', 1);
+        await flushPromises();
+        wrapper!.findComponent({ name: 'AddPlayerDialog' }).vm.$emit('select', {
+            isCustom: true,
+            name: 'Nova Reyes',
+            fullName: 'Nova Reyes',
+            playerUUID: 'p1',
+        });
+        await flushPromises();
+        expect(toast.loading).toHaveBeenCalledWith(expect.stringMatching(/^Adding Nova Reyes to /));
     });
 });

@@ -65,6 +65,8 @@ import { findHistoricalJersey } from "@/utils/historicalJersey";
 import { getCurrentTeamSeason, getTeamSeasonFile, getTeamSeasonsIndex } from "@/network/teamSeasons";
 import { findSeasonChoice, parseRealParam, realTeamDetails, rosterSlots, seasonChoices } from "@/utils/realTeam";
 import { toBuilderPlayer } from "@/utils/builderPlayer";
+import { parseAppearance } from "@/utils/appearance";
+import type { PersonAppearance } from "@/constants/appearance";
 import { track } from "@/lib/analytics";
 import { landingSource } from "@/lib/attribution";
 import type { DrawerSide, NBA2KRating, Player } from "@/models/types";
@@ -292,6 +294,18 @@ const retryPlayerStats = async (slot: number) => {
     Object.assign(player, await fetchStatsDetails(player.id));
 };
 
+// A custom player edited in the add-player dialog wears the new look here
+// at once. In place, like retryPlayerStats: it's the player's current look
+// (the rule refresh-on-open follows), not a roster change to undo.
+const applyCustomLook = ({ playerUUID, appearance }: { playerUUID: string; appearance: PersonAppearance }) => {
+    const look = parseAppearance(appearance);
+    for (const player of selectedPlayersData.value.values()) {
+        if (player?.isCustom !== true || player.playerUUID !== playerUUID) continue;
+        if (look) player.appearance = look;
+        else delete player.appearance;
+    }
+};
+
 const isInRoster = (player: Player) =>
     [...selectedPlayersData.value.values()].some((p) => toRaw(p) === toRaw(player));
 
@@ -301,7 +315,8 @@ const addPlayerFromDialog = (player: any) => {
     // nullable and there is no slot to report progress against without it.
     if (playerIndex === null) return;
 
-    const playerName = `${player.first_name} ${player.last_name}`;
+    // A custom player has only a fullName.
+    const playerName = player.fullName ?? `${player.first_name} ${player.last_name}`;
     const where = slotLabel(playerIndex);
 
     recordChange({
@@ -1295,6 +1310,7 @@ watch(
             :slot-index="selectedPlayerIndex ?? undefined"
             :selectedDrawerSide="selectedDrawerSide"
             @select="addPlayerFromDialog"
+            @custom-player-saved="applyCustomLook"
         />
 
         <!-- Player Stats Dialog -->

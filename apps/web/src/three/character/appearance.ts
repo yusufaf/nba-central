@@ -1,15 +1,29 @@
 // What a custom person's look loads: one GLB per hair and facial hair style,
 // skinned to the same rig as the body.
 import { Skeleton, SkinnedMesh, type Bone, type MeshStandardMaterial, type Object3D } from 'three';
-import type { FacialHairId, HairStyleId } from '@/constants/appearance';
+import type { AppearanceFrame, FacialHairId, HairStyleId } from '@/constants/appearance';
+import maleUrl from '../assets/athletic-male.glb?url';
+import femaleUrl from '../assets/athletic-female.glb?url';
 import buzzedUrl from '../assets/hair/buzzed.glb?url';
 import partedUrl from '../assets/hair/parted.glb?url';
+import buzzedFemaleUrl from '../assets/hair/buzzedFemale.glb?url';
+import longUrl from '../assets/hair/long.glb?url';
+import bunsUrl from '../assets/hair/buns.glb?url';
 import beardUrl from '../assets/hair/beard.glb?url';
 import { loadBody } from './load';
+
+// Each URL is fetched only when a person in view uses it.
+export const BODY_ASSETS: Record<AppearanceFrame, string> = {
+    m: maleUrl,
+    f: femaleUrl,
+};
 
 export const HAIR_ASSETS: Record<Exclude<HairStyleId, 'none'>, string> = {
     buzzed: buzzedUrl,
     parted: partedUrl,
+    buzzedFemale: buzzedFemaleUrl,
+    long: longUrl,
+    buns: bunsUrl,
 };
 
 export const FACIAL_HAIR_ASSETS: Record<Exclude<FacialHairId, 'none'>, string> = {
