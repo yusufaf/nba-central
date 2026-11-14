@@ -1,4 +1,4 @@
-import { BufferAttribute, Matrix3, Matrix4, MeshStandardMaterial, SkinnedMesh, Vector3, type Object3D } from 'three';
+import { BufferAttribute, Matrix3, Matrix4, MeshStandardMaterial, SkinnedMesh, Texture, Vector3, type Object3D } from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
 import { clone as cloneSkinned } from 'three/addons/utils/SkeletonUtils.js';
@@ -46,6 +46,18 @@ export const dequantizeSkinned = (root: Object3D): void => {
     }
 };
 
+// Every clone's material points at the cached file's textures (Material.clone
+// copies references), so disposing a person must leave them for the next.
+export const markTexturesShared = (root: Object3D): void => {
+    root.traverse((node) => {
+        const material = (node as SkinnedMesh).material;
+        if (!material) return;
+        for (const one of Array.isArray(material) ? material : [material]) {
+            for (const value of Object.values(one)) if (value instanceof Texture) value.userData.shared = true;
+        }
+    });
+};
+
 const loader = new GLTFLoader().setMeshoptDecoder(MeshoptDecoder);
 const bodies = new Map<string, Promise<Object3D>>();
 
@@ -57,6 +69,7 @@ export const loadBody = (url: string): Promise<Object3D> => {
         pending = loader.loadAsync(url).then(
             (gltf) => {
                 dequantizeSkinned(gltf.scene);
+                markTexturesShared(gltf.scene);
                 return gltf.scene;
             },
             (error: unknown) => {

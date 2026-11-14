@@ -29,7 +29,10 @@ import {
   Edit2,
   Trash,
 } from 'lucide-vue-next';
-import CreateCustomPlayerModal from './CreateCustomPlayerModal.vue';
+import CustomPlayerCreator from './creator/CustomPlayerCreator.vue';
+import type { CustomPlayerPayload } from './creator/types';
+import { track } from '@/lib/analytics';
+import type { PersonAppearance } from '@/constants/appearance';
 import ConfirmDialog from '@/components/ui/confirm-dialog/ConfirmDialog.vue';
 
 interface Props {
@@ -47,6 +50,8 @@ const props = withDefaults(defineProps<Props>(), {
 const emit = defineEmits<{
   'update:open': [value: boolean];
   'select': [player: any];
+  // An edited custom player's new look, so a team showing them can follow.
+  'customPlayerSaved': [saved: { playerUUID: string; appearance: PersonAppearance }];
 }>();
 
 const search = ref('');
@@ -60,7 +65,7 @@ const sortDirection = ref<'asc' | 'desc'>('asc');
 const { customPlayers, createPlayer, updatePlayer, deletePlayer: deleteCustomPlayer } = useCustomPlayers();
 const showCreatePlayerModal = ref<boolean>(false);
 const editingPlayer = ref<any>(null);
-const createPlayerModalRef = ref<any>(null);
+const creatorSaving = ref(false);
 const showDeleteDialog = ref<boolean>(false);
 const playerToDelete = ref<any>(null);
 
@@ -186,46 +191,25 @@ const openEditModal = (player: any) => {
   showCreatePlayerModal.value = true;
 };
 
-const handleCreatePlayer = async () => {
-  if (!createPlayerModalRef.value) return;
-
-  const name = createPlayerModalRef.value.getName();
-  const position = createPlayerModalRef.value.getPosition();
-  const heightFeet = createPlayerModalRef.value.getHeightFeet();
-  const heightInches = createPlayerModalRef.value.getHeightInches();
-  const weightPounds = createPlayerModalRef.value.getWeight();
-  const overallRating = createPlayerModalRef.value.getOverallRating();
-
-  createPlayerModalRef.value.setLoading(true);
-  const result = await createPlayer({ name, position, heightFeet, heightInches, weightPounds, overallRating });
-  createPlayerModalRef.value.setLoading(false);
-
-  if (result) {
+const onCreatorSubmit = async (data: CustomPlayerPayload) => {
+  const playerUUID: string | undefined = editingPlayer.value?.playerUUID;
+  creatorSaving.value = true;
+  try {
+    const result = playerUUID ? await updatePlayer(playerUUID, data) : await createPlayer(data);
+    if (!result) return;
+    // Only a save that went through counts.
+    track('creator_saved', {
+      kind: 'player',
+      mode: playerUUID ? 'edit' : 'create',
+      frame: data.appearance.frame,
+      hair: data.appearance.hair.style,
+      pose: data.appearance.pose,
+    });
+    if (playerUUID) emit('customPlayerSaved', { playerUUID, appearance: data.appearance });
     showCreatePlayerModal.value = false;
-    createPlayerModalRef.value.reset();
-  }
-};
-
-const handleUpdatePlayer = async () => {
-  if (!createPlayerModalRef.value || !editingPlayer.value?.playerUUID) return;
-
-  const name = createPlayerModalRef.value.getName();
-  const position = createPlayerModalRef.value.getPosition();
-  const heightFeet = createPlayerModalRef.value.getHeightFeet();
-  const heightInches = createPlayerModalRef.value.getHeightInches();
-  const weightPounds = createPlayerModalRef.value.getWeight();
-  const overallRating = createPlayerModalRef.value.getOverallRating();
-
-  createPlayerModalRef.value.setLoading(true);
-  const result = await updatePlayer(editingPlayer.value.playerUUID, {
-    name, position, heightFeet, heightInches, weightPounds, overallRating
-  });
-  createPlayerModalRef.value.setLoading(false);
-
-  if (result) {
-    showCreatePlayerModal.value = false;
-    createPlayerModalRef.value.reset();
     editingPlayer.value = null;
+  } finally {
+    creatorSaving.value = false;
   }
 };
 
@@ -402,24 +386,28 @@ const handleDeletePlayer = async () => {
             <!-- Edit/Delete buttons for custom players -->
             <div
               v-if="player.isCustom"
-              class="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity"
+              class="flex items-center gap-1 opacity-100 [@media(hover:hover)]:opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity"
               @click.stop
             >
+              <!-- Hidden until hover only where hovering is possible: touch
+                   and keyboard users always need to reach them. -->
               <Button
                 size="icon"
                 variant="ghost"
                 class="h-8 w-8 hover:bg-primary/20"
+                :aria-label="`Edit ${player.name}`"
                 @click="openEditModal(player)"
               >
-                <Edit2 class="h-4 w-4" />
+                <Edit2 class="h-4 w-4" aria-hidden="true" />
               </Button>
               <Button
                 size="icon"
                 variant="ghost"
                 class="h-8 w-8 hover:bg-destructive/20 hover:text-destructive-strong"
+                :aria-label="`Delete ${player.name}`"
                 @click="openDeleteDialog(player)"
               >
-                <Trash class="h-4 w-4" />
+                <Trash class="h-4 w-4" aria-hidden="true" />
               </Button>
             </div>
           </div>
@@ -429,12 +417,11 @@ const handleDeletePlayer = async () => {
   </Sheet>
 
   <!-- Create/Edit Player Modal -->
-  <CreateCustomPlayerModal
-    ref="createPlayerModalRef"
+  <CustomPlayerCreator
     v-model:open="showCreatePlayerModal"
     :editing-player="editingPlayer"
-    @created="handleCreatePlayer"
-    @updated="handleUpdatePlayer"
+    :saving="creatorSaving"
+    @submit="onCreatorSubmit"
   />
 
   <!-- Delete Confirmation Dialog -->

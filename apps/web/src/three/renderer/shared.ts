@@ -37,6 +37,7 @@ export const onContextChange = (listener: ContextListener): (() => void) => {
 
 // renderer.dispose() frees the renderer's own state, not what a scene holds.
 // Geometries and materials can be shared between meshes, so each is freed once.
+// Textures flagged userData.shared belong to a cached file and are kept.
 export const disposeObject = (root: Object3D): void => {
     const geometries = new Set<BufferGeometry>();
     const materials = new Set<Material>();
@@ -57,6 +58,7 @@ export const disposeObject = (root: Object3D): void => {
     }
     for (const geometry of geometries) geometry.dispose();
     for (const material of materials) material.dispose();
-    for (const texture of textures) texture.dispose();
+    // A loaded file's textures are shared by every clone (load.ts).
+    for (const texture of textures) if (texture.userData.shared !== true) texture.dispose();
     for (const skeleton of skeletons) skeleton.dispose();
 };

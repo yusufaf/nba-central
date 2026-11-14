@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { sceneLabel, scenePeople } from '@/components/scene3d/people';
+import { previewPerson, sceneLabel, scenePeople } from '@/components/scene3d/people';
 import { DEFAULT_APPEARANCE } from '@/utils/appearance';
 
 describe('scenePeople', () => {
@@ -82,5 +82,22 @@ describe('sceneLabel', () => {
 
     it('has no list when nobody is there', () => {
         expect(sceneLabel('Bulls', [])).toBe("3D view of Bulls's court");
+    });
+});
+
+describe('previewPerson', () => {
+    const profile = { position: 'PG', heightFeet: 6, heightInches: 3, weightPounds: 195 };
+
+    it("maps the profile's size and the look's number", () => {
+        const person = previewPerson(profile, { ...DEFAULT_APPEARANCE, jerseyNumber: '00' });
+        expect(person).toMatchObject({ id: 'preview', name: '', role: 'player', position: 'PG', heightInches: 75, weightPounds: 195, number: '00' });
+        expect(person.appearance?.jerseyNumber).toBe('00');
+    });
+
+    it('has no number without one, and no size from an unusable value', () => {
+        expect(previewPerson(profile, DEFAULT_APPEARANCE).number).toBeNull();
+        const blank = previewPerson({ ...profile, heightFeet: Number.NaN, weightPounds: Number.NaN }, DEFAULT_APPEARANCE);
+        expect(blank.heightInches).toBeNull();
+        expect(blank.weightPounds).toBeNull();
     });
 });

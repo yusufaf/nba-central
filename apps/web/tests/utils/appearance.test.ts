@@ -46,9 +46,14 @@ describe('parseAppearance', () => {
         ['a string shoulders', { build: { ...FULL.build, shoulders: '1' } }, { build: { ...FULL.build, shoulders: 0 } }],
         ['an infinite wingspan', { build: { ...FULL.build, wingspan: Infinity } }, { build: { ...FULL.build, wingspan: 0 } }],
         ['an unknown pose', { pose: 'dunk' }, { pose: 'relaxed' }],
-        ['a female-only cut, until the female body ships', { hair: { style: 'long', color: '#3b2a1e' } }, { hair: { style: 'buzzed', color: '#3b2a1e' } }],
+        ['a wrongly cased cut', { hair: { style: 'Long', color: '#3b2a1e' } }, { hair: { style: 'buzzed', color: '#3b2a1e' } }],
     ])('defaults %s and keeps the rest', ([, change, expected]) => {
         expect(parseAppearance({ ...FULL, ...change })).toEqual({ ...FULL, ...expected });
+    });
+
+    it('keeps a female cut and a new pose', () => {
+        const look = { ...FULL, frame: 'f' as const, hair: { style: 'long' as const, color: '#3b2a1e' }, pose: 'celebrate' as const };
+        expect(parseAppearance(look)).toEqual(look);
     });
 
     it('clamps build sliders to -1..1', () => {

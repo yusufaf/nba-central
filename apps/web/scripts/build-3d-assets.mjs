@@ -1,4 +1,4 @@
-// Rebuilds the 3D body asset from the Quaternius "Universal Base Characters"
+// Rebuilds the 3D body assets from the Quaternius "Universal Base Characters"
 // pack (CC0, free Standard tier: https://quaternius.itch.io/universal-base-characters).
 // Download and unzip the pack, then:
 //
@@ -10,14 +10,19 @@
 //
 // The hair GLBs in src/three/assets/hair/ were not produced by this script:
 // they were optimised with gltf-transform on feat/3d-spike (commit 99c0653f)
-// from the same pack's hair GLTFs and copied verbatim.
+// from the same pack's hair GLTFs and copied verbatim. athletic-female.glb was
+// copied verbatim from that branch too; its male output there is byte-identical
+// to this script's, so both bodies come from the same pipeline.
 import { copyFileSync, existsSync, readFileSync, statSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const CLI = '@gltf-transform/cli@4.5.1';
-const BODIES = [{ source: 'Superhero_Male_FullBody.gltf', output: 'athletic-male.glb' }];
+const BODIES = [
+    { source: 'Superhero_Male_FullBody.gltf', output: 'athletic-male.glb' },
+    { source: 'Superhero_Female_FullBody.gltf', output: 'athletic-female.glb' },
+];
 
 const pack = process.argv[2];
 if (!pack || !existsSync(pack)) {

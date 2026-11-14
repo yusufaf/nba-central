@@ -1,8 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { CAMERA_PRESETS, MAX_FRAMING_DISTANCE, PRESET_LABELS, TWO_ROWS_BELOW_ASPECT, framePreset } from '@/three/scene/cameraPresets';
+import { PerspectiveCamera, Vector3 } from 'three';
+import { CAMERA_PRESETS, MAX_FRAMING_DISTANCE, PRESET_LABELS, TWO_ROWS_BELOW_ASPECT, framePerson, framePreset } from '@/three/scene/cameraPresets';
 
 const deg = (d: number) => (d * Math.PI) / 180;
-const distance = (frame: ReturnType<typeof framePreset>) =>
+const distance = (frame: { position: number[]; target: number[] }) =>
     Math.hypot(...frame.position.map((p, i) => p - frame.target[i]));
 const halfFovH = (fov: number, aspect: number) => Math.atan(Math.tan(deg(fov) / 2) * aspect);
 
@@ -50,5 +51,35 @@ describe('framePreset', () => {
         const aspect = TWO_ROWS_BELOW_ASPECT;
         const frame = framePreset('team', aspect);
         expect(distance(frame) * Math.tan(halfFovH(frame.fov, aspect))).toBeGreaterThanOrEqual(4.9);
+    });
+});
+
+describe('framePerson', () => {
+    const inView = (frame: ReturnType<typeof framePerson>, aspect: number, y: number) => {
+        const camera = new PerspectiveCamera(frame.fov, aspect, 0.1, 100);
+        camera.position.set(...frame.position);
+        camera.lookAt(new Vector3(...frame.target));
+        camera.updateMatrixWorld();
+        return new Vector3(0, y, 0).project(camera).y;
+    };
+
+    it('aims at the middle of the person and backs off for a taller one', () => {
+        const short = framePerson(1.8, 1);
+        const tall = framePerson(2.1, 1);
+        expect(short.target[1]).toBeCloseTo(0.625 * 1.8);
+        expect(distance(tall)).toBeGreaterThan(distance(short));
+    });
+
+    it('backs off in a narrow view', () => {
+        expect(distance(framePerson(2, 0.5))).toBeGreaterThan(distance(framePerson(2, 1)));
+    });
+
+    it.for([1, 0.6, 1.6])('keeps raised hands and the shadow in view at aspect %s', (aspect) => {
+        const frame = framePerson(2, aspect);
+        for (const y of [1.3 * 2, -0.05 * 2]) {
+            const ndc = inView(frame, aspect, y);
+            expect(ndc).toBeGreaterThan(-1);
+            expect(ndc).toBeLessThan(1);
+        }
     });
 });

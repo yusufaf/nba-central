@@ -1,16 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
-import {
-    Bone,
-    BufferAttribute,
-    BufferGeometry,
-    Group,
-    Matrix4,
-    MeshStandardMaterial,
-    Skeleton,
-    SkinnedMesh,
-    Vector3,
-} from 'three';
+import { Group, MeshStandardMaterial, SkinnedMesh, Vector3 } from 'three';
 import type { Landmarks } from '@/three/character/kit';
+import { skeletonBody } from './fixtures/skeleton';
 import type { PersonAppearance } from '@/constants/appearance';
 
 const mocks = vi.hoisted(() => ({
@@ -18,11 +9,13 @@ const mocks = vi.hoisted(() => ({
     kitTexture: vi.fn(() => null),
     kitOptions: [] as { vinyl: string | null; material: MeshStandardMaterial }[],
     failHair: false,
+    urls: [] as string[],
 }));
 
 vi.mock('@/three/character/load', async (original) => ({
     ...(await original<typeof import('@/three/character/load')>()),
     loadBody: async (url: string) => {
+        mocks.urls.push(url);
         if (url.includes('/hair/') && mocks.failHair) throw new Error('offline');
         return skeletonBody();
     },
@@ -43,59 +36,6 @@ vi.mock('@/three/character/kit', async (original) => {
 import { buildPerson } from '@/three/character/person';
 import { findLandmarks } from '@/three/character/kit';
 import { reshapeBody } from '@/three/character/reshape';
-
-type Spec = [name: string, parent: string | null, offset: [number, number, number]];
-const SIDE = (s: 'l' | 'r', x: number): Spec[] => [
-    [`clavicle_${s}`, 'spine_03', [0.05 * x, 0.1, 0]],
-    [`upperarm_${s}`, `clavicle_${s}`, [0.15 * x, 0, 0]],
-    [`lowerarm_${s}`, `upperarm_${s}`, [0.3 * x, 0, 0]],
-    [`hand_${s}`, `lowerarm_${s}`, [0.25 * x, 0, 0]],
-    [`thigh_${s}`, 'pelvis', [0.1 * x, -0.05, 0]],
-    [`calf_${s}`, `thigh_${s}`, [0, -0.45, 0]],
-    [`foot_${s}`, `calf_${s}`, [0, -0.45, 0]],
-    [`ball_${s}`, `foot_${s}`, [0, -0.05, 0.1]],
-];
-const SPECS: Spec[] = [
-    ['pelvis', null, [0, 1, 0]],
-    ['spine_01', 'pelvis', [0, 0.15, 0]],
-    ['spine_02', 'spine_01', [0, 0.15, 0]],
-    ['spine_03', 'spine_02', [0, 0.15, 0]],
-    ['neck_01', 'spine_03', [0, 0.2, 0]],
-    ['head', 'neck_01', [0, 0.1, 0]],
-    ...SIDE('l', 1),
-    ...SIDE('r', -1),
-];
-
-// A T-pose mannequin with the real rig's bone names and a few vertices
-// on and around each bone, so the torso and limbs have width to reshape.
-function skeletonBody(): Group {
-    const root = new Group();
-    const bones = SPECS.map(([name]) => Object.assign(new Bone(), { name }));
-    SPECS.forEach(([, parent, offset], i) => {
-        bones[i].position.set(...offset);
-        if (parent) bones[SPECS.findIndex(([n]) => n === parent)].add(bones[i]);
-    });
-    root.add(bones[0]);
-    root.updateMatrixWorld(true);
-    const points: number[] = [];
-    const owners: number[] = [];
-    bones.forEach((bone, i) => {
-        const at = bone.getWorldPosition(new Vector3());
-        for (const d of [[0, 0, 0], [0.08, 0, 0], [-0.08, 0, 0], [0, 0, 0.08], [0, 0, -0.08]]) {
-            points.push(at.x + d[0], at.y + d[1], at.z + d[2]);
-            owners.push(i);
-        }
-    });
-    const geometry = new BufferGeometry();
-    geometry.setAttribute('position', new BufferAttribute(new Float32Array(points), 3));
-    geometry.setAttribute('normal', new BufferAttribute(new Float32Array(points.map((_, i) => (i % 3 === 1 ? 1 : 0))), 3));
-    geometry.setAttribute('skinIndex', new BufferAttribute(new Uint16Array(owners.flatMap((b) => [b, 0, 0, 0])), 4));
-    geometry.setAttribute('skinWeight', new BufferAttribute(new Float32Array(owners.flatMap(() => [1, 0, 0, 0])), 4));
-    const mesh = new SkinnedMesh(geometry, new MeshStandardMaterial());
-    root.add(mesh);
-    mesh.bind(new Skeleton(bones), new Matrix4());
-    return root;
-}
 
 const meshIn = (root: Group) => root.children.find((c): c is SkinnedMesh => (c as SkinnedMesh).isSkinnedMesh)!;
 
@@ -164,6 +104,60 @@ describe('buildPerson', () => {
             const { root } = await buildPerson(person, KIT);
             expect(mocks.kitOptions[0].vinyl).toBe('#c8c3ba');
             expect(named(root, 'hair')).toBeUndefined();
+        });
+
+        it('loads the female body for frame f, and the male one for a figurine', async () => {
+            mocks.urls.length = 0;
+            await buildPerson({ ...person, appearance: { ...LOOK, frame: 'f', hair: { style: 'long', color: '#000000' }, facialHair: { style: 'none', color: '#000000' } } }, KIT);
+            expect(mocks.urls.some((url) => url.includes('athletic-female'))).toBe(true);
+            expect(mocks.urls.some((url) => url.includes('athletic-male'))).toBe(false);
+            expect(mocks.urls.some((url) => url.includes('/hair/long'))).toBe(true);
+
+            mocks.urls.length = 0;
+            await buildPerson(person, KIT);
+            expect(mocks.urls).toHaveLength(1);
+            expect(mocks.urls[0]).toContain('athletic-male');
+        });
+
+        it('adds a female cut on frame f', async () => {
+            const { root } = await buildPerson(
+                { ...person, appearance: { ...LOOK, frame: 'f', hair: { style: 'long', color: '#000000' }, facialHair: { style: 'none', color: '#000000' } } },
+                KIT,
+            );
+            expect(named(root, 'hair')?.isSkinnedMesh).toBe(true);
+        });
+
+        it('skips a cut or beard shaped for the other head, without loading it', async () => {
+            mocks.urls.length = 0;
+            const { root } = await buildPerson(
+                { ...person, appearance: { ...LOOK, frame: 'f', hair: { style: 'parted', color: '#000000' } } },
+                KIT,
+            );
+            expect(mocks.urls.filter((url) => url.includes('/hair/'))).toEqual([]);
+            expect(named(root, 'hair')).toBeUndefined();
+            expect(named(root, 'facialHair')).toBeUndefined();
+
+            mocks.urls.length = 0;
+            await buildPerson({ ...person, appearance: { ...LOOK, hair: { style: 'long', color: '#000000' } } }, KIT);
+            expect(mocks.urls.some((url) => url.includes('/hair/long'))).toBe(false);
+        });
+
+        it('widens the torso with the girth slider', async () => {
+            const width = async (girth: number) => {
+                const { root } = await buildPerson({ ...person, appearance: { ...LOOK, build: { girth, shoulders: 0, wingspan: 0 } } }, KIT);
+                const mesh = root.getObjectByProperty('isSkinnedMesh', true) as SkinnedMesh;
+                mesh.geometry.computeBoundingBox();
+                const box = mesh.geometry.boundingBox!;
+                return (box.max.x - box.min.x) / (box.max.y - box.min.y);
+            };
+            expect(await width(1)).toBeGreaterThan(await width(0));
+        });
+
+        it('poses from the look', async () => {
+            const { root } = await buildPerson({ ...person, appearance: { ...LOOK, pose: 'celebrate' } }, KIT);
+            root.updateMatrixWorld(true);
+            const y = (name: string) => root.getObjectByName(name)!.getWorldPosition(new Vector3()).y;
+            expect(y('hand_l')).toBeGreaterThan(y('head'));
         });
 
         it('still builds the person when their hair fails to load', async () => {
