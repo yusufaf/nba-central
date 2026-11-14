@@ -65,12 +65,13 @@ const presetSize = (p: BodyProfile) => `${p.heightFeet}′${p.heightInches}″ �
             >
                 <ToggleGroupItem v-for="p in presets" :key="p.id" :value="p.id" class="h-auto flex-col gap-0.5 py-2">
                     <span class="font-semibold">{{ p.label }}</span>
-                    <span class="text-xs tabular-nums text-muted-foreground">{{ presetSize(p) }}</span>
+                    <span class="text-xs tabular-nums">{{ presetSize(p) }}</span>
                 </ToggleGroupItem>
-                <!-- Display only: selected whenever nothing else matches. -->
+                <!-- Display only: selected whenever nothing else matches. The sub-lines
+                     inherit the item colour: muted grey fails contrast on the selected orange. -->
                 <ToggleGroupItem value="custom" class="h-auto flex-col gap-0.5 py-2">
                     <span class="font-semibold">Custom</span>
-                    <span class="text-xs text-muted-foreground">Manual</span>
+                    <span class="text-xs">Manual</span>
                 </ToggleGroupItem>
             </ToggleGroup>
         </div>
