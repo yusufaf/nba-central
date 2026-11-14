@@ -526,7 +526,7 @@ describe("team roster appearances", () => {
 			{} as never,
 		)) as { statusCode: number; body: string };
 		expect(result.statusCode).toBe(400);
-		expect(parseBody(result).error).toBe("Nova's look is invalid: Appearance pose must be one of relaxed");
+		expect(parseBody(result).error).toBe("Nova's look is invalid: Appearance pose must be one of relaxed, handsOnHips, armsCrossed, celebrate");
 		expect(send).not.toHaveBeenCalled();
 	});
 });
