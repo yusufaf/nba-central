@@ -53,9 +53,9 @@ describe("appearanceError", () => {
         it.for(HAIR_STYLES)("accepts hair style %s", (style) => {
             expect(appearanceError(withLook({ hair: { style, color: "#000000" } }))).toBeNull();
         });
-        it.for(["mohawk", "long", undefined])("rejects hair style %s", (style) => {
+        it.for(["mohawk", "Long", undefined])("rejects hair style %s", (style) => {
             expect(appearanceError(withLook({ hair: { style, color: "#000000" } }))).toBe(
-                "Appearance hair style must be one of none, buzzed, parted",
+                "Appearance hair style must be one of none, buzzed, parted, buzzedFemale, long, buns",
             );
         });
 
@@ -81,7 +81,7 @@ describe("appearanceError", () => {
             expect(appearanceError(withLook({ pose }))).toBeNull();
         });
         it.for(["dunk", undefined])("rejects pose %s", (pose) => {
-            expect(appearanceError(withLook({ pose }))).toBe("Appearance pose must be one of relaxed");
+            expect(appearanceError(withLook({ pose }))).toBe("Appearance pose must be one of relaxed, handsOnHips, armsCrossed, celebrate");
         });
     });
 
