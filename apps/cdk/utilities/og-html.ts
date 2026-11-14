@@ -30,9 +30,10 @@ export const describeTeam = (team: PublicTeam): string => {
 export const buildOgTags = (team: PublicTeam, siteUrl: string): string => {
 	const title = escapeHtml(team.title || "Untitled team");
 	const description = escapeHtml(describeTeam(team));
-	// The hero poster isn't 1200x630, so only the rendered card gets explicit
-	// dimensions — unfurlers fall back to probing the image otherwise.
-	const image = escapeHtml(team.cardUrl || `${siteUrl}/hero/hero-poster.jpg`);
+	// Both the rendered team card and the home link preview are 1200x630, so
+	// every og:image gets explicit dimensions — unfurlers don't have to probe.
+	const image = escapeHtml(team.cardUrl || `${siteUrl}/og-image-home.jpg`);
+	const imageAlt = team.cardUrl ? `${title} team card` : "nba-central home preview";
 	const url = escapeHtml(`${siteUrl}/t/${team.teamUUID}`);
 	return [
 		`<meta name="description" content="${description}">`,
@@ -41,13 +42,9 @@ export const buildOgTags = (team: PublicTeam, siteUrl: string): string => {
 		`<meta property="og:title" content="${title}">`,
 		`<meta property="og:description" content="${description}">`,
 		`<meta property="og:image" content="${image}">`,
-		...(team.cardUrl
-			? [
-				`<meta property="og:image:width" content="1200">`,
-				`<meta property="og:image:height" content="630">`,
-				`<meta property="og:image:alt" content="${title} team card">`,
-			]
-			: []),
+		`<meta property="og:image:width" content="1200">`,
+		`<meta property="og:image:height" content="630">`,
+		`<meta property="og:image:alt" content="${imageAlt}">`,
 		`<meta property="og:url" content="${url}">`,
 		`<meta name="twitter:card" content="summary_large_image">`,
 		`<meta name="twitter:title" content="${title}">`,
