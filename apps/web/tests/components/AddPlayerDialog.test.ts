@@ -3,7 +3,12 @@ import { flushPromises, mount, type VueWrapper } from '@vue/test-utils';
 import { defineComponent, h, ref } from 'vue';
 import { DEFAULT_APPEARANCE } from '@/utils/appearance';
 
-const LOOK = { ...DEFAULT_APPEARANCE, frame: 'f' as const, hair: { style: 'long' as const, color: '#3b2a1e' } };
+const LOOK = {
+    ...DEFAULT_APPEARANCE,
+    frame: 'f' as const,
+    hair: { style: 'long' as const, color: '#3b2a1e' },
+    accessories: [{ id: 'headband' as const, color: '#c8102e' }],
+};
 
 const mocks = vi.hoisted(() => ({
     createPlayer: vi.fn(),
@@ -107,7 +112,14 @@ describe('AddPlayerDialog with the player creator', () => {
         creator().vm.$emit('submit', PAYLOAD);
         await flushPromises();
         expect(mocks.createPlayer).toHaveBeenCalledWith(PAYLOAD);
-        expect(mocks.track).toHaveBeenCalledWith('creator_saved', { kind: 'player', mode: 'create', frame: 'f', hair: 'long', pose: 'relaxed' });
+        expect(mocks.track).toHaveBeenCalledWith('creator_saved', {
+            kind: 'player',
+            mode: 'create',
+            frame: 'f',
+            hair: 'long',
+            pose: 'relaxed',
+            accessories: 1,
+        });
         expect(creator().props('open')).toBe(false);
         expect(wrapper!.emitted('customPlayerSaved')).toBeUndefined();
     });

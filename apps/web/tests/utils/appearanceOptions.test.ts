@@ -1,9 +1,12 @@
 import { describe, expect, it } from 'vitest';
-import { APPEARANCE_FRAMES, FACIAL_HAIR_STYLES, HAIR_STYLES, type PersonAppearance } from '@/constants/appearance';
+import { ACCESSORIES, APPEARANCE_FRAMES, FACIAL_HAIR_STYLES, HAIR_STYLES, type PersonAppearance } from '@/constants/appearance';
 import { DEFAULT_APPEARANCE } from '@/utils/appearance';
 import {
+    ACCESSORY_DEFAULT_COLOURS,
+    ACCESSORY_LABELS,
     BODY_PRESETS,
     FACIAL_HAIR_FITS,
+    GEAR_SWATCHES,
     HAIR_FITS,
     HAIR_SWAP,
     appearanceLabel,
@@ -11,6 +14,9 @@ import {
     fits,
     forFrame,
     presetMatching,
+    recolourAccessory,
+    shownAccessories,
+    wearAccessories,
 } from '@/utils/appearanceOptions';
 
 const look = (change: Partial<PersonAppearance> = {}): PersonAppearance => ({ ...structuredClone(DEFAULT_APPEARANCE), ...change });
@@ -91,5 +97,70 @@ describe('appearanceLabel', () => {
         expect(appearanceLabel('Max', look({ hair: { style: 'none', color: '#000000' }, facialHair: { style: 'beard', color: '#000000' } }))).toBe(
             '3D preview of Max: athletic male frame, no hair, beard, relaxed',
         );
+    });
+    it('lists the gear it shows', () => {
+        const nova = look({ frame: 'f', hair: { style: 'long', color: '#000000' }, pose: 'handsOnHips' });
+        const label = (ids: (typeof ACCESSORIES)[number][]) =>
+            appearanceLabel('Nova', { ...nova, accessories: ids.map((id) => ({ id, color: '#1c1c1c' })) });
+        expect(label(['headband'])).toBe('3D preview of Nova: athletic female frame, long hair, no facial hair, hands on hips, wearing a headband');
+        expect(label(['headband', 'armSleeve', 'glasses'])).toMatch(/, wearing a headband, an arm sleeve and glasses$/);
+        expect(label(['goggles', 'glasses'])).toMatch(/, wearing goggles$/);
+    });
+});
+
+describe('accessories', () => {
+    const worn = (...entries: [(typeof ACCESSORIES)[number], string][]) => entries.map(([id, color]) => ({ id, color }));
+
+    it('gives every accessory a label and a default colour from the gear swatches', () => {
+        const swatches = GEAR_SWATCHES.map((s) => s.value);
+        for (const id of ACCESSORIES) {
+            expect(ACCESSORY_LABELS[id]).toBeTruthy();
+            expect(swatches).toContain(ACCESSORY_DEFAULT_COLOURS[id]);
+        }
+    });
+
+    it('wears gear in a fixed order, in its default colour', () => {
+        expect(wearAccessories([], ['glasses', 'headband'])).toEqual(worn(['headband', '#f5f5f5'], ['glasses', '#1c1c1c']));
+    });
+
+    it('keeps the colours of gear already worn, and takes off what is dropped', () => {
+        const current = worn(['headband', '#c8102e'], ['glasses', '#1d428a']);
+        expect(wearAccessories(current, ['headband', 'glasses', 'armSleeve'])).toEqual(
+            worn(['headband', '#c8102e'], ['armSleeve', '#1c1c1c'], ['glasses', '#1d428a']),
+        );
+        expect(wearAccessories(current, ['glasses'])).toEqual(worn(['glasses', '#1d428a']));
+    });
+
+    it('swaps goggles and glasses for the one just pressed', () => {
+        expect(wearAccessories(worn(['goggles', '#c8102e']), ['goggles', 'glasses'])).toEqual(worn(['glasses', '#1c1c1c']));
+        expect(wearAccessories(worn(['glasses', '#c8102e']), ['glasses', 'goggles'])).toEqual(worn(['goggles', '#1c1c1c']));
+    });
+
+    it('keeps goggles when it cannot tell which eyewear was pressed', () => {
+        expect(wearAccessories([], ['goggles', 'glasses'])).toEqual(worn(['goggles', '#1c1c1c']));
+        const both = worn(['goggles', '#c8102e'], ['glasses', '#1d428a']);
+        expect(wearAccessories(both, ['goggles', 'glasses', 'headband'])).toEqual(worn(['headband', '#f5f5f5'], ['goggles', '#c8102e']));
+    });
+
+    it('ignores unknown ids and never changes what it was given', () => {
+        const current = worn(['headband', '#c8102e']);
+        const copy = structuredClone(current);
+        expect(wearAccessories(current, ['headband', 'cape' as never])).toEqual(copy);
+        expect(current).toEqual(copy);
+    });
+
+    it('recolours only the accessory named', () => {
+        const current = worn(['headband', '#f5f5f5'], ['armSleeve', '#1c1c1c']);
+        expect(recolourAccessory(current, 'armSleeve', '#007a33')).toEqual(worn(['headband', '#f5f5f5'], ['armSleeve', '#007a33']));
+        expect(recolourAccessory(current, 'glasses', '#007a33')).toEqual(current);
+        expect(current[1].color).toBe('#1c1c1c');
+    });
+
+    it('shows goggles over glasses, and everything else as worn', () => {
+        expect(shownAccessories(worn(['headband', '#f5f5f5'], ['goggles', '#1c1c1c'], ['glasses', '#1c1c1c']))).toEqual(
+            worn(['headband', '#f5f5f5'], ['goggles', '#1c1c1c']),
+        );
+        const glasses = worn(['armSleeve', '#1c1c1c'], ['glasses', '#1c1c1c']);
+        expect(shownAccessories(glasses)).toEqual(glasses);
     });
 });

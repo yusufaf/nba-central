@@ -31,11 +31,13 @@ import {
     facialHairFits,
     fits,
     forFrame,
+    shownAccessories,
     type BodyProfile,
 } from '@/utils/appearanceOptions';
 import { isJerseyNumber } from '@/utils/rosterNumbers';
 import { isWebGLAvailable } from '@/utils/webgl';
 import ColourField from './ColourField.vue';
+import CreatorAccessories from './CreatorAccessories.vue';
 import CreatorBodyTab from './CreatorBodyTab.vue';
 import type { CustomPlayerPayload } from './types';
 
@@ -78,10 +80,11 @@ const seed = () => {
     };
     overallRating.value = player?.overallRating ?? 75;
     // A player saved before looks existed starts from the default one.
-    // A hand-made look can carry a cut that doesn't fit its frame: map it,
-    // so the Hair tab shows what the preview shows.
+    // A hand-made look can carry a cut that doesn't fit its frame, or both
+    // goggles and glasses: map them, so the tabs show what the preview shows.
     const stored = parseAppearance(player?.appearance);
-    look.value = stored ? forFrame(stored, stored.frame) : structuredClone(DEFAULT_APPEARANCE);
+    const framed = stored && forFrame(stored, stored.frame);
+    look.value = framed ? { ...framed, accessories: shownAccessories(framed.accessories) } : structuredClone(DEFAULT_APPEARANCE);
     numberDraft.value = look.value.jerseyNumber ?? '';
     tab.value = 'profile';
 };
@@ -312,23 +315,30 @@ const submit = () => {
                                 />
                             </TabsContent>
 
-                            <TabsContent value="gear" class="mt-0 grid gap-2 pt-4">
-                                <Label for="creator-number">Jersey number</Label>
-                                <Input
-                                    id="creator-number"
-                                    :model-value="numberDraft"
-                                    inputmode="numeric"
-                                    maxlength="2"
-                                    autocomplete="off"
-                                    class="h-11 w-24"
-                                    :aria-invalid="numberInvalid ? 'true' : undefined"
-                                    aria-describedby="creator-number-hint"
+                            <TabsContent value="gear" class="mt-0 grid gap-5 pt-4">
+                                <div class="grid gap-2">
+                                    <Label for="creator-number">Jersey number</Label>
+                                    <Input
+                                        id="creator-number"
+                                        :model-value="numberDraft"
+                                        inputmode="numeric"
+                                        maxlength="2"
+                                        autocomplete="off"
+                                        class="h-11 w-24"
+                                        :aria-invalid="numberInvalid ? 'true' : undefined"
+                                        aria-describedby="creator-number-hint"
+                                        :disabled="saving"
+                                        @update:model-value="setNumber"
+                                    />
+                                    <p id="creator-number-hint" class="text-xs" :class="numberInvalid ? 'text-destructive-strong' : 'text-muted-foreground'">
+                                        {{ numberInvalid ? '0-99, or 00' : 'Worn when the team gives this player no number.' }}
+                                    </p>
+                                </div>
+                                <CreatorAccessories
+                                    :model-value="look.accessories"
                                     :disabled="saving"
-                                    @update:model-value="setNumber"
+                                    @update:model-value="(accessories) => (look = { ...look, accessories })"
                                 />
-                                <p id="creator-number-hint" class="text-xs" :class="numberInvalid ? 'text-destructive-strong' : 'text-muted-foreground'">
-                                    {{ numberInvalid ? '0-99, or 00' : 'Worn when the team gives this player no number.' }}
-                                </p>
                             </TabsContent>
 
                             <TabsContent value="pose" class="mt-0 grid gap-2 pt-4">

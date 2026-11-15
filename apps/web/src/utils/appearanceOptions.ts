@@ -1,6 +1,15 @@
 // What the player creator offers, and the rules that keep a look valid for
 // its body frame. Pure data, so the 3D code and the UI share it.
-import type { AppearanceFrame, FacialHairId, HairStyleId, PersonAppearance, PoseId } from '@/constants/appearance';
+import {
+    ACCESSORIES,
+    MAX_ACCESSORIES,
+    type AccessoryId,
+    type AppearanceFrame,
+    type FacialHairId,
+    type HairStyleId,
+    type PersonAppearance,
+    type PoseId,
+} from '@/constants/appearance';
 
 type Cut = Exclude<HairStyleId, 'none'>;
 type Facial = Exclude<FacialHairId, 'none'>;
@@ -144,9 +153,72 @@ export const presetMatching = (frame: AppearanceFrame, profile: BodyProfile, bui
 
 const FRAME_WORDS: Record<AppearanceFrame, string> = { m: 'athletic male frame', f: 'athletic female frame' };
 
+export const ACCESSORY_LABELS: Record<AccessoryId, string> = {
+    headband: 'Headband',
+    armSleeve: 'Arm sleeve',
+    goggles: 'Goggles',
+    glasses: 'Glasses',
+};
+
+const ACCESSORY_PHRASES: Record<AccessoryId, string> = {
+    headband: 'a headband',
+    armSleeve: 'an arm sleeve',
+    goggles: 'goggles',
+    glasses: 'glasses',
+};
+
+export const GEAR_SWATCHES: Swatch[] = [
+    { value: '#f5f5f5', label: 'White' },
+    { value: '#1c1c1c', label: 'Black' },
+    { value: '#c8102e', label: 'Red' },
+    { value: '#1d428a', label: 'Royal' },
+    { value: '#0c2340', label: 'Navy' },
+    { value: '#fdb927', label: 'Gold' },
+    { value: '#007a33', label: 'Green' },
+    { value: '#552583', label: 'Purple' },
+];
+
+export const ACCESSORY_DEFAULT_COLOURS: Record<AccessoryId, string> = {
+    headband: '#f5f5f5',
+    armSleeve: '#1c1c1c',
+    goggles: '#1c1c1c',
+    glasses: '#1c1c1c',
+};
+
+type Worn = PersonAppearance['accessories'];
+
+/**
+ * The gear a multiple toggle leaves on: always in `ACCESSORIES` order, so the
+ * order they were pressed in never changes the 3D card's key. Goggles and
+ * glasses cut into each other, so only one of them stays: the one just
+ * pressed, or goggles when that can't be told.
+ */
+export const wearAccessories = (current: Worn, ids: readonly AccessoryId[]): Worn => {
+    const wanted = new Set(ids.filter((id) => (ACCESSORIES as readonly string[]).includes(id)));
+    if (wanted.has('goggles') && wanted.has('glasses')) {
+        const had = new Set(current.map((a) => a.id));
+        wanted.delete(!had.has('glasses') && had.has('goggles') ? 'goggles' : 'glasses');
+    }
+    return ACCESSORIES.filter((id) => wanted.has(id))
+        .slice(0, MAX_ACCESSORIES)
+        .map((id) => ({ id, color: current.find((a) => a.id === id)?.color ?? ACCESSORY_DEFAULT_COLOURS[id] }));
+};
+
+export const recolourAccessory = (current: Worn, id: AccessoryId, color: string): Worn =>
+    current.map((a) => (a.id === id ? { ...a, color } : { ...a }));
+
+/** What the 3D body wears: a hand-made look can carry both eyewear, and goggles win. */
+export const shownAccessories = (worn: Worn): Worn =>
+    worn.some((a) => a.id === 'goggles') ? worn.filter((a) => a.id !== 'glasses') : worn;
+
+const listOf = (items: string[]): string =>
+    items.length < 2 ? (items[0] ?? '') : `${items.slice(0, -1).join(', ')} and ${items[items.length - 1]}`;
+
 /** What the preview shows, for a screen reader. */
 export const appearanceLabel = (name: string, look: PersonAppearance): string => {
     const hair = look.hair.style === 'none' ? 'no hair' : `${HAIR_LABELS[look.hair.style].toLowerCase()} hair`;
     const facial = look.facialHair.style === 'none' ? 'no facial hair' : FACIAL_HAIR_LABELS[look.facialHair.style].toLowerCase();
-    return `3D preview of ${name}: ${FRAME_WORDS[look.frame]}, ${hair}, ${facial}, ${POSE_LABELS[look.pose].toLowerCase()}`;
+    const gear = shownAccessories(look.accessories).map((a) => ACCESSORY_PHRASES[a.id]);
+    const wearing = gear.length ? `, wearing ${listOf(gear)}` : '';
+    return `3D preview of ${name}: ${FRAME_WORDS[look.frame]}, ${hair}, ${facial}, ${POSE_LABELS[look.pose].toLowerCase()}${wearing}`;
 };

@@ -36,4 +36,14 @@ describe('teamPhotoKey', () => {
         change(changed);
         expect(teamPhotoKey(changed)).not.toBe(teamPhotoKey(base()));
     });
+
+    it("changes with a custom person's accessories", () => {
+        const wearing = (accessories: typeof DEFAULT_APPEARANCE.accessories) => {
+            const input = base();
+            input.people[0].appearance = { ...structuredClone(DEFAULT_APPEARANCE), accessories };
+            return teamPhotoKey(input);
+        };
+        expect(wearing([{ id: 'headband', color: '#c8102e' }])).not.toBe(wearing([]));
+        expect(wearing([{ id: 'headband', color: '#c8102e' }])).not.toBe(wearing([{ id: 'headband', color: '#1c1c1c' }]));
+    });
 });

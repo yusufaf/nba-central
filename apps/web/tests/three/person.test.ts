@@ -1,7 +1,7 @@
-import { describe, expect, it, vi } from 'vitest';
-import { Group, MeshStandardMaterial, SkinnedMesh, Vector3 } from 'three';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { Group, MeshStandardMaterial, SkinnedMesh, Vector3, type Mesh } from 'three';
 import type { Landmarks } from '@/three/character/kit';
-import { skeletonBody } from './fixtures/skeleton';
+import { skeletonBody, surfacedBody } from './fixtures/skeleton';
 import type { PersonAppearance } from '@/constants/appearance';
 
 const mocks = vi.hoisted(() => ({
@@ -9,6 +9,7 @@ const mocks = vi.hoisted(() => ({
     kitTexture: vi.fn(() => null),
     kitOptions: [] as { vinyl: string | null; material: MeshStandardMaterial }[],
     failHair: false,
+    surfaced: false,
     urls: [] as string[],
 }));
 
@@ -17,7 +18,7 @@ vi.mock('@/three/character/load', async (original) => ({
     loadBody: async (url: string) => {
         mocks.urls.push(url);
         if (url.includes('/hair/') && mocks.failHair) throw new Error('offline');
-        return skeletonBody();
+        return mocks.surfaced && url.includes('athletic-') ? surfacedBody() : skeletonBody();
     },
 }));
 vi.mock('@/three/character/kit', async (original) => {
@@ -158,6 +159,64 @@ describe('buildPerson', () => {
             root.updateMatrixWorld(true);
             const y = (name: string) => root.getObjectByName(name)!.getWorldPosition(new Vector3()).y;
             expect(y('hand_l')).toBeGreaterThan(y('head'));
+        });
+
+        describe('with gear', () => {
+            // Hair files still load the plain mannequin, whose head bone doesn't
+            // match the surfaced body's, so these looks wear none.
+            const GEARED: PersonAppearance = {
+                ...LOOK,
+                hair: { style: 'none', color: '#000000' },
+                facialHair: { style: 'none', color: '#000000' },
+                accessories: [
+                    { id: 'headband', color: '#c8102e' },
+                    { id: 'armSleeve', color: '#1c1c1c' },
+                    { id: 'glasses', color: '#1c1c1c' },
+                ],
+            };
+            const gear = (root: Group) => {
+                const found: string[] = [];
+                root.traverse((node) => node.name.startsWith('accessory-') && found.push(`${node.name}@${node.parent!.name}`));
+                return found.sort();
+            };
+
+            beforeEach(() => {
+                mocks.surfaced = true;
+            });
+            afterEach(() => {
+                mocks.surfaced = false;
+            });
+
+            it('wears it on the head and the right forearm', async () => {
+                const { root } = await buildPerson({ ...person, appearance: GEARED }, KIT);
+                expect(gear(root)).toEqual(['accessory-armSleeve@lowerarm_r', 'accessory-head@Head']);
+            });
+
+            it('keeps it on through posing and reshaping', async () => {
+                const { root } = await buildPerson({ ...person, appearance: { ...GEARED, pose: 'celebrate', build: { girth: 1, shoulders: 0, wingspan: 0 } } }, KIT);
+                root.updateMatrixWorld(true);
+                expect(gear(root)).toHaveLength(2);
+                const sleeve = root.getObjectByName('accessory-armSleeve') as Mesh;
+                sleeve.geometry.computeBoundingBox();
+                const centre = sleeve.geometry.boundingBox!.getCenter(new Vector3()).applyMatrix4(sleeve.matrixWorld);
+                expect(centre.y).toBeGreaterThan(root.getObjectByName('Head')!.getWorldPosition(new Vector3()).y);
+            });
+
+            it('never puts it on a figurine', async () => {
+                const { root } = await buildPerson(person, KIT);
+                expect(gear(root)).toEqual([]);
+            });
+
+            it('fits it on frame f without a warning', async () => {
+                const warn = vi.spyOn(console, 'warn');
+                try {
+                    const { root } = await buildPerson({ ...person, appearance: { ...GEARED, frame: 'f' } }, KIT);
+                    expect(gear(root)).toHaveLength(2);
+                    expect(warn).not.toHaveBeenCalled();
+                } finally {
+                    warn.mockRestore();
+                }
+            });
         });
 
         it('still builds the person when their hair fails to load', async () => {

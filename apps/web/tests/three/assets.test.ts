@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { APPEARANCE_FRAMES, FACIAL_HAIR_STYLES, HAIR_STYLES, POSES } from '@/constants/appearance';
+import { ACCESSORIES, APPEARANCE_FRAMES, FACIAL_HAIR_STYLES, HAIR_STYLES, POSES } from '@/constants/appearance';
+import { ACCESSORY_BUILDERS } from '@/three/character/accessories';
 import { BODY_ASSETS, FACIAL_HAIR_ASSETS, HAIR_ASSETS } from '@/three/character/appearance';
 import { POSE_BUILDERS } from '@/three/character/poses';
 
@@ -46,5 +47,9 @@ describe('3D assets', () => {
         expect(Object.keys(HAIR_ASSETS).sort()).toEqual(HAIR_STYLES.filter((id) => id !== 'none').sort());
         expect(Object.keys(FACIAL_HAIR_ASSETS).sort()).toEqual(FACIAL_HAIR_STYLES.filter((id) => id !== 'none').sort());
         expect(Object.keys(POSE_BUILDERS)).toEqual([...POSES]);
+    });
+
+    it('builds every accessory in code', () => {
+        expect(Object.keys(ACCESSORY_BUILDERS)).toEqual([...ACCESSORIES]);
     });
 });

@@ -60,6 +60,7 @@ export class TeamScene {
         if (import.meta.env.DEV) {
             (window as unknown as { __scene3dInfo?: () => object }).__scene3dInfo = () => ({
                 ...this.renderer.info.memory,
+                render: { calls: this.renderer.info.render.calls, triangles: this.renderer.info.render.triangles },
                 canvases: document.querySelectorAll('canvas').length,
             });
         }

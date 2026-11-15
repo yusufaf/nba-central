@@ -312,6 +312,86 @@ describe('CustomPlayerCreator', () => {
         expect((await submitted()).name).toBe('Nova');
     });
 
+    describe('gear', () => {
+        const pressed = (label: string) => button(label).getAttribute('aria-pressed');
+        const colourGroup = (label: string) =>
+            [...document.querySelectorAll('[role="radiogroup"]')].find(
+                (g) => document.getElementById(g.getAttribute('aria-labelledby')!)?.textContent?.trim() === label,
+            ) as HTMLElement | undefined;
+
+        it('wears an accessory at once, in its default colour, and takes it off again', async () => {
+            await mountCreator();
+            await openTab('Gear');
+            await click(button('Headband'));
+            expect(person().appearance?.accessories).toEqual([{ id: 'headband', color: '#f5f5f5' }]);
+            expect(latest().label).toMatch(/wearing a headband$/);
+            expect(colourGroup('Headband colour')).toBeDefined();
+
+            await click(colourGroup('Headband colour')!.querySelector('[aria-label="Red"]') as HTMLElement);
+            expect(person().appearance?.accessories).toEqual([{ id: 'headband', color: '#c8102e' }]);
+
+            await click(button('Headband'));
+            expect(person().appearance?.accessories).toEqual([]);
+            expect(colourGroup('Headband colour')).toBeUndefined();
+        });
+
+        it('swaps goggles for glasses', async () => {
+            await mountCreator();
+            await openTab('Gear');
+            await click(button('Goggles'));
+            await click(button('Glasses'));
+            expect(person().appearance?.accessories).toEqual([{ id: 'glasses', color: '#1c1c1c' }]);
+            expect(pressed('Goggles')).toBe('false');
+            expect(pressed('Glasses')).toBe('true');
+        });
+
+        it('saves gear in a fixed order, whatever order it was put on in', async () => {
+            await mountCreator();
+            await typeInto('#creator-name', 'Nova');
+            await openTab('Gear');
+            await click(button('Arm sleeve'));
+            await click(button('Headband'));
+            const data = await submitted();
+            expect(data.appearance.accessories).toEqual([
+                { id: 'headband', color: '#f5f5f5' },
+                { id: 'armSleeve', color: '#1c1c1c' },
+            ]);
+        });
+
+        it("opens a player's own gear to edit", async () => {
+            const accessories = [{ id: 'armSleeve' as const, color: '#007a33' }];
+            await mountCreator(custom({ appearance: { ...DEFAULT_APPEARANCE, accessories } }));
+            await openTab('Gear');
+            expect(pressed('Arm sleeve')).toBe('true');
+            expect(pressed('Headband')).toBe('false');
+            expect(colourGroup('Arm sleeve colour')?.querySelector('[aria-checked="true"]')?.getAttribute('aria-label')).toBe('Green');
+        });
+
+        it('opens a stored look with both eyewear as the goggles the preview shows', async () => {
+            const accessories = [
+                { id: 'goggles' as const, color: '#1c1c1c' },
+                { id: 'glasses' as const, color: '#c8102e' },
+            ];
+            await mountCreator(custom({ appearance: { ...DEFAULT_APPEARANCE, accessories } }));
+            await openTab('Gear');
+            expect(pressed('Goggles')).toBe('true');
+            expect(pressed('Glasses')).toBe('false');
+            expect(colourGroup('Goggles colour')).toBeDefined();
+            expect(colourGroup('Glasses colour')).toBeUndefined();
+            expect((await submitted()).appearance.accessories).toEqual([{ id: 'goggles', color: '#1c1c1c' }]);
+        });
+
+        it('names the accessories group and each colour', async () => {
+            await mountCreator();
+            await openTab('Gear');
+            await click(button('Headband'));
+            const group = document.querySelector('[aria-labelledby="creator-accessories-label"]');
+            expect(document.getElementById('creator-accessories-label')?.textContent?.trim()).toBe('Accessories');
+            expect(group?.querySelectorAll('button')).toHaveLength(4);
+            expect(colourGroup('Headband colour')).toBeDefined();
+        });
+    });
+
     it('disables Save without a name', async () => {
         await mountCreator();
         expect((document.querySelector('button[type="submit"]') as HTMLButtonElement).disabled).toBe(true);
