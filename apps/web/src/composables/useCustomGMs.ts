@@ -4,6 +4,7 @@ import { customGMApi } from '@/network/api';
 import { getApiErrorMessage } from '@/composables/useApiErrorMessage';
 import { useCurrentUser } from '@/composables/useCurrentUser';
 import type { GM } from '@/models/types';
+import type { StaffAppearance } from '@/constants/appearance';
 
 export function useCustomGMs() {
     const { currentUser } = useCurrentUser();
@@ -32,7 +33,7 @@ export function useCustomGMs() {
         }
     };
 
-    const createGM = async (data: { name: string; teams: string[] }) => {
+    const createGM = async (data: { name: string; teams: string[]; appearance?: StaffAppearance }) => {
         loading.value = true;
         error.value = null;
 
@@ -58,7 +59,7 @@ export function useCustomGMs() {
         }
     };
 
-    const updateGM = async (gmUUID: string, data: { name: string; teams: string[] }) => {
+    const updateGM = async (gmUUID: string, data: { name: string; teams: string[]; appearance?: StaffAppearance }) => {
         loading.value = true;
         error.value = null;
 

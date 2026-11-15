@@ -1,16 +1,16 @@
 // Who stands in the 3D scene, shared by the public page and the builder: the
 // starters in the order given, then the staff. Imported by this path, not
 // through index.ts, so pages that mock the 3D module still get it.
-import type { PersonAppearance } from '@/constants/appearance';
+import type { PersonAppearance, StaffAppearance } from '@/constants/appearance';
 import type { PersonInput } from '@/three/character/person';
-import { parseAppearance } from '@/utils/appearance';
-import { snapshotSize, type SizeFields } from '@/utils/playerSize';
+import { parseAppearance, parseStaffAppearance } from '@/utils/appearance';
+import { snapshotSize, staffSize, type SizeFields } from '@/utils/playerSize';
 import { isJerseyNumber } from '@/utils/rosterNumbers';
 
 export type ScenePerson = PersonInput;
 export type ScenePlayer = { fullName?: string; position?: string; isCustom?: boolean; appearance?: unknown } & SizeFields;
 
-type Staff = { name?: string } | null | undefined;
+type Staff = { name?: string; isCustom?: boolean; appearance?: unknown } | null | undefined;
 
 export const scenePeople = (
     starters: { slot: number; player: ScenePlayer; number?: unknown }[],
@@ -32,8 +32,20 @@ export const scenePeople = (
         };
     }),
     ...(['coach', 'gm'] as const).flatMap((role) => {
-        const name = staff[role]?.name?.trim();
-        return name ? [{ id: role, name, role, heightInches: null, weightPounds: null }] : [];
+        const person = staff[role];
+        const name = person?.name?.trim();
+        if (!name) return [];
+        // Only a custom coach or GM has a look; real staff stay figurines.
+        const look = person?.isCustom === true ? parseStaffAppearance(person.appearance) : null;
+        return [
+            {
+                id: role,
+                name,
+                role,
+                ...(look ? staffSize(look) : { heightInches: null, weightPounds: null }),
+                ...(look && { appearance: look }),
+            },
+        ];
     }),
 ];
 
@@ -57,6 +69,15 @@ export const previewPerson = (
         appearance: look,
     };
 };
+
+/** The staff creator's preview person, nameless for the same reason. */
+export const previewStaff = (role: 'coach' | 'gm', look: StaffAppearance): ScenePerson => ({
+    id: 'preview',
+    name: '',
+    role,
+    ...staffSize(look),
+    appearance: look,
+});
 
 export const sceneLabel = (title: string | null | undefined, people: ScenePerson[]): string => {
     const names = people.map((person) => person.name).join(', ');

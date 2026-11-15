@@ -1,6 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import type { PersonAppearance } from '@/constants/appearance';
-import { DEFAULT_APPEARANCE, parseAppearance } from '@/utils/appearance';
+import {
+    DEFAULT_APPEARANCE,
+    DEFAULT_OUTFIT,
+    DEFAULT_STAFF_APPEARANCE,
+    parseAppearance,
+    parseStaffAppearance,
+} from '@/utils/appearance';
 
 const FULL: PersonAppearance = {
     version: 1,
@@ -96,5 +102,55 @@ describe('parseAppearance', () => {
         });
         expect(parsed).toEqual({ ...FULL, accessories: [{ id: 'goggles', color: '#ffffff' }] });
         expect(parsed?.version).toBe(1);
+    });
+});
+
+describe('parseStaffAppearance', () => {
+    const STAFF = {
+        ...DEFAULT_STAFF_APPEARANCE,
+        accessories: [{ id: 'glasses', color: '#1c1c1c' }],
+        outfit: { style: 'tracksuit', primary: '#552583', secondary: '#fdb927' },
+        ageLook: 'veteran',
+    };
+    const height = (heightIn: unknown) => parseStaffAppearance({ ...STAFF, build: { ...STAFF.build, heightIn } });
+
+    it('is null for anything that is not an object', () => {
+        for (const value of [null, undefined, 'x', 3, []]) expect(parseStaffAppearance(value)).toBeNull();
+    });
+
+    it('keeps a valid look as it is', () => {
+        expect(parseStaffAppearance(STAFF)).toEqual(STAFF);
+    });
+
+    it('fills every missing staff field with a default', () => {
+        const look = parseStaffAppearance({ ...DEFAULT_APPEARANCE })!;
+        expect(look.build.heightIn).toBe(74);
+        expect(look.outfit).toEqual(DEFAULT_OUTFIT);
+        expect(look.ageLook).toBe('prime');
+    });
+
+    it('rounds and clamps the height', () => {
+        expect(height(50)!.build.heightIn).toBe(60);
+        expect(height(95)!.build.heightIn).toBe(90);
+        expect(height(73.6)!.build.heightIn).toBe(74);
+        expect(height('72')!.build.heightIn).toBe(74);
+    });
+
+    it('drops a jersey number and player-only gear', () => {
+        const look = parseStaffAppearance({
+            ...STAFF,
+            jerseyNumber: '8',
+            accessories: [
+                { id: 'headband', color: '#ffffff' },
+                { id: 'glasses', color: '#1c1c1c' },
+            ],
+        })!;
+        expect(look).not.toHaveProperty('jerseyNumber');
+        expect(look.accessories).toEqual([{ id: 'glasses', color: '#1c1c1c' }]);
+    });
+
+    it('turns an unknown outfit into a suit, keeping good colours', () => {
+        const look = parseStaffAppearance({ ...STAFF, outfit: { style: 'robe', primary: '#123456', secondary: 'red' } })!;
+        expect(look.outfit).toEqual({ style: 'suit', primary: '#123456', secondary: DEFAULT_OUTFIT.secondary });
     });
 });

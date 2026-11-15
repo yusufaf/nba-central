@@ -2,12 +2,13 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { Group, MeshStandardMaterial, SkinnedMesh, Vector3, type Mesh } from 'three';
 import type { Landmarks } from '@/three/character/kit';
 import { skeletonBody, surfacedBody } from './fixtures/skeleton';
-import type { PersonAppearance } from '@/constants/appearance';
+import type { PersonAppearance, StaffAppearance } from '@/constants/appearance';
+import type { KitColours } from '@/utils/jerseyColours';
 
 const mocks = vi.hoisted(() => ({
     landmarks: [] as Landmarks[],
     kitTexture: vi.fn(() => null),
-    kitOptions: [] as { vinyl: string | null; material: MeshStandardMaterial }[],
+    kitOptions: [] as { vinyl: string | null; material: MeshStandardMaterial; kind: string; colours: KitColours }[],
     failHair: false,
     surfaced: false,
     urls: [] as string[],
@@ -26,15 +27,20 @@ vi.mock('@/three/character/kit', async (original) => {
     return {
         ...actual,
         kitTexture: mocks.kitTexture,
-        applyKitMaterial: (material: MeshStandardMaterial, options: { landmarks: Landmarks; vinyl: string | null }) => {
+        applyKitMaterial: (
+            material: MeshStandardMaterial,
+            options: { landmarks: Landmarks; vinyl: string | null; kind: string; colours: KitColours },
+        ) => {
             mocks.landmarks.push(options.landmarks);
-            mocks.kitOptions.push({ vinyl: options.vinyl, material });
+            mocks.kitOptions.push({ vinyl: options.vinyl, material, kind: options.kind, colours: options.colours });
             return material;
         },
     };
 });
 
 import { buildPerson } from '@/three/character/person';
+import { DEFAULT_OUTFIT } from '@/utils/appearance';
+import { agedColour } from '@/utils/appearanceOptions';
 import { findLandmarks } from '@/three/character/kit';
 import { reshapeBody } from '@/three/character/reshape';
 
@@ -231,5 +237,75 @@ describe('buildPerson', () => {
                 warn.mockRestore();
             }
         });
+    });
+});
+
+describe('buildPerson for staff', () => {
+    const KIT = { colours: { primary: '#123456', secondary: '#ffffff', trim: '#ffffff' }, teamName: 'Owls' };
+    const STAFF_LOOK: StaffAppearance = {
+        version: 1,
+        frame: 'm',
+        skin: '#f1c7a5',
+        hair: { style: 'parted', color: '#3b2a1e' },
+        facialHair: { style: 'beard', color: '#3b2a1e' },
+        build: { girth: 0, shoulders: 0, wingspan: 0, heightIn: 74 },
+        accessories: [],
+        outfit: { style: 'tracksuit', primary: '#552583', secondary: '#fdb927' },
+        ageLook: 'young',
+        pose: 'relaxed',
+    };
+    const coach = { id: 'coach', name: 'Coach Vega', role: 'coach' as const, heightInches: 74, weightPounds: 195 };
+    const lastKit = () => mocks.kitOptions[mocks.kitOptions.length - 1];
+
+    beforeEach(() => {
+        mocks.kitOptions.length = 0;
+        mocks.failHair = false;
+    });
+
+    it("wears the look's outfit in its colours", async () => {
+        await buildPerson({ ...coach, appearance: STAFF_LOOK }, KIT);
+        expect(lastKit().kind).toBe('tracksuit');
+        expect(lastKit().colours.primary).toBe('#552583');
+        expect(lastKit().colours.secondary).toBe('#fdb927');
+        expect(lastKit().vinyl).toBeNull();
+    });
+
+    it('greys the hair for a veteran', async () => {
+        const { root } = await buildPerson({ ...coach, appearance: { ...STAFF_LOOK, ageLook: 'veteran' } }, KIT);
+        const hair = root.getObjectByName('hair') as SkinnedMesh;
+        expect('#' + (hair.material as MeshStandardMaterial).color.getHexString()).toBe(agedColour('#3b2a1e', 'veteran'));
+    });
+
+    it('makes a veteran wider than the same look when young', async () => {
+        const width = async (ageLook: StaffAppearance['ageLook']) => {
+            const { root } = await buildPerson({ ...coach, appearance: { ...STAFF_LOOK, ageLook } }, KIT);
+            const mesh = root.getObjectByProperty('isSkinnedMesh', true) as SkinnedMesh;
+            mesh.geometry.computeBoundingBox();
+            const box = mesh.geometry.boundingBox!;
+            return (box.max.x - box.min.x) / (box.max.y - box.min.y);
+        };
+        expect(await width('veteran')).toBeGreaterThan(await width('young'));
+    });
+
+    it('puts a figurine coach in the default suit', async () => {
+        await buildPerson({ ...coach, heightInches: null, weightPounds: null }, KIT);
+        expect(lastKit().kind).toBe('suit');
+        expect(lastKit().vinyl).toBe('#c8c3ba');
+        expect(lastKit().colours.primary).toBe(DEFAULT_OUTFIT.primary);
+    });
+
+    it("stands a custom coach at the look's height", async () => {
+        const tall = await buildPerson({ ...coach, heightInches: 80, appearance: STAFF_LOOK }, KIT);
+        const figurine = await buildPerson({ ...coach, heightInches: null, weightPounds: null }, KIT);
+        expect(tall.headHeight).toBeGreaterThan(figurine.headHeight);
+    });
+
+    it('builds a coach given a player look as a default suit', async () => {
+        const playerLook: PersonAppearance = { ...STAFF_LOOK, build: { girth: 0, shoulders: 0, wingspan: 0 } } as never;
+        delete (playerLook as Partial<StaffAppearance>).outfit;
+        delete (playerLook as Partial<StaffAppearance>).ageLook;
+        await expect(buildPerson({ ...coach, appearance: playerLook }, KIT)).resolves.toBeDefined();
+        expect(lastKit().kind).toBe('suit');
+        expect(lastKit().colours.primary).toBe(DEFAULT_OUTFIT.primary);
     });
 });

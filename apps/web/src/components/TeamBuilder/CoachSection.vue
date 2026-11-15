@@ -46,7 +46,10 @@ import {
     Edit2,
     Trash,
 } from 'lucide-vue-next';
-import CreateCustomCoachModal from './CreateCustomCoachModal.vue';
+import CustomStaffCreator from './creator/CustomStaffCreator.vue';
+import type { CustomCoachPayload } from './creator/types';
+import type { StaffAppearance } from '@/constants/appearance';
+import { track } from '@/lib/analytics';
 import ConfirmDialog from '@/components/ui/confirm-dialog/ConfirmDialog.vue';
 
 const props = defineProps<{
@@ -54,6 +57,7 @@ const props = defineProps<{
 }>();
 
 const teamCoach = defineModel<Coach | null>('teamCoach');
+const emit = defineEmits<{ customStaffSaved: [saved: { uuid: string; name: string; appearance: StaffAppearance }] }>();
 const showCoachDrawer = defineModel<boolean>('showCoachDrawer');
 
 const typedCoachesData = coachesData as Coach[];
@@ -64,7 +68,7 @@ const search = ref<string>('');
 const { customCoaches, createCoach, updateCoach, deleteCoach: deleteCustomCoach } = useCustomCoaches();
 const showCreateCoachModal = ref<boolean>(false);
 const editingCoach = ref<Coach | null>(null);
-const createCoachModalRef = ref<any>(null);
+const creatorSaving = ref(false);
 const showDeleteDialog = ref<boolean>(false);
 const coachToDelete = ref<Coach | null>(null);
 
@@ -249,38 +253,25 @@ const openEditModal = (coach: Coach) => {
     showCreateCoachModal.value = true;
 };
 
-const handleCreateCoach = async () => {
-    if (!createCoachModalRef.value) return;
-
-    const name = createCoachModalRef.value.getName();
-    const overallRating = createCoachModalRef.value.getOverallRating();
-    const specialty = createCoachModalRef.value.getSpecialty();
-
-    createCoachModalRef.value.setLoading(true);
-    const result = await createCoach({ name, overallRating, specialty });
-    createCoachModalRef.value.setLoading(false);
-
-    if (result) {
+const onCreatorSubmit = async (data: CustomCoachPayload) => {
+    const coachUUID = editingCoach.value?.coachUUID;
+    creatorSaving.value = true;
+    try {
+        const result = coachUUID ? await updateCoach(coachUUID, data) : await createCoach(data);
+        if (!result) return;
+        // Only a save that went through counts.
+        track('creator_saved', {
+            kind: 'coach',
+            mode: coachUUID ? 'edit' : 'create',
+            frame: data.appearance.frame,
+            outfit: data.appearance.outfit.style,
+            age: data.appearance.ageLook,
+        });
+        if (coachUUID) emit('customStaffSaved', { uuid: coachUUID, name: data.name, appearance: data.appearance });
         showCreateCoachModal.value = false;
-        createCoachModalRef.value.reset();
-    }
-};
-
-const handleUpdateCoach = async () => {
-    if (!createCoachModalRef.value || !editingCoach.value?.coachUUID) return;
-
-    const name = createCoachModalRef.value.getName();
-    const overallRating = createCoachModalRef.value.getOverallRating();
-    const specialty = createCoachModalRef.value.getSpecialty();
-
-    createCoachModalRef.value.setLoading(true);
-    const result = await updateCoach(editingCoach.value.coachUUID, { name, overallRating, specialty });
-    createCoachModalRef.value.setLoading(false);
-
-    if (result) {
-        showCreateCoachModal.value = false;
-        createCoachModalRef.value.reset();
         editingCoach.value = null;
+    } finally {
+        creatorSaving.value = false;
     }
 };
 
@@ -328,8 +319,9 @@ const getCleanName = (coachName: string) => coachName.replace(/\*$/, '').trim();
                             variant="outline"
                             class="rounded-full h-16 w-16"
                             @click="showCoachDrawer = true"
+                            aria-label="Add coach"
                         >
-                            <Plus class="h-8 w-8" />
+                            <Plus class="h-8 w-8" aria-hidden="true" />
                         </Button>
                         <template v-else>
                             <UserCircle2
@@ -545,24 +537,28 @@ const getCleanName = (coachName: string) => coachName.replace(/\*$/, '').trim();
                                     <!-- Edit/Delete buttons for custom coaches -->
                                     <div
                                         v-if="coach.isCustom"
-                                        class="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                                        class="flex items-center gap-1 opacity-100 [@media(hover:hover)]:opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity"
                                         @click.stop
                                     >
+                                        <!-- Hidden until hover only where hovering is possible: touch
+                                             and keyboard users always need to reach them. -->
                                         <Button
                                             size="icon"
                                             variant="ghost"
                                             class="h-8 w-8 hover:bg-primary/20"
+                                            :aria-label="`Edit ${coach.name}`"
                                             @click="openEditModal(coach)"
                                         >
-                                            <Edit2 class="h-4 w-4" />
+                                            <Edit2 class="h-4 w-4" aria-hidden="true" />
                                         </Button>
                                         <Button
                                             size="icon"
                                             variant="ghost"
                                             class="h-8 w-8 hover:bg-destructive/20 hover:text-destructive-strong"
+                                            :aria-label="`Delete ${coach.name}`"
                                             @click="openDeleteDialog(coach)"
                                         >
-                                            <Trash class="h-4 w-4" />
+                                            <Trash class="h-4 w-4" aria-hidden="true" />
                                         </Button>
                                     </div>
                                 </div>
@@ -642,13 +638,13 @@ const getCleanName = (coachName: string) => coachName.replace(/\*$/, '').trim();
             </SheetContent>
         </Sheet>
 
-        <!-- Create/Edit Coach Modal -->
-        <CreateCustomCoachModal
-            ref="createCoachModalRef"
+        <!-- Create/Edit Coach: the creator in staff mode -->
+        <CustomStaffCreator
             v-model:open="showCreateCoachModal"
-            :editing-coach="editingCoach"
-            @created="handleCreateCoach"
-            @updated="handleUpdateCoach"
+            kind="coach"
+            :editing="editingCoach"
+            :saving="creatorSaving"
+            @submit="(data) => onCreatorSubmit(data as CustomCoachPayload)"
         />
 
         <!-- Delete Confirmation Dialog -->

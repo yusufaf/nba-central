@@ -603,8 +603,30 @@ test.describe('3D team scene', () => {
         accessories: [] as { id: string; color: string }[],
         pose: 'relaxed',
     };
-    // The public team with these slots' players made custom, each in its own look.
-    const withCustomPlayers = (page: Page, looks: Record<number, typeof LOOK>) =>
+    // #294: a custom coach's or GM's look.
+    const STAFF_LOOK = {
+        version: 1,
+        frame: 'm',
+        skin: '#8d5a3b',
+        hair: { style: 'parted', color: '#3b2a1e' },
+        facialHair: { style: 'beard', color: '#3b2a1e' },
+        build: { girth: 0, shoulders: 0, wingspan: 0, heightIn: 76 },
+        accessories: [{ id: 'glasses', color: '#1c1c1c' }] as { id: string; color: string }[],
+        outfit: { style: 'tracksuit', primary: '#552583', secondary: '#fdb927' },
+        ageLook: 'veteran',
+        pose: 'armsCrossed',
+    };
+    type StaffLooks = { coach?: typeof STAFF_LOOK; gm?: typeof STAFF_LOOK };
+    const customStaff = (role: 'coach' | 'gm', look: typeof STAFF_LOOK) => ({
+        name: role === 'coach' ? 'Coach Vega' : 'Exec Ortiz',
+        isCustom: true,
+        uuid: `${role}-1`,
+        appearance: look,
+    });
+    // The public team with these slots' players made custom, each in its own
+    // look, and the coach and GM made custom when a staff look is given. Only
+    // the routed response changes; the fixture file never does.
+    const withCustomPlayers = (page: Page, looks: Record<number, typeof LOOK>, staff: StaffLooks = {}) =>
         page.route('**/api/teams/public/visual-team', (route) =>
             route.fulfill({
                 status: 200,
@@ -613,6 +635,8 @@ test.describe('3D team scene', () => {
                     ...publicTeamFixture,
                     data: {
                         ...publicTeamFixture.data,
+                        ...(staff.coach && { coach: customStaff('coach', staff.coach) }),
+                        ...(staff.gm && { gm: customStaff('gm', staff.gm) }),
                         roster: publicTeamFixture.data.roster.map((entry) =>
                             looks[entry.slot]
                                 ? {
@@ -758,12 +782,54 @@ test.describe('3D team scene', () => {
         expect(problems).toEqual([]);
     });
 
-    test('stays inside the draw budget with five geared custom players', async ({ page }, testInfo) => {
-        test.setTimeout(150000);
+    test("renders a custom coach and GM's look", async ({ page }) => {
+        test.setTimeout(90000);
+        const problems: string[] = [];
+        page.on('console', (message) => {
+            if (message.type() === 'error' || (message.type() === 'warning' && /hair|skipped the|accessor/i.test(message.text()))) {
+                problems.push(message.text());
+            }
+        });
+        page.on('pageerror', (error) => problems.push(error.message));
         await stubNetwork(page);
-        const measure = async (look: typeof LOOK) => {
+
+        await page.goto('/t/visual-team?view=3d');
+        await expect(page.getByTestId('name-chip')).toHaveCount(7, { timeout: 20000 });
+        await expect.poll(() => renders(page), { timeout: 15000 }).toBeGreaterThanOrEqual(1);
+        const baseline = (await memory(page))!;
+
+        await withCustomPlayers(page, {}, {
+            coach: STAFF_LOOK,
+            gm: {
+                ...STAFF_LOOK,
+                frame: 'f',
+                hair: { style: 'long', color: '#1b1512' },
+                facialHair: { style: 'none', color: '#1b1512' },
+                accessories: [],
+                outfit: { style: 'polo', primary: '#00471b', secondary: '#eee1c6' },
+                ageLook: 'young',
+                pose: 'handsOnHips',
+            },
+        });
+        await page.goto('/t/visual-team?view=3d');
+        await expect(page.getByText('Coach Vega').first()).toBeVisible({ timeout: 20000 });
+        await expect(page.getByTestId('name-chip')).toHaveCount(7, { timeout: 20000 });
+        await expect.poll(() => renders(page), { timeout: 15000 }).toBeGreaterThanOrEqual(1);
+        await expect.poll(async () => (await memory(page))?.geometries ?? 0, { timeout: 15000 }).toBeGreaterThan(baseline.geometries);
+        await page.locator('[role="img"][data-render-count]').screenshot({ path: test.info().outputPath('staff-looks.png') });
+        expect(problems).toEqual([]);
+    });
+
+    test('stays inside the draw budget with five geared custom players', async ({ page }, testInfo) => {
+        test.setTimeout(240000);
+        await stubNetwork(page);
+        const measure = async (look: typeof LOOK, staffLook?: typeof STAFF_LOOK) => {
             await page.unroute('**/api/teams/public/visual-team');
-            await withCustomPlayers(page, Object.fromEntries([1, 2, 3, 4, 5].map((slot) => [slot, look])));
+            await withCustomPlayers(
+                page,
+                Object.fromEntries([1, 2, 3, 4, 5].map((slot) => [slot, look])),
+                staffLook ? { coach: staffLook, gm: staffLook } : {},
+            );
             await page.goto('/t/visual-team?view=3d');
             await expect(page.getByTestId('name-chip')).toHaveCount(7, { timeout: 20000 });
             await expect.poll(() => renders(page), { timeout: 15000 }).toBeGreaterThanOrEqual(1);
@@ -790,11 +856,21 @@ test.describe('3D team scene', () => {
             facialHair: { style: 'none', color: '#3b2a1e' },
             accessories: FULL_GEAR,
         };
+        // The worst staff looks a creator can save (#294): the most meshes for
+        // calls (male, beard, glasses), the most triangles for the rest
+        // (female, buns, glasses). Both bare rows keep figurine staff.
+        const beardedStaff = { ...STAFF_LOOK, ageLook: 'prime', outfit: { ...STAFF_LOOK.outfit, style: 'suit' } };
+        const bunsStaff = {
+            ...STAFF_LOOK,
+            frame: 'f',
+            hair: { style: 'buns', color: '#3b2a1e' },
+            facialHair: { style: 'none', color: '#3b2a1e' },
+        };
         const results = {
             beardedBare: await measure({ ...bearded, accessories: [] }),
-            bearded: await measure(bearded),
+            bearded: await measure(bearded, beardedStaff),
             bunsBare: await measure({ ...buns, accessories: [] }),
-            buns: await measure(buns),
+            buns: await measure(buns, bunsStaff),
         };
         testInfo.annotations.push({ type: 'draw budget', description: JSON.stringify(results) });
         console.log('DRAW BUDGET', JSON.stringify(results));
@@ -1338,6 +1414,93 @@ test.describe('player creator', () => {
             await expect(page.getByRole('button', { name: 'Create player' })).toBeInViewport();
             await expect(page.getByRole('dialog').last()).toHaveScreenshot('creator-gear-390.png', { mask: [page.locator('canvas')] });
             await page.screenshot({ path: testInfo.outputPath('creator-gear-390.png') });
+        });
+    });
+});
+
+// #294: the creator in staff mode, for custom coaches and GMs. As above, the
+// canvas is masked and the checks are about layout and behaviour.
+test.describe('staff creator', () => {
+    const preview = (page: Page) => page.locator('[role="img"][data-render-count]');
+    const renders = (page: Page) => preview(page).evaluate((el) => Number(el.getAttribute('data-render-count')));
+    const openCreator = async (page: Page, kind: 'coach' | 'GM') => {
+        await page.getByRole('button', { name: kind === 'coach' ? 'Add coach' : 'Add GM', exact: true }).click();
+        await page.getByRole('button', { name: kind === 'coach' ? 'Create Custom Coach' : 'Create Custom GM' }).click();
+        await expect.poll(() => renders(page), { timeout: 30000 }).toBeGreaterThanOrEqual(1);
+    };
+    const openTab = (page: Page, name: string) => page.getByRole('tab', { name, exact: true }).click();
+    test.beforeEach(() => {
+        test.setTimeout(90000);
+    });
+    const choose = (page: Page, name: string) => page.getByRole('dialog').last().getByRole('button', { name, exact: true }).click();
+
+    test('dresses the preview from the Outfit and Body tabs', async ({ page }, testInfo) => {
+        test.setTimeout(90000);
+        const problems: string[] = [];
+        page.on('console', (message) => message.type() === 'error' && problems.push(message.text()));
+        page.on('pageerror', (error) => problems.push(error.message));
+        await stubNetwork(page);
+        await page.goto('/teambuilder');
+        await settle(page);
+        await openCreator(page, 'coach');
+        for (const outfit of ['Polo', 'Tracksuit', 'Suit']) {
+            await openTab(page, 'Outfit');
+            const before = await renders(page);
+            await choose(page, outfit);
+            await expect.poll(() => renders(page), { timeout: 15000 }).toBeGreaterThan(before);
+            await preview(page).screenshot({ path: testInfo.outputPath(`staff-${outfit.toLowerCase()}.png`) });
+        }
+        await openTab(page, 'Body');
+        await choose(page, 'Veteran');
+        await openTab(page, 'Outfit');
+        await choose(page, 'Glasses');
+        await expect(page.getByRole('radiogroup', { name: 'Glasses colour' })).toBeVisible();
+        await expect.poll(() => renders(page), { timeout: 15000 }).toBeGreaterThan(1);
+        await preview(page).screenshot({ path: testInfo.outputPath('staff-veteran-glasses.png') });
+        expect(problems).toEqual([]);
+    });
+
+    test.describe('at 390 px', () => {
+        test.use({ viewport: { width: 390, height: 844 } });
+
+        for (const scheme of ['dark', 'light'] as const) {
+            test(`fits the coach creator, ${scheme}`, async ({ page }, testInfo) => {
+                await page.emulateMedia({ colorScheme: scheme });
+                await stubNetwork(page);
+                await page.goto('/teambuilder');
+                await settle(page);
+                await openCreator(page, 'coach');
+
+                expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(390);
+                for (const name of ['Profile', 'Body', 'Face', 'Hair', 'Outfit', 'Pose']) {
+                    await expect(page.getByRole('tab', { name, exact: true })).toBeInViewport();
+                }
+                await expect(page.getByRole('button', { name: 'Create coach' })).toBeInViewport();
+                await expect(page.getByRole('dialog').last()).toHaveScreenshot(
+                    scheme === 'dark' ? 'staff-creator-390.png' : 'light-staff-creator-390.png',
+                    { mask: [page.locator('canvas')] },
+                );
+                await page.screenshot({ path: testInfo.outputPath(`staff-creator-390-${scheme}.png`) });
+
+                await openTab(page, 'Outfit');
+                await choose(page, 'Glasses');
+                await expect(page.getByRole('radiogroup', { name: 'Glasses colour' })).toBeVisible();
+                expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(390);
+                await page.screenshot({ path: testInfo.outputPath(`staff-outfit-390-${scheme}.png`) });
+            });
+        }
+
+        test("fits the GM creator's team picker", async ({ page }, testInfo) => {
+            await stubNetwork(page);
+            await page.goto('/teambuilder');
+            await settle(page);
+            await openCreator(page, 'GM');
+            await page.getByRole('combobox', { name: 'Add a team' }).click();
+            await page.getByRole('option', { name: /^BOS/ }).click();
+            await expect(page.getByRole('button', { name: 'Remove BOS' })).toBeInViewport();
+            expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(390);
+            await expect(page.getByRole('button', { name: 'Create GM' })).toBeInViewport();
+            await page.screenshot({ path: testInfo.outputPath('staff-gm-390.png') });
         });
     });
 });

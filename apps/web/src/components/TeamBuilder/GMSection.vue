@@ -44,7 +44,10 @@ import {
     Edit2,
     Trash,
 } from "lucide-vue-next";
-import CreateCustomGMModal from "./CreateCustomGMModal.vue";
+import CustomStaffCreator from "./creator/CustomStaffCreator.vue";
+import type { CustomGMPayload } from "./creator/types";
+import type { StaffAppearance } from "@/constants/appearance";
+import { track } from "@/lib/analytics";
 import ConfirmDialog from "@/components/ui/confirm-dialog/ConfirmDialog.vue";
 
 const props = defineProps<{
@@ -52,6 +55,7 @@ const props = defineProps<{
 }>();
 
 const teamGM = defineModel<any>("teamGM");
+const emit = defineEmits<{ customStaffSaved: [saved: { uuid: string; name: string; appearance: StaffAppearance }] }>();
 const showGMDrawer = defineModel<boolean>("showGMDrawer");
 
 const typedGMData = gmData as GM[];
@@ -62,7 +66,7 @@ const search = ref<string>("");
 const { customGMs, createGM, updateGM, deleteGM: deleteCustomGM } = useCustomGMs();
 const showCreateGMModal = ref<boolean>(false);
 const editingGM = ref<GM | null>(null);
-const createGMModalRef = ref<any>(null);
+const creatorSaving = ref(false);
 const showDeleteDialog = ref<boolean>(false);
 const gmToDelete = ref<GM | null>(null);
 
@@ -77,7 +81,7 @@ const GM_FILTERS = ["Western Conference", "Eastern Conference"];
 
 // GM.teams entries aren't full team names like Arena's - execs.json gives
 // "BOS (2003-21)" (Basketball-Reference abbreviation + year range) and
-// CreateCustomGMModal stores a bare abbreviation ("BOS"). Both need
+// the staff creator stores a bare abbreviation ("BOS"). Both need
 // resolving to a full name before they mean anything against
 // WESTERN_TEAMS/EASTERN_TEAMS.
 const ABBR_TO_FULL_NAME: Record<string, string> = Object.fromEntries(
@@ -177,36 +181,25 @@ const openEditModal = (gm: GM) => {
     showCreateGMModal.value = true;
 };
 
-const handleCreateGM = async () => {
-    if (!createGMModalRef.value) return;
-
-    const name = createGMModalRef.value.getName();
-    const teams = createGMModalRef.value.getTeams();
-
-    createGMModalRef.value.setLoading(true);
-    const result = await createGM({ name, teams });
-    createGMModalRef.value.setLoading(false);
-
-    if (result) {
+const onCreatorSubmit = async (data: CustomGMPayload) => {
+    const gmUUID = editingGM.value?.gmUUID;
+    creatorSaving.value = true;
+    try {
+        const result = gmUUID ? await updateGM(gmUUID, data) : await createGM(data);
+        if (!result) return;
+        // Only a save that went through counts.
+        track("creator_saved", {
+            kind: "gm",
+            mode: gmUUID ? "edit" : "create",
+            frame: data.appearance.frame,
+            outfit: data.appearance.outfit.style,
+            age: data.appearance.ageLook,
+        });
+        if (gmUUID) emit("customStaffSaved", { uuid: gmUUID, name: data.name, appearance: data.appearance });
         showCreateGMModal.value = false;
-        createGMModalRef.value.reset();
-    }
-};
-
-const handleUpdateGM = async () => {
-    if (!createGMModalRef.value || !editingGM.value?.gmUUID) return;
-
-    const name = createGMModalRef.value.getName();
-    const teams = createGMModalRef.value.getTeams();
-
-    createGMModalRef.value.setLoading(true);
-    const result = await updateGM(editingGM.value.gmUUID, { name, teams });
-    createGMModalRef.value.setLoading(false);
-
-    if (result) {
-        showCreateGMModal.value = false;
-        createGMModalRef.value.reset();
         editingGM.value = null;
+    } finally {
+        creatorSaving.value = false;
     }
 };
 
@@ -250,8 +243,9 @@ const handleDeleteGM = async () => {
                         variant="outline"
                         class="rounded-full h-16 w-16"
                         @click="showGMDrawer = true"
+                        aria-label="Add GM"
                     >
-                        <Plus class="h-8 w-8" />
+                        <Plus class="h-8 w-8" aria-hidden="true" />
                     </Button>
                     <template v-else>
                         <UserCircle2 class="h-16 w-16 text-muted-foreground" />
@@ -420,24 +414,28 @@ const handleDeleteGM = async () => {
                                 <!-- Edit/Delete buttons for custom GMs -->
                                 <div
                                     v-if="gm.isCustom"
-                                    class="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                                    class="flex items-center gap-1 opacity-100 [@media(hover:hover)]:opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity"
                                     @click.stop
                                 >
+                                    <!-- Hidden until hover only where hovering is possible: touch
+                                         and keyboard users always need to reach them. -->
                                     <Button
                                         size="icon"
                                         variant="ghost"
                                         class="h-8 w-8 hover:bg-primary/20"
+                                        :aria-label="`Edit ${gm.name}`"
                                         @click="openEditModal(gm)"
                                     >
-                                        <Edit2 class="h-4 w-4" />
+                                        <Edit2 class="h-4 w-4" aria-hidden="true" />
                                     </Button>
                                     <Button
                                         size="icon"
                                         variant="ghost"
                                         class="h-8 w-8 hover:bg-destructive/20 hover:text-destructive-strong"
+                                        :aria-label="`Delete ${gm.name}`"
                                         @click="openDeleteDialog(gm)"
                                     >
-                                        <Trash class="h-4 w-4" />
+                                        <Trash class="h-4 w-4" aria-hidden="true" />
                                     </Button>
                                 </div>
                             </div>
@@ -447,13 +445,13 @@ const handleDeleteGM = async () => {
             </SheetContent>
         </Sheet>
 
-        <!-- Create/Edit GM Modal -->
-        <CreateCustomGMModal
-            ref="createGMModalRef"
+        <!-- Create/Edit GM: the creator in staff mode -->
+        <CustomStaffCreator
             v-model:open="showCreateGMModal"
-            :editing-g-m="editingGM"
-            @created="handleCreateGM"
-            @updated="handleUpdateGM"
+            kind="gm"
+            :editing="editingGM"
+            :saving="creatorSaving"
+            @submit="(data) => onCreatorSubmit(data as CustomGMPayload)"
         />
 
         <!-- Delete Confirmation Dialog -->

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { ACCESSORIES, APPEARANCE_FRAMES, FACIAL_HAIR_STYLES, HAIR_STYLES, type PersonAppearance } from '@/constants/appearance';
-import { DEFAULT_APPEARANCE } from '@/utils/appearance';
+import { DEFAULT_APPEARANCE, DEFAULT_STAFF_APPEARANCE } from '@/utils/appearance';
 import {
     ACCESSORY_DEFAULT_COLOURS,
     ACCESSORY_LABELS,
@@ -9,7 +9,11 @@ import {
     GEAR_SWATCHES,
     HAIR_FITS,
     HAIR_SWAP,
+    agedBuild,
+    agedColour,
     appearanceLabel,
+    isStaffLook,
+    staffAppearanceLabel,
     facialHairFits,
     fits,
     forFrame,
@@ -162,5 +166,42 @@ describe('accessories', () => {
         );
         const glasses = worn(['armSleeve', '#1c1c1c'], ['glasses', '#1c1c1c']);
         expect(shownAccessories(glasses)).toEqual(glasses);
+    });
+});
+
+describe('age looks', () => {
+    it('leaves the colour alone when young', () => {
+        expect(agedColour('#3B2A1E', 'young')).toBe('#3B2A1E');
+    });
+
+    it('greys toward silver, more at veteran than prime', () => {
+        expect(agedColour('#000000', 'veteran')).toBe('#898989');
+        const prime = parseInt(agedColour('#000000', 'prime').slice(1, 3), 16);
+        expect(prime).toBeGreaterThan(0);
+        expect(prime).toBeLessThan(0x89);
+        expect(agedColour('#3b2a1e', 'prime')).toMatch(/^#[0-9a-f]{6}$/);
+    });
+
+    it('adds girth only at veteran', () => {
+        const staff = structuredClone(DEFAULT_STAFF_APPEARANCE);
+        expect(agedBuild({ ...staff, ageLook: 'young' }).girth).toBe(0);
+        expect(agedBuild({ ...staff, ageLook: 'prime' }).girth).toBe(0);
+        expect(agedBuild({ ...staff, ageLook: 'veteran' }).girth).toBeCloseTo(0.4);
+    });
+
+    it('tells a staff look from a player look', () => {
+        expect(isStaffLook(DEFAULT_STAFF_APPEARANCE)).toBe(true);
+        expect(isStaffLook(DEFAULT_APPEARANCE)).toBe(false);
+        expect(isStaffLook(null)).toBe(false);
+    });
+
+    it('names the age and outfit in the label', () => {
+        const label = staffAppearanceLabel('Coach Vega', {
+            ...structuredClone(DEFAULT_STAFF_APPEARANCE),
+            ageLook: 'veteran',
+            outfit: { style: 'tracksuit', primary: '#000000', secondary: '#ffffff' },
+        });
+        expect(label).toMatch(/^3D preview of Coach Vega: /);
+        expect(label).toMatch(/, veteran tracksuit$/);
     });
 });

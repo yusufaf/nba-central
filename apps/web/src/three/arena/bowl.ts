@@ -37,7 +37,10 @@ export const bowlLayout = (capacity: number | null): Deck[] => {
     ];
 };
 
-const SEGMENTS = 96;
+// 72, not 96: two custom staff in their worst looks cost ~1.2k triangles over
+// the scene budget, and this saves ~3.5k (#294). A multiple of 4 keeps the
+// superellipse's axis points exact.
+const SEGMENTS = 72;
 // The bowl's inner edge sits this far outside the court's apron.
 const BOWL_INSET_M = 2.5;
 

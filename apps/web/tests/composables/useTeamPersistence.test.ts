@@ -6,8 +6,9 @@ import {
     remixStaff,
     remixTitle,
     staffUUID,
+    withStaffLook,
 } from "@/composables/useTeamPersistence";
-import { DEFAULT_APPEARANCE } from "@/utils/appearance";
+import { DEFAULT_APPEARANCE, DEFAULT_STAFF_APPEARANCE } from "@/utils/appearance";
 import type { EntityRef, SavedTeam, TeamRosterEntry } from "@/models/api";
 import historicalLogosData from "@/assets/data/historicalLogos.json";
 import type { Arena, Coach, GM, HistoricalLogo, Player } from "@/models/types";
@@ -659,5 +660,27 @@ describe("remixStaff", () => {
     it("is null for no coach", () => {
         expect(remixStaff(null)).toBeNull();
         expect(remixStaff(undefined)).toBeNull();
+    });
+});
+
+describe("withStaffLook", () => {
+    const saved = { uuid: "c1", name: "Coach Vega Sr.", appearance: { ...DEFAULT_STAFF_APPEARANCE, ageLook: "veteran" } };
+
+    it("dresses the edited coach, matched by uuid, in the saved name and look", () => {
+        const next = withStaffLook({ name: "Coach Vega", isCustom: true, uuid: "c1" }, saved);
+        expect(next).toEqual({ name: "Coach Vega Sr.", isCustom: true, uuid: "c1", appearance: saved.appearance });
+    });
+
+    it("matches a builder coach by coachUUID too", () => {
+        const next = withStaffLook({ name: "Coach Vega", isCustom: true, coachUUID: "c1" }, saved);
+        expect(next).toMatchObject({ name: "Coach Vega Sr.", appearance: { ageLook: "veteran" } });
+    });
+
+    it("leaves any other coach untouched", () => {
+        const other = { name: "Coach Lin", isCustom: true, uuid: "c2" };
+        expect(withStaffLook(other, saved)).toBe(other);
+        const real = { name: "Phil Jackson", isCustom: false, uuid: "c1" };
+        expect(withStaffLook(real, saved)).toBe(real);
+        expect(withStaffLook(null, saved)).toBeNull();
     });
 });

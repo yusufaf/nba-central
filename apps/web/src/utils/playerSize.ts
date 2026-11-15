@@ -17,3 +17,12 @@ export const snapshotSize = (player: SizeFields): { heightInches: number | null;
         weightPounds: player.weight_pounds ?? player.weightPounds ?? null,
     };
 };
+
+/**
+ * A custom coach's or GM's size: their height, at the weight the body model is
+ * built for (BMI 25), so only the look's girth slider makes them wider.
+ */
+export const staffSize = (look: { build: { heightIn: number } }): { heightInches: number; weightPounds: number } => {
+    const h = look.build.heightIn;
+    return { heightInches: h, weightPounds: Math.round((25 * h * h) / 703) };
+};

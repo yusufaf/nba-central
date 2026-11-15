@@ -8,7 +8,7 @@ vi.mock("vue-sonner", () => ({ toast }));
 
 const api = vi.hoisted(() => ({
     coach: { list: vi.fn(), delete: vi.fn() },
-    gm: { list: vi.fn(), delete: vi.fn() },
+    gm: { list: vi.fn(), delete: vi.fn(), create: vi.fn(), update: vi.fn() },
     player: { list: vi.fn() },
 }));
 vi.mock("@/network/api", () => ({
@@ -37,7 +37,23 @@ beforeEach(() => {
     });
     api.coach.delete.mockResolvedValue({ success: true });
     api.gm.delete.mockResolvedValue({ success: true });
+    api.gm.update.mockResolvedValue({ success: true, data: {} });
 });
+
+vi.mock("@/components/scene3d", async () => {
+    const { defineComponent, h } = await import("vue");
+    return {
+        PersonPreview3DAsync: defineComponent({ name: "PreviewStub", setup: () => () => h("div", { "data-testid": "preview-stub" }) }),
+        Scene3DUnavailable: defineComponent({ name: "UnavailableStub", setup: () => () => h("p") }),
+    };
+});
+vi.mock("@/utils/webgl", () => ({ isWebGLAvailable: () => true }));
+vi.mock("@/lib/analytics", () => ({ track: vi.fn() }));
+globalThis.ResizeObserver ??= class {
+    observe() {}
+    unobserve() {}
+    disconnect() {}
+} as unknown as typeof ResizeObserver;
 
 // The row's trash button, then the confirm dialog's Delete.
 const deleteFromList = async (itemSelector: string, name: string) => {
@@ -197,5 +213,49 @@ describe("deleting a custom GM", () => {
 
         expect(api.gm.delete).toHaveBeenCalledWith("g1");
         expect(update).toHaveBeenCalledWith(null);
+    });
+});
+
+describe("the GM creator", () => {
+    afterEach(() => {
+        document.body.innerHTML = "";
+    });
+
+    const mountSection = () =>
+        mount(GMSection, {
+            props: {
+                selectedDrawerSide: "right",
+                teamGM: null,
+                "onUpdate:teamGM": () => {},
+                showGMDrawer: true,
+                "onUpdate:showGMDrawer": () => {},
+            },
+            attachTo: document.body,
+        });
+
+    it("opens in staff mode from Create Custom GM", async () => {
+        mountSection();
+        await flushPromises();
+        findButton("Create Custom GM").click();
+        await flushPromises();
+        const tabs = [...document.querySelectorAll('[role="tab"]')].map((t) => t.textContent?.trim());
+        expect(tabs).toContain("Outfit");
+        expect(document.body.textContent).toContain("Create GM");
+    });
+
+    it("saves an edit with its look and tells the builder", async () => {
+        const wrapper = mountSection();
+        await flushPromises();
+        (document.querySelector('[aria-label="Edit Exec Ortiz"]') as HTMLButtonElement).click();
+        await flushPromises();
+        (document.querySelector('button[type="submit"]') as HTMLButtonElement).click();
+        await flushPromises();
+
+        expect(api.gm.update).toHaveBeenCalledWith(
+            "g1",
+            expect.objectContaining({ name: "Exec Ortiz", teams: ["SEA"], appearance: expect.any(Object) }),
+        );
+        const [saved] = wrapper.emitted("customStaffSaved")!.at(-1) as [{ uuid: string; name: string }];
+        expect(saved).toMatchObject({ uuid: "g1", name: "Exec Ortiz" });
     });
 });
