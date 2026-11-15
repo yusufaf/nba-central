@@ -12,7 +12,8 @@ import {
 	CreateCustomCoachPayload,
 	CreateCustomCoachResponse,
 } from "models/api/custom-entities-api";
-import { validateCoachData } from "utilities/custom-entities-validation";
+import { toStaffAppearance, validateCoachData } from "utilities/custom-entities-validation";
+import { isRecord } from "utilities/type-guards";
 
 const { mainTable = "" } = process.env;
 
@@ -55,6 +56,7 @@ export const handler: Handler = async (
 			name: payload.name.trim(),
 			overallRating: payload.overallRating,
 			specialty: payload.specialty,
+			...(isRecord(payload.appearance) && { appearance: toStaffAppearance(payload.appearance) }),
 			createdBy: username,
 		};
 
@@ -73,6 +75,7 @@ export const handler: Handler = async (
 				overallRating: item.overallRating,
 				specialty: item.specialty,
 				created: item.created,
+				...(item.appearance && { appearance: item.appearance }),
 			},
 		};
 		return {

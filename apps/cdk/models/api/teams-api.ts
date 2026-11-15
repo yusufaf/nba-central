@@ -1,5 +1,5 @@
 import { ApiResponse } from "./custom-entities-api";
-import type { CourtDesign, PersonAppearance } from "../custom-entities";
+import type { CourtDesign, PersonAppearance, StaffAppearance } from "../custom-entities";
 
 // A player record as embedded in a saved team - a snapshot so a team
 // renders exactly as it was saved, independent of later roster/rating
@@ -48,6 +48,13 @@ export interface EntityRef {
 	name: string;
 	isCustom: boolean;
 	uuid?: string;
+}
+
+// What getTeam and getPublicTeam return for a coach or GM: the stored ref,
+// with a custom one's live name and look (resources/dynamo/staff.ts). Never
+// saved back onto the team.
+export interface ResolvedEntity extends EntityRef {
+	appearance?: StaffAppearance;
 }
 
 // What a team stores for its arena. Built-in arenas keep their full details
@@ -124,8 +131,8 @@ export interface SavedTeam {
 	jerseyUrl: string;
 	playerCount: number;
 	roster: TeamRosterEntry[];
-	coach: EntityRef | null;
-	gm: EntityRef | null;
+	coach: ResolvedEntity | null;
+	gm: ResolvedEntity | null;
 	arena: ResolvedArena | null;
 	favorited: boolean;
 	label: string;

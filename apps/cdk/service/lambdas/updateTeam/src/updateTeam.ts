@@ -12,6 +12,7 @@ import { isRecord } from "utilities/type-guards";
 import { removeKeys } from "resources/dynamo/utilities";
 import { teamGsiKey, PRIVATE_SK2 } from "resources/dynamo/teams";
 import { toStoredArenaRef } from "resources/dynamo/arenas";
+import { toStoredEntityRef } from "resources/dynamo/staff";
 
 const { mainTable = "" } = process.env;
 
@@ -52,7 +53,11 @@ export const handler: Handler = async (
 			};
 		}
 
-		const arena = await toStoredArenaRef(docClient, mainTable, userUUID, payload.arena);
+		const [arena, coach, gm] = await Promise.all([
+			toStoredArenaRef(docClient, mainTable, userUUID, payload.arena),
+			toStoredEntityRef(docClient, mainTable, userUUID, "coach", payload.coach),
+			toStoredEntityRef(docClient, mainTable, userUUID, "gm", payload.gm),
+		]);
 		const timestamp = new Date().getTime();
 
 		// cardStyle and uniform are optional: a client that leaves them out
@@ -96,8 +101,8 @@ export const handler: Handler = async (
 				":jerseyUrl": payload.jerseyUrl || "",
 				":playerCount": payload.roster.length,
 				":roster": toRoster(payload.roster),
-				":coach": payload.coach ?? null,
-				":gm": payload.gm ?? null,
+				":coach": coach.stored,
+				":gm": gm.stored,
 				":arena": arena.stored,
 				":pk2": teamGsiKey(payload.teamUUID),
 				":sk2Default": PRIVATE_SK2,
@@ -110,6 +115,8 @@ export const handler: Handler = async (
 		const team = dbResponse.Attributes as SavedTeam & { PK?: string; SK?: string };
 		removeKeys(team);
 		team.arena = arena.resolved;
+		team.coach = coach.resolved;
+		team.gm = gm.resolved;
 
 		const response: UpdateTeamResponse = {
 			success: true,

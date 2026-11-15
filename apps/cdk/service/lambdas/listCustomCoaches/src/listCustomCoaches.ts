@@ -47,6 +47,7 @@ export const handler: Handler = async (
 			specialty: item.specialty,
 			created: item.created,
 			isCustom: true as const,
+			...(item.appearance && { appearance: item.appearance }),
 		}));
 
 		const response: ListCustomCoachesResponse = {

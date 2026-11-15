@@ -13,6 +13,7 @@ import { CreateTeamResponse, SaveTeamPayload, SavedTeam } from "models/api/teams
 import { toRoster, toUniform, validateTeamData } from "utilities/team-validation";
 import { isRecord } from "utilities/type-guards";
 import { toStoredArenaRef } from "resources/dynamo/arenas";
+import { toStoredEntityRef } from "resources/dynamo/staff";
 
 const { mainTable = "" } = process.env;
 
@@ -42,7 +43,11 @@ export const handler: Handler = async (
 			};
 		}
 
-		const arena = await toStoredArenaRef(docClient, mainTable, userUUID, payload.arena);
+		const [arena, coach, gm] = await Promise.all([
+			toStoredArenaRef(docClient, mainTable, userUUID, payload.arena),
+			toStoredEntityRef(docClient, mainTable, userUUID, "coach", payload.coach),
+			toStoredEntityRef(docClient, mainTable, userUUID, "gm", payload.gm),
+		]);
 
 		const teamUUID = randomUUID();
 		const timestamp = new Date().getTime();
@@ -62,8 +67,8 @@ export const handler: Handler = async (
 			jerseyUrl: payload.jerseyUrl || "",
 			playerCount: payload.roster.length,
 			roster: toRoster(payload.roster),
-			coach: payload.coach ?? null,
-			gm: payload.gm ?? null,
+			coach: coach.stored,
+			gm: gm.stored,
 			arena: arena.stored,
 			favorited: false,
 			label: "",
@@ -84,7 +89,7 @@ export const handler: Handler = async (
 
 		// Copy before stripping keys - initialTeam is the same object
 		// referenced by putCommand.input.Item, and removeKeys mutates in place.
-		const responseTeam = { ...initialTeam, arena: arena.resolved };
+		const responseTeam = { ...initialTeam, arena: arena.resolved, coach: coach.resolved, gm: gm.resolved };
 		removeKeys(responseTeam);
 
 		const response: CreateTeamResponse = {

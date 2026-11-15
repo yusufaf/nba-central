@@ -46,6 +46,7 @@ export const handler: Handler = async (
 			teams: item.teams,
 			created: item.created,
 			isCustom: true as const,
+			...(item.appearance && { appearance: item.appearance }),
 		}));
 
 		const response: ListCustomGMsResponse = {
