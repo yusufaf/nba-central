@@ -581,9 +581,64 @@ test.describe('3D team scene', () => {
         // Null until the lazy 3D chunk has loaded and set the probe.
         page.evaluate(
             () =>
-                (window as unknown as { __scene3dInfo?: () => { geometries: number; textures: number; canvases: number } })
-                    .__scene3dInfo?.() ?? null,
+                (
+                    window as unknown as {
+                        __scene3dInfo?: () => {
+                            geometries: number;
+                            textures: number;
+                            canvases: number;
+                            render: { calls: number; triangles: number };
+                        };
+                    }
+                ).__scene3dInfo?.() ?? null,
         );
+    const drawn = (page: Page) => memory(page).then((m) => m?.render ?? null);
+    const LOOK = {
+        version: 1,
+        frame: 'm',
+        skin: '#8d5a3b',
+        hair: { style: 'parted', color: '#3b2a1e' },
+        facialHair: { style: 'beard', color: '#3b2a1e' },
+        build: { girth: 0, shoulders: 0, wingspan: 0 },
+        accessories: [] as { id: string; color: string }[],
+        pose: 'relaxed',
+    };
+    // The public team with these slots' players made custom, each in its own look.
+    const withCustomPlayers = (page: Page, looks: Record<number, typeof LOOK>) =>
+        page.route('**/api/teams/public/visual-team', (route) =>
+            route.fulfill({
+                status: 200,
+                contentType: 'application/json',
+                body: JSON.stringify({
+                    ...publicTeamFixture,
+                    data: {
+                        ...publicTeamFixture.data,
+                        roster: publicTeamFixture.data.roster.map((entry) =>
+                            looks[entry.slot]
+                                ? {
+                                      ...entry,
+                                      player: {
+                                          fullName: `Custom ${entry.slot}`,
+                                          isCustom: true,
+                                          playerUUID: `p${entry.slot}`,
+                                          position: 'PG',
+                                          heightFeet: 6,
+                                          heightInches: 3,
+                                          weightPounds: 195,
+                                          appearance: looks[entry.slot],
+                                      },
+                                  }
+                                : entry,
+                        ),
+                    },
+                }),
+            }),
+        );
+    const FULL_GEAR = [
+        { id: 'headband', color: '#c8102e' },
+        { id: 'armSleeve', color: '#1c1c1c' },
+        { id: 'goggles', color: '#1c1c1c' },
+    ];
 
     test('renders a frame without errors', async ({ page }) => {
         const errors: string[] = [];
@@ -663,6 +718,88 @@ test.describe('3D team scene', () => {
         await expect.poll(async () => (await memory(page))?.textures ?? 0, { timeout: 15000 }).toBeGreaterThan(baseline.textures);
         await page.locator('[role="img"][data-render-count]').screenshot({ path: test.info().outputPath('custom-look.png') });
         expect(problems).toEqual([]);
+    });
+
+    // #293: gear is two meshes per player, one on the head and one on the forearm.
+    test("renders a custom player's accessories", async ({ page }) => {
+        test.setTimeout(90000);
+        const problems: string[] = [];
+        page.on('console', (message) => {
+            if (message.type() === 'error' || (message.type() === 'warning' && /skipped the|accessor/i.test(message.text()))) {
+                problems.push(message.text());
+            }
+        });
+        page.on('pageerror', (error) => problems.push(error.message));
+        await stubNetwork(page);
+
+        await withCustomPlayers(page, { 1: LOOK });
+        await page.goto('/t/visual-team?view=3d');
+        await expect(page.getByTestId('name-chip')).toHaveCount(7, { timeout: 20000 });
+        await expect.poll(() => renders(page), { timeout: 15000 }).toBeGreaterThanOrEqual(1);
+        await expect.poll(async () => (await memory(page))?.geometries ?? 0, { timeout: 15000 }).toBeGreaterThan(0);
+        const bare = (await memory(page))!.geometries;
+
+        await page.unroute('**/api/teams/public/visual-team');
+        await withCustomPlayers(page, {
+            1: {
+                ...LOOK,
+                accessories: [
+                    { id: 'headband', color: '#c8102e' },
+                    { id: 'armSleeve', color: '#1c1c1c' },
+                    { id: 'glasses', color: '#1c1c1c' },
+                ],
+            },
+        });
+        await page.goto('/t/visual-team?view=3d');
+        await expect(page.getByTestId('name-chip')).toHaveCount(7, { timeout: 20000 });
+        await expect.poll(() => renders(page), { timeout: 15000 }).toBeGreaterThanOrEqual(1);
+        await expect.poll(async () => (await memory(page))?.geometries ?? 0, { timeout: 15000 }).toBe(bare + 2);
+        await page.locator('[role="img"][data-render-count]').screenshot({ path: test.info().outputPath('accessories.png') });
+        expect(problems).toEqual([]);
+    });
+
+    test('stays inside the draw budget with five geared custom players', async ({ page }, testInfo) => {
+        test.setTimeout(150000);
+        await stubNetwork(page);
+        const measure = async (look: typeof LOOK) => {
+            await page.unroute('**/api/teams/public/visual-team');
+            await withCustomPlayers(page, Object.fromEntries([1, 2, 3, 4, 5].map((slot) => [slot, look])));
+            await page.goto('/t/visual-team?view=3d');
+            await expect(page.getByTestId('name-chip')).toHaveCount(7, { timeout: 20000 });
+            await expect.poll(() => renders(page), { timeout: 15000 }).toBeGreaterThanOrEqual(1);
+            // Every person has landed once the count stops climbing.
+            let last = -1;
+            await expect
+                .poll(
+                    async () => {
+                        const now = (await drawn(page))?.calls ?? 0;
+                        const settled = now === last && now > 0;
+                        last = now;
+                        return settled;
+                    },
+                    { timeout: 30000, intervals: [1500] },
+                )
+                .toBe(true);
+            return (await drawn(page))!;
+        };
+        const bearded = { ...LOOK, accessories: FULL_GEAR };
+        const buns = {
+            ...LOOK,
+            frame: 'f',
+            hair: { style: 'buns', color: '#3b2a1e' },
+            facialHair: { style: 'none', color: '#3b2a1e' },
+            accessories: FULL_GEAR,
+        };
+        const results = {
+            beardedBare: await measure({ ...bearded, accessories: [] }),
+            bearded: await measure(bearded),
+            bunsBare: await measure({ ...buns, accessories: [] }),
+            buns: await measure(buns),
+        };
+        testInfo.annotations.push({ type: 'draw budget', description: JSON.stringify(results) });
+        console.log('DRAW BUDGET', JSON.stringify(results));
+        expect(results.bearded.calls).toBeLessThanOrEqual(60);
+        expect(results.buns.triangles).toBeLessThanOrEqual(150000);
     });
 
     // #289: the share card's 3D team photo is drawn into an sRGB render target.
@@ -1063,6 +1200,80 @@ test.describe('player creator', () => {
         expect(body!.appearance).toMatchObject({ frame: 'f', hair: { style: 'long', color: '#aa5500' }, pose: 'celebrate' });
     });
 
+    test('wears the gear it shows', async ({ page }, testInfo) => {
+        let body: { appearance?: Record<string, unknown> } | null = null;
+        await page.route('**/api/custom-entities/player/create', async (route) => {
+            body = route.request().postDataJSON();
+            await route.fulfill({
+                status: 200,
+                contentType: 'application/json',
+                body: JSON.stringify({ success: true, data: { playerUUID: 'p1', ...body } }),
+            });
+        });
+        await page.goto('/teambuilder');
+        await settle(page);
+        await openCreator(page);
+        await page.locator('#creator-name').fill('Nova Reyes');
+        await openTab(page, 'Gear');
+        for (const name of ['Headband', 'Arm sleeve', 'Goggles', 'Glasses']) {
+            const before = await renders(page);
+            await choose(page, name);
+            await expect.poll(() => renders(page)).toBeGreaterThan(before);
+        }
+        await expect(page.getByRole('button', { name: 'Goggles', exact: true })).toHaveAttribute('aria-pressed', 'false');
+        await page.getByRole('radiogroup', { name: 'Headband colour' }).getByRole('radio', { name: 'Red' }).click();
+        await page.getByRole('dialog').last().screenshot({ path: testInfo.outputPath('creator-gear-desktop.png') });
+        await page.getByRole('button', { name: 'Create player' }).click();
+
+        await expect.poll(() => body).not.toBeNull();
+        expect(body!.appearance!.accessories).toEqual([
+            { id: 'headband', color: '#c8102e' },
+            { id: 'armSleeve', color: '#1c1c1c' },
+            { id: 'glasses', color: '#1c1c1c' },
+        ]);
+    });
+
+    test('wears gear from the keyboard', async ({ page }) => {
+        await page.goto('/teambuilder');
+        await settle(page);
+        await openCreator(page);
+        await page.getByRole('tab', { name: 'Profile', exact: true }).focus();
+        for (let i = 0; i < 4; i++) await page.keyboard.press('ArrowRight');
+        await expect(page.getByRole('tab', { name: 'Gear', exact: true })).toHaveAttribute('aria-selected', 'true');
+
+        const inAccessories = () =>
+            page.evaluate(() => document.activeElement?.closest('[aria-labelledby="creator-accessories-label"]') != null);
+        let presses = 0;
+        while (!(await inAccessories())) {
+            expect(++presses, 'the accessories are reachable by Tab').toBeLessThanOrEqual(10);
+            await page.keyboard.press('Tab');
+        }
+        const headband = page.getByRole('button', { name: 'Headband', exact: true });
+        presses = 0;
+        while (!(await headband.evaluate((el) => el === document.activeElement))) {
+            expect(++presses, 'arrows reach Headband').toBeLessThanOrEqual(4);
+            await page.keyboard.press('ArrowRight');
+        }
+        let before = await renders(page);
+        await page.keyboard.press('Space');
+        await expect(headband).toHaveAttribute('aria-pressed', 'true');
+        const colours = page.getByRole('radiogroup', { name: 'Headband colour' });
+        await expect(colours).toBeVisible();
+        await expect.poll(() => renders(page)).toBeGreaterThan(before);
+
+        presses = 0;
+        while (!(await page.evaluate(() => document.activeElement?.getAttribute('role') === 'radio'))) {
+            expect(++presses, 'the colour swatches are reachable by Tab').toBeLessThanOrEqual(10);
+            await page.keyboard.press('Tab');
+        }
+        const checked = () => colours.locator('[aria-checked="true"]').getAttribute('aria-label');
+        const was = await checked();
+        before = await renders(page);
+        await page.keyboard.press('ArrowRight');
+        await expect.poll(checked).not.toBe(was);
+        await expect.poll(() => renders(page)).toBeGreaterThan(before);
+    });
+
     test('desktop layout puts the preview beside the controls', async ({ page }, testInfo) => {
         test.skip(testInfo.project.name !== 'desktop', 'the side-by-side layout needs the desktop width');
         for (const scheme of ['dark', 'light'] as const) {
@@ -1115,5 +1326,18 @@ test.describe('player creator', () => {
                 }
             });
         }
+
+        test('fits the Gear tab, dark', async ({ page }, testInfo) => {
+            await page.goto('/teambuilder');
+            await settle(page);
+            await openCreator(page);
+            await openTab(page, 'Gear');
+            for (const name of ['Headband', 'Arm sleeve', 'Glasses']) await choose(page, name);
+            await expect(page.getByRole('radiogroup', { name: 'Glasses colour' })).toBeVisible();
+            expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(390);
+            await expect(page.getByRole('button', { name: 'Create player' })).toBeInViewport();
+            await expect(page.getByRole('dialog').last()).toHaveScreenshot('creator-gear-390.png', { mask: [page.locator('canvas')] });
+            await page.screenshot({ path: testInfo.outputPath('creator-gear-390.png') });
+        });
     });
 });

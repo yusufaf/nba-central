@@ -204,6 +204,7 @@ const onCreatorSubmit = async (data: CustomPlayerPayload) => {
       frame: data.appearance.frame,
       hair: data.appearance.hair.style,
       pose: data.appearance.pose,
+      accessories: data.appearance.accessories.length,
     });
     if (playerUUID) emit('customPlayerSaved', { playerUUID, appearance: data.appearance });
     showCreatePlayerModal.value = false;

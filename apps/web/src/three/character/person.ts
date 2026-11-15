@@ -1,9 +1,11 @@
 // One person in the team scene: the CC0 body, cloned, painted with the
 // team's uniform (or a suit for staff) as a neutral figurine, sized from
-// their height and weight, arms relaxed, facing the camera.
+// their height and weight, arms relaxed, facing the camera. A custom
+// person's gear is fitted to the reshaped body and rides its bone.
 import { Group, Vector3, type MeshStandardMaterial, type Object3D, type SkinnedMesh } from 'three';
 import type { PersonAppearance } from '@/constants/appearance';
 import { facialHairFits, fits } from '@/utils/appearanceOptions';
+import { attachAccessories } from './accessories';
 import { attachHair, BODY_ASSETS, FACIAL_HAIR_ASSETS, HAIR_ASSETS } from './appearance';
 import { bodySize, shapeFor, type Role } from './body';
 import type { KitColours } from '@/utils/jerseyColours';
@@ -86,6 +88,8 @@ export const buildPerson = async (
 
     addRegions(body);
     const landmarks = findLandmarks(body);
+    const facing = new Vector3(0, 0, landmarks.front).transformDirection(body.bindMatrix);
+    if (look && look.accessories.length) attachAccessories(character, body, look.accessories, facing);
     const kind = input.role === 'player' ? 'player' : 'suit';
     const texture = kitTexture({
         kind,
@@ -106,7 +110,6 @@ export const buildPerson = async (
     const root = new Group();
     root.add(character);
     character.updateMatrixWorld(true);
-    const facing = new Vector3(0, 0, landmarks.front).transformDirection(body.bindMatrix);
     character.rotation.y = -Math.atan2(facing.x, facing.z);
     character.updateMatrixWorld(true);
     POSE_BUILDERS[look?.pose ?? 'relaxed'](character, new Vector3(0, 0, 1));
