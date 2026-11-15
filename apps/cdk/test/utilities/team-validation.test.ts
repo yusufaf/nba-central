@@ -174,4 +174,24 @@ describe("roster appearances", () => {
         const entry = { slot: 0, player: { fullName: "Gary Payton" } };
         expect(toRoster([entry])[0]).toBe(entry);
     });
+
+    it("keeps a custom player's accessories", () => {
+        const accessories = [
+            { id: "headband", color: "#c8102e" },
+            { id: "glasses", color: "#1c1c1c", glow: true },
+        ];
+        const [entry] = toRoster([{ slot: 0, player: { ...nova, appearance: { ...LOOK, accessories } } } as never]);
+        expect((entry.player as { appearance: { accessories: unknown } }).appearance.accessories).toEqual([
+            { id: "headband", color: "#c8102e" },
+            { id: "glasses", color: "#1c1c1c" },
+        ]);
+    });
+
+    it("rejects a custom player's fifth accessory, naming them", () => {
+        const accessories = ["headband", "armSleeve", "goggles", "glasses", "headband"].map((id) => ({ id, color: "#1c1c1c" }));
+        expect(validateTeamData(team({ ...nova, appearance: { ...LOOK, accessories } }))).toEqual({
+            valid: false,
+            error: "Nova's look is invalid: Appearance can have at most 4 accessories",
+        });
+    });
 });
