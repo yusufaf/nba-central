@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { previewPerson, sceneLabel, scenePeople } from '@/components/scene3d/people';
-import { DEFAULT_APPEARANCE } from '@/utils/appearance';
+import { previewPerson, previewStaff, sceneLabel, scenePeople } from '@/components/scene3d/people';
+import { DEFAULT_APPEARANCE, DEFAULT_STAFF_APPEARANCE } from '@/utils/appearance';
 
 describe('scenePeople', () => {
     it('maps starters in the given order, then coach and GM', () => {
@@ -99,5 +99,37 @@ describe('previewPerson', () => {
         const blank = previewPerson({ ...profile, heightFeet: Number.NaN, weightPounds: Number.NaN }, DEFAULT_APPEARANCE);
         expect(blank.heightInches).toBeNull();
         expect(blank.weightPounds).toBeNull();
+    });
+});
+
+describe("a custom coach's or GM's look", () => {
+    const STAFF = {
+        ...DEFAULT_STAFF_APPEARANCE,
+        build: { ...DEFAULT_STAFF_APPEARANCE.build, heightIn: 80 },
+        outfit: { style: 'polo', primary: '#00471b', secondary: '#eee1c6' },
+    };
+
+    it('carries the parsed look and its height', () => {
+        const [coach] = scenePeople([], { coach: { name: 'Vega', isCustom: true, appearance: STAFF } });
+        expect(coach.appearance).toEqual(STAFF);
+        expect(coach.heightInches).toBe(80);
+        expect(coach.weightPounds).toBe(Math.round((25 * 80 * 80) / 703));
+    });
+
+    it('ignores a look on a real coach', () => {
+        const [coach] = scenePeople([], { coach: { name: 'Jackson', isCustom: false, appearance: STAFF } });
+        expect(coach).not.toHaveProperty('appearance');
+        expect(coach.heightInches).toBeNull();
+    });
+
+    it('fills a malformed look with defaults', () => {
+        const [gm] = scenePeople([], { gm: { name: 'Ortiz', isCustom: true, appearance: { outfit: 'robe' } } });
+        expect(gm.appearance).toMatchObject({ outfit: { style: 'suit' }, ageLook: 'prime', build: { heightIn: 74 } });
+    });
+
+    it('builds a nameless preview at the look height, with no number', () => {
+        const person = previewStaff('gm', STAFF as never);
+        expect(person).toMatchObject({ id: 'preview', name: '', role: 'gm', heightInches: 80 });
+        expect(person).not.toHaveProperty('number');
     });
 });

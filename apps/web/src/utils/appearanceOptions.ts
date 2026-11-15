@@ -4,11 +4,14 @@ import {
     ACCESSORIES,
     MAX_ACCESSORIES,
     type AccessoryId,
+    type AgeLookId,
     type AppearanceFrame,
     type FacialHairId,
     type HairStyleId,
+    type OutfitStyleId,
     type PersonAppearance,
     type PoseId,
+    type StaffAppearance,
 } from '@/constants/appearance';
 
 type Cut = Exclude<HairStyleId, 'none'>;
@@ -47,7 +50,7 @@ const firstFitting = (frame: AppearanceFrame): HairStyleId =>
     (Object.keys(HAIR_FITS) as Cut[]).find((style) => fits(frame, style)) ?? 'none';
 
 /** The same look on another frame, with hair that fits that head. */
-export const forFrame = (look: PersonAppearance, frame: AppearanceFrame): PersonAppearance => {
+export const forFrame = <Look extends PersonAppearance | StaffAppearance>(look: Look, frame: AppearanceFrame): Look => {
     const current = look.hair.style;
     let style: HairStyleId = current;
     if (!fits(frame, current)) {
@@ -222,3 +225,50 @@ export const appearanceLabel = (name: string, look: PersonAppearance): string =>
     const wearing = gear.length ? `, wearing ${listOf(gear)}` : '';
     return `3D preview of ${name}: ${FRAME_WORDS[look.frame]}, ${hair}, ${facial}, ${POSE_LABELS[look.pose].toLowerCase()}${wearing}`;
 };
+
+// Custom coaches and GMs (#294).
+export const OUTFIT_LABELS: Record<OutfitStyleId, string> = { suit: 'Suit', polo: 'Polo', tracksuit: 'Tracksuit' };
+export const AGE_LOOK_LABELS: Record<AgeLookId, string> = { young: 'Young', prime: 'Prime', veteran: 'Veteran' };
+
+export const OUTFIT_SWATCHES: Swatch[] = [
+    { value: '#1d2a44', label: 'Navy' },
+    { value: '#3a3d42', label: 'Charcoal' },
+    { value: '#1c1c1c', label: 'Black' },
+    { value: '#f5f5f5', label: 'White' },
+    { value: '#1d428a', label: 'Royal' },
+    { value: '#c8102e', label: 'Red' },
+    { value: '#c9a227', label: 'Gold' },
+    { value: '#007a33', label: 'Green' },
+];
+
+// Added to the girth slider before shapeFor scales and clamps it.
+export const AGE_GIRTH: Record<AgeLookId, number> = { young: 0, prime: 0, veteran: 0.4 };
+
+// How far each age look greys the hair, and the grey it heads for.
+const AGE_GREY: Record<AgeLookId, { amount: number; grey: [number, number, number] }> = {
+    young: { amount: 0, grey: [0, 0, 0] },
+    prime: { amount: 0.25, grey: [0xa8, 0xa8, 0xa8] },
+    veteran: { amount: 0.7, grey: [0xc4, 0xc4, 0xc4] },
+};
+
+/** A hair colour greyed for the age look, as lowercase #rrggbb. */
+export const agedColour = (hex: string, age: AgeLookId): string => {
+    const { amount, grey } = AGE_GREY[age];
+    if (amount === 0) return hex;
+    const channels = [1, 3, 5].map((at, i) => {
+        const value = parseInt(hex.slice(at, at + 2), 16);
+        return Math.round(value + (grey[i] - value) * amount);
+    });
+    return `#${channels.map((c) => c.toString(16).padStart(2, '0')).join('')}`;
+};
+
+export const agedBuild = (look: StaffAppearance): PersonAppearance['build'] => ({
+    ...look.build,
+    girth: look.build.girth + AGE_GIRTH[look.ageLook],
+});
+
+export const isStaffLook = (look: PersonAppearance | StaffAppearance | null | undefined): look is StaffAppearance =>
+    !!look && 'outfit' in look && 'ageLook' in look;
+
+export const staffAppearanceLabel = (name: string, look: StaffAppearance): string =>
+    `${appearanceLabel(name, look)}, ${AGE_LOOK_LABELS[look.ageLook].toLowerCase()} ${OUTFIT_LABELS[look.outfit.style].toLowerCase()}`;

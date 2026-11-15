@@ -8,7 +8,7 @@ const toast = vi.hoisted(() => ({ success: vi.fn(), error: vi.fn(), info: vi.fn(
 vi.mock("vue-sonner", () => ({ toast }));
 
 const api = vi.hoisted(() => ({
-    coach: { list: vi.fn(), delete: vi.fn() },
+    coach: { list: vi.fn(), delete: vi.fn(), create: vi.fn(), update: vi.fn() },
     gm: { list: vi.fn(), delete: vi.fn() },
     player: { list: vi.fn() },
 }));
@@ -37,8 +37,24 @@ beforeEach(() => {
         data: { customGMs: [{ gmUUID: "g1", name: "Exec Ortiz", teams: ["SEA"] }] },
     });
     api.coach.delete.mockResolvedValue({ success: true });
+    api.coach.update.mockResolvedValue({ success: true, data: {} });
     api.gm.delete.mockResolvedValue({ success: true });
 });
+
+vi.mock("@/components/scene3d", async () => {
+    const { defineComponent, h } = await import("vue");
+    return {
+        PersonPreview3DAsync: defineComponent({ name: "PreviewStub", setup: () => () => h("div", { "data-testid": "preview-stub" }) }),
+        Scene3DUnavailable: defineComponent({ name: "UnavailableStub", setup: () => () => h("p") }),
+    };
+});
+vi.mock("@/utils/webgl", () => ({ isWebGLAvailable: () => true }));
+vi.mock("@/lib/analytics", () => ({ track: vi.fn() }));
+globalThis.ResizeObserver ??= class {
+    observe() {}
+    unobserve() {}
+    disconnect() {}
+} as unknown as typeof ResizeObserver;
 
 // The row's trash button, then the confirm dialog's Delete.
 const deleteFromList = async (itemSelector: string, name: string) => {
@@ -164,5 +180,49 @@ describe("deleting a custom coach", () => {
 
         expect(api.coach.delete).toHaveBeenCalledWith("c1");
         expect(update).toHaveBeenCalledWith(null);
+    });
+});
+
+describe("the coach creator", () => {
+    afterEach(() => {
+        document.body.innerHTML = "";
+    });
+
+    const mountSection = () =>
+        mount(CoachSection, {
+            props: {
+                selectedDrawerSide: "right",
+                teamCoach: null,
+                "onUpdate:teamCoach": () => {},
+                showCoachDrawer: true,
+                "onUpdate:showCoachDrawer": () => {},
+            },
+            attachTo: document.body,
+        });
+
+    it("opens in staff mode from Create Custom Coach", async () => {
+        mountSection();
+        await flushPromises();
+        findButton("Create Custom Coach").click();
+        await flushPromises();
+        const tabs = [...document.querySelectorAll('[role="tab"]')].map((t) => t.textContent?.trim());
+        expect(tabs).toContain("Outfit");
+        expect(document.body.textContent).toContain("Create coach");
+    });
+
+    it("saves an edit with its look and tells the builder", async () => {
+        const wrapper = mountSection();
+        await flushPromises();
+        (document.querySelector('[aria-label="Edit Coach Vega"]') as HTMLButtonElement).click();
+        await flushPromises();
+        (document.querySelector('button[type="submit"]') as HTMLButtonElement).click();
+        await flushPromises();
+
+        expect(api.coach.update).toHaveBeenCalledWith(
+            "c1",
+            expect.objectContaining({ name: "Coach Vega", appearance: expect.objectContaining({ outfit: expect.any(Object) }) }),
+        );
+        const [saved] = wrapper.emitted("customStaffSaved")!.at(-1) as [{ uuid: string; name: string }];
+        expect(saved).toMatchObject({ uuid: "c1", name: "Coach Vega" });
     });
 });

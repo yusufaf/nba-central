@@ -1,7 +1,7 @@
 import type { Arena, Coach, GM, Player } from "@/models/types";
 import { resolveLegacyLogoUrl } from "@/utils/historicalLogoUrl";
 import { backfillArena, parseCapacity } from "@/utils/arenaDetails";
-import { parseAppearance } from "@/utils/appearance";
+import { parseAppearance, parseStaffAppearance } from "@/utils/appearance";
 import { parseUniform } from "@/utils/jerseyColours";
 import { rosterNumbers, type RosterNumbers } from "@/utils/rosterNumbers";
 import type {
@@ -10,6 +10,7 @@ import type {
     PlayerSnapshot,
     PublicTeam,
     ResolvedArena,
+    ResolvedEntity,
     SaveTeamPayload,
     TeamArenaRef,
     TeamRosterEntry,
@@ -88,6 +89,20 @@ export const staffUUID = (entity: unknown): string | undefined => {
     return nonEmpty(record.coachUUID) ?? nonEmpty(record.gmUUID) ?? nonEmpty(record.uuid);
 };
 
+/**
+ * The team's coach or GM after its creator saved: the same entity wearing the
+ * saved name and look when it's the one edited, otherwise unchanged.
+ */
+export const withStaffLook = <Entity extends object>(
+    entity: Entity | null,
+    saved: { uuid: string; name: string; appearance: unknown },
+): Entity | null => {
+    if (!entity || (entity as { isCustom?: unknown }).isCustom !== true || staffUUID(entity) !== saved.uuid) return entity;
+    const look = parseStaffAppearance(saved.appearance);
+    const { appearance: _old, ...rest } = entity as Entity & { appearance?: unknown };
+    return { ...rest, name: saved.name, ...(look && { appearance: look }) } as unknown as Entity;
+};
+
 // Only the stored fields: a custom one's look is read live on every load.
 const toEntityRef = (entity: Coach | GM | EntityRef | null): EntityRef | null => {
     if (!entity) return null;
@@ -102,7 +117,7 @@ const toEntityRef = (entity: Coach | GM | EntityRef | null): EntityRef | null =>
  * A remixed team's coach or GM, without the original owner's look. The link
  * id stays: the server keeps it only when the remixer owns the item.
  */
-export const remixStaff = (entity: EntityRef | null | undefined): EntityRef | null => {
+export const remixStaff = (entity: EntityRef | ResolvedEntity | null | undefined): EntityRef | null => {
     if (!entity) return null;
     const uuid = entity.isCustom ? staffUUID(entity) : undefined;
     return { name: entity.name, isCustom: !!entity.isCustom, ...(uuid && { uuid }) };
@@ -169,9 +184,9 @@ export interface HydratedTeam {
     teamLogo: string;
     teamJersey: string;
     players: Map<number, Player>;
-    teamCoach: EntityRef | null;
+    teamCoach: ResolvedEntity | null;
     teamArena: ResolvedArena | null;
-    teamGM: EntityRef | null;
+    teamGM: ResolvedEntity | null;
     teamUniform: TeamUniform | null;
     teamNumbers: RosterNumbers;
 }

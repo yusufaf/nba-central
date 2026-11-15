@@ -1,5 +1,6 @@
 import type { NBA2KRating, Player, RatingSource } from './types';
 import type { SettingsMap } from '@/constants/settings';
+import type { StaffAppearance } from '@/constants/appearance';
 
 // #region File API Types
 export interface InitiateMultipartUploadPayload {
@@ -132,6 +133,12 @@ export interface EntityRef {
     uuid?: string;
 }
 
+// What a load returns for a coach or GM: the stored ref with a custom one's
+// live name and look. Never sent back on a save.
+export interface ResolvedEntity extends EntityRef {
+    appearance?: StaffAppearance;
+}
+
 // Mirrors apps/cdk/models/api/teams-api.ts. Built-in arenas keep their full
 // details (rows saved before custom arenas only have name and imgLink, and
 // hydrateTeam fills the rest from arenas.json). A custom arena keeps its
@@ -201,8 +208,8 @@ export interface SavedTeam {
     jerseyUrl: string;
     playerCount: number;
     roster: TeamRosterEntry[];
-    coach: EntityRef | null;
-    gm: EntityRef | null;
+    coach: ResolvedEntity | null;
+    gm: ResolvedEntity | null;
     arena: ResolvedArena | null;
     favorited: boolean;
     label: string;

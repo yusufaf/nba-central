@@ -4,6 +4,7 @@ import { customCoachApi } from '@/network/api';
 import { getApiErrorMessage } from '@/composables/useApiErrorMessage';
 import { useCurrentUser } from '@/composables/useCurrentUser';
 import type { Coach } from '@/models/types';
+import type { StaffAppearance } from '@/constants/appearance';
 
 export function useCustomCoaches() {
     const { currentUser } = useCurrentUser();
@@ -32,7 +33,7 @@ export function useCustomCoaches() {
         }
     };
 
-    const createCoach = async (data: { name: string; overallRating: number; specialty: string }) => {
+    const createCoach = async (data: { name: string; overallRating: number; specialty: string; appearance?: StaffAppearance }) => {
         loading.value = true;
         error.value = null;
 
@@ -58,7 +59,10 @@ export function useCustomCoaches() {
         }
     };
 
-    const updateCoach = async (coachUUID: string, data: { name: string; overallRating: number; specialty: string }) => {
+    const updateCoach = async (
+        coachUUID: string,
+        data: { name: string; overallRating: number; specialty: string; appearance?: StaffAppearance },
+    ) => {
         loading.value = true;
         error.value = null;
 

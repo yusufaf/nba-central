@@ -47,7 +47,7 @@ import type {
     SubmitCapFiveResponse,
 } from '@/models/api';
 import type { SettingsMap } from '@/constants/settings';
-import type { PersonAppearance } from '@/constants/appearance';
+import type { PersonAppearance, StaffAppearance } from '@/constants/appearance';
 
 export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '';
 
@@ -283,7 +283,7 @@ export const capFiveApi = {
 
 // Custom GM API
 export const customGMApi = {
-    create: async (data: { name: string; teams: string[] }) => {
+    create: async (data: { name: string; teams: string[]; appearance?: StaffAppearance | null }) => {
         const response = await api.post('/api/custom-entities/gm/create', data);
         return response.data;
     },
@@ -291,7 +291,7 @@ export const customGMApi = {
         const response = await api.get('/api/custom-entities/gm/list');
         return response.data;
     },
-    update: async (gmUUID: string, data: { name: string; teams: string[] }) => {
+    update: async (gmUUID: string, data: { name: string; teams: string[]; appearance?: StaffAppearance | null }) => {
         const response = await api.put('/api/custom-entities/gm/update', { gmUUID, ...data });
         return response.data;
     },
@@ -303,7 +303,7 @@ export const customGMApi = {
 
 // Custom Coach API
 export const customCoachApi = {
-    create: async (data: { name: string; overallRating: number; specialty: string }) => {
+    create: async (data: { name: string; overallRating: number; specialty: string; appearance?: StaffAppearance | null }) => {
         const response = await api.post('/api/custom-entities/coach/create', data);
         return response.data;
     },
@@ -311,7 +311,10 @@ export const customCoachApi = {
         const response = await api.get('/api/custom-entities/coach/list');
         return response.data;
     },
-    update: async (coachUUID: string, data: { name: string; overallRating: number; specialty: string }) => {
+    update: async (
+        coachUUID: string,
+        data: { name: string; overallRating: number; specialty: string; appearance?: StaffAppearance | null },
+    ) => {
         const response = await api.put('/api/custom-entities/coach/update', { coachUUID, ...data });
         return response.data;
     },

@@ -1,4 +1,4 @@
-import type { PersonAppearance } from "@/constants/appearance";
+import type { PersonAppearance, StaffAppearance } from "@/constants/appearance";
 
 export type CustomizationKey =
     | "shortNames"
@@ -31,6 +31,7 @@ export type Coach = {
     created?: string;
     overallRating?: number;
     specialty?: 'Offensive' | 'Defensive' | 'Balanced';
+    appearance?: StaffAppearance;
 };
 
 export type Arena = {
@@ -48,6 +49,7 @@ export type GM = {
     isCustom?: boolean;
     gmUUID?: string;
     created?: string;
+    appearance?: StaffAppearance;
 };
 
 export type NBATeam = {

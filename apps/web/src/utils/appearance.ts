@@ -2,13 +2,19 @@
 // a default field by field, so a bad snapshot can't break the scene.
 import {
     ACCESSORIES,
+    AGE_LOOKS,
     APPEARANCE_FRAMES,
     FACIAL_HAIR_STYLES,
     HAIR_STYLES,
     MAX_ACCESSORIES,
+    OUTFIT_STYLES,
     POSES,
+    STAFF_ACCESSORIES,
+    STAFF_HEIGHT_INCHES,
     type AccessoryId,
     type PersonAppearance,
+    type StaffAppearance,
+    type StaffOutfit,
 } from '@/constants/appearance';
 import { isJerseyNumber } from '@/utils/rosterNumbers';
 
@@ -76,5 +82,48 @@ export const parseAppearance = (value: unknown): PersonAppearance | null => {
         accessories: accessoriesFrom(value.accessories),
         ...(isJerseyNumber(value.jerseyNumber) && { jerseyNumber: value.jerseyNumber }),
         pose: oneOf(POSES, value.pose, fallback.pose),
+    };
+};
+
+/** A real coach's or GM's suit, and a custom one's until they pick an outfit. */
+export const DEFAULT_OUTFIT: StaffOutfit = { style: 'suit', primary: '#1d2a44', secondary: '#c9a227' };
+
+const DEFAULT_STAFF_HEIGHT = 74;
+
+export const DEFAULT_STAFF_APPEARANCE: StaffAppearance = {
+    version: 1,
+    frame: DEFAULT_APPEARANCE.frame,
+    skin: DEFAULT_APPEARANCE.skin,
+    hair: { style: 'parted', color: '#3b2a1e' },
+    facialHair: { style: 'none', color: '#3b2a1e' },
+    build: { girth: 0, shoulders: 0, wingspan: 0, heightIn: DEFAULT_STAFF_HEIGHT },
+    accessories: [],
+    outfit: DEFAULT_OUTFIT,
+    ageLook: 'prime',
+    pose: 'relaxed',
+};
+
+const staffHeight = (value: unknown): number =>
+    typeof value === 'number' && Number.isFinite(value)
+        ? Math.min(STAFF_HEIGHT_INCHES.max, Math.max(STAFF_HEIGHT_INCHES.min, Math.round(value)))
+        : DEFAULT_STAFF_HEIGHT;
+
+/** A custom coach's or GM's look, or `null` for anything that isn't an object (a figurine). */
+export const parseStaffAppearance = (value: unknown): StaffAppearance | null => {
+    const person = parseAppearance(value);
+    if (!person || !isRecord(value)) return null;
+    const { jerseyNumber: _none, ...look } = person;
+    const build = isRecord(value.build) ? value.build : {};
+    const outfit = isRecord(value.outfit) ? value.outfit : {};
+    return {
+        ...look,
+        build: { ...look.build, heightIn: staffHeight(build.heightIn) },
+        accessories: look.accessories.filter(({ id }) => (STAFF_ACCESSORIES as readonly AccessoryId[]).includes(id)),
+        outfit: {
+            style: oneOf(OUTFIT_STYLES, outfit.style, DEFAULT_OUTFIT.style),
+            primary: colour(outfit.primary, DEFAULT_OUTFIT.primary),
+            secondary: colour(outfit.secondary, DEFAULT_OUTFIT.secondary),
+        },
+        ageLook: oneOf(AGE_LOOKS, value.ageLook, DEFAULT_STAFF_APPEARANCE.ageLook),
     };
 };

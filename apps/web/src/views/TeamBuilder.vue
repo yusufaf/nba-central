@@ -33,6 +33,7 @@ import {
     refreshCustomAppearances,
     remixStaff,
     remixTitle,
+    withStaffLook,
     type HydratedTeam,
 } from "@/composables/useTeamPersistence";
 import {
@@ -67,7 +68,7 @@ import { getCurrentTeamSeason, getTeamSeasonFile, getTeamSeasonsIndex } from "@/
 import { findSeasonChoice, parseRealParam, realTeamDetails, rosterSlots, seasonChoices } from "@/utils/realTeam";
 import { toBuilderPlayer } from "@/utils/builderPlayer";
 import { parseAppearance } from "@/utils/appearance";
-import type { PersonAppearance } from "@/constants/appearance";
+import type { PersonAppearance, StaffAppearance } from "@/constants/appearance";
 import { track } from "@/lib/analytics";
 import { landingSource } from "@/lib/attribution";
 import type { DrawerSide, NBA2KRating, Player } from "@/models/types";
@@ -305,6 +306,13 @@ const applyCustomLook = ({ playerUUID, appearance }: { playerUUID: string; appea
         if (look) player.appearance = look;
         else delete player.appearance;
     }
+};
+
+// The same for a custom coach or GM edited in their creator: the team's one
+// wears the new name and look at once, outside undo history.
+const applyStaffLook = (role: 'coach' | 'gm', saved: { uuid: string; name: string; appearance: StaffAppearance }) => {
+    const entity = role === 'coach' ? teamCoach : teamGM;
+    entity.value = withStaffLook(entity.value, saved);
 };
 
 const isInRoster = (player: Player) =>
@@ -1269,6 +1277,7 @@ watch(
                         :teamCoach="teamCoach"
                         @update:teamCoach="customize('coach', $event)"
                         v-model:showCoachDrawer="showCoachDrawer"
+                        @custom-staff-saved="applyStaffLook('coach', $event)"
                         :selectedDrawerSide="selectedDrawerSide"
                     />
                     <ArenaSection
@@ -1282,6 +1291,7 @@ watch(
                         :teamGM="teamGM"
                         @update:teamGM="customize('gm', $event)"
                         v-model:showGMDrawer="showGMDrawer"
+                        @custom-staff-saved="applyStaffLook('gm', $event)"
                         :selectedDrawerSide="selectedDrawerSide"
                     />
                 </div>
