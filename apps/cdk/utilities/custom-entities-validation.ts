@@ -1,5 +1,6 @@
 import {
 	ACCESSORIES,
+	AGE_LOOKS,
 	APPEARANCE_FRAMES,
 	COURT_CENTER_LOGOS,
 	COURT_WOODS,
@@ -7,8 +8,12 @@ import {
 	FACIAL_HAIR_STYLES,
 	HAIR_STYLES,
 	MAX_ACCESSORIES,
+	OUTFIT_STYLES,
 	PersonAppearance,
 	POSES,
+	STAFF_ACCESSORIES,
+	STAFF_HEIGHT_INCHES,
+	StaffAppearance,
 } from "../models/custom-entities";
 import { isOneOf, isRecord } from "./type-guards";
 
@@ -39,6 +44,11 @@ export const validateGMData = (data: unknown): { valid: boolean; error?: string 
 				return { valid: false, error: "Team codes must contain only uppercase letters" };
 			}
 		}
+	}
+
+	if (data.appearance != null) {
+		const error = staffAppearanceError(data.appearance);
+		if (error) return { valid: false, error };
 	}
 
 	return { valid: true };
@@ -73,6 +83,11 @@ export const validateCoachData = (data: unknown): { valid: boolean; error?: stri
 	const validSpecialties = ['Offensive', 'Defensive', 'Balanced'];
 	if (!validSpecialties.includes(data.specialty)) {
 		return { valid: false, error: "Specialty must be Offensive, Defensive, or Balanced" };
+	}
+
+	if (data.appearance != null) {
+		const error = staffAppearanceError(data.appearance);
+		if (error) return { valid: false, error };
 	}
 
 	return { valid: true };
@@ -161,8 +176,9 @@ const styledError = (
 	return null;
 };
 
-/** Why a stored look is invalid, or null. Every key is checked; unknown ones are ignored here and dropped by toAppearance. */
-export const appearanceError = (value: unknown): string | null => {
+// The checks a player's and a staff member's look share. Staff pass their own
+// accessory list and skip the jersey number, which they never have.
+const lookError = (value: unknown, accessories: readonly string[], jerseyNumber: boolean): string | null => {
 	if (!isRecord(value)) return "Appearance must be an object";
 	if (value.version !== 1) return "Appearance version must be 1";
 	if (!isOneOf(APPEARANCE_FRAMES, value.frame)) return `Appearance frame must be one of ${APPEARANCE_FRAMES.join(", ")}`;
@@ -182,18 +198,40 @@ export const appearanceError = (value: unknown): string | null => {
 	if (value.accessories.length > MAX_ACCESSORIES) return `Appearance can have at most ${MAX_ACCESSORIES} accessories`;
 	const seen = new Set<unknown>();
 	for (const accessory of value.accessories as unknown[]) {
-		if (!isRecord(accessory) || !isOneOf(ACCESSORIES, accessory.id)) {
-			return `Appearance accessories must be one of ${ACCESSORIES.join(", ")}`;
+		if (!isRecord(accessory) || !isOneOf(accessories, accessory.id)) {
+			return `Appearance accessories must be one of ${accessories.join(", ")}`;
 		}
 		if (!isHex(accessory.color)) return "Appearance accessory color must be a #rrggbb colour";
 		if (seen.has(accessory.id)) return "Appearance accessories must not repeat";
 		seen.add(accessory.id);
 	}
 	const number = value.jerseyNumber;
-	if (number != null && (typeof number !== "string" || !JERSEY_NUMBER.test(number))) {
+	if (jerseyNumber && number != null && (typeof number !== "string" || !JERSEY_NUMBER.test(number))) {
 		return "Appearance jersey number must be 0-99 or 00";
 	}
 	if (!isOneOf(POSES, value.pose)) return `Appearance pose must be one of ${POSES.join(", ")}`;
+	return null;
+};
+
+/** Why a stored look is invalid, or null. Every key is checked; unknown ones are ignored here and dropped by toAppearance. */
+export const appearanceError = (value: unknown): string | null => lookError(value, ACCESSORIES, true);
+
+/** Why a custom coach's or GM's look is invalid, or null. A jersey number is ignored, and toStaffAppearance drops it. */
+export const staffAppearanceError = (value: unknown): string | null => {
+	const shared = lookError(value, STAFF_ACCESSORIES, false);
+	if (shared) return shared;
+	const look = value as Record<string, unknown>;
+	const build = look.build as Record<string, unknown>;
+	if (!isWholeNumberIn(build.heightIn, STAFF_HEIGHT_INCHES.min, STAFF_HEIGHT_INCHES.max)) {
+		return `Appearance height must be a whole number of inches from ${STAFF_HEIGHT_INCHES.min} to ${STAFF_HEIGHT_INCHES.max}`;
+	}
+	const outfit = look.outfit;
+	if (!isRecord(outfit)) return "Appearance outfit must be {style, primary, secondary}";
+	if (!isOneOf(OUTFIT_STYLES, outfit.style)) return `Appearance outfit style must be one of ${OUTFIT_STYLES.join(", ")}`;
+	for (const field of ["primary", "secondary"] as const) {
+		if (!isHex(outfit[field])) return `Appearance outfit ${field} must be a #rrggbb colour`;
+	}
+	if (!isOneOf(AGE_LOOKS, look.ageLook)) return `Appearance age look must be one of ${AGE_LOOKS.join(", ")}`;
 	return null;
 };
 
@@ -209,6 +247,28 @@ export const toAppearance = (value: Record<string, unknown>): PersonAppearance =
 		build: { girth: look.build.girth, shoulders: look.build.shoulders, wingspan: look.build.wingspan },
 		accessories: look.accessories.map(({ id, color }) => ({ id, color })),
 		...(typeof look.jerseyNumber === "string" && { jerseyNumber: look.jerseyNumber }),
+		pose: look.pose,
+	};
+};
+
+/** The known keys of a look that passed staffAppearanceError, rebuilt so nothing else is stored. */
+export const toStaffAppearance = (value: Record<string, unknown>): StaffAppearance => {
+	const look = value as unknown as StaffAppearance;
+	return {
+		version: 1,
+		frame: look.frame,
+		skin: look.skin,
+		hair: { style: look.hair.style, color: look.hair.color },
+		facialHair: { style: look.facialHair.style, color: look.facialHair.color },
+		build: {
+			girth: look.build.girth,
+			shoulders: look.build.shoulders,
+			wingspan: look.build.wingspan,
+			heightIn: look.build.heightIn,
+		},
+		accessories: look.accessories.map(({ id, color }) => ({ id, color })),
+		outfit: { style: look.outfit.style, primary: look.outfit.primary, secondary: look.outfit.secondary },
+		ageLook: look.ageLook,
 		pose: look.pose,
 	};
 };

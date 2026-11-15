@@ -12,7 +12,8 @@ import {
 	CreateCustomGMPayload,
 	CreateCustomGMResponse,
 } from "models/api/custom-entities-api";
-import { validateGMData } from "utilities/custom-entities-validation";
+import { toStaffAppearance, validateGMData } from "utilities/custom-entities-validation";
+import { isRecord } from "utilities/type-guards";
 
 const { mainTable = "" } = process.env;
 
@@ -54,6 +55,7 @@ export const handler: Handler = async (
 			gmUUID,
 			name: payload.name.trim(),
 			teams: payload.teams || [],
+			...(isRecord(payload.appearance) && { appearance: toStaffAppearance(payload.appearance) }),
 			createdBy: username,
 		};
 
@@ -71,6 +73,7 @@ export const handler: Handler = async (
 				name: item.name,
 				teams: item.teams,
 				created: item.created,
+				...(item.appearance && { appearance: item.appearance }),
 			},
 		};
 

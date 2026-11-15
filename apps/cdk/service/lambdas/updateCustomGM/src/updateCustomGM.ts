@@ -10,7 +10,8 @@ import {
 	UpdateCustomGMPayload,
 	UpdateCustomGMResponse,
 } from "models/api/custom-entities-api";
-import { validateGMData } from "utilities/custom-entities-validation";
+import { toStaffAppearance, validateGMData } from "utilities/custom-entities-validation";
+import { isRecord } from "utilities/type-guards";
 
 const { mainTable = "" } = process.env;
 
@@ -52,6 +53,10 @@ export const handler: Handler = async (
 		}
 
 		const timestamp = new Date().toISOString();
+		// Absent leaves a stored look alone; null removes it.
+		const look = payload.appearance;
+		const setLook = isRecord(look) ? ", #appearance = :appearance" : "";
+		const removeLook = look === null ? " REMOVE #appearance" : "";
 
 		const updateCommand = new UpdateCommand({
 			TableName: mainTable,
@@ -59,14 +64,16 @@ export const handler: Handler = async (
 				PK: `userUUID#${userUUID}`,
 				SK: `customGM#${payload.gmUUID}`,
 			},
-			UpdateExpression: "SET updated = :updated, #name = :name, teams = :teams",
+			UpdateExpression: `SET updated = :updated, #name = :name, teams = :teams${setLook}${removeLook}`,
 			ExpressionAttributeNames: {
 				"#name": "name",
+				...((setLook || removeLook) && { "#appearance": "appearance" }),
 			},
 			ExpressionAttributeValues: {
 				":updated": timestamp,
 				":name": payload.name.trim(),
 				":teams": payload.teams || [],
+				...(isRecord(look) && { ":appearance": toStaffAppearance(look) }),
 			},
 			ConditionExpression: "attribute_exists(PK) AND attribute_exists(SK)",
 			ReturnValues: "ALL_NEW",
@@ -89,6 +96,7 @@ export const handler: Handler = async (
 				name: attributes.name,
 				teams: attributes.teams,
 				updated: attributes.updated,
+				...(attributes.appearance && { appearance: attributes.appearance }),
 			},
 		};
 

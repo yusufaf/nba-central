@@ -5,9 +5,21 @@ import {
     FACIAL_HAIR_STYLES,
     HAIR_STYLES,
     MAX_ACCESSORIES,
+    AGE_LOOKS,
+    OUTFIT_STYLES,
     POSES,
+    STAFF_ACCESSORIES,
+    STAFF_HEIGHT_INCHES,
 } from "../../models/custom-entities";
-import { appearanceError, toAppearance, validatePlayerData } from "../../utilities/custom-entities-validation";
+import {
+    appearanceError,
+    staffAppearanceError,
+    toAppearance,
+    toStaffAppearance,
+    validateCoachData,
+    validateGMData,
+    validatePlayerData,
+} from "../../utilities/custom-entities-validation";
 import * as web from "../../../web/src/constants/appearance";
 
 const LOOK = {
@@ -162,6 +174,11 @@ describe("appearanceError", () => {
         it.for(["07", "100", 7, ""])("rejects %s", (jerseyNumber) => {
             expect(appearanceError(withLook({ jerseyNumber }))).toBe("Appearance jersey number must be 0-99 or 00");
         });
+        it("is reported before a bad pose", () => {
+            expect(appearanceError(withLook({ jerseyNumber: "07", pose: "dab" }))).toBe(
+                "Appearance jersey number must be 0-99 or 00",
+            );
+        });
     });
 });
 
@@ -205,6 +222,133 @@ describe("validatePlayerData appearance", () => {
     });
 });
 
+const STAFF_LOOK = {
+    version: 1,
+    frame: "m",
+    skin: "#8d5a3b",
+    hair: { style: "parted", color: "#3b2a1e" },
+    facialHair: { style: "none", color: "#3b2a1e" },
+    build: { girth: 0.2, shoulders: 0, wingspan: -0.5, heightIn: 74 },
+    accessories: [{ id: "glasses", color: "#1c1c1c" }],
+    outfit: { style: "tracksuit", primary: "#552583", secondary: "#fdb927" },
+    ageLook: "veteran",
+    pose: "armsCrossed",
+};
+
+const withStaff = (change: Record<string, unknown>) => ({ ...STAFF_LOOK, ...change });
+const withHeight = (heightIn: unknown) => withStaff({ build: { ...STAFF_LOOK.build, heightIn } });
+
+describe("staffAppearanceError", () => {
+    it("accepts a full valid staff look", () => {
+        expect(staffAppearanceError(STAFF_LOOK)).toBeNull();
+    });
+
+    it.for(OUTFIT_STYLES)("accepts outfit %s", (style) => {
+        expect(staffAppearanceError(withStaff({ outfit: { ...STAFF_LOOK.outfit, style } }))).toBeNull();
+    });
+
+    it.for(AGE_LOOKS)("accepts age look %s", (ageLook) => {
+        expect(staffAppearanceError(withStaff({ ageLook }))).toBeNull();
+    });
+
+    it.for([STAFF_HEIGHT_INCHES.min, STAFF_HEIGHT_INCHES.max])("accepts height %s", (heightIn) => {
+        expect(staffAppearanceError(withHeight(heightIn))).toBeNull();
+    });
+
+    it.for([59, 91, 70.5, "72", undefined])("rejects height %s", (heightIn) => {
+        expect(staffAppearanceError(withHeight(heightIn))).toBe(
+            "Appearance height must be a whole number of inches from 60 to 90",
+        );
+    });
+
+    it("rejects a missing or non-object outfit", () => {
+        const copy: Record<string, unknown> = { ...STAFF_LOOK };
+        delete copy.outfit;
+        expect(staffAppearanceError(copy)).toBe("Appearance outfit must be {style, primary, secondary}");
+        expect(staffAppearanceError(withStaff({ outfit: "suit" }))).toBe(
+            "Appearance outfit must be {style, primary, secondary}",
+        );
+    });
+
+    it("rejects an unknown outfit style", () => {
+        expect(staffAppearanceError(withStaff({ outfit: { ...STAFF_LOOK.outfit, style: "robe" } }))).toBe(
+            "Appearance outfit style must be one of suit, polo, tracksuit",
+        );
+    });
+
+    it.for(["primary", "secondary"])("rejects a bad outfit %s", (field) => {
+        expect(staffAppearanceError(withStaff({ outfit: { ...STAFF_LOOK.outfit, [field]: "purple" } }))).toBe(
+            `Appearance outfit ${field} must be a #rrggbb colour`,
+        );
+    });
+
+    it.for(["old", undefined])("rejects age look %s", (ageLook) => {
+        expect(staffAppearanceError(withStaff({ ageLook }))).toBe(
+            "Appearance age look must be one of young, prime, veteran",
+        );
+    });
+
+    it("rejects player-only gear", () => {
+        expect(staffAppearanceError(withStaff({ accessories: [{ id: "headband", color: "#ffffff" }] }))).toBe(
+            "Appearance accessories must be one of glasses",
+        );
+    });
+
+    it("ignores a jersey number, even an invalid one", () => {
+        expect(staffAppearanceError(withStaff({ jerseyNumber: "07" }))).toBeNull();
+    });
+
+    it("still checks the shared fields", () => {
+        expect(staffAppearanceError(withStaff({ skin: "pink" }))).toBe("Appearance skin must be a #rrggbb colour");
+        expect(staffAppearanceError(withStaff({ pose: "dab" }))).toBe(
+            "Appearance pose must be one of relaxed, handsOnHips, armsCrossed, celebrate",
+        );
+    });
+});
+
+describe("toStaffAppearance", () => {
+    it("keeps a valid staff look as it is", () => {
+        expect(toStaffAppearance(STAFF_LOOK)).toEqual(STAFF_LOOK);
+    });
+
+    it("drops unknown keys at every level, and the jersey number", () => {
+        const stored = toStaffAppearance({
+            ...STAFF_LOOK,
+            secret: "x",
+            jerseyNumber: "8",
+            hair: { ...STAFF_LOOK.hair, extra: 1 },
+            build: { ...STAFF_LOOK.build, reach: 2 },
+            outfit: { ...STAFF_LOOK.outfit, tie: "#000000" },
+            accessories: [{ id: "glasses", color: "#1c1c1c", glow: true }],
+        });
+        expect(stored).toEqual(STAFF_LOOK);
+    });
+});
+
+describe("validateCoachData and validateGMData appearance", () => {
+    const coach = { name: "Coach K", overallRating: 70, specialty: "Balanced" };
+    const gm = { name: "Exec", teams: ["LAL"] };
+
+    it.for([
+        { kind: "coach", validate: validateCoachData, base: coach },
+        { kind: "gm", validate: validateGMData, base: gm },
+    ])("accepts a $kind without, with null, or with a valid look", ({ validate, base }) => {
+        expect(validate(base)).toEqual({ valid: true });
+        expect(validate({ ...base, appearance: null })).toEqual({ valid: true });
+        expect(validate({ ...base, appearance: STAFF_LOOK })).toEqual({ valid: true });
+    });
+
+    it.for([
+        { kind: "coach", validate: validateCoachData, base: coach },
+        { kind: "gm", validate: validateGMData, base: gm },
+    ])("rejects a $kind's invalid look with its error", ({ validate, base }) => {
+        expect(validate({ ...base, appearance: withHeight(100) })).toEqual({
+            valid: false,
+            error: "Appearance height must be a whole number of inches from 60 to 90",
+        });
+    });
+});
+
 describe("apps/web's copy", () => {
     it("has the same ids and limits", () => {
         expect(web.APPEARANCE_FRAMES).toEqual(APPEARANCE_FRAMES);
@@ -213,5 +357,9 @@ describe("apps/web's copy", () => {
         expect(web.ACCESSORIES).toEqual(ACCESSORIES);
         expect(web.POSES).toEqual(POSES);
         expect(web.MAX_ACCESSORIES).toBe(MAX_ACCESSORIES);
+        expect(web.OUTFIT_STYLES).toEqual(OUTFIT_STYLES);
+        expect(web.AGE_LOOKS).toEqual(AGE_LOOKS);
+        expect(web.STAFF_ACCESSORIES).toEqual(STAFF_ACCESSORIES);
+        expect(web.STAFF_HEIGHT_INCHES).toEqual(STAFF_HEIGHT_INCHES);
     });
 });

@@ -10,7 +10,8 @@ import {
 	UpdateCustomCoachPayload,
 	UpdateCustomCoachResponse,
 } from "models/api/custom-entities-api";
-import { validateCoachData } from "utilities/custom-entities-validation";
+import { toStaffAppearance, validateCoachData } from "utilities/custom-entities-validation";
+import { isRecord } from "utilities/type-guards";
 
 const { mainTable = "" } = process.env;
 
@@ -52,6 +53,10 @@ export const handler: Handler = async (
 		}
 
 		const timestamp = new Date().toISOString();
+		// Absent leaves a stored look alone; null removes it.
+		const look = payload.appearance;
+		const setLook = isRecord(look) ? ", #appearance = :appearance" : "";
+		const removeLook = look === null ? " REMOVE #appearance" : "";
 
 		const updateCommand = new UpdateCommand({
 			TableName: mainTable,
@@ -59,15 +64,17 @@ export const handler: Handler = async (
 				PK: `userUUID#${userUUID}`,
 				SK: `customCoach#${payload.coachUUID}`,
 			},
-			UpdateExpression: "SET updated = :updated, #name = :name, overallRating = :overallRating, specialty = :specialty",
+			UpdateExpression: `SET updated = :updated, #name = :name, overallRating = :overallRating, specialty = :specialty${setLook}${removeLook}`,
 			ExpressionAttributeNames: {
 				"#name": "name",
+				...((setLook || removeLook) && { "#appearance": "appearance" }),
 			},
 			ExpressionAttributeValues: {
 				":updated": timestamp,
 				":name": payload.name.trim(),
 				":overallRating": payload.overallRating,
 				":specialty": payload.specialty,
+				...(isRecord(look) && { ":appearance": toStaffAppearance(look) }),
 			},
 			ConditionExpression: "attribute_exists(PK) AND attribute_exists(SK)",
 			ReturnValues: "ALL_NEW",
@@ -91,6 +98,7 @@ export const handler: Handler = async (
 				overallRating: attributes.overallRating,
 				specialty: attributes.specialty,
 				updated: attributes.updated,
+				...(attributes.appearance && { appearance: attributes.appearance }),
 			},
 		};
 		return {

@@ -1,4 +1,4 @@
-import type { ArenaImageSlot, CourtDesign, PersonAppearance } from "../custom-entities";
+import type { ArenaImageSlot, CourtDesign, PersonAppearance, StaffAppearance } from "../custom-entities";
 
 // Generic API response wrapper with discriminated union for type safety
 export type ApiResponse<T = void> =
@@ -13,12 +13,15 @@ export type ApiResponse<T = void> =
 export interface CreateCustomGMPayload {
 	name: string;
 	teams: string[];
+	appearance?: StaffAppearance | null;
 }
 
 export interface UpdateCustomGMPayload {
 	gmUUID: string;
 	name: string;
 	teams: string[];
+	// Absent leaves a stored look alone; null removes it.
+	appearance?: StaffAppearance | null;
 }
 
 // Response data structures
@@ -27,6 +30,7 @@ export interface CustomGMData {
 	name: string;
 	teams: string[];
 	created: string;
+	appearance?: StaffAppearance;
 }
 
 export interface UpdatedCustomGMData {
@@ -34,6 +38,7 @@ export interface UpdatedCustomGMData {
 	name: string;
 	teams: string[];
 	updated: string;
+	appearance?: StaffAppearance;
 }
 
 export interface CustomGMListItem {
@@ -42,6 +47,7 @@ export interface CustomGMListItem {
 	teams: string[];
 	created: string;
 	isCustom: true;
+	appearance?: StaffAppearance;
 }
 
 export interface ListCustomGMsData {
@@ -66,6 +72,7 @@ export interface CreateCustomCoachPayload {
 	name: string;
 	overallRating: number;
 	specialty: CoachSpecialty;
+	appearance?: StaffAppearance | null;
 }
 
 export interface UpdateCustomCoachPayload {
@@ -73,6 +80,8 @@ export interface UpdateCustomCoachPayload {
 	name: string;
 	overallRating: number;
 	specialty: CoachSpecialty;
+	// Absent leaves a stored look alone; null removes it.
+	appearance?: StaffAppearance | null;
 }
 
 // Response data structures
@@ -82,6 +91,7 @@ export interface CustomCoachData {
 	overallRating: number;
 	specialty: CoachSpecialty;
 	created: string;
+	appearance?: StaffAppearance;
 }
 
 export interface UpdatedCustomCoachData {
@@ -90,6 +100,7 @@ export interface UpdatedCustomCoachData {
 	overallRating: number;
 	specialty: CoachSpecialty;
 	updated: string;
+	appearance?: StaffAppearance;
 }
 
 export interface CustomCoachListItem {
@@ -99,6 +110,7 @@ export interface CustomCoachListItem {
 	specialty: CoachSpecialty;
 	created: string;
 	isCustom: true;
+	appearance?: StaffAppearance;
 }
 
 export interface ListCustomCoachesData {

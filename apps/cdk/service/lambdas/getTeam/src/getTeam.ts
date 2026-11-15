@@ -9,6 +9,7 @@ import { AuthorizerContext } from "models/auth";
 import { GetTeamResponse, SavedTeam } from "models/api/teams-api";
 import { removeKeys } from "resources/dynamo/utilities";
 import { resolveArena } from "resources/dynamo/arenas";
+import { resolveEntity } from "resources/dynamo/staff";
 
 const { mainTable = "" } = process.env;
 
@@ -54,7 +55,11 @@ export const handler: Handler = async (
 		const dbResponse = await docClient.send(updateCommand);
 		const team = dbResponse.Attributes as SavedTeam & { PK?: string; SK?: string };
 		removeKeys(team);
-		team.arena = await resolveArena(docClient, mainTable, userUUID, team.arena);
+		[team.arena, team.coach, team.gm] = await Promise.all([
+			resolveArena(docClient, mainTable, userUUID, team.arena),
+			resolveEntity(docClient, mainTable, userUUID, "coach", team.coach),
+			resolveEntity(docClient, mainTable, userUUID, "gm", team.gm),
+		]);
 
 		const response: GetTeamResponse = {
 			success: true,

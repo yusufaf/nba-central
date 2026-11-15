@@ -10,6 +10,7 @@ export interface CustomGMItem {
 	gmUUID: string;
 	name: string;
 	teams: string[];
+	appearance?: StaffAppearance;
 	createdBy: string;
 }
 
@@ -23,6 +24,7 @@ export interface CustomCoachItem {
 	name: string;
 	overallRating: number;
 	specialty: CoachSpecialty;
+	appearance?: StaffAppearance;
 	createdBy: string;
 }
 
@@ -54,6 +56,28 @@ export interface PersonAppearance {
 	// Worn when the team gives the player no roster number.
 	jerseyNumber?: string;
 	pose: PoseId;
+}
+
+// Custom coaches and GMs (#294). Staff wear only what STAFF_ACCESSORIES lists.
+export const OUTFIT_STYLES = ["suit", "polo", "tracksuit"] as const;
+export const AGE_LOOKS = ["young", "prime", "veteran"] as const;
+export const STAFF_ACCESSORIES = ["glasses"] as const;
+export const STAFF_HEIGHT_INCHES = { min: 60, max: 90 } as const;
+
+export type OutfitStyleId = (typeof OUTFIT_STYLES)[number];
+export type AgeLookId = (typeof AGE_LOOKS)[number];
+
+export interface StaffOutfit {
+	style: OutfitStyleId;
+	primary: string;
+	secondary: string;
+}
+
+// A staff look is a person's look plus these; it never has a jersey number.
+export interface StaffAppearance extends Omit<PersonAppearance, "build" | "jerseyNumber"> {
+	build: PersonAppearance["build"] & { heightIn: number };
+	outfit: StaffOutfit;
+	ageLook: AgeLookId;
 }
 
 export interface CustomPlayerItem {
