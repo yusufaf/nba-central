@@ -28,9 +28,9 @@ interface BuilderState {
     teamLogo: string;
     teamJersey: string;
     selectedPlayersData: Map<number, Player>;
-    teamCoach: Coach | null;
+    teamCoach: Coach | EntityRef | null;
     teamArena: BuilderArena | null;
-    teamGM: GM | null;
+    teamGM: GM | EntityRef | null;
     teamUniform?: TeamUniform | null;
     teamNumbers?: RosterNumbers;
 }
@@ -75,13 +75,37 @@ export const refreshCustomAppearances = (
     });
 };
 
-const toEntityRef = (entity: Coach | GM | null): EntityRef | null => {
+const nonEmpty = (value: unknown): string | undefined =>
+    typeof value === "string" && value.length > 0 ? value : undefined;
+
+/**
+ * A custom coach's or GM's link id, whichever name it travels under: a list
+ * item carries coachUUID/gmUUID, a loaded team's ref carries uuid.
+ */
+export const staffUUID = (entity: unknown): string | undefined => {
+    if (typeof entity !== "object" || entity === null) return undefined;
+    const record = entity as Record<string, unknown>;
+    return nonEmpty(record.coachUUID) ?? nonEmpty(record.gmUUID) ?? nonEmpty(record.uuid);
+};
+
+// Only the stored fields: a custom one's look is read live on every load.
+const toEntityRef = (entity: Coach | GM | EntityRef | null): EntityRef | null => {
     if (!entity) return null;
     return {
         name: entity.name,
         isCustom: !!entity.isCustom,
-        uuid: ("coachUUID" in entity && entity.coachUUID) || ("gmUUID" in entity && entity.gmUUID) || undefined,
+        uuid: entity.isCustom ? staffUUID(entity) : undefined,
     };
+};
+
+/**
+ * A remixed team's coach or GM, without the original owner's look. The link
+ * id stays: the server keeps it only when the remixer owns the item.
+ */
+export const remixStaff = (entity: EntityRef | null | undefined): EntityRef | null => {
+    if (!entity) return null;
+    const uuid = entity.isCustom ? staffUUID(entity) : undefined;
+    return { name: entity.name, isCustom: !!entity.isCustom, ...(uuid && { uuid }) };
 };
 
 // Only the stored fields. A resolved arena's court, image URLs and `missing`

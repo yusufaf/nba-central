@@ -1,8 +1,56 @@
-import { describe, it, expect, afterEach, vi } from "vitest";
-import { mount } from "@vue/test-utils";
+import { describe, it, expect, afterEach, beforeEach, vi } from "vitest";
+import { flushPromises, mount } from "@vue/test-utils";
 import { nextTick } from "vue";
 import CoachSection from "@/components/TeamBuilder/CoachSection.vue";
 import coachesData from "@/assets/data/coaches.json";
+
+const toast = vi.hoisted(() => ({ success: vi.fn(), error: vi.fn(), info: vi.fn() }));
+vi.mock("vue-sonner", () => ({ toast }));
+
+const api = vi.hoisted(() => ({
+    coach: { list: vi.fn(), delete: vi.fn() },
+    gm: { list: vi.fn(), delete: vi.fn() },
+    player: { list: vi.fn() },
+}));
+vi.mock("@/network/api", () => ({
+    customCoachApi: api.coach,
+    customGMApi: api.gm,
+    customPlayerApi: api.player,
+    dataApi: { getPlayers: vi.fn() },
+}));
+
+const { currentUser } = await vi.hoisted(async () => {
+    const { ref } = await import("vue");
+    return { currentUser: ref<{ id: string; username: string | null; memberSince: Date | null } | null>(null) };
+});
+vi.mock("@/composables/useCurrentUser", () => ({ useCurrentUser: () => ({ currentUser }) }));
+
+beforeEach(() => {
+    vi.clearAllMocks();
+    currentUser.value = { id: "user-1", username: "someone", memberSince: null };
+    api.coach.list.mockResolvedValue({
+        success: true,
+        data: { customCoaches: [{ coachUUID: "c1", name: "Coach Vega", overallRating: 80, specialty: "Balanced" }] },
+    });
+    api.gm.list.mockResolvedValue({
+        success: true,
+        data: { customGMs: [{ gmUUID: "g1", name: "Exec Ortiz", teams: ["SEA"] }] },
+    });
+    api.coach.delete.mockResolvedValue({ success: true });
+    api.gm.delete.mockResolvedValue({ success: true });
+});
+
+// The row's trash button, then the confirm dialog's Delete.
+const deleteFromList = async (itemSelector: string, name: string) => {
+    const item = [...document.querySelectorAll(itemSelector)].find((el) => el.textContent?.includes(name))!;
+    (item.querySelector("svg.lucide-trash")!.closest("button") as HTMLButtonElement).click();
+    await flushPromises();
+    const dialog = [...document.querySelectorAll('[role="dialog"]')].find((el) => el.textContent?.includes("Delete Custom"))!;
+    const confirm = [...dialog.querySelectorAll("button")].find((b) => b.textContent?.trim() === "Delete")!;
+    confirm.click();
+    await flushPromises();
+};
+
 
 // Sheet and DropdownMenu both portal their content to document.body via
 // Teleport, so everything below queries the live document directly instead
@@ -90,5 +138,31 @@ describe("CoachSection filters", () => {
 
         expect(both).toBeLessThanOrEqual(currentOnly);
         wrapper.unmount();
+    });
+});
+
+describe("deleting a custom coach", () => {
+    afterEach(() => {
+        document.body.innerHTML = "";
+    });
+
+    it("clears a loaded team's coach, whose link is uuid", async () => {
+        const update = vi.fn();
+        mount(CoachSection, {
+            props: {
+                selectedDrawerSide: "right",
+                teamCoach: { name: "Coach Vega", isCustom: true, uuid: "c1" } as never,
+                "onUpdate:teamCoach": update,
+                showCoachDrawer: true,
+                "onUpdate:showCoachDrawer": () => {},
+            },
+            attachTo: document.body,
+        });
+        await flushPromises();
+
+        await deleteFromList(".coach-item", "Coach Vega");
+
+        expect(api.coach.delete).toHaveBeenCalledWith("c1");
+        expect(update).toHaveBeenCalledWith(null);
     });
 });
