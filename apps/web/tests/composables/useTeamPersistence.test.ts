@@ -1,9 +1,16 @@
 import { describe, it, expect } from "vitest";
-import { serializeTeam, hydrateTeam, refreshCustomAppearances, remixTitle } from "@/composables/useTeamPersistence";
+import {
+    serializeTeam,
+    hydrateTeam,
+    refreshCustomAppearances,
+    remixStaff,
+    remixTitle,
+    staffUUID,
+} from "@/composables/useTeamPersistence";
 import { DEFAULT_APPEARANCE } from "@/utils/appearance";
-import type { SavedTeam, TeamRosterEntry } from "@/models/api";
+import type { EntityRef, SavedTeam, TeamRosterEntry } from "@/models/api";
 import historicalLogosData from "@/assets/data/historicalLogos.json";
-import type { Arena, Coach, HistoricalLogo, Player } from "@/models/types";
+import type { Arena, Coach, GM, HistoricalLogo, Player } from "@/models/types";
 
 const apiPlayer = (overrides: Record<string, any> = {}) => ({
     id: "jamesle01",
@@ -573,5 +580,84 @@ describe("custom player appearances", () => {
             refreshCustomAppearances([nova], [{ playerUUID: "p1", appearance: LOOK_B }]);
             expect(JSON.stringify([nova])).toBe(before);
         });
+    });
+});
+
+describe("custom coach and GM links", () => {
+    const builder = (teamCoach: unknown, teamGM: unknown = null) => ({
+        teamName: "T",
+        teamDescription: "",
+        teamCity: "",
+        teamCountry: "",
+        teamLogo: "",
+        teamJersey: "",
+        selectedPlayersData: new Map(),
+        teamCoach: teamCoach as Coach | null,
+        teamArena: null,
+        teamGM: teamGM as GM | null,
+    });
+
+    it("keeps a loaded team's custom coach and GM uuid on the next save", () => {
+        const loaded = hydrateTeam({
+            title: "T",
+            roster: [],
+            coach: { name: "Coach Vega", isCustom: true, uuid: "c1" },
+            gm: { name: "Exec Ortiz", isCustom: true, uuid: "g1" },
+            arena: null,
+        });
+        const payload = serializeTeam(builder(loaded.teamCoach, loaded.teamGM));
+        expect(payload.coach).toEqual({ name: "Coach Vega", isCustom: true, uuid: "c1" });
+        expect(payload.gm).toEqual({ name: "Exec Ortiz", isCustom: true, uuid: "g1" });
+    });
+
+    it("sends a builder coach's link and nothing else, never its look", () => {
+        const coach = {
+            name: "Coach Vega",
+            isCustom: true,
+            coachUUID: "c1",
+            overallRating: 80,
+            specialty: "Balanced",
+            appearance: { version: 1 },
+        };
+        expect(serializeTeam(builder(coach)).coach).toEqual({ name: "Coach Vega", isCustom: true, uuid: "c1" });
+    });
+
+    it.for([
+        [{ coachUUID: "a" }, "a"],
+        [{ gmUUID: "b" }, "b"],
+        [{ uuid: "c" }, "c"],
+        [{ coachUUID: "", uuid: "d" }, "d"],
+        [{ uuid: "" }, undefined],
+        [null, undefined],
+        ["c1", undefined],
+    ] as const)("staffUUID(%o) is %s", ([entity, expected]) => {
+        expect(staffUUID(entity)).toBe(expected);
+    });
+});
+
+describe("remixStaff", () => {
+    it("drops a custom coach's look but keeps its link", () => {
+        const coach = { name: "Coach Vega", isCustom: true, uuid: "c1", appearance: { version: 1 } } as EntityRef;
+        const remixed = remixStaff(coach);
+        expect(remixed).toEqual({ name: "Coach Vega", isCustom: true, uuid: "c1" });
+        expect(remixed).not.toHaveProperty("appearance");
+    });
+
+    it("normalises a coachUUID to uuid", () => {
+        const coach = { name: "Coach Vega", isCustom: true, coachUUID: "c1" } as unknown as EntityRef;
+        const remixed = remixStaff(coach);
+        expect(remixed).toEqual({ name: "Coach Vega", isCustom: true, uuid: "c1" });
+        expect(remixed).not.toHaveProperty("coachUUID");
+    });
+
+    it("keeps a real coach as its name", () => {
+        const remixed = remixStaff({ name: "Phil Jackson", isCustom: false, uuid: "x" });
+        expect(remixed).toEqual({ name: "Phil Jackson", isCustom: false });
+        expect(remixed).not.toHaveProperty("uuid");
+    });
+
+    it("is null for no coach", () => {
+        expect(remixStaff(null)).toBeNull();
+        expect(remixStaff(undefined)).toBeNull();
     });
 });

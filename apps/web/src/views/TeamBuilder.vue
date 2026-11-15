@@ -31,6 +31,7 @@ import {
     serializeTeam,
     hydrateTeam,
     refreshCustomAppearances,
+    remixStaff,
     remixTitle,
     type HydratedTeam,
 } from "@/composables/useTeamPersistence";
@@ -948,6 +949,10 @@ const loadRemixFromRoute = async (teamUUID: string) => {
             return;
         }
         const hydrated = hydrateTeam(response.data);
+        // The original owner's coach and GM look stays theirs: the remix shows
+        // figurines, and the server decides on save whether a link is kept.
+        hydrated.teamCoach = remixStaff(hydrated.teamCoach);
+        hydrated.teamGM = remixStaff(hydrated.teamGM);
         forgetHistory();
         applyHydratedTeam(hydrated, remixTitle(hydrated.teamName));
         await Promise.all(

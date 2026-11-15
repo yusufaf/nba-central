@@ -6,6 +6,7 @@ import coachesData from '@/assets/data/coaches.json';
 import { getRandomIndex, roundValueToNPlaces, getWikipediaUrl } from '@/constants/utilities';
 import ExternalLinksMenu from '@/components/ExternalLinksMenu.vue';
 import { useCustomCoaches } from '@/composables/useCustomCoaches';
+import { staffUUID } from '@/composables/useTeamPersistence';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -300,7 +301,7 @@ const handleDeleteCoach = async () => {
         coachToDelete.value = null;
 
         // Clear from team if currently selected
-        if (teamCoach.value?.coachUUID === coachUUID) {
+        if (staffUUID(teamCoach.value) === coachUUID) {
             teamCoach.value = null;
         }
     }

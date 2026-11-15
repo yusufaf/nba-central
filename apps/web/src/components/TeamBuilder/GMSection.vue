@@ -7,6 +7,7 @@ import nbaTeamsData from "@/assets/data/nbaTeams.json";
 import { getRandomIndex, getWikipediaUrl } from "@/constants/utilities";
 import ExternalLinksMenu from "@/components/ExternalLinksMenu.vue";
 import { useCustomGMs } from "@/composables/useCustomGMs";
+import { staffUUID } from "@/composables/useTeamPersistence";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -226,7 +227,7 @@ const handleDeleteGM = async () => {
         gmToDelete.value = null;
 
         // Clear from team if currently selected
-        if (teamGM.value?.gmUUID === gmUUID) {
+        if (staffUUID(teamGM.value) === gmUUID) {
             teamGM.value = null;
         }
     }
