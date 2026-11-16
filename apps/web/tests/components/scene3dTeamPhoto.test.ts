@@ -47,4 +47,12 @@ describe('renderTeamPhoto', () => {
         expect(options.kit).toEqual({ colours: mocks.sampled, teamName: 'Owls' });
         expect(options.people[0].number).toBe('23');
     });
+
+    it("passes the arena's venue, and none when there isn't one", async () => {
+        const venue = { version: 1, seats: { primary: '#111111', secondary: '#eeeeee', pattern: 'rows' }, upperDeck: true } as const;
+        await renderTeamPhoto(input({ venue }));
+        expect(mocks.frame.mock.calls[0][0].venue).toEqual(venue);
+        await renderTeamPhoto(input());
+        expect(mocks.frame.mock.calls[1][0].venue).toBeNull();
+    });
 });

@@ -23,7 +23,7 @@ vi.mock('@/components/scene3d', async () => {
     return {
         TeamScene3DAsync: defineComponent({
             name: 'TeamScene3DStub',
-            props: ['court', 'logoUrl', 'drawingUrl', 'capacity', 'label', 'people', 'jerseyUrl', 'teamName', 'uniform'],
+            props: ['court', 'logoUrl', 'drawingUrl', 'capacity', 'venue', 'label', 'people', 'jerseyUrl', 'teamName', 'uniform'],
             setup(props) {
                 mocks.mounts++;
                 // The live reactive props, so later prop changes are visible.
@@ -62,6 +62,7 @@ const PROPS = {
     logoUrl: 'https://cdn/logo.png',
     drawingUrl: undefined,
     capacity: 19200,
+    venue: { version: 1, seats: { primary: '#111111', secondary: '#eeeeee', pattern: 'rows' }, upperDeck: true },
     people: PEOPLE,
     jerseyUrl: 'https://cdn/jersey.png',
     teamName: 'Owls',
@@ -117,6 +118,7 @@ describe('TeamScene3DDialog', () => {
         expect(mocks.liveProps).toMatchObject({
             court: COURT,
             capacity: 19200,
+            venue: PROPS.venue,
             people: PEOPLE,
             jerseyUrl: 'https://cdn/jersey.png',
             teamName: 'Owls',

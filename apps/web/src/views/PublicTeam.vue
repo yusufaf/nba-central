@@ -206,6 +206,7 @@ const remix = () => {
                         :logo-url="courtLogoUrl"
                         :drawing-url="arena?.drawingUrl"
                         :capacity="arena?.capacity ?? null"
+                        :venue="arena?.venue ?? null"
                         :label="label3d"
                         :people="people3d"
                         :jersey-url="team.jerseyUrl || undefined"

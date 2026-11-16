@@ -1,8 +1,10 @@
-import { Color, Fog, Group, Scene, type Object3D, type WebGLRenderer } from 'three';
+import { Color, Fog, Group, Scene, type Mesh, type Object3D, type WebGLRenderer } from 'three';
+import type { VenueDesign } from '@/constants/venue';
 import { buildBowl, bowlLayout } from '@/three/arena/bowl';
 import { buildCourt, courtTexture } from '@/three/arena/court';
 import { broadcastLighting } from '@/three/arena/lighting';
 import { FOG, SCENE_COLOURS } from '@/three/arena/palette';
+import { seatColouring } from '@/three/arena/seats';
 import { blobShadow } from '@/three/arena/shadow';
 import { disposeObject } from '@/three/renderer/shared';
 import { layoutPeople } from './layout';
@@ -18,10 +20,22 @@ export const createStage = (): Scene => {
     return scene;
 };
 
-export const buildArena = (court: HTMLCanvasElement | null, capacity: number | null, renderer: WebGLRenderer): Group => {
+export const buildCourtFloor = (court: HTMLCanvasElement | null, renderer: WebGLRenderer): Group =>
+    buildCourt(court ? courtTexture(court, renderer) : null);
+
+// An arena without a venue gets today's bowl: the capacity's decks, solid seats.
+export const buildSeating = (capacity: number | null, venue: VenueDesign | null): Mesh =>
+    buildBowl(bowlLayout(capacity, venue?.upperDeck), seatColouring(venue));
+
+export const buildArena = (
+    court: HTMLCanvasElement | null,
+    capacity: number | null,
+    renderer: WebGLRenderer,
+    venue: VenueDesign | null = null,
+): Group => {
     const arena = new Group();
-    arena.add(buildCourt(court ? courtTexture(court, renderer) : null));
-    arena.add(buildBowl(bowlLayout(capacity), SCENE_COLOURS.seat));
+    arena.add(buildCourtFloor(court, renderer));
+    arena.add(buildSeating(capacity, venue));
     return arena;
 };
 

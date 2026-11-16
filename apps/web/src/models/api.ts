@@ -1,6 +1,9 @@
 import type { NBA2KRating, Player, RatingSource } from './types';
 import type { SettingsMap } from '@/constants/settings';
 import type { StaffAppearance } from '@/constants/appearance';
+import type { VenueDesign } from '@/constants/venue';
+
+export type { VenueDesign };
 
 // #region File API Types
 export interface InitiateMultipartUploadPayload {
@@ -158,6 +161,7 @@ export interface TeamArenaRef {
 // What getTeam and getPublicTeam return: the ref with the live arena.
 export interface ResolvedArena extends TeamArenaRef {
     court?: CourtDesign;
+    venue?: VenueDesign;
     photoUrl?: string;
     logoUrl?: string;
     drawingUrl?: string;
@@ -280,10 +284,13 @@ export interface CustomArenaPayload {
     capacity: number | null;
     openedYear: number | null;
     court: CourtDesign | null;
+    // Absent on update leaves the stored venue; null removes it.
+    venue?: VenueDesign | null;
 }
 
 export interface CustomArena extends CustomArenaPayload {
     arenaUUID: string;
+    venue?: VenueDesign;
     photoUrl?: string;
     logoUrl?: string;
     drawingUrl?: string;

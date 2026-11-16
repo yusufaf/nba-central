@@ -27,12 +27,13 @@ vi.mock('@/three/character/person', async () => {
     };
 });
 
-const stage = vi.hoisted(() => ({ failArena: false }));
+const stage = vi.hoisted(() => ({ failArena: false, arenaArgs: [] as unknown[][] }));
 vi.mock('@/three/scene/stage', async (importOriginal) => {
     const actual = await importOriginal<typeof import('@/three/scene/stage')>();
     return {
         ...actual,
         buildArena: (...args: Parameters<typeof actual.buildArena>) => {
+            stage.arenaArgs.push(args);
             if (stage.failArena) throw new Error('no arena');
             return actual.buildArena(...args);
         },
@@ -48,6 +49,7 @@ const person = (id: string): PersonInput => ({ id, name: id, role: 'player', hei
 const input = (ids: string[]) => ({
     court: null,
     capacity: 18000,
+    venue: null,
     people: ids.map(person),
     kit: { colours: HOME_KIT, teamName: 'Owls' },
 });
@@ -63,6 +65,7 @@ beforeEach(() => {
     shared.disposeObject.mockClear();
     people.failId = null;
     stage.failArena = false;
+    stage.arenaArgs = [];
     people.built = [];
 });
 
@@ -85,6 +88,14 @@ describe('renderTeamPhotoFrame', () => {
         expect(new Set(people.built.map((root) => root.position.z.toFixed(2))).size).toBeLessThanOrEqual(2);
         const xs = people.built.map((root) => root.position.x);
         expect(xs).toEqual([...xs].sort((a, b) => a - b));
+    });
+
+    it("builds the arena with the team's venue", async () => {
+        const venue = { version: 1, seats: { primary: '#111111', secondary: '#eeeeee', pattern: 'sections' }, upperDeck: false } as const;
+        await renderTeamPhotoFrame({ ...input(['p1']), venue });
+        expect(stage.arenaArgs).toHaveLength(1);
+        expect(stage.arenaArgs[0][1]).toBe(18000);
+        expect(stage.arenaArgs[0][3]).toEqual(venue);
     });
 
     it("frames the team-photo shot for the card's shape", async () => {

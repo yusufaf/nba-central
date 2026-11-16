@@ -1,5 +1,7 @@
 import { BufferAttribute, BufferGeometry, Color, DoubleSide, Mesh, MeshStandardMaterial } from 'three';
+import { DEFAULT_CAPACITY, defaultUpperDeck } from '@/utils/venue';
 import { COURT_DEPTH_M, COURT_LENGTH_M } from './court';
+import { seatMix, type SeatColouring } from './seats';
 
 export interface Deck {
     rows: number;
@@ -9,13 +11,12 @@ export interface Deck {
     rise: number; // height of one row
 }
 
-export const DEFAULT_CAPACITY = 18000;
-
 const clamp = (value: number, min: number, max: number) => Math.min(max, Math.max(min, value));
 
 // Bigger arenas get more rows, and an upper deck once a single deck would
 // have to climb too far. The numbers are a look, not an attendance model.
-export const bowlLayout = (capacity: number | null): Deck[] => {
+// A venue's upper-deck setting overrides that rule either way (#295).
+export const bowlLayout = (capacity: number | null, upperDeck?: boolean): Deck[] => {
     const seats = capacity ?? DEFAULT_CAPACITY;
     const lower: Deck = {
         rows: clamp(Math.round(seats / 1000), 12, 24),
@@ -24,7 +25,7 @@ export const bowlLayout = (capacity: number | null): Deck[] => {
         tread: 0.85,
         rise: 0.42,
     };
-    if (seats <= 12000) return [lower];
+    if (!(upperDeck ?? defaultUpperDeck(capacity))) return [lower];
     return [
         lower,
         {
@@ -52,12 +53,16 @@ const ringPoint = (t: number, ax: number, az: number): [number, number] => {
 };
 
 // Each row is a riser (the seat colour) and a tread (a darker aisle floor),
-// all in one vertex-coloured mesh: one draw call for the whole bowl.
-export const buildBowl = (decks: Deck[], seat: string): Mesh => {
+// all in one vertex-coloured mesh: one draw call for the whole bowl. The seat
+// pattern only changes the risers' colours, so it adds no triangles.
+export const buildBowl = (decks: Deck[], seats: SeatColouring): Mesh => {
     const ax = COURT_LENGTH_M / 2 + BOWL_INSET_M;
     const az = COURT_DEPTH_M / 2 + BOWL_INSET_M;
-    const riser = new Color(seat);
-    const tread = riser.clone().multiplyScalar(0.45);
+    const primary = new Color(seats.primary);
+    const secondary = new Color(seats.secondary);
+    const rows = decks.reduce((total, deck) => total + deck.rows, 0);
+    const riser = new Color();
+    const tread = new Color();
     const positions: number[] = [];
     const colours: number[] = [];
     const quad = (corners: number[][], colour: Color) => {
@@ -66,8 +71,9 @@ export const buildBowl = (decks: Deck[], seat: string): Mesh => {
             colours.push(colour.r, colour.g, colour.b);
         }
     };
+    let row = 0;
     for (const deck of decks) {
-        for (let r = 0; r < deck.rows; r++) {
+        for (let r = 0; r < deck.rows; r++, row++) {
             const inner = deck.startOffset + r * deck.tread;
             const outer = inner + deck.tread;
             const y = deck.startHeight + r * deck.rise;
@@ -79,6 +85,8 @@ export const buildBowl = (decks: Deck[], seat: string): Mesh => {
                 const [ix1, iz1] = ringPoint(t1, ax + inner, az + inner);
                 const [ox0, oz0] = ringPoint(t0, ax + outer, az + outer);
                 const [ox1, oz1] = ringPoint(t1, ax + outer, az + outer);
+                riser.copy(primary).lerp(secondary, seatMix(seats.pattern, { row, rows, segment: k }));
+                tread.copy(riser).multiplyScalar(0.45);
                 quad([[ix0, y, iz0], [ix1, y, iz1], [ix1, top, iz1], [ix0, top, iz0]], riser);
                 quad([[ix0, top, iz0], [ix1, top, iz1], [ox1, top, oz1], [ox0, top, oz0]], tread);
             }

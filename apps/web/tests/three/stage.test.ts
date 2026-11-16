@@ -25,6 +25,16 @@ describe('buildArena', () => {
         expect(arena).toBeInstanceOf(Group);
         expect(arena.children).toHaveLength(2);
     });
+
+    it("colours the bowl from the venue's seats", () => {
+        const renderer = { capabilities: { getMaxAnisotropy: () => 1 } } as never;
+        const venue = { version: 1, seats: { primary: '#111111', secondary: '#eeeeee', pattern: 'rows' }, upperDeck: true } as const;
+        const colours = (arena: Group) =>
+            Array.from((arena.getObjectByName('bowl') as Mesh).geometry.getAttribute('color').array as Float32Array);
+        const withVenue = buildArena(null, 18000, renderer, venue);
+        expect(withVenue.children).toHaveLength(2);
+        expect(colours(withVenue)).not.toEqual(colours(buildArena(null, 18000, renderer)));
+    });
 });
 
 describe('placeInRows', () => {

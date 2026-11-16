@@ -30,7 +30,7 @@ vi.mock('@/components/scene3d', async () => {
     return {
         TeamScene3DAsync: define({
             name: 'TeamScene3DStub',
-            props: ['court', 'logoUrl', 'drawingUrl', 'capacity', 'label', 'people', 'jerseyUrl', 'teamName', 'uniform'],
+            props: ['court', 'logoUrl', 'drawingUrl', 'capacity', 'venue', 'label', 'people', 'jerseyUrl', 'teamName', 'uniform'],
             setup(props) {
                 mocks.sceneMounts++;
                 mocks.sceneProps.push({ ...props });
@@ -66,7 +66,7 @@ const teamWith = (uuid: string, wood: 'maple' | 'walnut') => ({
     roster: [],
     coach: null,
     gm: null,
-    arena: { name: 'Nest', capacity: 21000, isCustom: true, court: court(wood) },
+    arena: { name: 'Nest', capacity: 21000, isCustom: true, court: court(wood), venue: { version: 1, seats: { primary: '#111111', secondary: '#eeeeee', pattern: 'rows' }, upperDeck: true } },
     createdAt: 1,
     updatedAt: 2,
     public: true,
@@ -109,12 +109,12 @@ describe('PublicTeam ?view=3d', () => {
         expect(button(wrapper, 'View in 3D')).toBeTruthy();
     });
 
-    it("mounts the scene with the arena's court and capacity", async () => {
+    it("mounts the scene with the arena's court, capacity and venue", async () => {
         mocks.route.query = { view: '3d' };
         const wrapper = mountView();
         await flushPromises();
         expect(wrapper.find('[data-testid="scene-stub"]').exists()).toBe(true);
-        expect(mocks.sceneProps.at(-1)).toMatchObject({ court: court('maple'), capacity: 21000 });
+        expect(mocks.sceneProps.at(-1)).toMatchObject({ court: court('maple'), capacity: 21000, venue: { version: 1, seats: { primary: '#111111', secondary: '#eeeeee', pattern: 'rows' }, upperDeck: true } });
         expect(button(wrapper, 'Hide 3D')).toBeTruthy();
     });
 
