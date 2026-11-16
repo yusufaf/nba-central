@@ -1,5 +1,5 @@
 import { ApiResponse } from "./custom-entities-api";
-import type { CourtDesign, PersonAppearance, StaffAppearance } from "../custom-entities";
+import type { CourtDesign, PersonAppearance, StaffAppearance, VenueDesign } from "../custom-entities";
 
 // A player record as embedded in a saved team - a snapshot so a team
 // renders exactly as it was saved, independent of later roster/rating
@@ -80,6 +80,7 @@ export interface TeamArenaRef {
 // ever saved back onto the team.
 export interface ResolvedArena extends TeamArenaRef {
 	court?: CourtDesign;
+	venue?: VenueDesign;
 	photoUrl?: string;
 	logoUrl?: string;
 	drawingUrl?: string;

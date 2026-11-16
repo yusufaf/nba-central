@@ -11,9 +11,11 @@ import {
 	OUTFIT_STYLES,
 	PersonAppearance,
 	POSES,
+	SEAT_PATTERNS,
 	STAFF_ACCESSORIES,
 	STAFF_HEIGHT_INCHES,
 	StaffAppearance,
+	VenueDesign,
 } from "../models/custom-entities";
 import { isOneOf, isRecord } from "./type-guards";
 
@@ -303,6 +305,32 @@ const courtError = (court: unknown): string | null => {
 	return null;
 };
 
+export const venueError = (value: unknown): string | null => {
+	if (!isRecord(value)) return "Venue must be an object";
+	if (value.version !== 1) return "Venue version must be 1";
+	const seats = value.seats;
+	if (!isRecord(seats)) return "Venue seats must be {primary, secondary, pattern}";
+	for (const field of ["primary", "secondary"]) {
+		const colour = seats[field];
+		if (typeof colour !== "string" || !HEX_COLOUR.test(colour)) return `Venue seats ${field} must be a #rrggbb colour`;
+	}
+	if (!isOneOf(SEAT_PATTERNS, seats.pattern)) {
+		return `Venue seats pattern must be one of ${SEAT_PATTERNS.join(", ")}`;
+	}
+	if (typeof value.upperDeck !== "boolean") return "Venue upper deck must be true or false";
+	return null;
+};
+
+/** A venue that passed venueError, copied key by key so nothing else a client sends is stored. */
+export const toVenue = (value: Record<string, unknown>): VenueDesign => {
+	const seats = value.seats as VenueDesign["seats"];
+	return {
+		version: 1,
+		seats: { primary: seats.primary, secondary: seats.secondary, pattern: seats.pattern },
+		upperDeck: value.upperDeck as boolean,
+	};
+};
+
 export const validateArenaData = (data: unknown): { valid: boolean; error?: string } => {
 	if (!isRecord(data)) {
 		return { valid: false, error: "Invalid request body" };
@@ -333,6 +361,11 @@ export const validateArenaData = (data: unknown): { valid: boolean; error?: stri
 
 	if (data.court != null) {
 		const error = courtError(data.court);
+		if (error) return { valid: false, error };
+	}
+
+	if (data.venue != null) {
+		const error = venueError(data.venue);
 		if (error) return { valid: false, error };
 	}
 

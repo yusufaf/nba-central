@@ -84,6 +84,12 @@ const court = {
 	sidelineText: "",
 };
 
+const venue = {
+	version: 1,
+	seats: { primary: "#1e293b", secondary: "#b91c1c", pattern: "rows" },
+	upperDeck: false,
+};
+
 const arenaItem = (owner: string, arenaUUID: string, extra: Item = {}): Item => ({
 	PK: `userUUID#${owner}`,
 	SK: `customArena#${arenaUUID}`,
@@ -96,6 +102,7 @@ const arenaItem = (owner: string, arenaUUID: string, extra: Item = {}): Item => 
 	capacity: 18600,
 	openedYear: 2026,
 	court,
+	venue,
 	photoUrl: `https://cdn.example/arenas/${arenaUUID}/photo-1.jpg`,
 	photoKey: `arenas/${arenaUUID}/photo-1.jpg`,
 	createdBy: `${owner}-name`,
@@ -162,6 +169,7 @@ describe("saving a team's arena", () => {
 			// Resolved fields a client might send back are never stored.
 			photoUrl: "https://evil.example/x.jpg",
 			court: { ...court, wood: "ebony" },
+			venue: { ...venue, upperDeck: true },
 			missing: true,
 		});
 
@@ -178,6 +186,7 @@ describe("saving a team's arena", () => {
 		expect(data.arena).toMatchObject({
 			arenaUUID: "a1",
 			court,
+			venue,
 			photoUrl: "https://cdn.example/arenas/a1/photo-1.jpg",
 		});
 		const [get] = dynamoSend.mock.calls.map(([c]) => c.input);
@@ -206,6 +215,7 @@ describe("saving a team's arena", () => {
 		});
 		expect(data.arena).not.toHaveProperty("photoUrl");
 		expect(data.arena).not.toHaveProperty("court");
+		expect(data.arena).not.toHaveProperty("venue");
 		// Only the caller's own partition was ever looked at.
 		const gets = dynamoSend.mock.calls.filter(([c]) => c.constructor.name === "GetCommand");
 		expect(gets.map(([c]) => c.input.Key.PK)).toEqual([`userUUID#${ME}`]);
@@ -277,6 +287,7 @@ describe("reading a team's arena", () => {
 			isCustom: true,
 			arenaUUID: "a1",
 			court,
+			venue,
 			photoUrl: "https://cdn.example/arenas/a1/photo-1.jpg",
 		});
 	});
@@ -320,7 +331,7 @@ describe("reading a team's arena", () => {
 
 		expect(result.statusCode).toBe(200);
 		const { data } = parseBody(result);
-		expect(data.arena).toMatchObject({ name: "Harbor Pavilion", court, arenaUUID: "b1" });
+		expect(data.arena).toMatchObject({ name: "Harbor Pavilion", court, venue, arenaUUID: "b1" });
 		expect(data).not.toHaveProperty("userUUID");
 		// `username` is deliberate attribution; the owner's id is never sent.
 		expect(result.body).not.toMatch(new RegExp(`"${OTHER}"|/${OTHER}/`));

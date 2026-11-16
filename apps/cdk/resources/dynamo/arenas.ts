@@ -36,6 +36,7 @@ export const toArenaListItem = (item: CustomArenaItem): CustomArenaListItem => (
 	capacity: item.capacity ?? null,
 	openedYear: item.openedYear ?? null,
 	court: item.court ?? null,
+	venue: optional(item.venue),
 	photoUrl: optional(item.photoUrl),
 	logoUrl: optional(item.logoUrl),
 	drawingUrl: optional(item.drawingUrl),
@@ -48,7 +49,8 @@ const compact = <T extends object>(value: T): T =>
 	Object.fromEntries(Object.entries(value).filter(([, v]) => v !== undefined)) as T;
 
 // Only the fields a team stores. A client sending back a resolved arena
-// (court, photoUrl, missing) gets those dropped here.
+// (court, venue, photoUrl, missing) gets those dropped here, so a remix never
+// carries the owner's court or venue.
 const toRef = (ref: TeamArenaRef): TeamArenaRef =>
 	compact({
 		name: ref.name,
@@ -75,6 +77,7 @@ const resolveFromItem = (item: CustomArenaItem): ResolvedArena =>
 	compact({
 		...refFromItem(item),
 		court: optional(item.court),
+		venue: optional(item.venue),
 		photoUrl: optional(item.photoUrl),
 		logoUrl: optional(item.logoUrl),
 		drawingUrl: optional(item.drawingUrl),

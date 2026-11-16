@@ -8,7 +8,8 @@ import { DynamoDBDocumentClient, UpdateCommand } from "@aws-sdk/lib-dynamodb";
 import { AuthorizerContext } from "models/auth";
 import { CustomArenaItem } from "models/custom-entities";
 import { UpdateCustomArenaResponse } from "models/api/custom-entities-api";
-import { toArenaFields, validateArenaData } from "utilities/custom-entities-validation";
+import { toArenaFields, toVenue, validateArenaData } from "utilities/custom-entities-validation";
+import { isRecord } from "utilities/type-guards";
 import { parseRequestBody } from "utilities/request-body";
 import { customArenaKey, toArenaListItem } from "resources/dynamo/arenas";
 
@@ -32,7 +33,7 @@ export const handler: Handler = async (
 		return fail(401, "Unauthorized");
 	}
 
-	const parsed = parseRequestBody<{ arenaUUID: string }>(event.body, { arenaUUID: "string" });
+	const parsed = parseRequestBody<{ arenaUUID: string; venue?: unknown }>(event.body, { arenaUUID: "string" });
 	if (!parsed.valid) {
 		return fail(400, parsed.error);
 	}
@@ -41,6 +42,11 @@ export const handler: Handler = async (
 		return fail(400, validation.error!);
 	}
 	const fields = toArenaFields(parsed.body);
+	// The venue is optional: absent leaves the stored one as it is (so an old
+	// client can't wipe it), null removes it, an object replaces it.
+	const venue = parsed.body.venue;
+	const setVenue = isRecord(venue) ? ", #venue = :venue" : "";
+	const removeVenue = venue === null ? " REMOVE #venue" : "";
 
 	try {
 		// Keyed by the caller's own partition and conditional on the item
@@ -52,7 +58,9 @@ export const handler: Handler = async (
 				Key: customArenaKey(userUUID, parsed.body.arenaUUID),
 				UpdateExpression:
 					"SET #updated = :updated, #name = :name, #location = :location, " +
-					"#capacity = :capacity, #openedYear = :openedYear, #court = :court",
+					"#capacity = :capacity, #openedYear = :openedYear, #court = :court" +
+					setVenue +
+					removeVenue,
 				ExpressionAttributeNames: {
 					"#updated": "updated",
 					"#name": "name",
@@ -60,6 +68,7 @@ export const handler: Handler = async (
 					"#capacity": "capacity",
 					"#openedYear": "openedYear",
 					"#court": "court",
+					...((setVenue || removeVenue) && { "#venue": "venue" }),
 				},
 				ExpressionAttributeValues: {
 					":updated": new Date().toISOString(),
@@ -68,6 +77,7 @@ export const handler: Handler = async (
 					":capacity": fields.capacity,
 					":openedYear": fields.openedYear,
 					":court": fields.court,
+					...(isRecord(venue) && { ":venue": toVenue(venue) }),
 				},
 				ConditionExpression: "attribute_exists(PK) AND attribute_exists(SK)",
 				ReturnValues: "ALL_NEW",
