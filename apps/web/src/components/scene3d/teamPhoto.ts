@@ -46,6 +46,7 @@ export const renderTeamPhoto = async (input: TeamPhotoInput): Promise<string> =>
     const canvas = await renderTeamPhotoFrame({
         court,
         capacity: input.capacity,
+        venue: input.venue ?? null,
         people: input.people,
         kit: { colours, teamName: input.teamName },
     });

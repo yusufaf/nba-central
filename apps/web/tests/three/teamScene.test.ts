@@ -28,6 +28,7 @@ vi.mock('@/three/character/person', async () => {
     };
 });
 
+import type { Group } from 'three';
 import { TeamScene } from '@/three/scene/teamScene';
 import { framePreset } from '@/three/scene/cameraPresets';
 import type { PersonInput } from '@/three/character/person';
@@ -170,5 +171,44 @@ describe('TeamScene', () => {
         expect(camera.position.y).toBeCloseTo(expected[1], 5);
         expect(camera.position.z).toBeCloseTo(expected[2], 5);
         scene.dispose();
+    });
+});
+
+describe('TeamScene arena parts (#295)', () => {
+    const sceneOf = (scene: TeamScene) => (scene as unknown as { scene: Group }).scene;
+    const bowls = (scene: TeamScene) => sceneOf(scene).children.filter((child) => child.name === 'bowl');
+    const courts = (scene: TeamScene) => sceneOf(scene).children.filter((child) => child.getObjectByName('court-floor'));
+    const VENUE = { version: 1, seats: { primary: '#111111', secondary: '#eeeeee', pattern: 'rows' }, upperDeck: true } as const;
+
+    beforeEach(() => shared.disposeObject.mockClear());
+
+    it('setBowl swaps the bowl rather than adding another', () => {
+        const scene = new TeamScene(container);
+        scene.setBowl(18000, null);
+        const [first] = bowls(scene);
+        scene.setBowl(18000, VENUE);
+        expect(bowls(scene)).toHaveLength(1);
+        expect(bowls(scene)[0]).not.toBe(first);
+        expect(shared.disposeObject).toHaveBeenCalledWith(first);
+        scene.dispose();
+    });
+
+    it('setCourt swaps the court rather than adding another', () => {
+        const scene = new TeamScene(container);
+        scene.setCourt(null);
+        const [first] = courts(scene);
+        scene.setCourt(null);
+        expect(courts(scene)).toHaveLength(1);
+        expect(shared.disposeObject).toHaveBeenCalledWith(first);
+        scene.dispose();
+    });
+
+    it('adds nothing once disposed', () => {
+        const scene = new TeamScene(container);
+        scene.dispose();
+        scene.setBowl(18000, VENUE);
+        scene.setCourt(null);
+        expect(bowls(scene)).toHaveLength(0);
+        expect(courts(scene)).toHaveLength(0);
     });
 });

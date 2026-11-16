@@ -1,10 +1,12 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { flushPromises, mount, type VueWrapper } from '@vue/test-utils';
+import { h } from 'vue';
 import type { CourtDesign } from '@/models/api';
 
 const mocks = vi.hoisted(() => ({
     scenes: [] as Array<{
-        setArena: ReturnType<typeof vi.fn>;
+        setCourt: ReturnType<typeof vi.fn>;
+        setBowl: ReturnType<typeof vi.fn>;
         setPreset: ReturnType<typeof vi.fn>;
         requestRender: ReturnType<typeof vi.fn>;
         dispose: ReturnType<typeof vi.fn>;
@@ -24,7 +26,8 @@ const mocks = vi.hoisted(() => ({
 
 vi.mock('@/three/scene/teamScene', () => ({
     TeamScene: class {
-        setArena = vi.fn();
+        setCourt = vi.fn();
+        setBowl = vi.fn();
         setPreset = vi.fn();
         requestRender = vi.fn();
         dispose = vi.fn();
@@ -121,7 +124,7 @@ describe('TeamScene3D', () => {
         mocks.rasterise.mockResolvedValueOnce(null).mockResolvedValueOnce(second);
         const w = mountScene();
         await flushPromises();
-        expect(scene().setArena).toHaveBeenCalledWith(second, 18000);
+        expect(scene().setCourt).toHaveBeenCalledWith(second);
         const floor = w.findComponent(CourtFloor);
         expect(floor.props('logoUrl')).toBeUndefined();
         expect(floor.props('drawingUrl')).toBe('https://cdn/drawing.png');
@@ -135,7 +138,7 @@ describe('TeamScene3D', () => {
         const floor = w.findComponent(CourtFloor);
         expect(floor.props('logoUrl')).toBeUndefined();
         expect(floor.props('drawingUrl')).toBeUndefined();
-        expect(scene().setArena).toHaveBeenCalledWith(third, 18000);
+        expect(scene().setCourt).toHaveBeenCalledWith(third);
     });
 
     it('gives the scene no court only when every attempt fails', async () => {
@@ -143,7 +146,7 @@ describe('TeamScene3D', () => {
         mountScene();
         await flushPromises();
         expect(mocks.rasterise).toHaveBeenCalledTimes(3);
-        expect(scene().setArena).toHaveBeenCalledWith(null, 18000);
+        expect(scene().setCourt).toHaveBeenCalledWith(null);
     });
 
     it('a stale rasterise never lands', async () => {
@@ -159,8 +162,8 @@ describe('TeamScene3D', () => {
         await flushPromises();
         first.resolve(canvas('older'));
         await flushPromises();
-        expect(scene().setArena).toHaveBeenCalledTimes(1);
-        expect(scene().setArena).toHaveBeenCalledWith(newer, 18000);
+        expect(scene().setCourt).toHaveBeenCalledTimes(1);
+        expect(scene().setCourt).toHaveBeenCalledWith(newer);
     });
 
     it('a rasterise finishing after unmount is dropped', async () => {
@@ -173,7 +176,7 @@ describe('TeamScene3D', () => {
         wrapper = null;
         pending.resolve(canvas('late'));
         await flushPromises();
-        expect(created.setArena).not.toHaveBeenCalled();
+        expect(created.setCourt).not.toHaveBeenCalled();
     });
 
     it('uses the default court when court is null', async () => {
@@ -320,5 +323,95 @@ describe('TeamScene3D', () => {
         await flushPromises();
         expect(mocks.track).toHaveBeenCalledWith('scene3d_failed', { reason: 'people' });
         expect(w.find('[role="img"]').exists()).toBe(true);
+    });
+
+    describe('the venue and the editor preview (#295)', () => {
+        const VENUE = { version: 1, seats: { primary: '#111111', secondary: '#eeeeee', pattern: 'rows' }, upperDeck: true } as const;
+
+        it('builds the bowl from the capacity and venue before the court lands', async () => {
+            mocks.rasterise.mockResolvedValue(canvas('a'));
+            mountScene({ venue: VENUE });
+            await flushPromises();
+            expect(scene().setBowl).toHaveBeenCalledWith(18000, VENUE);
+            expect(scene().setBowl.mock.invocationCallOrder[0]).toBeLessThan(scene().setCourt.mock.invocationCallOrder[0]);
+        });
+
+        it('rebuilds only the bowl when the venue changes', async () => {
+            mocks.rasterise.mockResolvedValue(canvas('a'));
+            const w = mountScene();
+            await flushPromises();
+            await w.setProps({ venue: VENUE });
+            await flushPromises();
+            expect(scene().setBowl).toHaveBeenLastCalledWith(18000, VENUE);
+            expect(mocks.rasterise).toHaveBeenCalledTimes(1);
+            expect(scene().setCourt).toHaveBeenCalledTimes(1);
+        });
+
+        it('rebuilds only the bowl when the capacity changes', async () => {
+            mocks.rasterise.mockResolvedValue(canvas('a'));
+            const w = mountScene();
+            await flushPromises();
+            await w.setProps({ capacity: 5000 });
+            await flushPromises();
+            expect(scene().setBowl).toHaveBeenLastCalledWith(5000, null);
+            expect(mocks.rasterise).toHaveBeenCalledTimes(1);
+        });
+
+        it('re-rasterises when the court changes', async () => {
+            mocks.rasterise.mockResolvedValue(canvas('a'));
+            const w = mountScene();
+            await flushPromises();
+            await w.setProps({ court: { ...COURT, wood: 'walnut' } });
+            await flushPromises();
+            expect(mocks.rasterise).toHaveBeenCalledTimes(2);
+            expect(scene().setCourt).toHaveBeenCalledTimes(2);
+        });
+
+        it('starts on the initial preset', async () => {
+            mocks.rasterise.mockResolvedValue(canvas('a'));
+            const w = mountScene({ initialPreset: 'broadcast' });
+            await flushPromises();
+            expect(scene().setPreset).toHaveBeenCalledWith('broadcast');
+            const pressed = w.findAll('button').filter((b) => b.attributes('aria-pressed') === 'true');
+            expect(pressed.map((b) => b.text())).toEqual(['Broadcast']);
+        });
+
+        it('offers only the given presets', async () => {
+            mocks.rasterise.mockResolvedValue(canvas('a'));
+            const w = mountScene({ presets: ['broadcast', 'courtside', 'rafters'] });
+            await flushPromises();
+            expect(w.findAll('button').map((b) => b.text())).toEqual(['Broadcast', 'Courtside', 'Rafters']);
+        });
+
+        it("tags its events with the page when one is given", async () => {
+            mocks.rasterise.mockResolvedValue(canvas('a'));
+            const w = mountScene({ page: 'arena-editor' });
+            await flushPromises();
+            await w.findAll('button')[2].trigger('click');
+            expect(mocks.track).toHaveBeenCalledWith('scene3d_preset', { preset: 'broadcast', page: 'arena-editor' });
+        });
+
+        it('gives every preset button type="button"', async () => {
+            mocks.rasterise.mockResolvedValue(canvas('a'));
+            const w = mountScene();
+            await flushPromises();
+            for (const button of w.findAll('button')) expect(button.attributes('type')).toBe('button');
+        });
+
+        it("doesn't submit a form it sits in", async () => {
+            mocks.rasterise.mockResolvedValue(canvas('a'));
+            const onSubmit = vi.fn((event: Event) => event.preventDefault());
+            wrapper = mount(
+                {
+                    render: () =>
+                        h('form', { onSubmit }, [h(TeamScene3D, { court: COURT, capacity: 18000, label: 'Owls court' })]),
+                },
+                { attachTo: document.body },
+            );
+            await flushPromises();
+            for (const button of wrapper.findAll('button')) (button.element as HTMLButtonElement).click();
+            await flushPromises();
+            expect(onSubmit).not.toHaveBeenCalled();
+        });
     });
 });

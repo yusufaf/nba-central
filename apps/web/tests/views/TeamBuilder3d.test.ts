@@ -35,15 +35,16 @@ vi.mock('@/network/api', () => ({
     },
     customArenaApi: { list: vi.fn(async () => ({ success: true, data: { customArenas: [] } })) },
 }));
+const user = vi.hoisted(() => ({ current: null as { id: string } | null }));
 vi.mock('@/composables/useCurrentUser', async () => {
     const { ref } = await import('vue');
-    return { useCurrentUser: () => ({ currentUser: ref(null) }) };
+    return { useCurrentUser: () => ({ currentUser: ref(user.current) }) };
 });
 vi.mock('@/lib/analytics', () => ({ track: vi.fn() }));
 vi.mock('@/lib/attribution', () => ({ landingSource: vi.fn(() => 'newsletter') }));
 
 import TeamBuilder from '@/views/TeamBuilder.vue';
-import { teamApi } from '@/network/api';
+import { customArenaApi, teamApi } from '@/network/api';
 import { defineComponent, h } from 'vue';
 
 const signedIn = auth.signedIn as ReturnType<typeof ref<boolean>>;
@@ -117,6 +118,7 @@ beforeEach(() => {
 afterEach(() => {
     wrapper?.unmount();
     wrapper = null;
+    user.current = null;
 });
 
 describe('View in 3D from the builder', () => {
@@ -161,6 +163,32 @@ describe('View in 3D from the builder', () => {
         await mountAt('/teambuilder?team=t-1');
         expect(ids()).toEqual(['player-1', 'player-2', 'coach', 'gm']);
         expect(scene().props('teamName')).toBe('Owls');
+    });
+});
+
+describe("the arena's venue in the scene (#295)", () => {
+    const VENUE = { version: 1, seats: { primary: '#111111', secondary: '#eeeeee', pattern: 'rows' }, upperDeck: true };
+    const ARENA = { name: 'Harbor Pavilion', isCustom: true, arenaUUID: 'a1', capacity: 18600 };
+
+    it("a remix never takes the owner's venue", async () => {
+        vi.mocked(teamApi.getPublicTeam).mockResolvedValue({
+            success: true,
+            data: { ...TEAM, arena: { ...ARENA, venue: VENUE } },
+        } as never);
+        await mountAt('/teambuilder?remix=t-1');
+        expect(scene().props('venue')).toBeNull();
+    });
+
+    it("your own arena's venue reaches the scene", async () => {
+        signedIn.value = true;
+        user.current = { id: 'me' };
+        vi.mocked(customArenaApi.list).mockResolvedValueOnce({
+            success: true,
+            data: { customArenas: [{ ...ARENA, location: '', openedYear: null, court: null, created: '', venue: VENUE }] },
+        } as never);
+        vi.mocked(teamApi.getTeam).mockResolvedValue({ success: true, data: { ...TEAM, arena: ARENA } } as never);
+        await mountAt('/teambuilder?team=t-1');
+        expect(scene().props('venue')).toEqual(VENUE);
     });
 });
 

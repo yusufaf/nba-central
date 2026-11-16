@@ -1,6 +1,7 @@
 import { Group, PerspectiveCamera } from 'three';
 import { buildPerson, type PersonInput } from '@/three/character/person';
 import type { KitColours } from '@/utils/jerseyColours';
+import type { VenueDesign } from '@/constants/venue';
 import { renderToImageData } from '@/three/renderer/offscreen';
 import { disposeObject, getSharedRenderer } from '@/three/renderer/shared';
 import { TWO_ROWS_BELOW_ASPECT, framePreset } from './cameraPresets';
@@ -15,6 +16,7 @@ export const CARD_SIZE = { width: 1200, height: 630 };
 export const renderTeamPhotoFrame = async (input: {
     court: HTMLCanvasElement | null;
     capacity: number | null;
+    venue: VenueDesign | null;
     people: PersonInput[];
     kit: { colours: KitColours; teamName: string };
 }): Promise<HTMLCanvasElement> => {
@@ -37,7 +39,7 @@ export const renderTeamPhotoFrame = async (input: {
     try {
         placeInRows(group, roots, aspect < TWO_ROWS_BELOW_ASPECT);
         const renderer = getSharedRenderer();
-        scene.add(buildArena(input.court, input.capacity, renderer));
+        scene.add(buildArena(input.court, input.capacity, renderer, input.venue));
 
         const { position, target, fov } = framePreset('team', aspect);
         const camera = new PerspectiveCamera(fov, aspect, 0.1, 200);

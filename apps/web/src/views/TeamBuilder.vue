@@ -191,6 +191,9 @@ const photoInput = computed<TeamPhotoInput>(() => ({
     logoUrl: courtLogoUrl.value,
     drawingUrl: liveArena.value?.drawingUrl,
     capacity: sceneCapacity.value,
+    // Only from your own arena list: a remix's arena carries its owner's
+    // venue, which the remix must not inherit (#295).
+    venue: liveArena.value?.venue ?? null,
     people: people3d.value,
     jerseyUrl: teamJersey.value || undefined,
     teamName: teamName.value,

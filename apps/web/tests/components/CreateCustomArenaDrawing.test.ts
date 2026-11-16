@@ -95,12 +95,13 @@ const submitted = async (wrapper: VueWrapper) => {
 };
 
 describe("CreateCustomArenaModal drawing", () => {
-    it("has a Drawing tab next to Details and Court", async () => {
+    it("has a Drawing tab after Details and Court, then Seats", async () => {
         await mountModal(null);
         expect([...document.querySelectorAll('[role="tab"]')].map((t) => t.textContent?.trim())).toEqual([
             "Details",
             "Court",
             "Drawing",
+            "Seats",
         ]);
     });
 

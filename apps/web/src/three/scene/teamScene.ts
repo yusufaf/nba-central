@@ -1,9 +1,10 @@
-import { Group, PerspectiveCamera, Vector3 } from 'three';
+import { Group, PerspectiveCamera, Vector3, type Object3D } from 'three';
+import type { VenueDesign } from '@/constants/venue';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { buildPerson, type PersonInput } from '@/three/character/person';
 import type { KitColours } from '@/utils/jerseyColours';
 import { disposeObject, getSharedRenderer } from '@/three/renderer/shared';
-import { buildArena, createStage, placeInRows } from './stage';
+import { buildCourtFloor, buildSeating, createStage, placeInRows } from './stage';
 import { ORBIT_LIMITS, TWO_ROWS_BELOW_ASPECT, framePreset, type CameraPreset } from './cameraPresets';
 
 export interface LabelAnchor {
@@ -27,7 +28,8 @@ export class TeamScene {
     private readonly camera = new PerspectiveCamera(40, 1, 0.1, 200);
     private readonly controls: OrbitControls;
     private readonly observer: ResizeObserver;
-    private arena: Group | null = null;
+    private court: Object3D | null = null;
+    private bowl: Object3D | null = null;
     private preset: CameraPreset = 'team';
     private frameRequested = false;
     private disposed = false;
@@ -71,16 +73,26 @@ export class TeamScene {
         this.frame();
     }
 
-    setArena(court: HTMLCanvasElement | null, capacity: number | null): void {
+    // The court and the bowl are swapped separately: a seat colour edit
+    // shouldn't re-rasterise the court, and a court edit shouldn't rebuild seats.
+    setCourt(court: HTMLCanvasElement | null): void {
         if (this.disposed) return;
-        if (this.arena) {
-            this.scene.remove(this.arena);
-            disposeObject(this.arena);
+        this.court = this.swap(this.court, buildCourtFloor(court, this.renderer));
+    }
+
+    setBowl(capacity: number | null, venue: VenueDesign | null): void {
+        if (this.disposed) return;
+        this.bowl = this.swap(this.bowl, buildSeating(capacity, venue));
+    }
+
+    private swap(old: Object3D | null, next: Object3D): Object3D {
+        if (old) {
+            this.scene.remove(old);
+            disposeObject(old);
         }
-        const arena = buildArena(court, capacity, this.renderer);
-        this.arena = arena;
-        this.scene.add(arena);
+        this.scene.add(next);
         this.requestRender();
+        return next;
     }
 
     // Builds everyone, then swaps them in at once. A newer call wins: an
@@ -131,7 +143,8 @@ export class TeamScene {
         this.controls.dispose();
         this.renderer.domElement.removeEventListener('wheel', this.onWheel, { capture: true });
         disposeObject(this.scene);
-        this.arena = null;
+        this.court = null;
+        this.bowl = null;
         // The canvas is shared: if another scene has already taken it, leave it.
         const canvas = this.renderer.domElement;
         if (canvas.parentElement === this.container) canvas.remove();

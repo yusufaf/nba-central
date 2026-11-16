@@ -625,8 +625,9 @@ test.describe('3D team scene', () => {
     });
     // The public team with these slots' players made custom, each in its own
     // look, and the coach and GM made custom when a staff look is given. Only
-    // the routed response changes; the fixture file never does.
-    const withCustomPlayers = (page: Page, looks: Record<number, typeof LOOK>, staff: StaffLooks = {}) =>
+    // the routed response changes; the fixture file never does. An arena, when
+    // given, replaces the team's.
+    const withCustomPlayers = (page: Page, looks: Record<number, typeof LOOK>, staff: StaffLooks = {}, arena?: object) =>
         page.route('**/api/teams/public/visual-team', (route) =>
             route.fulfill({
                 status: 200,
@@ -637,6 +638,7 @@ test.describe('3D team scene', () => {
                         ...publicTeamFixture.data,
                         ...(staff.coach && { coach: customStaff('coach', staff.coach) }),
                         ...(staff.gm && { gm: customStaff('gm', staff.gm) }),
+                        ...(arena && { arena }),
                         roster: publicTeamFixture.data.roster.map((entry) =>
                             looks[entry.slot]
                                 ? {
@@ -821,14 +823,15 @@ test.describe('3D team scene', () => {
     });
 
     test('stays inside the draw budget with five geared custom players', async ({ page }, testInfo) => {
-        test.setTimeout(240000);
+        test.setTimeout(300000);
         await stubNetwork(page);
-        const measure = async (look: typeof LOOK, staffLook?: typeof STAFF_LOOK) => {
+        const measure = async (look: typeof LOOK, staffLook?: typeof STAFF_LOOK, arena?: object) => {
             await page.unroute('**/api/teams/public/visual-team');
             await withCustomPlayers(
                 page,
                 Object.fromEntries([1, 2, 3, 4, 5].map((slot) => [slot, look])),
                 staffLook ? { coach: staffLook, gm: staffLook } : {},
+                arena,
             );
             await page.goto('/t/visual-team?view=3d');
             await expect(page.getByTestId('name-chip')).toHaveCount(7, { timeout: 20000 });
@@ -871,11 +874,22 @@ test.describe('3D team scene', () => {
             bearded: await measure(bearded, beardedStaff),
             bunsBare: await measure({ ...buns, accessories: [] }),
             buns: await measure(buns, bunsStaff),
+            // The deepest bowl a custom arena can have (#295): 24 lower rows and
+            // a 16-row upper deck, seats patterned. Patterns add no triangles.
+            busiestBowl: await measure(buns, bunsStaff, {
+                name: 'Harbor Pavilion',
+                isCustom: true,
+                arenaUUID: 'a1',
+                capacity: 200000,
+                venue: { version: 1, seats: { primary: '#1e293b', secondary: '#b91c1c', pattern: 'sections' }, upperDeck: true },
+            }),
         };
         testInfo.annotations.push({ type: 'draw budget', description: JSON.stringify(results) });
         console.log('DRAW BUDGET', JSON.stringify(results));
         expect(results.bearded.calls).toBeLessThanOrEqual(60);
         expect(results.buns.triangles).toBeLessThanOrEqual(150000);
+        expect(results.busiestBowl.calls).toBeLessThanOrEqual(60);
+        expect(results.busiestBowl.triangles).toBeLessThanOrEqual(150000);
     });
 
     // #289: the share card's 3D team photo is drawn into an sRGB render target.

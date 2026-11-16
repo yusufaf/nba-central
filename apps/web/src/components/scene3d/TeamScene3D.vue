@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import Scene3DUnavailable from './Scene3DUnavailable.vue';
 import { DEFAULT_COURT, courtAttempts } from './courtRaster';
 import { track } from '@/lib/analytics';
-import type { CourtDesign, TeamUniform } from '@/models/api';
+import type { CourtDesign, TeamUniform, VenueDesign } from '@/models/api';
 import { rasteriseCourt } from '@/three/arena/rasteriseCourt';
 import { loadJerseyColours, type KitColours } from '@/utils/jerseyColours';
 import type { PersonInput } from '@/three/character/person';
@@ -27,15 +27,34 @@ const props = withDefaults(
         jerseyUrl?: string;
         teamName?: string;
         uniform?: TeamUniform | null;
+        venue?: VenueDesign | null;
+        initialPreset?: CameraPreset;
+        presets?: readonly CameraPreset[];
+        viewportClass?: string;
+        // Tags the analytics events, so the arena editor's preview can be told apart.
+        page?: string;
     }>(),
-    { logoUrl: undefined, drawingUrl: undefined, people: () => [], jerseyUrl: undefined, teamName: '', uniform: null },
+    {
+        logoUrl: undefined,
+        drawingUrl: undefined,
+        people: () => [],
+        jerseyUrl: undefined,
+        teamName: '',
+        uniform: null,
+        venue: null,
+        initialPreset: 'team',
+        presets: () => CAMERA_PRESETS,
+        viewportClass: 'h-[min(70vh,40rem,160vw)]',
+        page: undefined,
+    },
 );
+const tagged = <T extends object>(data: T) => ({ ...data, ...(props.page && { page: props.page }) });
 const emit = defineEmits<{ failed: [reason: 'context-lost'] }>();
 
 const viewport = ref<HTMLElement | null>(null);
 const courtHost = ref<HTMLElement | null>(null);
 const scene = shallowRef<TeamScene | null>(null);
-const preset = ref<CameraPreset>('team');
+const preset = ref<CameraPreset>(props.initialPreset);
 const renderCount = ref(0);
 const paused = ref(false);
 // The page's probe can pass and context creation still fail (a blocklisted
@@ -81,7 +100,7 @@ const placePeople = async () => {
     try {
         await current.setPeople(props.people, { colours, teamName: props.teamName });
     } catch {
-        track('scene3d_failed', { reason: 'people' });
+        track('scene3d_failed', tagged({ reason: 'people' }));
     }
 };
 
@@ -108,13 +127,13 @@ const rasterise = async () => {
         if (!current()) return;
         if (canvas) break;
     }
-    scene.value?.setArena(canvas, props.capacity);
+    scene.value?.setCourt(canvas);
 };
 
 const choose = (next: CameraPreset) => {
     preset.value = next;
     scene.value?.setPreset(next);
-    track('scene3d_preset', { preset: next });
+    track('scene3d_preset', tagged({ preset: next }));
 };
 
 let stopContext: (() => void) | null = null;
@@ -126,7 +145,7 @@ onMounted(() => {
         created = new TeamScene(viewport.value);
     } catch {
         unavailable.value = true;
-        track('scene3d_failed', { reason: 'no-webgl' });
+        track('scene3d_failed', tagged({ reason: 'no-webgl' }));
         return;
     }
     created.onRender = () => {
@@ -135,11 +154,13 @@ onMounted(() => {
         anchors.value = created.labelAnchors();
     };
     scene.value = created;
+    if (props.initialPreset !== 'team') created.setPreset(props.initialPreset);
+    created.setBowl(props.capacity, props.venue);
     stopContext = onContextChange((lost) => {
         paused.value = lost;
         if (lost) {
             emit('failed', 'context-lost');
-            track('scene3d_failed', { reason: 'context-lost' });
+            track('scene3d_failed', tagged({ reason: 'context-lost' }));
         } else {
             scene.value?.requestRender();
         }
@@ -150,7 +171,14 @@ onMounted(() => {
 
 watch([() => props.people, () => props.jerseyUrl, () => props.teamName, () => props.uniform], () => void placePeople());
 
-watch(() => [props.court, props.logoUrl, props.drawingUrl, props.capacity], () => void rasterise());
+watch(() => [props.court, props.logoUrl, props.drawingUrl], () => void rasterise());
+
+// Seats are rebuilt on their own, so a colour edit never re-rasterises the court.
+watch(
+    [() => props.capacity, () => props.venue],
+    () => scene.value?.setBowl(props.capacity, props.venue ?? null),
+    { deep: true },
+);
 
 onBeforeUnmount(() => {
     unmounted = true;
@@ -163,7 +191,7 @@ onBeforeUnmount(() => {
 <template>
     <Scene3DUnavailable v-if="unavailable" reason="no-webgl" />
     <div v-else class="flex flex-col gap-3">
-        <div class="relative h-[min(70vh,40rem,160vw)] overflow-hidden rounded-xl border border-border bg-card">
+        <div class="relative overflow-hidden rounded-xl border border-border bg-card" :class="viewportClass">
             <div ref="viewport" class="absolute inset-0" role="img" :aria-label="label" :data-render-count="renderCount" />
             <!-- Names over heads; the canvas's label already lists everyone. -->
             <span
@@ -186,8 +214,9 @@ onBeforeUnmount(() => {
         </div>
         <div class="flex flex-wrap gap-2" aria-label="Camera">
             <Button
-                v-for="option in CAMERA_PRESETS"
+                v-for="option in presets"
                 :key="option"
+                type="button"
                 size="sm"
                 :variant="preset === option ? 'default' : 'outline'"
                 :aria-pressed="preset === option ? 'true' : 'false'"
