@@ -1,4 +1,4 @@
-import type { ArenaImageSlot, CourtDesign, PersonAppearance, StaffAppearance } from "../custom-entities";
+import type { ArenaImageSlot, CourtDesign, PersonAppearance, StaffAppearance, VenueDesign } from "../custom-entities";
 
 // Generic API response wrapper with discriminated union for type safety
 export type ApiResponse<T = void> =
@@ -208,6 +208,8 @@ export interface CreateCustomArenaPayload {
 	capacity: number | null;
 	openedYear: number | null;
 	court: CourtDesign | null;
+	// Absent on update leaves the stored venue; null removes it.
+	venue?: VenueDesign | null;
 }
 
 export interface UpdateCustomArenaPayload extends CreateCustomArenaPayload {
@@ -222,6 +224,7 @@ export interface CustomArenaListItem {
 	capacity: number | null;
 	openedYear: number | null;
 	court: CourtDesign | null;
+	venue?: VenueDesign;
 	photoUrl?: string;
 	logoUrl?: string;
 	drawingUrl?: string;

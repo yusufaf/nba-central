@@ -397,6 +397,67 @@ describe("updateCustomArena", () => {
 	});
 });
 
+describe("an arena's venue (#295)", () => {
+	const venue = {
+		version: 1,
+		seats: { primary: "#1e293b", secondary: "#b91c1c", pattern: "sections" },
+		upperDeck: true,
+	};
+	const update = (body: Item) => run(updateHandler, { body: JSON.stringify({ ...payload(), arenaUUID: "a1", ...body }) });
+
+	it("is stored on create as a key-by-key copy, and returned", async () => {
+		const result = await run(createHandler, {
+			body: JSON.stringify(payload({ venue: { ...venue, extra: 1, seats: { ...venue.seats, extra: 2 } } })),
+		});
+
+		expect(result.statusCode).toBe(200);
+		expect(parseBody(result).data.venue).toEqual(venue);
+		expect(arenasOf(ME)[0].venue).toEqual(venue);
+	});
+
+	it("isn't stored on create without one", async () => {
+		await run(createHandler, { body: JSON.stringify(payload({ venue: null })) });
+		expect(arenasOf(ME)[0]).not.toHaveProperty("venue");
+	});
+
+	it("is set by an update with a venue", async () => {
+		db.push(storedArena(ME, "a1"));
+		const result = await update({ venue });
+		expect(result.statusCode).toBe(200);
+		expect(parseBody(result).data.venue).toEqual(venue);
+		expect(arenasOf(ME)[0].venue).toEqual(venue);
+	});
+
+	it("is kept by an update that leaves it out", async () => {
+		db.push(storedArena(ME, "a1", { venue }));
+		const result = await update({ name: "Renamed" });
+		expect(result.statusCode).toBe(200);
+		expect(arenasOf(ME)[0]).toMatchObject({ name: "Renamed", venue });
+	});
+
+	it("is removed by an update with venue: null", async () => {
+		db.push(storedArena(ME, "a1", { venue }));
+		const result = await update({ venue: null });
+		expect(result.statusCode).toBe(200);
+		expect(parseBody(result).data).not.toHaveProperty("venue");
+		expect(arenasOf(ME)[0]).not.toHaveProperty("venue");
+	});
+
+	it("400s on a bad venue and leaves the item as it was", async () => {
+		db.push(storedArena(ME, "a1", { venue }));
+		const result = await update({ name: "Renamed", venue: { ...venue, upperDeck: "yes" } });
+		expect(result.statusCode).toBe(400);
+		expect(parseBody(result).error).toBe("Venue upper deck must be true or false");
+		expect(arenasOf(ME)[0]).toMatchObject({ name: `${ME}'s arena`, venue });
+	});
+
+	it("is listed", async () => {
+		db.push(storedArena(ME, "a1", { venue }));
+		const result = await run(listHandler);
+		expect(parseBody(result).data.customArenas[0].venue).toEqual(venue);
+	});
+});
+
 describe("deleteCustomArena", () => {
 	const seedWithImages = () => {
 		db.push(

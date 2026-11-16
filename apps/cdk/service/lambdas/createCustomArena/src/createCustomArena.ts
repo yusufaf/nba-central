@@ -9,7 +9,8 @@ import { randomUUID } from "crypto";
 import { AuthorizerContext } from "models/auth";
 import { CustomArenaItem, MAX_CUSTOM_ARENAS } from "models/custom-entities";
 import { CreateCustomArenaResponse } from "models/api/custom-entities-api";
-import { toArenaFields, validateArenaData } from "utilities/custom-entities-validation";
+import { toArenaFields, toVenue, validateArenaData } from "utilities/custom-entities-validation";
+import { isRecord } from "utilities/type-guards";
 import { parseRequestBody } from "utilities/request-body";
 import {
 	CUSTOM_ARENA_SK_PREFIX,
@@ -75,6 +76,7 @@ export const handler: Handler = async (
 			updated: timestamp,
 			arenaUUID,
 			...toArenaFields(parsed.body),
+			...(isRecord(parsed.body.venue) && { venue: toVenue(parsed.body.venue) }),
 			createdBy: event.requestContext.authorizer.lambda.username,
 		};
 
