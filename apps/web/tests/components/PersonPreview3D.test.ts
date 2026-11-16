@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { flushPromises, mount, type VueWrapper } from '@vue/test-utils';
+import { h } from 'vue';
 import type { PersonInput } from '@/three/character/person';
 import { DEFAULT_APPEARANCE } from '@/utils/appearance';
 
@@ -108,6 +109,23 @@ describe('PersonPreview3D', () => {
         await w.get('button[aria-label="Reset view"]').trigger('click');
         expect(preview.rotate.mock.calls).toEqual([[-Math.PI / 8], [Math.PI / 8]]);
         expect(preview.resetView).toHaveBeenCalledTimes(1);
+    });
+
+    // The preview sits inside the creator's form; a plain button would submit it.
+    it("doesn't submit a form it sits in", async () => {
+        const onSubmit = vi.fn((event: Event) => event.preventDefault());
+        const host = mount(
+            { render: () => h('form', { onSubmit }, [h(PersonPreview3D, { person: PERSON, label: 'Preview' })]) },
+            { attachTo: document.body },
+        );
+        for (const label of ['Rotate left', 'Rotate right', 'Reset view']) {
+            const button = host.get(`button[aria-label="${label}"]`);
+            expect(button.attributes('type')).toBe('button');
+            (button.element as HTMLButtonElement).click();
+        }
+        await flushPromises();
+        expect(onSubmit).not.toHaveBeenCalled();
+        host.unmount();
     });
 
     it("shows the unavailable note when WebGL can't start", async () => {

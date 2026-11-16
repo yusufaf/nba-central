@@ -77,13 +77,13 @@ onBeforeUnmount(() => {
             Drag to orbit
         </span>
         <div class="absolute right-2 bottom-2 flex gap-1">
-            <Button size="icon" variant="outline" class="bg-background/85" aria-label="Rotate left" @click="preview?.rotate(-STEP)">
+            <Button type="button" size="icon" variant="outline" class="bg-background/85" aria-label="Rotate left" @click="preview?.rotate(-STEP)">
                 <RotateCcw aria-hidden="true" />
             </Button>
-            <Button size="icon" variant="outline" class="bg-background/85" aria-label="Rotate right" @click="preview?.rotate(STEP)">
+            <Button type="button" size="icon" variant="outline" class="bg-background/85" aria-label="Rotate right" @click="preview?.rotate(STEP)">
                 <RotateCw aria-hidden="true" />
             </Button>
-            <Button size="icon" variant="outline" class="bg-background/85" aria-label="Reset view" @click="preview?.resetView()">
+            <Button type="button" size="icon" variant="outline" class="bg-background/85" aria-label="Reset view" @click="preview?.resetView()">
                 <Focus aria-hidden="true" />
             </Button>
         </div>
