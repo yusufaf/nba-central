@@ -4,7 +4,8 @@ import { Color, Fog, Group, Mesh, Object3D } from 'three';
 const shared = vi.hoisted(() => ({ disposeObject: vi.fn() }));
 vi.mock('@/three/renderer/shared', () => ({ disposeObject: shared.disposeObject }));
 
-import { buildArena, createStage, placeInRows } from '@/three/scene/stage';
+import { buildArena, buildSeating, createStage, placeInRows } from '@/three/scene/stage';
+import type { VenueDesign } from '@/constants/venue';
 import { SCENE_COLOURS } from '@/three/arena/palette';
 
 const roots = (count: number) => Array.from({ length: count }, () => new Group());
@@ -34,6 +35,27 @@ describe('buildArena', () => {
         const withVenue = buildArena(null, 18000, renderer, venue);
         expect(withVenue.children).toHaveLength(2);
         expect(colours(withVenue)).not.toEqual(colours(buildArena(null, 18000, renderer)));
+    });
+});
+
+describe('buildSeating (#296)', () => {
+    const seats = { primary: '#111111', secondary: '#eeeeee', pattern: 'rows' } as const;
+    const scoreboard = { text: 'HARBOR', accent: '#ef4444' };
+    const ribbon = { text: 'WELCOME', color: '#f59e0b' };
+
+    it.for([
+        { label: 'no venue (an NBA arena)', venue: null, parts: [] },
+        { label: 'a seats-only venue', venue: { version: 1, seats, upperDeck: false }, parts: [] },
+        { label: 'a scoreboard only', venue: { version: 1, scoreboard }, parts: ['scoreboard'] },
+        { label: 'a ribbon only', venue: { version: 1, ribbon }, parts: ['ribbon'] },
+        { label: 'both', venue: { version: 1, scoreboard, ribbon }, parts: ['ribbon', 'scoreboard'] },
+        { label: 'a malformed scoreboard', venue: { version: 1, scoreboard: { text: 1, accent: 'red' }, ribbon }, parts: ['ribbon'] },
+    ] as unknown as { label: string; venue: VenueDesign | null; parts: string[] }[])('builds only what $label holds', ({ venue, parts }) => {
+        const seating = buildSeating(18000, venue);
+        expect(seating.name).toBe('seating');
+        expect(seating.getObjectByName('bowl')).toBeDefined();
+        const built = ['ribbon', 'scoreboard'].filter((name) => seating.getObjectByName(name));
+        expect(built).toEqual(parts);
     });
 });
 

@@ -4,12 +4,15 @@
 export const SEAT_PATTERNS = ['solid', 'sections', 'rows', 'gradient'] as const;
 export type SeatPatternId = (typeof SEAT_PATTERNS)[number];
 
-export interface VenueDesign {
-    version: 1;
-    seats: { primary: string; secondary: string; pattern: SeatPatternId };
-    upperDeck: boolean;
-}
-
 // Scoreboard and LED ribbon text limits (#296), counted in .length like the court's.
 export const SCOREBOARD_TEXT_MAX = 16;
 export const RIBBON_TEXT_MAX = 32;
+
+// Every part is optional (#296): an arena can have a scoreboard without a seat design.
+export interface VenueDesign {
+    version: 1;
+    seats?: { primary: string; secondary: string; pattern: SeatPatternId };
+    upperDeck?: boolean;
+    scoreboard?: { text: string; accent: string };
+    ribbon?: { text: string; color: string };
+}

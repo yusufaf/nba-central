@@ -4,7 +4,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import ColourField from './creator/ColourField.vue';
-import { SEAT_PATTERNS, type SeatPatternId, type VenueDesign } from '@/constants/venue';
+import { SEAT_PATTERNS, type SeatPatternId } from '@/constants/venue';
 import { formatCapacity } from '@/utils/arenaDetails';
 import {
     DEFAULT_CAPACITY,
@@ -12,14 +12,15 @@ import {
     SEAT_SWATCHES,
     SECONDARY_HINTS,
     patternChip,
+    type SeatedVenue,
 } from '@/utils/venue';
 
 // The Seats tab's settings (#295). Every change replaces the venue, so the
 // arena being edited is never changed in place.
 const props = defineProps<{ capacity: number | null; disabled?: boolean }>();
-const venue = defineModel<VenueDesign>('venue', { required: true });
+const venue = defineModel<SeatedVenue>('venue', { required: true });
 
-const setSeat = <K extends keyof VenueDesign['seats']>(key: K, value: VenueDesign['seats'][K]) => {
+const setSeat = <K extends keyof SeatedVenue['seats']>(key: K, value: SeatedVenue['seats'][K]) => {
     venue.value = { ...venue.value, seats: { ...venue.value.seats, [key]: value } };
 };
 const setUpperDeck = (value: boolean) => {

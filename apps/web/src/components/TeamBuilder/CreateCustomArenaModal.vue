@@ -16,6 +16,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import CourtFloor from '@/components/court/CourtFloor.vue';
 import DrawingCanvas from '@/components/drawing/DrawingCanvas.vue';
 import CourtDesignFields from './CourtDesignFields.vue';
+import ScoreboardDesignFields from './ScoreboardDesignFields.vue';
 import SeatDesignFields from './SeatDesignFields.vue';
 import { Scene3DUnavailable, TeamScene3DAsync } from '@/components/scene3d';
 import type { CourtDesign, CustomArena, CustomArenaPayload, VenueDesign } from '@/models/api';
@@ -24,7 +25,7 @@ import { DEFAULT_STROKE_WIDTH, dataUrlToBlob, useDrawing } from '@/composables/u
 import { useImageChoice } from '@/composables/useImageChoice';
 import { parseCapacity } from '@/utils/arenaDetails';
 import { resizeArenaPhoto, resizeCourtLogo } from '@/utils/arenaImage';
-import { newVenue } from '@/utils/venue';
+import { copyVenue, hasSeats, submittedVenue, venueTextsValid, withSeatDesign, withoutSeatDesign } from '@/utils/venue';
 import { isWebGLAvailable } from '@/utils/webgl';
 import {
     COURT_DRAWING_SCALE,
@@ -54,17 +55,23 @@ const open = defineModel<boolean>('open');
 const NAME_MAX = 60;
 const LOCATION_MAX = 60;
 
-const tab = ref<'details' | 'court' | 'drawing' | 'seats'>('details');
+const tab = ref<'details' | 'court' | 'drawing' | 'seats' | 'scoreboard'>('details');
 const name = ref('');
 const location = ref('');
 const capacity = ref('');
 const openedYear = ref('');
 const court = ref<CourtDesign | null>(null);
-// null means the standard bowl; Design the seats creates one (#295).
+// null means the standard bowl; the Seats and Scoreboard tabs add parts (#295, #296).
 const venue = ref<VenueDesign | null>(null);
-// Probed the first time Seats opens: the probe costs a GPU context.
+// Probed the first time a 3D tab opens: the probe costs a GPU context.
 const webgl = ref<boolean | null>(null);
 const SEAT_PRESETS = ['broadcast', 'courtside', 'rafters'] as const;
+// One preview spans these tabs, so switching between them keeps the scene.
+const SCENE_TABS: readonly string[] = ['seats', 'scoreboard'];
+const onSceneTab = computed(() => SCENE_TABS.includes(tab.value));
+const previewLabel = computed(() =>
+    tab.value === 'seats' ? "Preview of the arena's seating bowl" : "Preview of the arena's scoreboard and ribbon",
+);
 // Kept here, not in the Court tab, which unmounts while Details shows.
 const apronMode = ref<ApronMode>('match');
 const linesMode = ref<LinesMode>('custom');
@@ -128,7 +135,7 @@ const reset = () => {
     openedYear.value = arena?.openedYear != null ? String(arena.openedYear) : '';
     setCourt(arena?.court ? { ...arena.court } : null);
     // A plain copy: the list's venue can hold reactive proxies, which structuredClone refuses.
-    venue.value = arena?.venue ? { ...arena.venue, seats: { ...arena.venue.seats } } : null;
+    venue.value = arena?.venue ? copyVenue(arena.venue) : null;
     photo.reset();
     logo.reset();
     resetDrawing(arena?.drawingUrl ?? null);
@@ -144,8 +151,8 @@ watch(
 watch(() => props.editingArena, () => {
     if (open.value) reset();
 });
-watch(tab, (now) => {
-    if (now === 'seats') webgl.value ??= isWebGLAvailable();
+watch(onSceneTab, (onScene) => {
+    if (onScene) webgl.value ??= isWebGLAvailable();
 });
 
 // null = left blank, NaN = not a number at all.
@@ -180,7 +187,8 @@ const isFormValid = computed(
         !photo.preparing.value &&
         !logo.preparing.value &&
         !logoMissing.value &&
-        !drawingUnsaved.value,
+        !drawingUnsaved.value &&
+        venueTextsValid(venue.value),
 );
 
 const onPhotoInput = (event: Event) => {
@@ -214,7 +222,7 @@ const handleSubmit = () => {
                       sidelineText: court.value.sidelineText.trim(),
                   }
                 : null,
-            venue: venue.value,
+            venue: submittedVenue(venue.value),
         },
         { photo: photo.change.value, logo: logo.change.value, drawing: drawingChange() },
     );
@@ -233,14 +241,33 @@ const handleSubmit = () => {
                 </DialogHeader>
 
                 <Tabs v-model="tab" class="flex min-h-0 flex-1 flex-col">
-                    <TabsList class="mx-6 mt-4 self-start">
+                    <!-- Wraps rather than scrolls sideways, as in the creators' sheet. -->
+                    <TabsList class="mx-6 mt-4 grid h-auto grid-cols-3 gap-1 @min-[36rem]:grid-cols-5">
                         <TabsTrigger value="details">Details</TabsTrigger>
                         <TabsTrigger value="court">Court</TabsTrigger>
                         <TabsTrigger value="drawing">Drawing</TabsTrigger>
                         <TabsTrigger value="seats">Seats</TabsTrigger>
+                        <TabsTrigger value="scoreboard">Scoreboard</TabsTrigger>
                     </TabsList>
 
-                    <div class="min-h-0 flex-1 overflow-y-auto px-6 pb-6" :class="{ 'seats-scroller': tab === 'seats' }">
+                    <div class="min-h-0 flex-1 overflow-y-auto px-6 pb-6" :class="{ 'scene-scroller': onSceneTab }">
+                        <!-- Pinned, so the arena stays in view while it changes. -->
+                        <div v-if="onSceneTab" class="sticky top-0 z-[var(--z-sticky)] -mx-6 bg-card px-6 pt-4 pb-3">
+                            <TeamScene3DAsync
+                                v-if="webgl"
+                                :court="court ?? null"
+                                :logo-url="previewLogo"
+                                :drawing-url="drawingPreview"
+                                :capacity="previewCapacity"
+                                :venue="venue"
+                                initial-preset="broadcast"
+                                :presets="SEAT_PRESETS"
+                                viewport-class="h-[min(32dvh,15rem)]"
+                                page="arena-editor"
+                                :label="previewLabel"
+                            />
+                            <Scene3DUnavailable v-else-if="webgl === false" reason="no-webgl" />
+                        </div>
                         <TabsContent value="details" class="mt-0 grid gap-5 pt-4">
                             <div class="grid gap-4 @min-[32rem]:grid-cols-2">
                                 <div class="grid gap-2">
@@ -456,28 +483,11 @@ const handleSubmit = () => {
                             </div>
                         </TabsContent>
 
-                        <TabsContent value="seats" class="mt-0 pt-4">
-                            <!-- Pinned, so the bowl stays in view while its colours change. -->
-                            <div class="sticky top-0 z-[var(--z-sticky)] -mx-6 bg-card px-6 pt-2 pb-3">
-                                <TeamScene3DAsync
-                                    v-if="webgl"
-                                    :court="court ?? null"
-                                    :logo-url="previewLogo"
-                                    :drawing-url="drawingPreview"
-                                    :capacity="previewCapacity"
-                                    :venue="venue"
-                                    initial-preset="broadcast"
-                                    :presets="SEAT_PRESETS"
-                                    viewport-class="h-[min(32dvh,15rem)]"
-                                    page="arena-editor"
-                                    label="Preview of the arena's seating bowl"
-                                />
-                                <Scene3DUnavailable v-else-if="webgl === false" reason="no-webgl" />
-                            </div>
-                            <div v-if="venue" class="grid gap-5 pt-2">
+                        <TabsContent value="seats" class="mt-0">
+                            <div v-if="venue && hasSeats(venue)" class="grid gap-5 pt-2">
                                 <SeatDesignFields v-model:venue="venue" :capacity="previewCapacity" :disabled="saving" />
                                 <div>
-                                    <Button type="button" variant="ghost" size="sm" :disabled="saving" class="text-destructive-strong hover:bg-destructive/10 hover:text-destructive-strong" @click="venue = null">
+                                    <Button type="button" variant="ghost" size="sm" :disabled="saving" class="text-destructive-strong hover:bg-destructive/10 hover:text-destructive-strong" @click="venue = withoutSeatDesign(venue)">
                                         Remove seat design
                                     </Button>
                                 </div>
@@ -486,8 +496,13 @@ const handleSubmit = () => {
                                 <p class="max-w-sm text-sm text-muted-foreground">
                                     This arena uses the standard seats. Pick colours and a pattern to make the bowl yours.
                                 </p>
-                                <Button type="button" :disabled="saving" @click="venue = newVenue(previewCapacity)">Design the seats</Button>
+                                <Button type="button" :disabled="saving" @click="venue = withSeatDesign(venue, previewCapacity)">Design the seats</Button>
                             </div>
+                            <p class="pt-4 text-xs text-muted-foreground">Arena colours look the same in light and dark mode.</p>
+                        </TabsContent>
+
+                        <TabsContent value="scoreboard" class="mt-0">
+                            <ScoreboardDesignFields v-model:venue="venue" :arena-name="name" :disabled="saving" class="pt-2" />
                             <p class="pt-4 text-xs text-muted-foreground">Arena colours look the same in light and dark mode.</p>
                         </TabsContent>
                     </div>
@@ -508,7 +523,7 @@ const handleSubmit = () => {
 
 <style scoped>
 /* A focused control scrolls in below the pinned preview, not under it. */
-.seats-scroller {
-    scroll-padding-top: calc(min(32dvh, 15rem) + 4.5rem);
+.scene-scroller {
+    scroll-padding-top: calc(min(32dvh, 15rem) + 5rem);
 }
 </style>
