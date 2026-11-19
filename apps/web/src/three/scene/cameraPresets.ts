@@ -26,8 +26,11 @@ type Vec3 = [number, number, number];
 const BASE: Record<CameraPreset, { position: Vec3; target: Vec3 }> = {
     team: { position: [0, 1.5, 9.5], target: [0, 1.1, 0] },
     courtside: { position: [7.5, 1.2, 6], target: [0, 1.2, 0] },
-    broadcast: { position: [0, 10, 24], target: [0, 1, 0] },
-    rafters: { position: [0.01, 30, 6], target: [0, 0, 0] },
+    // For every scene, with or without a scoreboard (#296): a centre-hung board
+    // hid the team from the old top-down rafters shot, and neither shot
+    // reached the LED ribbon. tests/three/venueVisibility.test.ts checks both.
+    broadcast: { position: [0, 10, 24], target: [0, 4, 0] },
+    rafters: { position: [0, 30, 30], target: [0, 6, -4] },
 };
 
 // What the team-photo shot keeps in view, in metres around its target: one

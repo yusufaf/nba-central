@@ -5,6 +5,10 @@ export const SCENE_COLOURS = {
     seat: '#2a3140',
     surround: '#1a1d22',
     defaultFloor: '#c99a5b',
+    // The scoreboard and LED ribbon (#296): a dark housing, black LED panels.
+    scoreboardHousing: '#14171c',
+    ledBackground: '#050608',
+    scoreboardText: '#ffffff',
 };
 
 export const FOG = { near: 40, far: 90 };

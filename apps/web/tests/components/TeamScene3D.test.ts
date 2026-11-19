@@ -7,6 +7,7 @@ const mocks = vi.hoisted(() => ({
     scenes: [] as Array<{
         setCourt: ReturnType<typeof vi.fn>;
         setBowl: ReturnType<typeof vi.fn>;
+        setMotion: ReturnType<typeof vi.fn>;
         setPreset: ReturnType<typeof vi.fn>;
         requestRender: ReturnType<typeof vi.fn>;
         dispose: ReturnType<typeof vi.fn>;
@@ -28,6 +29,7 @@ vi.mock('@/three/scene/teamScene', () => ({
     TeamScene: class {
         setCourt = vi.fn();
         setBowl = vi.fn();
+        setMotion = vi.fn();
         setPreset = vi.fn();
         requestRender = vi.fn();
         dispose = vi.fn();
@@ -43,6 +45,12 @@ vi.mock('@/three/scene/teamScene', () => ({
         }
     },
 }));
+// The scene's motion rule (reduced motion, touch screens) is a ref the tests flip.
+const motionMock = await vi.hoisted(async () => {
+    const { ref } = await import('vue');
+    return { motion: ref(true) };
+});
+vi.mock('@/components/scene3d/sceneMotion', () => ({ useSceneMotion: () => motionMock.motion }));
 vi.mock('@/three/arena/rasteriseCourt', () => ({ rasteriseCourt: mocks.rasterise }));
 vi.mock('@/three/renderer/shared', () => ({
     onContextChange: (listener: (lost: boolean) => void) => {
@@ -94,10 +102,37 @@ describe('TeamScene3D', () => {
         mocks.contextListener = null;
         mocks.failToStart = false;
         mocks.failPeople = false;
+        motionMock.motion.value = true;
     });
     afterEach(() => {
         wrapper?.unmount();
         wrapper = null;
+    });
+
+    it('passes the motion rule to the scene before building the bowl', async () => {
+        mocks.rasterise.mockResolvedValue(canvas('a'));
+        mountScene();
+        await flushPromises();
+        expect(scene().setMotion).toHaveBeenCalledWith(true);
+        expect(scene().setMotion.mock.invocationCallOrder[0]).toBeLessThan(scene().setBowl.mock.invocationCallOrder[0]);
+    });
+
+    it('starts the scene still when motion is off', async () => {
+        motionMock.motion.value = false;
+        mocks.rasterise.mockResolvedValue(canvas('a'));
+        mountScene();
+        await flushPromises();
+        expect(scene().setMotion).toHaveBeenCalledWith(false);
+    });
+
+    it('follows the motion rule as it changes', async () => {
+        mocks.rasterise.mockResolvedValue(canvas('a'));
+        mountScene();
+        await flushPromises();
+        scene().setMotion.mockClear();
+        motionMock.motion.value = false;
+        await flushPromises();
+        expect(scene().setMotion).toHaveBeenCalledWith(false);
     });
 
     it('renders one button per preset and marks the active one', async () => {

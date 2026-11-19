@@ -1,6 +1,14 @@
 import { describe, expect, it } from 'vitest';
 import { PerspectiveCamera, Vector3 } from 'three';
-import { CAMERA_PRESETS, MAX_FRAMING_DISTANCE, PRESET_LABELS, TWO_ROWS_BELOW_ASPECT, framePerson, framePreset } from '@/three/scene/cameraPresets';
+import {
+    CAMERA_PRESETS,
+    MAX_FRAMING_DISTANCE,
+    ORBIT_LIMITS,
+    PRESET_LABELS,
+    TWO_ROWS_BELOW_ASPECT,
+    framePerson,
+    framePreset,
+} from '@/three/scene/cameraPresets';
 
 const deg = (d: number) => (d * Math.PI) / 180;
 const distance = (frame: { position: number[]; target: number[] }) =>
@@ -33,6 +41,22 @@ describe('framePreset', () => {
         const wide = framePreset('courtside', 2);
         expect(narrow.position).toEqual(wide.position);
         expect(narrow.target).toEqual(wide.target);
+    });
+
+    it('pins the broadcast and rafters shots (#296)', () => {
+        expect(framePreset('broadcast', 16 / 9)).toEqual({ position: [0, 10, 24], target: [0, 4, 0], fov: 40 });
+        expect(framePreset('rafters', 0.625)).toEqual({ position: [0, 30, 30], target: [0, 6, -4], fov: 50 });
+    });
+
+    it('keeps broadcast and rafters inside the orbit limits, so the controls never snap them', () => {
+        for (const preset of ['broadcast', 'rafters'] as const) {
+            const frame = framePreset(preset, 16 / 9);
+            const offset = frame.position.map((p, i) => p - frame.target[i]);
+            const polar = Math.acos(offset[1] / Math.hypot(...offset));
+            expect(distance(frame)).toBeLessThanOrEqual(ORBIT_LIMITS.maxDistance);
+            expect(polar).toBeLessThan(ORBIT_LIMITS.maxPolarAngle);
+        }
+        expect(distance(framePreset('rafters', 1))).toBeCloseTo(41.6, 1);
     });
 
     it('every preset has a label', () => {

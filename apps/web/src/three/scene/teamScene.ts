@@ -1,6 +1,7 @@
-import { Group, PerspectiveCamera, Vector3, type Object3D } from 'three';
+import { Group, PerspectiveCamera, Vector3, type Object3D, type Texture } from 'three';
 import type { VenueDesign } from '@/constants/venue';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { ribbonTextureIn, scrollRibbon } from '@/three/arena/ribbon';
 import { buildPerson, type PersonInput } from '@/three/character/person';
 import type { KitColours } from '@/utils/jerseyColours';
 import { disposeObject, getSharedRenderer } from '@/three/renderer/shared';
@@ -17,8 +18,15 @@ export interface LabelAnchor {
 // How far above the head a name chip sits, in metres.
 const CHIP_LIFT = 0.25;
 
+// The ribbon scrolls at about 30 fps. The slack keeps 60, 120 and 144 Hz
+// displays on a steady every-other (or every-fourth) frame instead of
+// alternating 2- and 3-frame gaps when rAF's timestamps jitter around 33.3 ms.
+const FRAME_MS = 1000 / 30;
+const FRAME_SLACK_MS = 4;
+
 // The team's arena in 3D. Frames render only when something changes (a
-// camera move, a resize, a new arena), never in a loop.
+// camera move, a resize, a new arena). The one loop is the LED ribbon's
+// scroll, which runs only while there is a ribbon and motion is allowed.
 export class TeamScene {
     renderCount = 0;
     onRender: (() => void) | null = null;
@@ -38,6 +46,10 @@ export class TeamScene {
     private peopleRequest = 0;
     private twoRows = false;
     private anchors: LabelAnchor[] = [];
+    private motion = false;
+    private ribbon: Texture | null = null;
+    private loop = 0;
+    private lastTick: number | null = null;
 
     constructor(private readonly container: HTMLElement) {
         const canvas = this.renderer.domElement;
@@ -82,8 +94,57 @@ export class TeamScene {
 
     setBowl(capacity: number | null, venue: VenueDesign | null): void {
         if (this.disposed) return;
+        const previous = this.ribbon;
         this.bowl = this.swap(this.bowl, buildSeating(capacity, venue));
+        const next = ribbonTextureIn(this.bowl);
+        // The editor rebuilds the bowl on every keystroke: the ribbon keeps its
+        // place rather than snapping back to the start.
+        if (previous && next) next.offset.x = previous.offset.x;
+        this.ribbon = next;
+        this.syncScroll();
     }
+
+    /** Whether the scene may animate: the caller decides (reduced motion, touch screens). */
+    setMotion(enabled: boolean): void {
+        this.motion = enabled;
+        this.syncScroll();
+    }
+
+    // At most one loop: a bowl rebuild while scrolling keeps the queued tick,
+    // which picks up the new ribbon. Stopping leaves the text at rest.
+    private syncScroll(): void {
+        const run = this.motion && this.ribbon !== null && !this.disposed;
+        if (run) {
+            if (this.loop === 0) {
+                this.lastTick = null;
+                this.loop = requestAnimationFrame(this.tick);
+            }
+            return;
+        }
+        if (this.loop !== 0) cancelAnimationFrame(this.loop);
+        this.loop = 0;
+        this.lastTick = null;
+        if (this.ribbon) {
+            this.ribbon.offset.x = 0;
+            this.requestRender();
+        }
+    }
+
+    private readonly tick = (now: number): void => {
+        this.loop = 0;
+        if (!this.motion || !this.ribbon || this.disposed) return;
+        // Seeded from rAF's own clock, never performance.now(), so the first
+        // delta is a real frame's.
+        if (this.lastTick === null) {
+            this.lastTick = now;
+        } else if (now - this.lastTick >= FRAME_MS - FRAME_SLACK_MS) {
+            scrollRibbon(this.ribbon, (now - this.lastTick) / 1000);
+            this.lastTick = now;
+            // A pending on-demand frame draws the new offset itself, with anchors.
+            if (!this.frameRequested) this.paint(false);
+        }
+        this.loop = requestAnimationFrame(this.tick);
+    };
 
     private swap(old: Object3D | null, next: Object3D): Object3D {
         if (old) {
@@ -130,15 +191,23 @@ export class TeamScene {
         requestAnimationFrame(() => {
             this.frameRequested = false;
             if (this.disposed) return;
-            this.renderer.render(this.scene, this.camera);
-            this.updateAnchors();
-            this.renderCount++;
-            this.onRender?.();
+            this.paint(true);
         });
+    }
+
+    // A scroll frame skips the anchors: the camera hasn't moved, so
+    // labelAnchors() keeps returning the same array and the chips don't re-render.
+    private paint(withAnchors: boolean): void {
+        this.renderer.render(this.scene, this.camera);
+        if (withAnchors) this.updateAnchors();
+        this.renderCount++;
+        this.onRender?.();
     }
 
     dispose(): void {
         this.disposed = true;
+        if (this.loop !== 0) cancelAnimationFrame(this.loop);
+        this.loop = 0;
         this.observer.disconnect();
         this.controls.dispose();
         this.renderer.domElement.removeEventListener('wheel', this.onWheel, { capture: true });

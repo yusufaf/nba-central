@@ -822,8 +822,27 @@ test.describe('3D team scene', () => {
         expect(problems).toEqual([]);
     });
 
+    // Every person has landed once the draw-call count stops climbing.
+    const settleDraws = async (page: Page) => {
+        let last = -1;
+        await expect
+            .poll(
+                async () => {
+                    const now = (await drawn(page))?.calls ?? 0;
+                    const settled = now === last && now > 0;
+                    last = now;
+                    return settled;
+                },
+                { timeout: 30000, intervals: [1500] },
+            )
+            .toBe(true);
+    };
+
     test('stays inside the draw budget with five geared custom players', async ({ page }, testInfo) => {
         test.setTimeout(300000);
+        // The ribbon would otherwise re-render ~149k triangles back to back on
+        // SwiftShader; the calls and triangles are the same still or moving.
+        await page.emulateMedia({ reducedMotion: 'reduce' });
         await stubNetwork(page);
         const measure = async (look: typeof LOOK, staffLook?: typeof STAFF_LOOK, arena?: object) => {
             await page.unroute('**/api/teams/public/visual-team');
@@ -836,19 +855,7 @@ test.describe('3D team scene', () => {
             await page.goto('/t/visual-team?view=3d');
             await expect(page.getByTestId('name-chip')).toHaveCount(7, { timeout: 20000 });
             await expect.poll(() => renders(page), { timeout: 15000 }).toBeGreaterThanOrEqual(1);
-            // Every person has landed once the count stops climbing.
-            let last = -1;
-            await expect
-                .poll(
-                    async () => {
-                        const now = (await drawn(page))?.calls ?? 0;
-                        const settled = now === last && now > 0;
-                        last = now;
-                        return settled;
-                    },
-                    { timeout: 30000, intervals: [1500] },
-                )
-                .toBe(true);
+            await settleDraws(page);
             return (await drawn(page))!;
         };
         const bearded = { ...LOOK, accessories: FULL_GEAR };
@@ -875,21 +882,105 @@ test.describe('3D team scene', () => {
             bunsBare: await measure({ ...buns, accessories: [] }),
             buns: await measure(buns, bunsStaff),
             // The deepest bowl a custom arena can have (#295): 24 lower rows and
-            // a 16-row upper deck, seats patterned. Patterns add no triangles.
+            // a 16-row upper deck, seats patterned (patterns add no triangles),
+            // with a scoreboard and an LED ribbon (#296).
             busiestBowl: await measure(buns, bunsStaff, {
                 name: 'Harbor Pavilion',
                 isCustom: true,
                 arenaUUID: 'a1',
                 capacity: 200000,
-                venue: { version: 1, seats: { primary: '#1e293b', secondary: '#b91c1c', pattern: 'sections' }, upperDeck: true },
+                venue: {
+                    version: 1,
+                    seats: { primary: '#1e293b', secondary: '#b91c1c', pattern: 'sections' },
+                    upperDeck: true,
+                    scoreboard: { text: 'HARBOR PAVILION', accent: '#ef4444' },
+                    ribbon: { text: 'WELCOME TO HARBOR PAVILION', color: '#f59e0b' },
+                },
             }),
         };
+        // The same scene from Broadcast, which has the scoreboard and ribbon in view.
+        const before = await renders(page);
+        await page.getByRole('button', { name: 'Broadcast', exact: true }).click();
+        await expect.poll(() => renders(page), { timeout: 15000 }).toBeGreaterThan(before);
+        await settleDraws(page);
+        const busiestBowlBroadcast = (await drawn(page))!;
+        Object.assign(results, { busiestBowlBroadcast });
         testInfo.annotations.push({ type: 'draw budget', description: JSON.stringify(results) });
         console.log('DRAW BUDGET', JSON.stringify(results));
         expect(results.bearded.calls).toBeLessThanOrEqual(60);
         expect(results.buns.triangles).toBeLessThanOrEqual(150000);
         expect(results.busiestBowl.calls).toBeLessThanOrEqual(60);
         expect(results.busiestBowl.triangles).toBeLessThanOrEqual(150000);
+        expect(busiestBowlBroadcast.calls).toBeLessThanOrEqual(60);
+        expect(busiestBowlBroadcast.triangles).toBeLessThanOrEqual(150000);
+    });
+
+    // #296: the scoreboard and LED ribbon. A light scene (the fixture team,
+    // an 18k bowl without an upper deck), since both projects render on
+    // SwiftShader. Desktop only: a mobile run's touch emulation could change
+    // whether the ribbon scrolls.
+    test.describe('3D scoreboard and ribbon', () => {
+        const ARENA = {
+            name: 'Harbor Pavilion',
+            isCustom: true,
+            arenaUUID: 'a1',
+            capacity: 18000,
+            venue: {
+                version: 1,
+                scoreboard: { text: 'HARBOR', accent: '#ef4444' },
+                ribbon: { text: 'WELCOME TO HARBOR PAVILION', color: '#f59e0b' },
+            },
+        };
+        const load = async (page: Page) => {
+            await stubNetwork(page);
+            await withCustomPlayers(page, {}, {}, ARENA);
+            await page.goto('/t/visual-team?view=3d');
+            await expect(page.getByTestId('name-chip')).toHaveCount(7, { timeout: 20000 });
+            await expect.poll(() => renders(page), { timeout: 15000 }).toBeGreaterThanOrEqual(1);
+            await settleDraws(page);
+        };
+        const rendersOver = async (page: Page, ms: number) => {
+            const start = await renders(page);
+            await page.waitForTimeout(ms);
+            return (await renders(page)) - start;
+        };
+
+        test.describe.configure({ timeout: 120000 });
+        test.skip(({ isMobile }) => isMobile, 'Pointer and motion rules are checked on desktop');
+
+        test('shows both from broadcast and rafters', async ({ page }, testInfo) => {
+            await load(page);
+            for (const preset of ['Broadcast', 'Rafters']) {
+                const before = await renders(page);
+                await page.getByRole('button', { name: preset, exact: true }).click();
+                await expect.poll(() => renders(page), { timeout: 15000 }).toBeGreaterThan(before);
+                await page.waitForTimeout(500);
+                await page
+                    .locator('[role="img"][data-render-count]')
+                    .screenshot({ path: testInfo.outputPath(`scoreboard-${preset.toLowerCase()}.png`) });
+            }
+        });
+
+        test('scrolls with a fine pointer', async ({ page }) => {
+            await load(page);
+            expect(await rendersOver(page, 3000)).toBeGreaterThanOrEqual(6);
+        });
+
+        test('stays still under reduced motion', async ({ page }) => {
+            await page.emulateMedia({ reducedMotion: 'reduce' });
+            await load(page);
+            expect(await rendersOver(page, 3000)).toBe(0);
+        });
+
+        test('stays still on a touch screen', async ({ page }) => {
+            await page.addInitScript(() => {
+                const real = window.matchMedia.bind(window);
+                window.matchMedia = (query: string) => real(query === '(pointer: coarse)' ? 'all' : query);
+            });
+            await load(page);
+            expect(await page.evaluate(() => matchMedia('(pointer: coarse)').matches)).toBe(true);
+            expect(await rendersOver(page, 3000)).toBe(0);
+        });
     });
 
     // #289: the share card's 3D team photo is drawn into an sRGB render target.

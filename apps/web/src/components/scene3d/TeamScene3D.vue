@@ -6,6 +6,7 @@ import { computed, nextTick, onBeforeUnmount, onMounted, ref, shallowRef, watch 
 import CourtFloor from '@/components/court/CourtFloor.vue';
 import { Button } from '@/components/ui/button';
 import Scene3DUnavailable from './Scene3DUnavailable.vue';
+import { useSceneMotion } from './sceneMotion';
 import { DEFAULT_COURT, courtAttempts } from './courtRaster';
 import { track } from '@/lib/analytics';
 import type { CourtDesign, TeamUniform, VenueDesign } from '@/models/api';
@@ -138,6 +139,9 @@ const choose = (next: CameraPreset) => {
 
 let stopContext: (() => void) | null = null;
 
+// The ribbon scrolls unless reduced motion is on or the screen is a touch screen.
+const motion = useSceneMotion();
+
 onMounted(() => {
     if (!viewport.value) return;
     let created: TeamScene;
@@ -155,6 +159,7 @@ onMounted(() => {
     };
     scene.value = created;
     if (props.initialPreset !== 'team') created.setPreset(props.initialPreset);
+    created.setMotion(motion.value);
     created.setBowl(props.capacity, props.venue);
     stopContext = onContextChange((lost) => {
         paused.value = lost;
@@ -172,6 +177,8 @@ onMounted(() => {
 watch([() => props.people, () => props.jerseyUrl, () => props.teamName, () => props.uniform], () => void placePeople());
 
 watch(() => [props.court, props.logoUrl, props.drawingUrl], () => void rasterise());
+
+watch(motion, (on) => scene.value?.setMotion(on));
 
 // Seats are rebuilt on their own, so a colour edit never re-rasterises the court.
 watch(

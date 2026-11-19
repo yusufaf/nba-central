@@ -1,4 +1,4 @@
-import type { SeatPatternId, VenueDesign } from '@/constants/venue';
+import { RIBBON_TEXT_MAX, SCOREBOARD_TEXT_MAX, type SeatPatternId, type VenueDesign } from '@/constants/venue';
 import type { Swatch } from '@/utils/appearanceOptions';
 
 // Shared by the Seats tab and the 3D bowl, so it lives outside src/three. The
@@ -37,12 +37,84 @@ export const SECONDARY_HINTS: Record<SeatPatternId, string> = {
     gradient: 'The top rows; the primary is at the bottom.',
 };
 
+// A venue whose Seats tab is designed: both seat keys are there.
+export type SeatedVenue = VenueDesign & Required<Pick<VenueDesign, 'seats' | 'upperDeck'>>;
+
+export const hasSeats = (venue: VenueDesign): venue is SeatedVenue =>
+    venue.seats !== undefined && venue.upperDeck !== undefined;
+
+// A venue with no part left is no venue: the arena keeps the standard bowl.
+const orNull = (venue: VenueDesign): VenueDesign | null =>
+    Object.keys(venue).some((key) => key !== 'version') ? venue : null;
+
 // Starts from today's look, so nothing in the preview jumps when it's created.
-export const newVenue = (capacity: number | null): VenueDesign => ({
-    version: 1,
+export const withSeatDesign = (venue: VenueDesign | null, capacity: number | null): SeatedVenue => ({
+    ...(venue ?? { version: 1 }),
     seats: { primary: SEAT_SWATCHES[0].value, secondary: '#b91c1c', pattern: 'solid' },
     upperDeck: defaultUpperDeck(capacity),
 });
+
+export const withoutSeatDesign = (venue: VenueDesign): VenueDesign | null => {
+    const { seats: _seats, upperDeck: _upperDeck, ...rest } = venue;
+    return orNull(rest);
+};
+
+// LED colours: bright, since they're lit screens on a black panel.
+export const LED_SWATCHES: Swatch[] = [
+    { value: '#ffffff', label: 'White' },
+    { value: '#f59e0b', label: 'Amber' },
+    { value: '#ef4444', label: 'Red' },
+    { value: '#22c55e', label: 'Green' },
+    { value: '#06b6d4', label: 'Cyan' },
+    { value: '#3b82f6', label: 'Blue' },
+    { value: '#a855f7', label: 'Purple' },
+    { value: '#c9a227', label: 'Gold' },
+];
+
+export const newScoreboard = (arenaName: string): NonNullable<VenueDesign['scoreboard']> => ({
+    text: arenaName.trim().slice(0, SCOREBOARD_TEXT_MAX),
+    accent: '#ef4444',
+});
+
+export const newRibbon = (arenaName: string): NonNullable<VenueDesign['ribbon']> => {
+    const name = arenaName.trim();
+    return { text: (name ? `Welcome to ${name}` : 'Welcome').slice(0, RIBBON_TEXT_MAX), color: '#f59e0b' };
+};
+
+/** A new venue with one part set, or removed with undefined. */
+export const setVenuePart = <K extends 'scoreboard' | 'ribbon'>(
+    venue: VenueDesign | null,
+    key: K,
+    value: VenueDesign[K] | undefined,
+): VenueDesign | null => {
+    const next: VenueDesign = { ...(venue ?? { version: 1 }) };
+    if (value === undefined) delete next[key];
+    else next[key] = value;
+    return orNull(next);
+};
+
+// A plain copy two levels deep: a loaded venue can hold reactive proxies,
+// which structuredClone (and so the 3D scene's inputs) can't take.
+export const copyVenue = (venue: VenueDesign): VenueDesign => ({
+    version: 1,
+    ...(venue.seats && { seats: { ...venue.seats } }),
+    ...(venue.upperDeck !== undefined && { upperDeck: venue.upperDeck }),
+    ...(venue.scoreboard && { scoreboard: { ...venue.scoreboard } }),
+    ...(venue.ribbon && { ribbon: { ...venue.ribbon } }),
+});
+
+export const submittedVenue = (venue: VenueDesign | null): VenueDesign | null => {
+    if (!venue) return null;
+    const copy = copyVenue(venue);
+    if (copy.scoreboard) copy.scoreboard.text = copy.scoreboard.text.trim();
+    if (copy.ribbon) copy.ribbon.text = copy.ribbon.text.trim();
+    return orNull(copy);
+};
+
+// Behind the inputs' maxlength, which a paste or a script can get past.
+export const venueTextsValid = (venue: VenueDesign | null): boolean =>
+    (venue?.scoreboard?.text.length ?? 0) <= SCOREBOARD_TEXT_MAX &&
+    (venue?.ribbon?.text.length ?? 0) <= RIBBON_TEXT_MAX;
 
 // The pattern buttons' little preview of each pattern in the current colours.
 export const patternChip = (

@@ -29,6 +29,8 @@ vi.mock('@/three/character/person', async () => {
 });
 
 import type { Group } from 'three';
+import type { VenueDesign } from '@/constants/venue';
+import { ribbonTextureIn } from '@/three/arena/ribbon';
 import { TeamScene } from '@/three/scene/teamScene';
 import { framePreset } from '@/three/scene/cameraPresets';
 import type { PersonInput } from '@/three/character/person';
@@ -176,7 +178,7 @@ describe('TeamScene', () => {
 
 describe('TeamScene arena parts (#295)', () => {
     const sceneOf = (scene: TeamScene) => (scene as unknown as { scene: Group }).scene;
-    const bowls = (scene: TeamScene) => sceneOf(scene).children.filter((child) => child.name === 'bowl');
+    const bowls = (scene: TeamScene) => sceneOf(scene).children.filter((child) => child.name === 'seating');
     const courts = (scene: TeamScene) => sceneOf(scene).children.filter((child) => child.getObjectByName('court-floor'));
     const VENUE = { version: 1, seats: { primary: '#111111', secondary: '#eeeeee', pattern: 'rows' }, upperDeck: true } as const;
 
@@ -210,5 +212,136 @@ describe('TeamScene arena parts (#295)', () => {
         scene.setCourt(null);
         expect(bowls(scene)).toHaveLength(0);
         expect(courts(scene)).toHaveLength(0);
+    });
+});
+
+describe('the LED ribbon scroll (#296)', () => {
+    // Queued rAF: a self-rescheduling tick would recurse forever under the
+    // file's synchronous stub.
+    let queue: { id: number; cb: FrameRequestCallback }[] = [];
+    let nextId = 1;
+    const flush = (now: number) => {
+        const due = queue;
+        queue = [];
+        for (const { cb } of due) cb(now);
+    };
+
+    beforeEach(() => {
+        queue = [];
+        nextId = 1;
+        vi.stubGlobal('requestAnimationFrame', (cb: FrameRequestCallback) => {
+            queue.push({ id: nextId, cb });
+            return nextId++;
+        });
+        vi.stubGlobal('cancelAnimationFrame', (id: number) => {
+            queue = queue.filter((entry) => entry.id !== id);
+        });
+    });
+
+    const RIBBON_VENUE = { version: 1, ribbon: { text: 'HELLO', color: '#f59e0b' } } as const;
+    const tickOf = (scene: TeamScene) => (scene as unknown as { tick: FrameRequestCallback }).tick;
+    const loopCallbacks = (scene: TeamScene) => queue.filter(({ cb }) => cb === tickOf(scene));
+    const ribbonOf = (scene: TeamScene) => ribbonTextureIn((scene as unknown as { bowl: Group }).bowl)!;
+
+    // Builds the scene and its bowl, then drains their on-demand renders.
+    const setUp = (venue: VenueDesign | null = RIBBON_VENUE) => {
+        const scene = new TeamScene(container);
+        scene.setBowl(18000, venue);
+        flush(0);
+        return scene;
+    };
+
+    it('queues one loop when motion is on, seeds from the first tick and draws at ~30 fps', () => {
+        const scene = setUp();
+        const renders = scene.renderCount;
+        scene.setMotion(true);
+        expect(loopCallbacks(scene)).toHaveLength(1);
+        flush(1000);
+        expect(scene.renderCount).toBe(renders);
+        flush(1010);
+        flush(1020);
+        expect(scene.renderCount).toBe(renders);
+        flush(1033);
+        expect(scene.renderCount).toBe(renders + 1);
+        expect(ribbonOf(scene).offset.x).toBeCloseTo((0.033 * 2) / 19.2, 6);
+        expect(loopCallbacks(scene)).toHaveLength(1);
+    });
+
+    it('keeps the label anchors across scroll frames', () => {
+        const scene = setUp();
+        const anchors = scene.labelAnchors();
+        scene.setMotion(true);
+        flush(1000);
+        flush(1040);
+        flush(1080);
+        expect(scene.labelAnchors()).toBe(anchors);
+    });
+
+    it('keeps one loop across bowl rebuilds, scrolling the newest ribbon', () => {
+        const scene = setUp();
+        scene.setMotion(true);
+        scene.setBowl(18000, { version: 1, ribbon: { text: 'A', color: '#ffffff' } });
+        scene.setBowl(18000, { version: 1, ribbon: { text: 'B', color: '#ffffff' } });
+        expect(loopCallbacks(scene)).toHaveLength(1);
+        flush(1000);
+        flush(1040);
+        expect(ribbonOf(scene).offset.x).toBeGreaterThan(0);
+    });
+
+    it("carries the ribbon's place to a rebuilt bowl", () => {
+        const scene = setUp();
+        scene.setMotion(true);
+        flush(1000);
+        flush(1040);
+        flush(1080);
+        const offset = ribbonOf(scene).offset.x;
+        expect(offset).toBeGreaterThan(0);
+        scene.setBowl(18000, { version: 1, ribbon: { text: 'NEW TEXT', color: '#ffffff' } });
+        expect(ribbonOf(scene).offset.x).toBe(offset);
+    });
+
+    it('keeps one loop when motion goes off and on before a frame', () => {
+        const scene = setUp();
+        scene.setMotion(true);
+        scene.setMotion(false);
+        scene.setMotion(true);
+        expect(loopCallbacks(scene)).toHaveLength(1);
+    });
+
+    it('stops with the text at rest, drawing it once', () => {
+        const scene = setUp();
+        scene.setMotion(true);
+        flush(1000);
+        flush(1040);
+        expect(ribbonOf(scene).offset.x).toBeGreaterThan(0);
+        scene.setMotion(false);
+        expect(loopCallbacks(scene)).toHaveLength(0);
+        expect(ribbonOf(scene).offset.x).toBe(0);
+        const renders = scene.renderCount;
+        flush(1100);
+        expect(scene.renderCount).toBe(renders + 1);
+    });
+
+    it('stops when the new bowl has no ribbon', () => {
+        const scene = setUp();
+        scene.setMotion(true);
+        scene.setBowl(18000, null);
+        expect(loopCallbacks(scene)).toHaveLength(0);
+    });
+
+    it('never loops without a ribbon', () => {
+        const scene = setUp(null);
+        scene.setMotion(true);
+        expect(loopCallbacks(scene)).toHaveLength(0);
+        const seatsOnly = setUp({ version: 1, seats: { primary: '#111111', secondary: '#222222', pattern: 'solid' }, upperDeck: false });
+        seatsOnly.setMotion(true);
+        expect(loopCallbacks(seatsOnly)).toHaveLength(0);
+    });
+
+    it('stops the loop on dispose', () => {
+        const scene = setUp();
+        scene.setMotion(true);
+        scene.dispose();
+        expect(loopCallbacks(scene)).toHaveLength(0);
     });
 });
