@@ -458,6 +458,45 @@ describe("an arena's venue (#295)", () => {
 	});
 });
 
+describe("an arena's scoreboard and LED ribbon (#296)", () => {
+	const scoreboard = { text: "HARBOR", accent: "#c8102e" };
+	const ribbon = { text: "WELCOME", color: "#f59e0b" };
+	const venue = {
+		version: 1,
+		seats: { primary: "#1e293b", secondary: "#b91c1c", pattern: "sections" },
+		upperDeck: true,
+		scoreboard,
+		ribbon,
+	};
+	const update = (body: Item) => run(updateHandler, { body: JSON.stringify({ ...payload(), arenaUUID: "a1", ...body }) });
+
+	it("stores both on create as key-by-key copies", async () => {
+		const result = await run(createHandler, {
+			body: JSON.stringify(
+				payload({ venue: { ...venue, scoreboard: { ...scoreboard, extra: 1 }, ribbon: { ...ribbon, extra: 2 } } }),
+			),
+		});
+		expect(result.statusCode).toBe(200);
+		expect(parseBody(result).data.venue).toEqual(venue);
+		expect(arenasOf(ME)[0].venue).toEqual(venue);
+	});
+
+	it("400s on a 17-character scoreboard text and leaves the item as it was", async () => {
+		db.push(storedArena(ME, "a1"));
+		const result = await update({ venue: { ...venue, scoreboard: { ...scoreboard, text: "x".repeat(17) } } });
+		expect(result.statusCode).toBe(400);
+		expect(parseBody(result).error).toBe("Venue scoreboard text must be at most 16 characters");
+		expect(arenasOf(ME)[0]).not.toHaveProperty("venue");
+	});
+
+	it("stores a venue that holds only a ribbon", async () => {
+		db.push(storedArena(ME, "a1"));
+		const result = await update({ venue: { version: 1, ribbon } });
+		expect(result.statusCode).toBe(200);
+		expect(arenasOf(ME)[0].venue).toEqual({ version: 1, ribbon });
+	});
+});
+
 describe("deleteCustomArena", () => {
 	const seedWithImages = () => {
 		db.push(

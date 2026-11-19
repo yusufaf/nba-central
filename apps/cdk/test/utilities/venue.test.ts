@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { SEAT_PATTERNS } from "../../models/custom-entities";
+import { RIBBON_TEXT_MAX, SCOREBOARD_TEXT_MAX, SEAT_PATTERNS } from "../../models/custom-entities";
 import { toVenue, validateArenaData, venueError } from "../../utilities/custom-entities-validation";
 import * as web from "../../../web/src/constants/venue";
 
@@ -10,6 +10,10 @@ const VENUE = {
 };
 
 const withSeats = (seats: Record<string, unknown>) => ({ ...VENUE, seats: { ...VENUE.seats, ...seats } });
+
+const SCOREBOARD = { text: "HARBOR", accent: "#c8102e" };
+const RIBBON = { text: "WELCOME", color: "#f59e0b" };
+const FULL = { ...VENUE, scoreboard: SCOREBOARD, ribbon: RIBBON };
 
 describe("venueError", () => {
     it("accepts a full venue, every pattern and both upper-deck values", () => {
@@ -29,9 +33,7 @@ describe("venueError", () => {
         expect(venueError(noVersion)).toBe("Venue version must be 1");
     });
 
-    it("rejects missing or malformed seats", () => {
-        const { seats: _seats, ...noSeats } = VENUE;
-        expect(venueError(noSeats)).toBe("Venue seats must be {primary, secondary, pattern}");
+    it("rejects malformed seats", () => {
         expect(venueError({ ...VENUE, seats: "red" })).toBe("Venue seats must be {primary, secondary, pattern}");
         expect(venueError({ ...VENUE, seats: [] })).toBe("Venue seats must be {primary, secondary, pattern}");
     });
@@ -49,8 +51,63 @@ describe("venueError", () => {
     });
 
     it("rejects an upper deck that isn't a boolean", () => {
-        for (const upperDeck of ["yes", 1, undefined]) {
+        for (const upperDeck of ["yes", 1, null]) {
             expect(venueError({ ...VENUE, upperDeck })).toBe("Venue upper deck must be true or false");
+        }
+    });
+});
+
+describe("venueError, optional parts (#296)", () => {
+    it("accepts a version-only venue and any subset of parts", () => {
+        expect(venueError({ version: 1 })).toBeNull();
+        expect(venueError({ version: 1, scoreboard: SCOREBOARD })).toBeNull();
+        expect(venueError({ version: 1, ribbon: RIBBON })).toBeNull();
+        expect(venueError(VENUE)).toBeNull();
+        expect(venueError(FULL)).toBeNull();
+    });
+
+    it("needs the seats and the upper deck together, or neither", () => {
+        const { upperDeck: _upperDeck, ...seatsOnly } = VENUE;
+        const { seats: _seats, ...deckOnly } = VENUE;
+        expect(venueError(seatsOnly)).toBe("Venue seats and upper deck must be set together");
+        expect(venueError(deckOnly)).toBe("Venue seats and upper deck must be set together");
+    });
+
+    it("accepts texts at the limits and empty texts", () => {
+        expect(venueError({ ...FULL, scoreboard: { ...SCOREBOARD, text: "x".repeat(16) } })).toBeNull();
+        expect(venueError({ ...FULL, ribbon: { ...RIBBON, text: "x".repeat(32) } })).toBeNull();
+        expect(venueError({ ...FULL, scoreboard: { ...SCOREBOARD, text: "" }, ribbon: { ...RIBBON, text: "" } })).toBeNull();
+    });
+
+    it("rejects a malformed scoreboard", () => {
+        for (const scoreboard of [null, "HARBOR", [], 1]) {
+            expect(venueError({ ...FULL, scoreboard })).toBe("Venue scoreboard must be {text, accent}");
+        }
+        for (const text of ["x".repeat(17), 7, undefined]) {
+            expect(venueError({ ...FULL, scoreboard: { ...SCOREBOARD, text } })).toBe(
+                "Venue scoreboard text must be at most 16 characters",
+            );
+        }
+        for (const accent of ["red", "#fff", undefined]) {
+            expect(venueError({ ...FULL, scoreboard: { ...SCOREBOARD, accent } })).toBe(
+                "Venue scoreboard accent must be a #rrggbb colour",
+            );
+        }
+    });
+
+    it("rejects a malformed ribbon", () => {
+        for (const ribbon of [null, "WELCOME", [], 1]) {
+            expect(venueError({ ...FULL, ribbon })).toBe("Venue ribbon must be {text, color}");
+        }
+        for (const text of ["x".repeat(33), 7, undefined]) {
+            expect(venueError({ ...FULL, ribbon: { ...RIBBON, text } })).toBe(
+                "Venue ribbon text must be at most 32 characters",
+            );
+        }
+        for (const color of ["amber", "#f59e0", undefined]) {
+            expect(venueError({ ...FULL, ribbon: { ...RIBBON, color } })).toBe(
+                "Venue ribbon colour must be a #rrggbb colour",
+            );
         }
     });
 });
@@ -60,6 +117,25 @@ describe("toVenue", () => {
         const copied = toVenue({ ...VENUE, extra: 1, seats: { ...VENUE.seats, extra: 2 } });
         expect(copied).toEqual(VENUE);
         expect(copied.seats).not.toBe(VENUE.seats);
+    });
+
+    it("copies the scoreboard and ribbon key by key", () => {
+        const copied = toVenue({
+            ...FULL,
+            scoreboard: { ...SCOREBOARD, extra: 1 },
+            ribbon: { ...RIBBON, extra: 2 },
+        });
+        expect(copied).toEqual(FULL);
+        expect(copied.scoreboard).not.toBe(SCOREBOARD);
+        expect(copied.ribbon).not.toBe(RIBBON);
+    });
+
+    it("leaves absent parts out instead of setting them to undefined", () => {
+        const seated = toVenue(VENUE);
+        expect("scoreboard" in seated).toBe(false);
+        expect("ribbon" in seated).toBe(false);
+        const bare = toVenue({ version: 1, ribbon: RIBBON });
+        expect(Object.keys(bare).sort()).toEqual(["ribbon", "version"]);
     });
 });
 
@@ -83,5 +159,10 @@ describe("validateArenaData with a venue", () => {
 describe("the web copy of the seat patterns", () => {
     it("matches", () => {
         expect(web.SEAT_PATTERNS).toEqual(SEAT_PATTERNS);
+    });
+
+    it("matches the text limits", () => {
+        expect(web.SCOREBOARD_TEXT_MAX).toBe(SCOREBOARD_TEXT_MAX);
+        expect(web.RIBBON_TEXT_MAX).toBe(RIBBON_TEXT_MAX);
     });
 });

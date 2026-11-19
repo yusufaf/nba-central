@@ -11,6 +11,8 @@ import {
 	OUTFIT_STYLES,
 	PersonAppearance,
 	POSES,
+	RIBBON_TEXT_MAX,
+	SCOREBOARD_TEXT_MAX,
 	SEAT_PATTERNS,
 	STAFF_ACCESSORIES,
 	STAFF_HEIGHT_INCHES,
@@ -308,26 +310,56 @@ const courtError = (court: unknown): string | null => {
 export const venueError = (value: unknown): string | null => {
 	if (!isRecord(value)) return "Venue must be an object";
 	if (value.version !== 1) return "Venue version must be 1";
-	const seats = value.seats;
-	if (!isRecord(seats)) return "Venue seats must be {primary, secondary, pattern}";
-	for (const field of ["primary", "secondary"]) {
-		const colour = seats[field];
-		if (typeof colour !== "string" || !HEX_COLOUR.test(colour)) return `Venue seats ${field} must be a #rrggbb colour`;
+	const { seats, scoreboard, ribbon } = value;
+	// A seat design is both keys: the editor can't show one without the other.
+	if ((seats === undefined) !== (value.upperDeck === undefined)) {
+		return "Venue seats and upper deck must be set together";
 	}
-	if (!isOneOf(SEAT_PATTERNS, seats.pattern)) {
-		return `Venue seats pattern must be one of ${SEAT_PATTERNS.join(", ")}`;
+	if (seats !== undefined) {
+		if (!isRecord(seats)) return "Venue seats must be {primary, secondary, pattern}";
+		for (const field of ["primary", "secondary"]) {
+			if (!isHex(seats[field])) return `Venue seats ${field} must be a #rrggbb colour`;
+		}
+		if (!isOneOf(SEAT_PATTERNS, seats.pattern)) {
+			return `Venue seats pattern must be one of ${SEAT_PATTERNS.join(", ")}`;
+		}
 	}
-	if (typeof value.upperDeck !== "boolean") return "Venue upper deck must be true or false";
+	if (value.upperDeck !== undefined && typeof value.upperDeck !== "boolean") {
+		return "Venue upper deck must be true or false";
+	}
+	if (scoreboard !== undefined) {
+		if (!isRecord(scoreboard)) return "Venue scoreboard must be {text, accent}";
+		if (!isTextUpTo(scoreboard.text, SCOREBOARD_TEXT_MAX)) {
+			return `Venue scoreboard text must be at most ${SCOREBOARD_TEXT_MAX} characters`;
+		}
+		if (!isHex(scoreboard.accent)) return "Venue scoreboard accent must be a #rrggbb colour";
+	}
+	if (ribbon !== undefined) {
+		if (!isRecord(ribbon)) return "Venue ribbon must be {text, color}";
+		if (!isTextUpTo(ribbon.text, RIBBON_TEXT_MAX)) {
+			return `Venue ribbon text must be at most ${RIBBON_TEXT_MAX} characters`;
+		}
+		if (!isHex(ribbon.color)) return "Venue ribbon colour must be a #rrggbb colour";
+	}
 	return null;
 };
 
-/** A venue that passed venueError, copied key by key so nothing else a client sends is stored. */
+const isTextUpTo = (value: unknown, max: number): value is string => typeof value === "string" && value.length <= max;
+
+/**
+ * A venue that passed venueError, copied key by key so nothing else a client sends is stored.
+ * An absent part gets no key at all: DocumentClient throws on undefined map values.
+ */
 export const toVenue = (value: Record<string, unknown>): VenueDesign => {
 	const seats = value.seats as VenueDesign["seats"];
+	const scoreboard = value.scoreboard as VenueDesign["scoreboard"];
+	const ribbon = value.ribbon as VenueDesign["ribbon"];
 	return {
 		version: 1,
-		seats: { primary: seats.primary, secondary: seats.secondary, pattern: seats.pattern },
-		upperDeck: value.upperDeck as boolean,
+		...(seats && { seats: { primary: seats.primary, secondary: seats.secondary, pattern: seats.pattern } }),
+		...(typeof value.upperDeck === "boolean" && { upperDeck: value.upperDeck }),
+		...(scoreboard && { scoreboard: { text: scoreboard.text, accent: scoreboard.accent } }),
+		...(ribbon && { ribbon: { text: ribbon.text, color: ribbon.color } }),
 	};
 };
 
