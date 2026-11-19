@@ -9,3 +9,7 @@ export interface VenueDesign {
     seats: { primary: string; secondary: string; pattern: SeatPatternId };
     upperDeck: boolean;
 }
+
+// Scoreboard and LED ribbon text limits (#296), counted in .length like the court's.
+export const SCOREBOARD_TEXT_MAX = 16;
+export const RIBBON_TEXT_MAX = 32;
