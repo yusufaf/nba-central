@@ -1,11 +1,17 @@
 import { describe, expect, it } from 'vitest';
 import { reactive } from 'vue';
-import { BANNERS_MAX, BANNER_KINDS, SEAT_PATTERNS, type VenueBanner, type VenueDesign } from '@/constants/venue';
+import { BANNERS_MAX, BANNER_KINDS, LIGHTING_PRESETS, SEAT_PATTERNS, type VenueBanner, type VenueDesign } from '@/constants/venue';
 import { SCENE_COLOURS } from '@/three/arena/palette';
 import {
     BANNER_KIND_LABELS,
     BANNER_SWATCHES,
     DEFAULT_CAPACITY,
+    DEFAULT_LIGHTING,
+    LIGHT_SWATCHES,
+    LIGHTING_PRESET_HINTS,
+    LIGHTING_PRESET_LABELS,
+    lightingDesign,
+    setLighting,
     LED_SWATCHES,
     addBanner,
     moveBanner,
@@ -34,7 +40,7 @@ describe('venue values', () => {
     });
 
     it('keeps every swatch as lower-case #rrggbb', () => {
-        for (const swatch of [...SEAT_SWATCHES, ...LED_SWATCHES, ...BANNER_SWATCHES]) expect(swatch.value).toMatch(/^#[0-9a-f]{6}$/);
+        for (const swatch of [...SEAT_SWATCHES, ...LED_SWATCHES, ...BANNER_SWATCHES, ...LIGHT_SWATCHES]) expect(swatch.value).toMatch(/^#[0-9a-f]{6}$/);
     });
 
     it('labels and hints every pattern', () => {
@@ -288,5 +294,76 @@ describe('banners in copyVenue, submittedVenue and venueTextsValid', () => {
         expect(valid([{ ...BANNER, subtitle: 'x'.repeat(25) }])).toBe(false);
         expect(valid(Array.from({ length: BANNERS_MAX }, () => BANNER))).toBe(true);
         expect(valid(Array.from({ length: BANNERS_MAX + 1 }, () => BANNER))).toBe(false);
+    });
+});
+
+const THEATER = { preset: 'theater', tint: '#a855f7' } as const;
+
+describe('lighting values (#298)', () => {
+    it('labels and hints every preset, and starts the swatches with white', () => {
+        for (const preset of LIGHTING_PRESETS) {
+            expect(LIGHTING_PRESET_LABELS[preset]).toBeTruthy();
+            expect(LIGHTING_PRESET_HINTS[preset]).toBeTruthy();
+        }
+        expect(LIGHT_SWATCHES[0].value).toBe(DEFAULT_LIGHTING.tint);
+        expect(DEFAULT_LIGHTING).toEqual({ preset: 'broadcast', tint: '#ffffff' });
+    });
+});
+
+describe('lightingDesign', () => {
+    it.for([
+        ['no venue', null],
+        ['undefined', undefined],
+        ['a venue without lighting', { version: 1 }],
+        ['null lighting', { version: 1, lighting: null }],
+        ['an unknown preset', { version: 1, lighting: { ...THEATER, preset: 'disco' } }],
+        ['a named tint', { version: 1, lighting: { ...THEATER, tint: 'blue' } }],
+        ['a short tint', { version: 1, lighting: { ...THEATER, tint: '#fff' } }],
+    ] as [string, VenueDesign | null | undefined][])('is the default for %s', ([, venue]) => {
+        const lighting = lightingDesign(venue);
+        expect(lighting).toEqual(DEFAULT_LIGHTING);
+        expect(lighting).not.toBe(DEFAULT_LIGHTING);
+    });
+
+    it('copies a valid lighting, dropping anything else', () => {
+        const stored = { ...THEATER, extra: 1 };
+        const lighting = lightingDesign({ version: 1, lighting: stored } as VenueDesign);
+        expect(lighting).toEqual(THEATER);
+        expect(lighting).not.toBe(stored);
+    });
+});
+
+describe('setLighting', () => {
+    it('starts a venue from nothing', () => {
+        expect(setLighting(null, { preset: 'theater' })).toEqual({
+            version: 1,
+            lighting: { preset: 'theater', tint: '#ffffff' },
+        });
+    });
+
+    it('keeps the preset when the tint changes, in a new venue', () => {
+        const venue: VenueDesign = { version: 1, ribbon: RIBBON, lighting: { ...THEATER } };
+        const next = setLighting(venue, { tint: '#22c55e' });
+        expect(next).toEqual({ version: 1, ribbon: RIBBON, lighting: { preset: 'theater', tint: '#22c55e' } });
+        expect(venue.lighting).toEqual(THEATER);
+    });
+
+    it('drops standard lighting, and the venue once nothing else is left', () => {
+        const lit: VenueDesign = { version: 1, lighting: { preset: 'theater', tint: '#ffffff' } };
+        expect(setLighting(lit, { preset: 'broadcast' })).toBeNull();
+        expect(setLighting({ version: 1, lighting: { preset: 'broadcast', tint: '#a855f7' } }, { tint: '#FFFFFF' })).toBeNull();
+        expect(setLighting({ ...lit, ribbon: RIBBON }, { preset: 'broadcast' })).toEqual({ version: 1, ribbon: RIBBON });
+        expect(lit.lighting).toEqual({ preset: 'theater', tint: '#ffffff' });
+    });
+});
+
+describe('lighting in copyVenue and submittedVenue', () => {
+    it('copies the lighting into a new object, and submits it', () => {
+        const venue = reactive<VenueDesign>({ version: 1, lighting: { ...THEATER } });
+        const copy = copyVenue(venue);
+        expect(copy).toEqual({ version: 1, lighting: THEATER });
+        expect(copy.lighting).not.toBe(venue.lighting);
+        expect(() => structuredClone(copy)).not.toThrow();
+        expect(submittedVenue(venue)).toEqual({ version: 1, lighting: THEATER });
     });
 });

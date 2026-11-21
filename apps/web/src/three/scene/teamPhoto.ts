@@ -6,6 +6,7 @@ import { renderToImageData } from '@/three/renderer/offscreen';
 import { disposeObject, getSharedRenderer } from '@/three/renderer/shared';
 import { TWO_ROWS_BELOW_ASPECT, framePreset } from './cameraPresets';
 import { buildArena, createStage, placeInRows } from './stage';
+import { lightingDesign } from '@/utils/venue';
 
 // The share card's size (useShareCard renders the card at this size too).
 export const CARD_SIZE = { width: 1200, height: 630 };
@@ -32,7 +33,7 @@ export const renderTeamPhotoFrame = async (input: {
     const aspect = width / height;
     // Everyone joins the scene before anything that can fail, so disposing the
     // scene always frees them.
-    const scene = createStage();
+    const scene = createStage(lightingDesign(input.venue));
     const group = new Group();
     group.add(...roots);
     scene.add(group);

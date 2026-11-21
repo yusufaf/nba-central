@@ -883,7 +883,8 @@ test.describe('3D team scene', () => {
             buns: await measure(buns, bunsStaff),
             // The deepest bowl a custom arena can have (#295): 24 lower rows and
             // a 16-row upper deck, seats patterned (patterns add no triangles),
-            // with a scoreboard and an LED ribbon (#296) and eight banners (#297).
+            // with a scoreboard and an LED ribbon (#296), eight banners (#297) and
+            // theater lighting (#298), whose lights add no calls or triangles.
             busiestBowl: await measure(buns, bunsStaff, {
                 name: 'Harbor Pavilion',
                 isCustom: true,
@@ -901,6 +902,7 @@ test.describe('3D team scene', () => {
                         subtitle: 'Y'.repeat(24),
                         color: '#1d2a44',
                     })),
+                    lighting: { preset: 'theater', tint: '#a855f7' },
                 },
             }),
         };
@@ -1041,6 +1043,186 @@ test.describe('3D team scene', () => {
 
         test('five banners from broadcast', async ({ page }, testInfo) => {
             await shoot(page, 5, ['Broadcast'], testInfo);
+        });
+    });
+
+    // #298: lighting. The card path (what the share card ships) with an ash
+    // court, the brightest wood, checks glare; a rafters render with a plain
+    // floor checks the theater pool covers the court and not the seats.
+    test.describe('3D lighting', () => {
+        const LIGHTINGS = [
+            { name: 'broadcast-white', lighting: null },
+            { name: 'theater-white', lighting: { preset: 'theater', tint: '#ffffff' } },
+            { name: 'theater-purple', lighting: { preset: 'theater', tint: '#a855f7' } },
+        ];
+
+        test.describe.configure({ timeout: 180000 });
+        test.skip(({ isMobile }) => isMobile, 'Lighting is measured on the desktop card renderer');
+
+        test('both presets light the court without glare', async ({ page }, testInfo) => {
+            await stubNetwork(page);
+            await page.goto('/t/visual-team');
+            const results = await page.evaluate(
+                async ({ team, lightings }) => {
+                    const { renderTeamPhoto } = await import('/src/components/scene3d/teamPhoto.ts');
+                    const { scenePeople } = await import('/src/components/scene3d/people.ts');
+                    const { newCourt } = await import('/src/utils/court.ts');
+                    const starters = team.roster
+                        .filter((entry) => entry.slot >= 1 && entry.slot <= 5)
+                        .sort((a, b) => a.slot - b.slot);
+                    const people = scenePeople(starters as never, { coach: team.coach, gm: team.gm } as never);
+                    const out: { name: string; png: string; clipped: number; floor: number; bowl: number }[] = [];
+                    for (const { name, lighting } of lightings) {
+                        const png = await renderTeamPhoto({
+                            court: { ...newCourt('HARBOR'), centerLogo: 'none', wood: 'ash' },
+                            capacity: 18000,
+                            venue: lighting ? { version: 1, lighting } : null,
+                            people,
+                            teamName: team.title,
+                        } as never);
+                        const image = new Image();
+                        image.src = png;
+                        await image.decode();
+                        const canvas = document.createElement('canvas');
+                        canvas.width = 1200;
+                        canvas.height = 630;
+                        const context = canvas.getContext('2d')!;
+                        context.drawImage(image, 0, 0);
+                        const band = (y: number, h: number) => context.getImageData(0, y, 1200, h).data;
+                        const luma = (d: Uint8ClampedArray, i: number) => 0.2126 * d[i] + 0.7152 * d[i + 1] + 0.0722 * d[i + 2];
+                        const floor = band(450, 180);
+                        let clipped = 0;
+                        let floorSum = 0;
+                        for (let i = 0; i < floor.length; i += 4) {
+                            if (floor[i] >= 250 && floor[i + 1] >= 250 && floor[i + 2] >= 250) clipped++;
+                            floorSum += luma(floor, i);
+                        }
+                        const bowl = band(0, 60);
+                        let bowlSum = 0;
+                        for (let i = 0; i < bowl.length; i += 4) bowlSum += luma(bowl, i);
+                        const pixels = floor.length / 4;
+                        out.push({
+                            name,
+                            png,
+                            clipped: clipped / pixels,
+                            floor: floorSum / pixels,
+                            bowl: bowlSum / (bowl.length / 4),
+                        });
+                    }
+                    return out;
+                },
+                { team: publicTeamFixture.data, lightings: LIGHTINGS },
+            );
+            for (const { name, png } of results) {
+                await testInfo.attach(`card-${name}`, {
+                    body: Buffer.from(png.split(',')[1], 'base64'),
+                    contentType: 'image/png',
+                });
+            }
+            const metrics = results.map(({ name, clipped, floor, bowl }) => ({ name, clipped, floor, bowl }));
+            console.log('LIGHTING CARD', JSON.stringify(metrics));
+            const [lit, ...dark] = metrics;
+            for (const { clipped, floor } of metrics) {
+                expect(clipped).toBeLessThanOrEqual(0.04);
+                expect(floor).toBeLessThanOrEqual(215);
+            }
+            for (const theater of dark) {
+                expect(theater.bowl).toBeLessThanOrEqual(0.5 * lit.bowl);
+                expect(Math.abs(theater.floor - lit.floor)).toBeLessThanOrEqual(25);
+            }
+        });
+
+        test('theater lights the whole court and not the seats', async ({ page }) => {
+            await stubNetwork(page);
+            await page.goto('/t/visual-team');
+            const result = await page.evaluate(async () => {
+                // three's own module URL, so these objects share the app's instance.
+                const source = await (await fetch('/src/three/arena/lighting.ts')).text();
+                const THREE = await import(source.match(/from\s+"([^"]*deps\/three\.js[^"]*)"/)![1]);
+                const { getSharedRenderer, disposeObject } = await import('/src/three/renderer/shared.ts');
+                const { renderToImageData } = await import('/src/three/renderer/offscreen.ts');
+                const { buildArena, createStage } = await import('/src/three/scene/stage.ts');
+                const { framePreset } = await import('/src/three/scene/cameraPresets.ts');
+                const { COURT_DEPTH_M } = await import('/src/three/arena/court.ts');
+                const W = 1200;
+                const H = 630;
+                const render = (lighting: { preset: 'broadcast' | 'theater'; tint: string }) => {
+                    const renderer = getSharedRenderer();
+                    const scene = createStage(lighting);
+                    scene.add(buildArena(null, 18000, renderer, { version: 1, lighting }));
+                    const { position, target, fov } = framePreset('rafters', W / H);
+                    const camera = new THREE.PerspectiveCamera(fov, W / H, 0.1, 200);
+                    camera.position.set(...position);
+                    camera.lookAt(...target);
+                    camera.updateMatrixWorld();
+                    const image = renderToImageData(renderer, scene, camera, W, H);
+                    const sample = (point: [number, number, number]) => {
+                        const v = new THREE.Vector3(...point).project(camera);
+                        const px = Math.round(((v.x + 1) / 2) * W);
+                        const py = Math.round(((1 - v.y) / 2) * H);
+                        let sum = 0;
+                        let n = 0;
+                        for (let y = py - 4; y <= py + 4; y++) {
+                            for (let x = px - 4; x <= px + 4; x++) {
+                                const i = (y * W + x) * 4;
+                                sum += 0.2126 * image.data[i] + 0.7152 * image.data[i + 1] + 0.0722 * image.data[i + 2];
+                                n++;
+                            }
+                        }
+                        return sum / n;
+                    };
+                    const out = {
+                        left: sample([-14.5, 0, 0]),
+                        right: sample([14.5, 0, 0]),
+                        middle: sample([0, 0, 3]),
+                        front: sample([0, 0.85, -(COURT_DEPTH_M / 2 + 5.2)]),
+                    };
+                    disposeObject(scene);
+                    return out;
+                };
+                return {
+                    broadcast: render({ preset: 'broadcast', tint: '#ffffff' }),
+                    theater: render({ preset: 'theater', tint: '#ffffff' }),
+                };
+            });
+            console.log('LIGHTING POOL', JSON.stringify(result));
+            const { broadcast, theater } = result;
+            const middle = theater.middle / broadcast.middle;
+            const ends = Math.min(theater.left / broadcast.left, theater.right / broadcast.right);
+            expect(ends).toBeGreaterThanOrEqual(0.75 * middle);
+            expect(theater.front).toBeLessThanOrEqual(0.8 * broadcast.front);
+        });
+
+        test('review shots for every lighting', async ({ page }, testInfo) => {
+            await page.emulateMedia({ reducedMotion: 'reduce' });
+            await stubNetwork(page);
+            for (const { name, lighting } of LIGHTINGS) {
+                await page.unroute('**/api/teams/public/visual-team');
+                await withCustomPlayers(page, {}, {}, {
+                    name: 'Harbor Pavilion',
+                    isCustom: true,
+                    arenaUUID: 'a1',
+                    capacity: 18000,
+                    venue: lighting ? { version: 1, lighting } : null,
+                });
+                await page.goto('/t/visual-team?view=3d');
+                await expect(page.getByTestId('name-chip')).toHaveCount(7, { timeout: 20000 });
+                await expect.poll(() => renders(page), { timeout: 15000 }).toBeGreaterThanOrEqual(1);
+                await settleDraws(page);
+                for (const preset of ['Team photo', 'Broadcast']) {
+                    // The scene opens on Team photo, so only Broadcast is a new frame.
+                    const before = await renders(page);
+                    await page.getByRole('button', { name: preset, exact: true }).click();
+                    if (preset === 'Broadcast') {
+                        await expect.poll(() => renders(page), { timeout: 15000 }).toBeGreaterThan(before);
+                    }
+                    await page.waitForTimeout(500);
+                    await page.locator('[role="img"][data-render-count]').screenshot({
+                        path: testInfo.outputPath(`lighting-${name}-${preset.replace(' ', '-').toLowerCase()}.png`),
+                        style: 'header { visibility: hidden; }',
+                    });
+                }
+            }
         });
     });
 

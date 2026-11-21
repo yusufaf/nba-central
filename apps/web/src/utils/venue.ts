@@ -2,12 +2,15 @@ import {
     BANNER_SUBTITLE_MAX,
     BANNER_TITLE_MAX,
     BANNERS_MAX,
+    LIGHTING_PRESETS,
     RIBBON_TEXT_MAX,
     SCOREBOARD_TEXT_MAX,
     type BannerKindId,
+    type LightingPresetId,
     type SeatPatternId,
     type VenueBanner,
     type VenueDesign,
+    type VenueLighting,
 } from '@/constants/venue';
 import type { Swatch } from '@/utils/appearanceOptions';
 
@@ -115,8 +118,51 @@ export const newBanner = (): VenueBanner => ({
     color: BANNER_SWATCHES[0].value,
 });
 
+// Lighting (#298). Standard lighting is broadcast in white: what an arena
+// without a lighting part, or an NBA arena, gets.
+export const DEFAULT_LIGHTING: VenueLighting = { preset: 'broadcast', tint: '#ffffff' };
+
+// House-light tints; the first is no tint.
+export const LIGHT_SWATCHES: Swatch[] = [
+    { value: '#ffffff', label: 'White' },
+    { value: '#ffd6a5', label: 'Warm' },
+    { value: '#cfe0ff', label: 'Cool' },
+    { value: '#ef4444', label: 'Red' },
+    { value: '#3b82f6', label: 'Blue' },
+    { value: '#a855f7', label: 'Purple' },
+    { value: '#22c55e', label: 'Green' },
+    { value: '#f5c542', label: 'Gold' },
+];
+
+export const LIGHTING_PRESET_LABELS: Record<LightingPresetId, string> = {
+    broadcast: 'Broadcast',
+    theater: 'Theater',
+};
+
+export const LIGHTING_PRESET_HINTS: Record<LightingPresetId, string> = {
+    broadcast: 'Bright and even, like a TV game.',
+    theater: 'A dark bowl with the floor in a spotlight.',
+};
+
+const HEX = /^#[0-9a-f]{6}$/i;
+
+/**
+ * The venue's lighting, or the default when it has none or a malformed one.
+ * Lives here, not in src/three, so the Lighting tab can use it without
+ * pulling three into the entry chunk.
+ */
+export const lightingDesign = (venue: VenueDesign | null | undefined): VenueLighting => {
+    const lighting: unknown = venue?.lighting;
+    if (typeof lighting !== 'object' || lighting === null) return { ...DEFAULT_LIGHTING };
+    const { preset, tint } = lighting as Record<string, unknown>;
+    if (!(LIGHTING_PRESETS as readonly unknown[]).includes(preset) || typeof tint !== 'string' || !HEX.test(tint)) {
+        return { ...DEFAULT_LIGHTING };
+    }
+    return { preset: preset as LightingPresetId, tint };
+};
+
 /** A new venue with one part set, or removed with undefined. */
-export const setVenuePart = <K extends 'scoreboard' | 'ribbon' | 'banners'>(
+export const setVenuePart = <K extends 'scoreboard' | 'ribbon' | 'banners' | 'lighting'>(
     venue: VenueDesign | null,
     key: K,
     value: VenueDesign[K] | undefined,
@@ -125,6 +171,13 @@ export const setVenuePart = <K extends 'scoreboard' | 'ribbon' | 'banners'>(
     if (value === undefined) delete next[key];
     else next[key] = value;
     return orNull(next);
+};
+
+// Standard lighting is no part, so a venue left with only that is no venue.
+export const setLighting = (venue: VenueDesign | null, change: Partial<VenueLighting>): VenueDesign | null => {
+    const next = { ...(venue?.lighting ?? DEFAULT_LIGHTING), ...change };
+    const standard = next.preset === DEFAULT_LIGHTING.preset && next.tint.toLowerCase() === DEFAULT_LIGHTING.tint;
+    return setVenuePart(venue, 'lighting', standard ? undefined : next);
 };
 
 const withBanners = (venue: VenueDesign | null, banners: VenueBanner[]): VenueDesign | null =>
@@ -176,6 +229,7 @@ export const copyVenue = (venue: VenueDesign): VenueDesign => ({
     ...(venue.scoreboard && { scoreboard: { ...venue.scoreboard } }),
     ...(venue.ribbon && { ribbon: { ...venue.ribbon } }),
     ...(venue.banners && { banners: venue.banners.map((banner) => ({ ...banner })) }),
+    ...(venue.lighting && { lighting: { ...venue.lighting } }),
 });
 
 export const submittedVenue = (venue: VenueDesign | null): VenueDesign | null => {

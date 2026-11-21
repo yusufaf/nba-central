@@ -98,6 +98,15 @@ describe('renderTeamPhotoFrame', () => {
         expect(stage.arenaArgs[0][3]).toEqual(venue);
     });
 
+    it("lights the card from the team's venue (#298)", async () => {
+        const spotIn = (scene: Scene) => (scene.getObjectByName('spot') as unknown as { intensity: number }).intensity;
+        await renderTeamPhotoFrame({ ...input(['p1']), venue: { version: 1, lighting: { preset: 'theater', tint: '#ffffff' } } });
+        expect(spotIn(rendered()[1])).toBeGreaterThan(0);
+        offscreen.renderToImageData.mockClear();
+        await renderTeamPhotoFrame(input(['p1']));
+        expect(spotIn(rendered()[1])).toBe(0);
+    });
+
     it("frames the team-photo shot for the card's shape", async () => {
         await renderTeamPhotoFrame(input(['p1']));
         const camera = rendered()[2];

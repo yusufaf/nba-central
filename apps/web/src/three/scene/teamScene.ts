@@ -5,7 +5,8 @@ import { ribbonTextureIn, scrollRibbon } from '@/three/arena/ribbon';
 import { buildPerson, type PersonInput } from '@/three/character/person';
 import type { KitColours } from '@/utils/jerseyColours';
 import { disposeObject, getSharedRenderer } from '@/three/renderer/shared';
-import { buildCourtFloor, buildSeating, createStage, placeInRows } from './stage';
+import { buildCourtFloor, buildSeating, createStage, placeInRows, setStageLighting } from './stage';
+import { lightingDesign } from '@/utils/venue';
 import { ORBIT_LIMITS, TWO_ROWS_BELOW_ASPECT, framePreset, type CameraPreset } from './cameraPresets';
 
 export interface LabelAnchor {
@@ -96,6 +97,8 @@ export class TeamScene {
         if (this.disposed) return;
         const previous = this.ribbon;
         this.bowl = this.swap(this.bowl, buildSeating(capacity, venue));
+        // The swap above asks for a frame, which picks up the new lighting (#298).
+        setStageLighting(this.scene, lightingDesign(venue));
         const next = ribbonTextureIn(this.bowl);
         // The editor rebuilds the bowl on every keystroke: the ribbon keeps its
         // place rather than snapping back to the start.
