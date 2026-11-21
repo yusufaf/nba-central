@@ -115,13 +115,27 @@ export interface CourtDesign {
 }
 
 // An arena's 3D venue (#295). Later tabs (#296-#298) add optional keys; version stays 1.
-// apps/web keeps a copy of SEAT_PATTERNS and the two text limits in src/constants/venue.ts;
+// apps/web keeps a copy of SEAT_PATTERNS, BANNER_KINDS and the text limits in src/constants/venue.ts;
 // test/utilities/venue.test.ts fails on drift.
 export const SEAT_PATTERNS = ["solid", "sections", "rows", "gradient"] as const;
 export type SeatPatternId = (typeof SEAT_PATTERNS)[number];
 
 export const SCOREBOARD_TEXT_MAX = 16;
 export const RIBBON_TEXT_MAX = 32;
+
+// Rafters banners (#297): championship or retired-number banners.
+export const BANNER_KINDS = ["title", "number"] as const;
+export type BannerKindId = (typeof BANNER_KINDS)[number];
+export const BANNERS_MAX = 8;
+export const BANNER_TITLE_MAX = 16;
+export const BANNER_SUBTITLE_MAX = 24;
+
+export interface VenueBanner {
+	kind: BannerKindId;
+	title: string;
+	subtitle: string;
+	color: string;
+}
 
 // Every part is optional (#296): an arena can have a scoreboard without a seat design.
 export interface VenueDesign {
@@ -130,6 +144,7 @@ export interface VenueDesign {
 	upperDeck?: boolean;
 	scoreboard?: { text: string; accent: string };
 	ribbon?: { text: string; color: string };
+	banners?: VenueBanner[];
 }
 
 // One image per slot under arenas/<arenaUUID>/. Keys use the arena's uuid,
