@@ -1,5 +1,6 @@
 import { Color, Fog, Group, Scene, type Object3D, type WebGLRenderer } from 'three';
 import type { VenueDesign } from '@/constants/venue';
+import { buildBanners, bannersDesign } from '@/three/arena/banners';
 import { buildBowl, bowlLayout } from '@/three/arena/bowl';
 import { buildCourt, courtTexture } from '@/three/arena/court';
 import { broadcastLighting } from '@/three/arena/lighting';
@@ -26,8 +27,8 @@ export const buildCourtFloor = (court: HTMLCanvasElement | null, renderer: WebGL
     buildCourt(court ? courtTexture(court, renderer) : null);
 
 // An arena without a venue gets today's bowl: the capacity's decks, solid
-// seats. The scoreboard and ribbon are opt-in: there only when the venue has
-// them (#296), never a default.
+// seats. The scoreboard, ribbon (#296) and banners (#297) are opt-in: there
+// only when the venue has them, never a default.
 export const buildSeating = (capacity: number | null, venue: VenueDesign | null): Group => {
     const seating = new Group();
     seating.name = 'seating';
@@ -37,6 +38,8 @@ export const buildSeating = (capacity: number | null, venue: VenueDesign | null)
     if (ribbon) seating.add(buildRibbon(decks, ribbon));
     const board = scoreboardDesign(venue);
     if (board) seating.add(buildScoreboard(board));
+    const banners = bannersDesign(venue);
+    if (banners.length > 0) seating.add(buildBanners(banners));
     return seating;
 };
 

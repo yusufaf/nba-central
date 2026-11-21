@@ -42,6 +42,7 @@ describe('buildSeating (#296)', () => {
     const seats = { primary: '#111111', secondary: '#eeeeee', pattern: 'rows' } as const;
     const scoreboard = { text: 'HARBOR', accent: '#ef4444' };
     const ribbon = { text: 'WELCOME', color: '#f59e0b' };
+    const banners = [{ kind: 'title', title: 'CHAMPIONS', subtitle: '1998', color: '#1d2a44' }];
 
     it.for([
         { label: 'no venue (an NBA arena)', venue: null, parts: [] },
@@ -50,11 +51,13 @@ describe('buildSeating (#296)', () => {
         { label: 'a ribbon only', venue: { version: 1, ribbon }, parts: ['ribbon'] },
         { label: 'both', venue: { version: 1, scoreboard, ribbon }, parts: ['ribbon', 'scoreboard'] },
         { label: 'a malformed scoreboard', venue: { version: 1, scoreboard: { text: 1, accent: 'red' }, ribbon }, parts: ['ribbon'] },
+        { label: 'banners only', venue: { version: 1, banners }, parts: ['banners'] },
+        { label: 'an empty banner list', venue: { version: 1, banners: [], ribbon }, parts: ['ribbon'] },
     ] as unknown as { label: string; venue: VenueDesign | null; parts: string[] }[])('builds only what $label holds', ({ venue, parts }) => {
         const seating = buildSeating(18000, venue);
         expect(seating.name).toBe('seating');
         expect(seating.getObjectByName('bowl')).toBeDefined();
-        const built = ['ribbon', 'scoreboard'].filter((name) => seating.getObjectByName(name));
+        const built = ['ribbon', 'scoreboard', 'banners'].filter((name) => seating.getObjectByName(name));
         expect(built).toEqual(parts);
     });
 });

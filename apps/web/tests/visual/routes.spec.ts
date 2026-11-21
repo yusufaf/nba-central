@@ -1,4 +1,4 @@
-import { test, expect, type Page } from '@playwright/test';
+import { test, expect, type Page, type TestInfo } from '@playwright/test';
 import gameSummaryFixture from './fixtures/game-summary.json' with { type: 'json' };
 import publicTeamFixture from './fixtures/public-team.json' with { type: 'json' };
 import liveStandings from '../fixtures/liveData/standings.json' with { type: 'json' };
@@ -883,7 +883,7 @@ test.describe('3D team scene', () => {
             buns: await measure(buns, bunsStaff),
             // The deepest bowl a custom arena can have (#295): 24 lower rows and
             // a 16-row upper deck, seats patterned (patterns add no triangles),
-            // with a scoreboard and an LED ribbon (#296).
+            // with a scoreboard and an LED ribbon (#296) and eight banners (#297).
             busiestBowl: await measure(buns, bunsStaff, {
                 name: 'Harbor Pavilion',
                 isCustom: true,
@@ -895,6 +895,12 @@ test.describe('3D team scene', () => {
                     upperDeck: true,
                     scoreboard: { text: 'HARBOR PAVILION', accent: '#ef4444' },
                     ribbon: { text: 'WELCOME TO HARBOR PAVILION', color: '#f59e0b' },
+                    banners: Array.from({ length: 8 }, (_, i) => ({
+                        kind: i % 2 ? 'number' : 'title',
+                        title: 'X'.repeat(16),
+                        subtitle: 'Y'.repeat(24),
+                        color: '#1d2a44',
+                    })),
                 },
             }),
         };
@@ -980,6 +986,61 @@ test.describe('3D team scene', () => {
             await load(page);
             expect(await page.evaluate(() => matchMedia('(pointer: coarse)').matches)).toBe(true);
             expect(await rendersOver(page, 3000)).toBe(0);
+        });
+    });
+
+    // #297: rafters banners, saved for review from Broadcast and Rafters. Years,
+    // retired numbers and full-length titles, at eight and at five banners.
+    test.describe('3D banners', () => {
+        const BANNERS = [
+            { kind: 'title', title: '1998', subtitle: 'NBA CHAMPIONS', color: '#1d2a44' },
+            { kind: 'number', title: '23', subtitle: 'JORDAN', color: '#b91c1c' },
+            { kind: 'title', title: 'WEST 1997', subtitle: 'CONFERENCE CHAMPIONS', color: '#c9a227' },
+            { kind: 'number', title: '33', subtitle: 'PIPPEN', color: '#f5f5f4' },
+            { kind: 'title', title: 'HARBOR CHAMPIONS', subtitle: 'WORLD CHAMPIONS 1996-98', color: '#0f6b3c' },
+            { kind: 'title', title: '1996', subtitle: '72-10', color: '#4b2a7b' },
+            { kind: 'number', title: '91', subtitle: 'RODMAN', color: '#16181d' },
+            { kind: 'title', title: '1993', subtitle: 'THREE-PEAT', color: '#1d4ed8' },
+        ];
+        const arena = (count: number) => ({
+            name: 'Harbor Pavilion',
+            isCustom: true,
+            arenaUUID: 'a1',
+            capacity: 18000,
+            venue: { version: 1, scoreboard: { text: 'HARBOR', accent: '#ef4444' }, banners: BANNERS.slice(0, count) },
+        });
+        const shoot = async (page: Page, count: number, presets: string[], testInfo: TestInfo) => {
+            await page.emulateMedia({ reducedMotion: 'reduce' });
+            await stubNetwork(page);
+            await withCustomPlayers(page, {}, {}, arena(count));
+            await page.goto('/t/visual-team?view=3d');
+            await expect(page.getByTestId('name-chip')).toHaveCount(7, { timeout: 20000 });
+            await expect.poll(() => renders(page), { timeout: 15000 }).toBeGreaterThanOrEqual(1);
+            await settleDraws(page);
+            for (const preset of presets) {
+                const before = await renders(page);
+                await page.getByRole('button', { name: preset, exact: true }).click();
+                await expect.poll(() => renders(page), { timeout: 15000 }).toBeGreaterThan(before);
+                await page.waitForTimeout(500);
+                await page
+                    .locator('[role="img"][data-render-count]')
+                    // The sticky site header would cover the canvas's top, where the banners hang.
+                    .screenshot({
+                        path: testInfo.outputPath(`banners-${count}-${preset.toLowerCase()}.png`),
+                        style: 'header { visibility: hidden; }',
+                    });
+            }
+        };
+
+        test.describe.configure({ timeout: 120000 });
+        test.skip(({ isMobile }) => isMobile, 'Reviewed on the desktop canvas the legibility bar is set at');
+
+        test('eight banners from broadcast and rafters', async ({ page }, testInfo) => {
+            await shoot(page, 8, ['Broadcast', 'Rafters'], testInfo);
+        });
+
+        test('five banners from broadcast', async ({ page }, testInfo) => {
+            await shoot(page, 5, ['Broadcast'], testInfo);
         });
     });
 
