@@ -115,7 +115,7 @@ export interface CourtDesign {
 }
 
 // An arena's 3D venue (#295). Later tabs (#296-#298) add optional keys; version stays 1.
-// apps/web keeps a copy of SEAT_PATTERNS, BANNER_KINDS and the text limits in src/constants/venue.ts;
+// apps/web keeps a copy of SEAT_PATTERNS, BANNER_KINDS, LIGHTING_PRESETS and the text limits in src/constants/venue.ts;
 // test/utilities/venue.test.ts fails on drift.
 export const SEAT_PATTERNS = ["solid", "sections", "rows", "gradient"] as const;
 export type SeatPatternId = (typeof SEAT_PATTERNS)[number];
@@ -137,6 +137,15 @@ export interface VenueBanner {
 	color: string;
 }
 
+// Lighting (#298): the arena's lighting preset and tint.
+export const LIGHTING_PRESETS = ["broadcast", "theater"] as const;
+export type LightingPresetId = (typeof LIGHTING_PRESETS)[number];
+
+export interface VenueLighting {
+	preset: LightingPresetId;
+	tint: string;
+}
+
 // Every part is optional (#296): an arena can have a scoreboard without a seat design.
 export interface VenueDesign {
 	version: 1;
@@ -145,6 +154,7 @@ export interface VenueDesign {
 	scoreboard?: { text: string; accent: string };
 	ribbon?: { text: string; color: string };
 	banners?: VenueBanner[];
+	lighting?: VenueLighting;
 }
 
 // One image per slot under arenas/<arenaUUID>/. Keys use the arena's uuid,

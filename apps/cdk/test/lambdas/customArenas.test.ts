@@ -528,6 +528,42 @@ describe("an arena's rafters banners (#297)", () => {
 	});
 });
 
+describe("an arena's lighting (#298)", () => {
+	const lighting = { preset: "theater", tint: "#a855f7" };
+	const venue = { version: 1, lighting };
+	const update = (body: Item) => run(updateHandler, { body: JSON.stringify({ ...payload(), arenaUUID: "a1", ...body }) });
+
+	it("stores it on create as a key-by-key copy", async () => {
+		const result = await run(createHandler, {
+			body: JSON.stringify(payload({ venue: { version: 1, lighting: { ...lighting, extra: 1 } } })),
+		});
+		expect(result.statusCode).toBe(200);
+		expect(parseBody(result).data.venue).toEqual(venue);
+		expect(arenasOf(ME)[0].venue).toEqual(venue);
+	});
+
+	it("400s on an unknown preset and leaves the item as it was", async () => {
+		db.push(storedArena(ME, "a1", { venue }));
+		const result = await update({ venue: { version: 1, lighting: { ...lighting, preset: "disco" } } });
+		expect(result.statusCode).toBe(400);
+		expect(parseBody(result).error).toBe("Venue lighting preset must be one of broadcast, theater");
+		expect(arenasOf(ME)[0].venue).toEqual(venue);
+	});
+
+	it("stores a venue that holds only lighting", async () => {
+		db.push(storedArena(ME, "a1"));
+		const result = await update({ venue });
+		expect(result.statusCode).toBe(200);
+		expect(arenasOf(ME)[0].venue).toEqual(venue);
+	});
+
+	it("is listed", async () => {
+		db.push(storedArena(ME, "a1", { venue }));
+		const result = await run(listHandler);
+		expect(parseBody(result).data.customArenas[0].venue).toEqual(venue);
+	});
+});
+
 describe("deleteCustomArena", () => {
 	const seedWithImages = () => {
 		db.push(
