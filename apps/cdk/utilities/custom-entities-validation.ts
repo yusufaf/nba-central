@@ -11,6 +11,7 @@ import {
 	CourtDesign,
 	FACIAL_HAIR_STYLES,
 	HAIR_STYLES,
+	LIGHTING_PRESETS,
 	MAX_ACCESSORIES,
 	OUTFIT_STYLES,
 	PersonAppearance,
@@ -314,7 +315,7 @@ const courtError = (court: unknown): string | null => {
 export const venueError = (value: unknown): string | null => {
 	if (!isRecord(value)) return "Venue must be an object";
 	if (value.version !== 1) return "Venue version must be 1";
-	const { seats, scoreboard, ribbon, banners } = value;
+	const { seats, scoreboard, ribbon, banners, lighting } = value;
 	// A seat design is both keys: the editor can't show one without the other.
 	if ((seats === undefined) !== (value.upperDeck === undefined)) {
 		return "Venue seats and upper deck must be set together";
@@ -344,6 +345,13 @@ export const venueError = (value: unknown): string | null => {
 			return `Venue ribbon text must be at most ${RIBBON_TEXT_MAX} characters`;
 		}
 		if (!isHex(ribbon.color)) return "Venue ribbon colour must be a #rrggbb colour";
+	}
+	if (lighting !== undefined) {
+		if (!isRecord(lighting)) return "Venue lighting must be {preset, tint}";
+		if (!isOneOf(LIGHTING_PRESETS, lighting.preset)) {
+			return `Venue lighting preset must be one of ${LIGHTING_PRESETS.join(", ")}`;
+		}
+		if (!isHex(lighting.tint)) return "Venue lighting tint must be a #rrggbb colour";
 	}
 	if (banners !== undefined) return bannersError(banners);
 	return null;
@@ -379,6 +387,7 @@ export const toVenue = (value: Record<string, unknown>): VenueDesign => {
 	const scoreboard = value.scoreboard as VenueDesign["scoreboard"];
 	const ribbon = value.ribbon as VenueDesign["ribbon"];
 	const banners = value.banners as VenueDesign["banners"];
+	const lighting = value.lighting as VenueDesign["lighting"];
 	return {
 		version: 1,
 		...(seats && { seats: { primary: seats.primary, secondary: seats.secondary, pattern: seats.pattern } }),
@@ -389,6 +398,7 @@ export const toVenue = (value: Record<string, unknown>): VenueDesign => {
 			banners.length > 0 && {
 				banners: banners.map(({ kind, title, subtitle, color }) => ({ kind, title, subtitle, color })),
 			}),
+		...(lighting && { lighting: { preset: lighting.preset, tint: lighting.tint } }),
 	};
 };
 

@@ -4,6 +4,7 @@ import {
     BANNER_SUBTITLE_MAX,
     BANNER_TITLE_MAX,
     BANNERS_MAX,
+    LIGHTING_PRESETS,
     RIBBON_TEXT_MAX,
     SCOREBOARD_TEXT_MAX,
     SEAT_PATTERNS,
@@ -171,7 +172,54 @@ describe("venueError, banners (#297)", () => {
     });
 });
 
+const LIGHTING = { preset: "theater", tint: "#a855f7" };
+
+describe("venueError, lighting (#298)", () => {
+    it("accepts both presets with any #rrggbb tint, alone or with other parts", () => {
+        for (const preset of LIGHTING_PRESETS) {
+            expect(venueError({ version: 1, lighting: { preset, tint: "#FFD6A5" } })).toBeNull();
+            expect(venueError({ ...FULL, lighting: { preset, tint: "#ffffff" } })).toBeNull();
+        }
+    });
+
+    it("rejects lighting that isn't an object", () => {
+        for (const lighting of [null, "theater", [], 1]) {
+            expect(venueError({ version: 1, lighting })).toBe("Venue lighting must be {preset, tint}");
+        }
+    });
+
+    it("rejects an unknown or missing preset", () => {
+        for (const preset of ["disco", undefined]) {
+            expect(venueError({ version: 1, lighting: { ...LIGHTING, preset } })).toBe(
+                "Venue lighting preset must be one of broadcast, theater",
+            );
+        }
+    });
+
+    it("rejects a tint that isn't #rrggbb", () => {
+        for (const tint of ["blue", "#fff", undefined]) {
+            expect(venueError({ version: 1, lighting: { ...LIGHTING, tint } })).toBe(
+                "Venue lighting tint must be a #rrggbb colour",
+            );
+        }
+    });
+
+    it("checks lighting before the banners", () => {
+        expect(venueError({ version: 1, lighting: { ...LIGHTING, preset: "disco" }, banners: [] })).toBe(
+            "Venue lighting preset must be one of broadcast, theater",
+        );
+    });
+});
+
 describe("toVenue", () => {
+    it("copies the lighting key by key", () => {
+        const lighting = { ...LIGHTING, extra: 1 };
+        const copied = toVenue({ version: 1, lighting });
+        expect(copied).toEqual({ version: 1, lighting: LIGHTING });
+        expect(copied.lighting).not.toBe(lighting);
+        expect("lighting" in toVenue(VENUE)).toBe(false);
+    });
+
     it("copies each banner key by key, in order", () => {
         const second = { ...BANNER, kind: "number", title: "23" };
         const copied = toVenue({ version: 1, banners: [{ ...BANNER, extra: 1 }, second] });
@@ -242,5 +290,9 @@ describe("the web copy of the seat patterns", () => {
         expect(web.BANNERS_MAX).toBe(BANNERS_MAX);
         expect(web.BANNER_TITLE_MAX).toBe(BANNER_TITLE_MAX);
         expect(web.BANNER_SUBTITLE_MAX).toBe(BANNER_SUBTITLE_MAX);
+    });
+
+    it("matches the lighting presets", () => {
+        expect(web.LIGHTING_PRESETS).toEqual(LIGHTING_PRESETS);
     });
 });
