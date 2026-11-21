@@ -1,10 +1,11 @@
 import { describe, expect, it, vi } from 'vitest';
-import { Color, Fog, Group, Mesh, Object3D } from 'three';
+import { Color, Fog, Group, Mesh, Object3D, SpotLight } from 'three';
 
 const shared = vi.hoisted(() => ({ disposeObject: vi.fn() }));
 vi.mock('@/three/renderer/shared', () => ({ disposeObject: shared.disposeObject }));
 
-import { buildArena, buildSeating, createStage, placeInRows } from '@/three/scene/stage';
+import { buildArena, buildSeating, createStage, placeInRows, setStageLighting } from '@/three/scene/stage';
+import { poolCookie } from '@/three/arena/lighting';
 import type { VenueDesign } from '@/constants/venue';
 import { SCENE_COLOURS } from '@/three/arena/palette';
 
@@ -17,6 +18,39 @@ describe('createStage', () => {
         expect(scene.background).toEqual(new Color(SCENE_COLOURS.background));
         expect(scene.fog).toBeInstanceOf(Fog);
         expect(scene.children.length).toBeGreaterThan(0);
+    });
+});
+
+describe('stage lighting (#298)', () => {
+    const spotOf = (scene: ReturnType<typeof createStage>) => scene.getObjectByName('spot') as SpotLight;
+    const THEATER = { preset: 'theater', tint: '#a855f7' } as const;
+
+    it('is standard broadcast lighting by default', () => {
+        const scene = createStage();
+        expect(spotOf(scene).intensity).toBe(0);
+        expect(spotOf(scene).map).toBe(poolCookie());
+        expect((scene.background as Color).getHexString()).toBe('0b0d11');
+        expect(scene.getObjectByName('lighting')).toBeDefined();
+    });
+
+    it('lights the spot and tints the haze in theater', () => {
+        const scene = createStage(THEATER);
+        expect(spotOf(scene).intensity).toBeGreaterThan(0);
+        expect((scene.background as Color).getHexString()).not.toBe('0b0d11');
+        expect((scene.fog as Fog).color.equals(scene.background as Color)).toBe(true);
+    });
+
+    it('switches both ways in place', () => {
+        const scene = createStage();
+        const count = scene.children.length;
+        setStageLighting(scene, THEATER);
+        expect(spotOf(scene).intensity).toBeGreaterThan(0);
+        expect((scene.fog as Fog).color.getHexString()).toBe((scene.background as Color).getHexString());
+        setStageLighting(scene, { preset: 'broadcast', tint: '#ffffff' });
+        expect(spotOf(scene).intensity).toBe(0);
+        expect((scene.background as Color).getHexString()).toBe('0b0d11');
+        expect((scene.fog as Fog).color.getHexString()).toBe('0b0d11');
+        expect(scene.children).toHaveLength(count);
     });
 });
 

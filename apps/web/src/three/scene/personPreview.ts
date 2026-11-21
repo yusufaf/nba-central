@@ -20,6 +20,8 @@ export class PersonPreview {
     onShown: (() => void) | null = null;
 
     private readonly renderer = getSharedRenderer();
+    // The arena's standard lighting (#298): a player belongs to many teams, so
+    // there is no one arena to follow.
     private readonly scene = createStage();
     private readonly camera = new PerspectiveCamera(30, 1, 0.1, 100);
     private readonly controls: OrbitControls;

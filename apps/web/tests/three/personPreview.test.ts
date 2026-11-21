@@ -74,6 +74,26 @@ afterEach(() => {
 });
 
 describe('PersonPreview', () => {
+    it("uses the arena's standard lighting (#298)", async () => {
+        const { lightingRig } = await import('@/three/arena/lighting');
+        const { DEFAULT_LIGHTING } = await import('@/utils/venue');
+        const { Color } = await import('three');
+        const preview = new PersonPreview(container);
+        const scene = (preview as unknown as { scene: import('three').Scene }).scene;
+        const rig = lightingRig(DEFAULT_LIGHTING);
+        const hemisphere = scene.getObjectByName('hemisphere') as import('three').HemisphereLight;
+        const key = scene.getObjectByName('key') as import('three').DirectionalLight;
+        const spot = scene.getObjectByName('spot') as import('three').SpotLight;
+        expect(hemisphere.color.equals(new Color(rig.hemisphere.sky))).toBe(true);
+        expect(hemisphere.groundColor.equals(new Color(rig.hemisphere.ground))).toBe(true);
+        expect(hemisphere.intensity).toBe(rig.hemisphere.intensity);
+        expect(key.intensity).toBe(rig.key.intensity);
+        expect(key.position.toArray()).toEqual(rig.key.position);
+        expect(spot.intensity).toBe(0);
+        expect((scene.background as import('three').Color).equals(new Color(rig.background))).toBe(true);
+        preview.dispose();
+    });
+
     it('builds the first edit and only the latest one queued behind it', async () => {
         const preview = new PersonPreview(container);
         preview.setPerson(person('a'), KIT);

@@ -29,6 +29,7 @@ describe('teamPhotoKey', () => {
         ['a court colour', (input) => void (input.court = { ...input.court!, paint: '#123456' })],
         ['the capacity', (input) => void (input.capacity = 12000)],
         ['the venue', (input) => void (input.venue = { version: 1, seats: { primary: '#111111', secondary: '#eeeeee', pattern: 'rows' }, upperDeck: true })],
+        ['the lighting', (input) => void (input.venue = { version: 1, lighting: { preset: 'theater', tint: '#ffffff' } })],
         ['the uniform', (input) => void (input.uniform = { primary: '#111111', secondary: '#222222', trim: '#333333' })],
         ["a person's number", (input) => void (input.people[0].number = '23')],
         ["a person's appearance", (input) => void (input.people[0].appearance = DEFAULT_APPEARANCE)],

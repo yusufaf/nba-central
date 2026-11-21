@@ -106,9 +106,9 @@ describe("CreateCustomArenaModal", () => {
         wrapper.unmount();
     });
 
-    it("has Details, Court, Drawing, Seats, Scoreboard and Banners tabs, and a new arena starts with no court", async () => {
+    it("has Details, Court, Drawing, Seats, Scoreboard, Banners and Lighting tabs, and a new arena starts with no court", async () => {
         const wrapper = await mountModal(null);
-        expect([...document.querySelectorAll('[role="tab"]')].map((t) => t.textContent?.trim())).toEqual(["Details", "Court", "Drawing", "Seats", "Scoreboard", "Banners"]);
+        expect([...document.querySelectorAll('[role="tab"]')].map((t) => t.textContent?.trim())).toEqual(["Details", "Court", "Drawing", "Seats", "Scoreboard", "Banners", "Lighting"]);
 
         await typeInto("#arena-name", "Harbor Pavilion");
         const [data] = await submitted(wrapper);

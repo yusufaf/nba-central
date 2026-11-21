@@ -195,6 +195,22 @@ describe('TeamScene arena parts (#295)', () => {
         scene.dispose();
     });
 
+    it('setBowl relights the scene from the venue, in place (#298)', () => {
+        const scene = new TeamScene(container);
+        const stage = sceneOf(scene) as unknown as import('three').Scene;
+        const spot = () => (stage.getObjectByName('spot') as import('three').SpotLight).intensity;
+        scene.setBowl(18000, null);
+        const count = stage.children.length;
+        scene.setBowl(18000, { version: 1, lighting: { preset: 'theater', tint: '#a855f7' } });
+        expect(spot()).toBeGreaterThan(0);
+        expect((stage.background as import('three').Color).getHexString()).not.toBe('0b0d11');
+        scene.setBowl(18000, null);
+        expect(spot()).toBe(0);
+        expect((stage.background as import('three').Color).getHexString()).toBe('0b0d11');
+        expect(stage.children).toHaveLength(count);
+        scene.dispose();
+    });
+
     it('setCourt swaps the court rather than adding another', () => {
         const scene = new TeamScene(container);
         scene.setCourt(null);

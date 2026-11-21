@@ -1,26 +1,40 @@
 import { Color, Fog, Group, Scene, type Object3D, type WebGLRenderer } from 'three';
-import type { VenueDesign } from '@/constants/venue';
+import type { VenueDesign, VenueLighting } from '@/constants/venue';
 import { buildBanners, bannersDesign } from '@/three/arena/banners';
 import { buildBowl, bowlLayout } from '@/three/arena/bowl';
 import { buildCourt, courtTexture } from '@/three/arena/court';
-import { broadcastLighting } from '@/three/arena/lighting';
+import { applyLighting, buildLighting, lightingRig } from '@/three/arena/lighting';
 import { buildRibbon, ribbonDesign } from '@/three/arena/ribbon';
 import { buildScoreboard, scoreboardDesign } from '@/three/arena/scoreboard';
-import { FOG, SCENE_COLOURS } from '@/three/arena/palette';
+import { FOG } from '@/three/arena/palette';
 import { seatColouring } from '@/three/arena/seats';
 import { blobShadow } from '@/three/arena/shadow';
 import { disposeObject } from '@/three/renderer/shared';
+import { DEFAULT_LIGHTING } from '@/utils/venue';
 import { layoutPeople } from './layout';
 
 // The parts of the team's arena that the live scene and the share card's
 // team photo both use.
 
-export const createStage = (): Scene => {
+// Standard lighting unless told otherwise: the creators' previews always
+// use it, since a player belongs to many teams (#298).
+export const createStage = (lighting: VenueLighting = DEFAULT_LIGHTING): Scene => {
+    const rig = lightingRig(lighting);
     const scene = new Scene();
-    scene.background = new Color(SCENE_COLOURS.background);
-    scene.fog = new Fog(SCENE_COLOURS.background, FOG.near, FOG.far);
-    scene.add(broadcastLighting());
+    scene.background = new Color(rig.background);
+    scene.fog = new Fog(rig.background, FOG.near, FOG.far);
+    scene.add(buildLighting(rig));
     return scene;
+};
+
+/** Relights a stage in place: same lights, so no shader recompiles. */
+export const setStageLighting = (scene: Scene, lighting: VenueLighting): void => {
+    const rig = lightingRig(lighting);
+    const group = scene.getObjectByName('lighting');
+    if (group instanceof Group) applyLighting(group, rig);
+    if (scene.background instanceof Color) scene.background.set(rig.background);
+    else scene.background = new Color(rig.background);
+    scene.fog?.color.set(rig.background);
 };
 
 export const buildCourtFloor = (court: HTMLCanvasElement | null, renderer: WebGLRenderer): Group =>
