@@ -22,6 +22,15 @@ export interface VenueBanner {
     color: string;
 }
 
+// Lighting (#298): the arena's lighting preset and tint.
+export const LIGHTING_PRESETS = ['broadcast', 'theater'] as const;
+export type LightingPresetId = (typeof LIGHTING_PRESETS)[number];
+
+export interface VenueLighting {
+    preset: LightingPresetId;
+    tint: string;
+}
+
 // Every part is optional (#296): an arena can have a scoreboard without a seat design.
 export interface VenueDesign {
     version: 1;
@@ -30,4 +39,5 @@ export interface VenueDesign {
     scoreboard?: { text: string; accent: string };
     ribbon?: { text: string; color: string };
     banners?: VenueBanner[];
+    lighting?: VenueLighting;
 }
