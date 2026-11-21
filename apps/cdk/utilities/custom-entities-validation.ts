@@ -2,6 +2,10 @@ import {
 	ACCESSORIES,
 	AGE_LOOKS,
 	APPEARANCE_FRAMES,
+	BANNER_KINDS,
+	BANNER_SUBTITLE_MAX,
+	BANNER_TITLE_MAX,
+	BANNERS_MAX,
 	COURT_CENTER_LOGOS,
 	COURT_WOODS,
 	CourtDesign,
@@ -310,7 +314,7 @@ const courtError = (court: unknown): string | null => {
 export const venueError = (value: unknown): string | null => {
 	if (!isRecord(value)) return "Venue must be an object";
 	if (value.version !== 1) return "Venue version must be 1";
-	const { seats, scoreboard, ribbon } = value;
+	const { seats, scoreboard, ribbon, banners } = value;
 	// A seat design is both keys: the editor can't show one without the other.
 	if ((seats === undefined) !== (value.upperDeck === undefined)) {
 		return "Venue seats and upper deck must be set together";
@@ -341,6 +345,26 @@ export const venueError = (value: unknown): string | null => {
 		}
 		if (!isHex(ribbon.color)) return "Venue ribbon colour must be a #rrggbb colour";
 	}
+	if (banners !== undefined) return bannersError(banners);
+	return null;
+};
+
+const bannersError = (banners: unknown): string | null => {
+	if (!Array.isArray(banners) || banners.length > BANNERS_MAX) {
+		return `Venue banners must be a list of at most ${BANNERS_MAX}`;
+	}
+	for (const [index, banner] of banners.entries()) {
+		const label = `Venue banner ${index + 1}`;
+		if (!isRecord(banner)) return `${label} must be {kind, title, subtitle, color}`;
+		if (!isOneOf(BANNER_KINDS, banner.kind)) return `${label} kind must be one of ${BANNER_KINDS.join(", ")}`;
+		if (!isTextUpTo(banner.title, BANNER_TITLE_MAX)) {
+			return `${label} title must be at most ${BANNER_TITLE_MAX} characters`;
+		}
+		if (!isTextUpTo(banner.subtitle, BANNER_SUBTITLE_MAX)) {
+			return `${label} subtitle must be at most ${BANNER_SUBTITLE_MAX} characters`;
+		}
+		if (!isHex(banner.color)) return `${label} colour must be a #rrggbb colour`;
+	}
 	return null;
 };
 
@@ -354,12 +378,17 @@ export const toVenue = (value: Record<string, unknown>): VenueDesign => {
 	const seats = value.seats as VenueDesign["seats"];
 	const scoreboard = value.scoreboard as VenueDesign["scoreboard"];
 	const ribbon = value.ribbon as VenueDesign["ribbon"];
+	const banners = value.banners as VenueDesign["banners"];
 	return {
 		version: 1,
 		...(seats && { seats: { primary: seats.primary, secondary: seats.secondary, pattern: seats.pattern } }),
 		...(typeof value.upperDeck === "boolean" && { upperDeck: value.upperDeck }),
 		...(scoreboard && { scoreboard: { text: scoreboard.text, accent: scoreboard.accent } }),
 		...(ribbon && { ribbon: { text: ribbon.text, color: ribbon.color } }),
+		...(banners &&
+			banners.length > 0 && {
+				banners: banners.map(({ kind, title, subtitle, color }) => ({ kind, title, subtitle, color })),
+			}),
 	};
 };
 

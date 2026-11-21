@@ -497,6 +497,37 @@ describe("an arena's scoreboard and LED ribbon (#296)", () => {
 	});
 });
 
+describe("an arena's rafters banners (#297)", () => {
+	const banner = { kind: "title", title: "CHAMPIONS", subtitle: "1998", color: "#c9a227" };
+	const retired = { kind: "number", title: "23", subtitle: "JORDAN", color: "#b91c1c" };
+	const venue = { version: 1, banners: [banner, retired] };
+	const update = (body: Item) => run(updateHandler, { body: JSON.stringify({ ...payload(), arenaUUID: "a1", ...body }) });
+
+	it("stores them on create as key-by-key copies, in order", async () => {
+		const result = await run(createHandler, {
+			body: JSON.stringify(payload({ venue: { version: 1, banners: [{ ...banner, extra: 1 }, retired] } })),
+		});
+		expect(result.statusCode).toBe(200);
+		expect(parseBody(result).data.venue).toEqual(venue);
+		expect(arenasOf(ME)[0].venue).toEqual(venue);
+	});
+
+	it("400s on nine banners and leaves the item as it was", async () => {
+		db.push(storedArena(ME, "a1", { venue }));
+		const result = await update({ venue: { version: 1, banners: Array.from({ length: 9 }, () => banner) } });
+		expect(result.statusCode).toBe(400);
+		expect(parseBody(result).error).toBe("Venue banners must be a list of at most 8");
+		expect(arenasOf(ME)[0].venue).toEqual(venue);
+	});
+
+	it("stores a venue that holds only banners", async () => {
+		db.push(storedArena(ME, "a1"));
+		const result = await update({ venue });
+		expect(result.statusCode).toBe(200);
+		expect(arenasOf(ME)[0].venue).toEqual(venue);
+	});
+});
+
 describe("deleteCustomArena", () => {
 	const seedWithImages = () => {
 		db.push(

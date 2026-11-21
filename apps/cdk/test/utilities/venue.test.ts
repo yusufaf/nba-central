@@ -1,5 +1,13 @@
 import { describe, it, expect } from "vitest";
-import { RIBBON_TEXT_MAX, SCOREBOARD_TEXT_MAX, SEAT_PATTERNS } from "../../models/custom-entities";
+import {
+    BANNER_KINDS,
+    BANNER_SUBTITLE_MAX,
+    BANNER_TITLE_MAX,
+    BANNERS_MAX,
+    RIBBON_TEXT_MAX,
+    SCOREBOARD_TEXT_MAX,
+    SEAT_PATTERNS,
+} from "../../models/custom-entities";
 import { toVenue, validateArenaData, venueError } from "../../utilities/custom-entities-validation";
 import * as web from "../../../web/src/constants/venue";
 
@@ -112,7 +120,70 @@ describe("venueError, optional parts (#296)", () => {
     });
 });
 
+const BANNER = { kind: "title", title: "CHAMPIONS", subtitle: "1998", color: "#c9a227" };
+const withBanner = (banner: Record<string, unknown>) => ({ version: 1, banners: [{ ...BANNER, ...banner }] });
+
+describe("venueError, banners (#297)", () => {
+    it("accepts 0, 1 and 8 banners of both kinds", () => {
+        expect(venueError({ version: 1, banners: [] })).toBeNull();
+        expect(venueError({ version: 1, banners: [BANNER] })).toBeNull();
+        const eight = Array.from({ length: 8 }, (_, i) => ({ ...BANNER, kind: BANNER_KINDS[i % 2] }));
+        expect(venueError({ ...FULL, banners: eight })).toBeNull();
+    });
+
+    it("accepts texts at the limits and empty texts", () => {
+        expect(venueError(withBanner({ title: "x".repeat(16), subtitle: "x".repeat(24) }))).toBeNull();
+        expect(venueError(withBanner({ title: "", subtitle: "" }))).toBeNull();
+    });
+
+    it("rejects a list that isn't one, or is too long", () => {
+        for (const banners of [null, "CHAMPIONS", {}, 1, Array.from({ length: 9 }, () => BANNER)]) {
+            expect(venueError({ version: 1, banners })).toBe("Venue banners must be a list of at most 8");
+        }
+    });
+
+    it("rejects a banner that isn't an object, counting from 1", () => {
+        expect(venueError({ version: 1, banners: [BANNER, "x"] })).toBe(
+            "Venue banner 2 must be {kind, title, subtitle, color}",
+        );
+        expect(venueError({ version: 1, banners: [[]] })).toBe("Venue banner 1 must be {kind, title, subtitle, color}");
+    });
+
+    it("rejects an unknown kind", () => {
+        for (const kind of ["flag", undefined]) {
+            expect(venueError(withBanner({ kind }))).toBe("Venue banner 1 kind must be one of title, number");
+        }
+    });
+
+    it("rejects a long, missing or non-string title or subtitle", () => {
+        for (const title of ["x".repeat(17), 7, undefined]) {
+            expect(venueError(withBanner({ title }))).toBe("Venue banner 1 title must be at most 16 characters");
+        }
+        for (const subtitle of ["x".repeat(25), 7, undefined]) {
+            expect(venueError(withBanner({ subtitle }))).toBe("Venue banner 1 subtitle must be at most 24 characters");
+        }
+    });
+
+    it("rejects a colour that isn't #rrggbb", () => {
+        for (const color of ["gold", "#fff", undefined]) {
+            expect(venueError(withBanner({ color }))).toBe("Venue banner 1 colour must be a #rrggbb colour");
+        }
+    });
+});
+
 describe("toVenue", () => {
+    it("copies each banner key by key, in order", () => {
+        const second = { ...BANNER, kind: "number", title: "23" };
+        const copied = toVenue({ version: 1, banners: [{ ...BANNER, extra: 1 }, second] });
+        expect(copied).toEqual({ version: 1, banners: [BANNER, second] });
+        expect(copied.banners?.[1]).not.toBe(second);
+    });
+
+    it("stores no banners key for an empty list", () => {
+        expect(Object.keys(toVenue({ version: 1, banners: [] }))).toEqual(["version"]);
+        expect("banners" in toVenue(VENUE)).toBe(false);
+    });
+
     it("copies only the known keys, at both levels", () => {
         const copied = toVenue({ ...VENUE, extra: 1, seats: { ...VENUE.seats, extra: 2 } });
         expect(copied).toEqual(VENUE);
@@ -164,5 +235,12 @@ describe("the web copy of the seat patterns", () => {
     it("matches the text limits", () => {
         expect(web.SCOREBOARD_TEXT_MAX).toBe(SCOREBOARD_TEXT_MAX);
         expect(web.RIBBON_TEXT_MAX).toBe(RIBBON_TEXT_MAX);
+    });
+
+    it("matches the banner kinds and limits", () => {
+        expect(web.BANNER_KINDS).toEqual(BANNER_KINDS);
+        expect(web.BANNERS_MAX).toBe(BANNERS_MAX);
+        expect(web.BANNER_TITLE_MAX).toBe(BANNER_TITLE_MAX);
+        expect(web.BANNER_SUBTITLE_MAX).toBe(BANNER_SUBTITLE_MAX);
     });
 });
