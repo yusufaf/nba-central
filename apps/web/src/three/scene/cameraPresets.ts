@@ -28,8 +28,9 @@ const BASE: Record<CameraPreset, { position: Vec3; target: Vec3 }> = {
     courtside: { position: [7.5, 1.2, 6], target: [0, 1.2, 0] },
     // For every scene, with or without a scoreboard (#296): a centre-hung board
     // hid the team from the old top-down rafters shot, and neither shot
-    // reached the LED ribbon. tests/three/venueVisibility.test.ts checks both.
-    broadcast: { position: [0, 10, 24], target: [0, 4, 0] },
+    // reached the LED ribbon. Broadcast aims at y 6, not 4, so the rafters
+    // banners (#297) clear the board's top. tests/three/venueVisibility.test.ts checks both.
+    broadcast: { position: [0, 10, 24], target: [0, 6, 0] },
     rafters: { position: [0, 30, 30], target: [0, 6, -4] },
 };
 

@@ -43,8 +43,8 @@ describe('framePreset', () => {
         expect(narrow.target).toEqual(wide.target);
     });
 
-    it('pins the broadcast and rafters shots (#296)', () => {
-        expect(framePreset('broadcast', 16 / 9)).toEqual({ position: [0, 10, 24], target: [0, 4, 0], fov: 40 });
+    it('pins the broadcast and rafters shots (#296, #297)', () => {
+        expect(framePreset('broadcast', 16 / 9)).toEqual({ position: [0, 10, 24], target: [0, 6, 0], fov: 40 });
         expect(framePreset('rafters', 0.625)).toEqual({ position: [0, 30, 30], target: [0, 6, -4], fov: 50 });
     });
 
