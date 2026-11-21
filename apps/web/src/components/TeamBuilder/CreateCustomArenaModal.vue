@@ -16,6 +16,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import CourtFloor from '@/components/court/CourtFloor.vue';
 import DrawingCanvas from '@/components/drawing/DrawingCanvas.vue';
 import CourtDesignFields from './CourtDesignFields.vue';
+import BannerDesignFields from './BannerDesignFields.vue';
 import ScoreboardDesignFields from './ScoreboardDesignFields.vue';
 import SeatDesignFields from './SeatDesignFields.vue';
 import { Scene3DUnavailable, TeamScene3DAsync } from '@/components/scene3d';
@@ -55,23 +56,26 @@ const open = defineModel<boolean>('open');
 const NAME_MAX = 60;
 const LOCATION_MAX = 60;
 
-const tab = ref<'details' | 'court' | 'drawing' | 'seats' | 'scoreboard'>('details');
+const tab = ref<'details' | 'court' | 'drawing' | 'seats' | 'scoreboard' | 'banners'>('details');
 const name = ref('');
 const location = ref('');
 const capacity = ref('');
 const openedYear = ref('');
 const court = ref<CourtDesign | null>(null);
-// null means the standard bowl; the Seats and Scoreboard tabs add parts (#295, #296).
+// null means the standard bowl; the Seats, Scoreboard and Banners tabs add parts (#295-#297).
 const venue = ref<VenueDesign | null>(null);
 // Probed the first time a 3D tab opens: the probe costs a GPU context.
 const webgl = ref<boolean | null>(null);
 const SEAT_PRESETS = ['broadcast', 'courtside', 'rafters'] as const;
 // One preview spans these tabs, so switching between them keeps the scene.
-const SCENE_TABS: readonly string[] = ['seats', 'scoreboard'];
+const SCENE_TABS: readonly string[] = ['seats', 'scoreboard', 'banners'];
 const onSceneTab = computed(() => SCENE_TABS.includes(tab.value));
-const previewLabel = computed(() =>
-    tab.value === 'seats' ? "Preview of the arena's seating bowl" : "Preview of the arena's scoreboard and ribbon",
-);
+const PREVIEW_LABELS: Record<string, string> = {
+    seats: "Preview of the arena's seating bowl",
+    scoreboard: "Preview of the arena's scoreboard and ribbon",
+    banners: "Preview of the arena's rafters banners",
+};
+const previewLabel = computed(() => PREVIEW_LABELS[tab.value] ?? PREVIEW_LABELS.seats);
 // Kept here, not in the Court tab, which unmounts while Details shows.
 const apronMode = ref<ApronMode>('match');
 const linesMode = ref<LinesMode>('custom');
@@ -242,12 +246,13 @@ const handleSubmit = () => {
 
                 <Tabs v-model="tab" class="flex min-h-0 flex-1 flex-col">
                     <!-- Wraps rather than scrolls sideways, as in the creators' sheet. -->
-                    <TabsList class="mx-6 mt-4 grid h-auto grid-cols-3 gap-1 @min-[36rem]:grid-cols-5">
+                    <TabsList class="mx-6 mt-4 grid h-auto grid-cols-3 gap-1 @min-[44rem]:grid-cols-6">
                         <TabsTrigger value="details">Details</TabsTrigger>
                         <TabsTrigger value="court">Court</TabsTrigger>
                         <TabsTrigger value="drawing">Drawing</TabsTrigger>
                         <TabsTrigger value="seats">Seats</TabsTrigger>
                         <TabsTrigger value="scoreboard">Scoreboard</TabsTrigger>
+                        <TabsTrigger value="banners">Banners</TabsTrigger>
                     </TabsList>
 
                     <div class="min-h-0 flex-1 overflow-y-auto px-6 pb-6" :class="{ 'scene-scroller': onSceneTab }">
@@ -503,6 +508,10 @@ const handleSubmit = () => {
 
                         <TabsContent value="scoreboard" class="mt-0">
                             <ScoreboardDesignFields v-model:venue="venue" :arena-name="name" :disabled="saving" class="pt-2" />
+                            <p class="pt-4 text-xs text-muted-foreground">Arena colours look the same in light and dark mode.</p>
+                        </TabsContent>
+                        <TabsContent value="banners" class="mt-0">
+                            <BannerDesignFields v-model:venue="venue" :disabled="saving" class="pt-2" />
                             <p class="pt-4 text-xs text-muted-foreground">Arena colours look the same in light and dark mode.</p>
                         </TabsContent>
                     </div>

@@ -1,4 +1,14 @@
-import { RIBBON_TEXT_MAX, SCOREBOARD_TEXT_MAX, type SeatPatternId, type VenueDesign } from '@/constants/venue';
+import {
+    BANNER_SUBTITLE_MAX,
+    BANNER_TITLE_MAX,
+    BANNERS_MAX,
+    RIBBON_TEXT_MAX,
+    SCOREBOARD_TEXT_MAX,
+    type BannerKindId,
+    type SeatPatternId,
+    type VenueBanner,
+    type VenueDesign,
+} from '@/constants/venue';
 import type { Swatch } from '@/utils/appearanceOptions';
 
 // Shared by the Seats tab and the 3D bowl, so it lives outside src/three. The
@@ -81,8 +91,32 @@ export const newRibbon = (arenaName: string): NonNullable<VenueDesign['ribbon']>
     return { text: (name ? `Welcome to ${name}` : 'Welcome').slice(0, RIBBON_TEXT_MAX), color: '#f59e0b' };
 };
 
+// Banner fabric colours (#297).
+export const BANNER_SWATCHES: Swatch[] = [
+    { value: '#1d2a44', label: 'Navy' },
+    { value: '#b91c1c', label: 'Red' },
+    { value: '#1d4ed8', label: 'Royal' },
+    { value: '#0f6b3c', label: 'Green' },
+    { value: '#4b2a7b', label: 'Purple' },
+    { value: '#c9a227', label: 'Gold' },
+    { value: '#16181d', label: 'Black' },
+    { value: '#f5f5f4', label: 'White' },
+];
+
+export const BANNER_KIND_LABELS: Record<BannerKindId, string> = {
+    title: 'Championship',
+    number: 'Retired number',
+};
+
+export const newBanner = (): VenueBanner => ({
+    kind: 'title',
+    title: 'Champions',
+    subtitle: '',
+    color: BANNER_SWATCHES[0].value,
+});
+
 /** A new venue with one part set, or removed with undefined. */
-export const setVenuePart = <K extends 'scoreboard' | 'ribbon'>(
+export const setVenuePart = <K extends 'scoreboard' | 'ribbon' | 'banners'>(
     venue: VenueDesign | null,
     key: K,
     value: VenueDesign[K] | undefined,
@@ -93,6 +127,46 @@ export const setVenuePart = <K extends 'scoreboard' | 'ribbon'>(
     return orNull(next);
 };
 
+const withBanners = (venue: VenueDesign | null, banners: VenueBanner[]): VenueDesign | null =>
+    setVenuePart(venue, 'banners', banners.length > 0 ? banners : undefined);
+
+export const addBanner = (venue: VenueDesign | null): VenueDesign => {
+    const banners = venue?.banners ?? [];
+    if (venue && banners.length >= BANNERS_MAX) return venue;
+    return { ...(venue ?? { version: 1 }), banners: [...banners, newBanner()] };
+};
+
+export const setBanner = (
+    venue: VenueDesign | null,
+    index: number,
+    change: Partial<VenueBanner>,
+): VenueDesign | null => {
+    const banners = venue?.banners;
+    if (!banners?.[index]) return venue;
+    return withBanners(
+        venue,
+        banners.map((banner, i) => (i === index ? { ...banner, ...change } : banner)),
+    );
+};
+
+export const moveBanner = (venue: VenueDesign | null, from: number, to: number): VenueDesign | null => {
+    const banners = venue?.banners;
+    if (!banners?.[from] || !banners[to]) return venue;
+    const next = [...banners];
+    const [moved] = next.splice(from, 1);
+    next.splice(to, 0, moved);
+    return withBanners(venue, next);
+};
+
+export const removeBanner = (venue: VenueDesign | null, index: number): VenueDesign | null => {
+    const banners = venue?.banners;
+    if (!banners?.[index]) return venue;
+    return withBanners(
+        venue,
+        banners.filter((_, i) => i !== index),
+    );
+};
+
 // A plain copy two levels deep: a loaded venue can hold reactive proxies,
 // which structuredClone (and so the 3D scene's inputs) can't take.
 export const copyVenue = (venue: VenueDesign): VenueDesign => ({
@@ -101,6 +175,7 @@ export const copyVenue = (venue: VenueDesign): VenueDesign => ({
     ...(venue.upperDeck !== undefined && { upperDeck: venue.upperDeck }),
     ...(venue.scoreboard && { scoreboard: { ...venue.scoreboard } }),
     ...(venue.ribbon && { ribbon: { ...venue.ribbon } }),
+    ...(venue.banners && { banners: venue.banners.map((banner) => ({ ...banner })) }),
 });
 
 export const submittedVenue = (venue: VenueDesign | null): VenueDesign | null => {
@@ -108,13 +183,21 @@ export const submittedVenue = (venue: VenueDesign | null): VenueDesign | null =>
     const copy = copyVenue(venue);
     if (copy.scoreboard) copy.scoreboard.text = copy.scoreboard.text.trim();
     if (copy.ribbon) copy.ribbon.text = copy.ribbon.text.trim();
+    for (const banner of copy.banners ?? []) {
+        banner.title = banner.title.trim();
+        banner.subtitle = banner.subtitle.trim();
+    }
     return orNull(copy);
 };
 
 // Behind the inputs' maxlength, which a paste or a script can get past.
 export const venueTextsValid = (venue: VenueDesign | null): boolean =>
     (venue?.scoreboard?.text.length ?? 0) <= SCOREBOARD_TEXT_MAX &&
-    (venue?.ribbon?.text.length ?? 0) <= RIBBON_TEXT_MAX;
+    (venue?.ribbon?.text.length ?? 0) <= RIBBON_TEXT_MAX &&
+    (venue?.banners ?? []).length <= BANNERS_MAX &&
+    (venue?.banners ?? []).every(
+        (banner) => banner.title.length <= BANNER_TITLE_MAX && banner.subtitle.length <= BANNER_SUBTITLE_MAX,
+    );
 
 // The pattern buttons' little preview of each pattern in the current colours.
 export const patternChip = (

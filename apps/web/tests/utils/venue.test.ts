@@ -1,10 +1,17 @@
 import { describe, expect, it } from 'vitest';
 import { reactive } from 'vue';
-import { SEAT_PATTERNS, type VenueDesign } from '@/constants/venue';
+import { BANNERS_MAX, BANNER_KINDS, SEAT_PATTERNS, type VenueBanner, type VenueDesign } from '@/constants/venue';
 import { SCENE_COLOURS } from '@/three/arena/palette';
 import {
+    BANNER_KIND_LABELS,
+    BANNER_SWATCHES,
     DEFAULT_CAPACITY,
     LED_SWATCHES,
+    addBanner,
+    moveBanner,
+    newBanner,
+    removeBanner,
+    setBanner,
     SEAT_PATTERN_LABELS,
     SEAT_SWATCHES,
     SECONDARY_HINTS,
@@ -27,7 +34,7 @@ describe('venue values', () => {
     });
 
     it('keeps every swatch as lower-case #rrggbb', () => {
-        for (const swatch of [...SEAT_SWATCHES, ...LED_SWATCHES]) expect(swatch.value).toMatch(/^#[0-9a-f]{6}$/);
+        for (const swatch of [...SEAT_SWATCHES, ...LED_SWATCHES, ...BANNER_SWATCHES]) expect(swatch.value).toMatch(/^#[0-9a-f]{6}$/);
     });
 
     it('labels and hints every pattern', () => {
@@ -176,5 +183,110 @@ describe('patternChip', () => {
             background: 'repeating-linear-gradient(180deg, #111111 0 25%, #eeeeee 25% 50%)',
         });
         expect(patternChip('gradient', seats)).toEqual({ background: 'linear-gradient(0deg, #111111, #eeeeee)' });
+    });
+});
+
+const BANNER: VenueBanner = { kind: 'title', title: 'CHAMPIONS', subtitle: '1998', color: '#c9a227' };
+const RETIRED: VenueBanner = { kind: 'number', title: '23', subtitle: 'JORDAN', color: '#b91c1c' };
+
+describe('banner values (#297)', () => {
+    it('labels every kind', () => {
+        for (const kind of BANNER_KINDS) expect(BANNER_KIND_LABELS[kind]).toBeTruthy();
+    });
+
+    it('starts a new banner as a championship in the first swatch', () => {
+        expect(newBanner()).toEqual({ kind: 'title', title: 'Champions', subtitle: '', color: BANNER_SWATCHES[0].value });
+        expect(newBanner()).not.toBe(newBanner());
+    });
+});
+
+describe('addBanner', () => {
+    it('starts a venue from nothing', () => {
+        expect(addBanner(null)).toEqual({ version: 1, banners: [newBanner()] });
+    });
+
+    it('appends to a new venue and list, leaving the old ones alone', () => {
+        const venue: VenueDesign = { version: 1, ribbon: RIBBON, banners: [BANNER] };
+        const next = addBanner(venue);
+        expect(next).toEqual({ ...venue, banners: [BANNER, newBanner()] });
+        expect(next.banners).not.toBe(venue.banners);
+        expect(venue.banners).toEqual([BANNER]);
+    });
+
+    it('stops at the limit', () => {
+        const full: VenueDesign = { version: 1, banners: Array.from({ length: BANNERS_MAX }, () => BANNER) };
+        expect(addBanner(full)).toBe(full);
+    });
+});
+
+describe('setBanner', () => {
+    it('changes one banner in a new venue', () => {
+        const venue: VenueDesign = { version: 1, banners: [BANNER, RETIRED] };
+        const next = setBanner(venue, 1, { title: '33' });
+        expect(next?.banners).toEqual([BANNER, { ...RETIRED, title: '33' }]);
+        expect(next?.banners?.[0]).toBe(BANNER);
+        expect(venue.banners?.[1]).toEqual(RETIRED);
+    });
+
+    it('leaves the venue as it is when there is no banner there', () => {
+        const venue: VenueDesign = { version: 1, banners: [BANNER] };
+        expect(setBanner(venue, 3, { title: 'X' })).toBe(venue);
+        expect(setBanner(null, 0, { title: 'X' })).toBeNull();
+    });
+});
+
+describe('moveBanner', () => {
+    it('moves a banner in a new list', () => {
+        const venue: VenueDesign = { version: 1, banners: [BANNER, RETIRED] };
+        const next = moveBanner(venue, 0, 1);
+        expect(next?.banners).toEqual([RETIRED, BANNER]);
+        expect(venue.banners).toEqual([BANNER, RETIRED]);
+    });
+
+    it('ignores a move out of range', () => {
+        const venue: VenueDesign = { version: 1, banners: [BANNER, RETIRED] };
+        expect(moveBanner(venue, 1, 2)).toBe(venue);
+        expect(moveBanner(venue, -1, 0)).toBe(venue);
+        expect(moveBanner(null, 0, 1)).toBeNull();
+    });
+});
+
+describe('removeBanner', () => {
+    it('removes one banner in a new list', () => {
+        const venue: VenueDesign = { version: 1, ribbon: RIBBON, banners: [BANNER, RETIRED] };
+        expect(removeBanner(venue, 0)).toEqual({ version: 1, ribbon: RIBBON, banners: [RETIRED] });
+        expect(venue.banners).toHaveLength(2);
+    });
+
+    it('drops the key with the last banner, and the venue once nothing is left', () => {
+        expect(removeBanner({ version: 1, ribbon: RIBBON, banners: [BANNER] }, 0)).toEqual({ version: 1, ribbon: RIBBON });
+        expect(removeBanner({ version: 1, banners: [BANNER] }, 0)).toBeNull();
+        expect(removeBanner(null, 0)).toBeNull();
+    });
+});
+
+describe('banners in copyVenue, submittedVenue and venueTextsValid', () => {
+    it('copies the list and each banner', () => {
+        const venue = reactive<VenueDesign>({ version: 1, banners: [{ ...BANNER }] });
+        const copy = copyVenue(venue);
+        expect(copy).toEqual({ version: 1, banners: [BANNER] });
+        expect(copy.banners).not.toBe(venue.banners);
+        expect(copy.banners?.[0]).not.toBe(venue.banners?.[0]);
+        expect(() => structuredClone(copy)).not.toThrow();
+    });
+
+    it('trims each title and subtitle', () => {
+        expect(submittedVenue({ version: 1, banners: [{ ...BANNER, title: ' CHAMPIONS ', subtitle: ' 1998 ' }] })).toEqual(
+            { version: 1, banners: [BANNER] },
+        );
+    });
+
+    it('holds the list and each text to its limit', () => {
+        const valid = (banners: VenueBanner[]) => venueTextsValid({ version: 1, banners });
+        expect(valid([{ ...BANNER, title: 'x'.repeat(16), subtitle: 'x'.repeat(24) }])).toBe(true);
+        expect(valid([{ ...BANNER, title: 'x'.repeat(17) }])).toBe(false);
+        expect(valid([{ ...BANNER, subtitle: 'x'.repeat(25) }])).toBe(false);
+        expect(valid(Array.from({ length: BANNERS_MAX }, () => BANNER))).toBe(true);
+        expect(valid(Array.from({ length: BANNERS_MAX + 1 }, () => BANNER))).toBe(false);
     });
 });

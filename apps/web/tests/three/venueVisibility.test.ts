@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { Box3, PerspectiveCamera, Ray, Vector3 } from 'three';
 import type { VenueDesign } from '@/constants/venue';
+import { BANNER_FONT, BANNER_ROW, bannerLayout } from '@/three/arena/banners';
 import { bowlLayout, bowlRingPoint } from '@/three/arena/bowl';
 import { ribbonBand } from '@/three/arena/ribbon';
 import { framePreset, type CameraPreset } from '@/three/scene/cameraPresets';
@@ -27,7 +28,8 @@ const BOWLS = [
     { capacity: 200000, upperDeck: false },
     { capacity: 200000, upperDeck: true },
 ];
-const ASPECTS = [2, 16 / 9, 1.43, 0.625];
+// 0.586 is a 360 x 800 phone's public viewport (#297).
+const ASPECTS = [2, 16 / 9, 1.43, 0.625, 0.586];
 const PRESETS: CameraPreset[] = ['broadcast', 'rafters'];
 
 const cameraFor = (preset: CameraPreset, aspect: number): PerspectiveCamera => {
@@ -99,5 +101,118 @@ describe('the team-photo shot', () => {
             const camera = cameraFor('team', aspect);
             for (const corner of corners(board)) expect(inView(corner, camera)).toBe(false);
         }
+    });
+});
+
+// #297: every banner, for any count, is in view and clear of the scoreboard
+// from both shots, and the banners never hide the whole ribbon.
+const bannerRow = (count: number): { corners: Vector3[]; centre: Vector3; box: Box3 }[] =>
+    bannerLayout(count).map(({ x, width, height }) => {
+        const { z, top } = BANNER_ROW;
+        const bottom = top - height;
+        const left = x - width / 2;
+        const right = x + width / 2;
+        return {
+            corners: [
+                new Vector3(left, bottom, z),
+                new Vector3(right, bottom, z),
+                new Vector3(right, top, z),
+                new Vector3(left, top, z),
+            ],
+            centre: new Vector3(x, (top + bottom) / 2, z),
+            box: new Box3(new Vector3(left, bottom, z - 0.01), new Vector3(right, top, z + 0.01)),
+        };
+    });
+
+const BANNER_COUNTS = [1, 2, 3, 4, 5, 6, 7, 8];
+
+describe('the banners from broadcast and rafters', () => {
+    for (const { capacity, upperDeck } of BOWLS) {
+        const seating = buildSeating(capacity, venueWith(upperDeck));
+        seating.updateMatrixWorld(true);
+        const board = new Box3().setFromObject(seating.getObjectByName('scoreboard')!);
+        const band = ribbonBand(bowlLayout(capacity, upperDeck));
+        const ribbonLine = Array.from({ length: 360 }, (_, k) => {
+            const [x, z] = bowlRingPoint((k / 360) * Math.PI * 2, band.offset);
+            return new Vector3(x, (band.bottom + band.top) / 2, z);
+        });
+
+        for (const preset of PRESETS) {
+            for (const aspect of ASPECTS) {
+                it(`${preset}, capacity ${capacity}, upper deck ${upperDeck}, aspect ${aspect.toFixed(3)}`, () => {
+                    const camera = cameraFor(preset, aspect);
+                    for (const count of BANNER_COUNTS) {
+                        const row = bannerRow(count);
+                        for (const banner of row) {
+                            for (const point of [...banner.corners, banner.centre]) {
+                                expect(inView(point, camera, 0.95), `${count} banners`).toBe(true);
+                                expect(hiddenBy(board, point, camera), `${count} banners`).toBe(false);
+                            }
+                        }
+                        const occluders = [board, ...row.map((banner) => banner.box)];
+                        const visible = ribbonLine.filter(
+                            (point) =>
+                                inView(point, camera, 0.95) && !occluders.some((box) => hiddenBy(box, point, camera)),
+                        );
+                        expect(visible.length, `${count} banners`).toBeGreaterThanOrEqual(6);
+                    }
+                });
+            }
+        }
+    }
+});
+
+describe('the team-photo shot and the banners', () => {
+    it('never shows a banner, so the share card stays as it was', () => {
+        for (const aspect of [1200 / 630, 16 / 9, 0.625]) {
+            const camera = cameraFor('team', aspect);
+            for (const count of BANNER_COUNTS) {
+                for (const banner of bannerRow(count)) {
+                    for (const corner of banner.corners) expect(inView(corner, camera)).toBe(false);
+                }
+            }
+        }
+    });
+});
+
+// The legibility bar the owner accepted (#297): text at least 10 px on screen.
+// A line of `chars` characters is drawn at its cap, or smaller to fit the
+// 216 px box of a 256 px cell; B is the narrowest banner's on-screen width.
+const CHAR_EM = 0.62;
+const linePx = (bannerPx: number, cap: number, chars: number): number =>
+    (Math.min(cap, BANNER_FONT.textWidth / (chars * CHAR_EM)) * bannerPx) / 256;
+
+const narrowestBannerPx = (preset: CameraPreset, count: number, width: number, height: number): number => {
+    const camera = cameraFor(preset, width / height);
+    return Math.min(
+        ...bannerRow(count).flatMap(({ corners: [bottomLeft, bottomRight, topRight, topLeft] }) =>
+            [
+                [bottomLeft, bottomRight],
+                [topLeft, topRight],
+            ].map(([left, right]) => ((right.clone().project(camera).x - left.clone().project(camera).x) / 2) * width),
+        ),
+    );
+};
+
+describe('banner legibility', () => {
+    it('fits a 4-character title at its cap', () => {
+        expect(4 * CHAR_EM * BANNER_FONT.title).toBeLessThanOrEqual(BANNER_FONT.textWidth);
+    });
+
+    it('on a 1200 x 630 canvas (a desktop window at least 900 px tall)', () => {
+        for (const preset of PRESETS) {
+            expect(linePx(narrowestBannerPx(preset, 8, 1200, 630), BANNER_FONT.title, 4), preset).toBeGreaterThanOrEqual(10);
+        }
+        expect(linePx(narrowestBannerPx('broadcast', 8, 1200, 630), BANNER_FONT.title, 6)).toBeGreaterThanOrEqual(10);
+        const five = narrowestBannerPx('broadcast', 5, 1200, 630);
+        expect(linePx(five, BANNER_FONT.title, 10)).toBeGreaterThanOrEqual(10);
+        expect((BANNER_FONT.subtitle * five) / 256).toBeGreaterThanOrEqual(10);
+    });
+
+    it('on a 1376 x 517 canvas (a 1536 x 864 window)', () => {
+        for (const preset of PRESETS) {
+            expect(linePx(narrowestBannerPx(preset, 8, 1376, 517), BANNER_FONT.title, 4), preset).toBeGreaterThanOrEqual(10);
+        }
+        expect(linePx(narrowestBannerPx('broadcast', 5, 1376, 517), BANNER_FONT.title, 6)).toBeGreaterThanOrEqual(10);
     });
 });
