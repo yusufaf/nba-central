@@ -3,7 +3,7 @@ import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { buildCourt } from '@/three/arena/court';
 import { blobShadow } from '@/three/arena/shadow';
 import { buildPerson, type PersonInput } from '@/three/character/person';
-import { disposeObject, getSharedRenderer } from '@/three/renderer/shared';
+import { acquireRenderer, disposeObject, fitRenderer, onPixelRatioChange, releaseRenderer } from '@/three/renderer/shared';
 import type { KitColours } from '@/utils/jerseyColours';
 import { PREVIEW_ORBIT, framePerson } from './cameraPresets';
 import { createStage } from './stage';
@@ -19,13 +19,14 @@ export class PersonPreview {
     /** A build landed: the preview matches the latest edit it has shown. */
     onShown: (() => void) | null = null;
 
-    private readonly renderer = getSharedRenderer();
+    private readonly renderer = acquireRenderer();
     // The arena's standard lighting (#298): a player belongs to many teams, so
     // there is no one arena to follow.
     private readonly scene = createStage();
     private readonly camera = new PerspectiveCamera(30, 1, 0.1, 100);
     private readonly controls: OrbitControls;
     private readonly observer: ResizeObserver;
+    private readonly stopPixelRatio: () => void;
     private person: Group | null = null;
     private height = 0;
     private building = false;
@@ -61,6 +62,8 @@ export class PersonPreview {
 
         this.observer = new ResizeObserver(() => this.resize());
         this.observer.observe(container);
+        // Browser zoom and a move to another monitor change the ratio without a resize.
+        this.stopPixelRatio = onPixelRatioChange(() => this.resize());
         this.resize();
     }
 
@@ -99,7 +102,9 @@ export class PersonPreview {
     }
 
     dispose(): void {
+        if (this.disposed) return;
         this.disposed = true;
+        this.stopPixelRatio();
         this.pending = null;
         this.observer.disconnect();
         this.controls.dispose();
@@ -108,6 +113,7 @@ export class PersonPreview {
         this.person = null;
         const canvas = this.renderer.domElement;
         if (canvas.parentElement === this.container) canvas.remove();
+        releaseRenderer();
     }
 
     private async build(input: PersonInput, kit: Kit): Promise<void> {
@@ -151,7 +157,7 @@ export class PersonPreview {
     private resize(): void {
         const { clientWidth: width, clientHeight: height } = this.container;
         if (!width || !height) return;
-        this.renderer.setSize(width, height, false);
+        fitRenderer(this.renderer, width, height);
         this.camera.aspect = width / height;
         this.camera.updateProjectionMatrix();
         this.requestRender();

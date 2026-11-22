@@ -8,9 +8,24 @@ const fakeRenderer = vi.hoisted(() => ({
     capabilities: { getMaxAnisotropy: () => 1 },
     info: { memory: { geometries: 0, textures: 0 } },
 }));
-const shared = vi.hoisted(() => ({ disposeObject: vi.fn() }));
+const shared = vi.hoisted(() => ({
+    disposeObject: vi.fn(),
+    releaseRenderer: vi.fn(),
+    fitRenderer: vi.fn((renderer: { setSize: (w: number, h: number, s: boolean) => void }, w: number, h: number) =>
+        renderer.setSize(w, h, false),
+    ),
+    stopPixelRatio: vi.fn(),
+    pixelRatioListener: null as (() => void) | null,
+}));
 vi.mock('@/three/renderer/shared', () => ({
     getSharedRenderer: () => fakeRenderer,
+    acquireRenderer: () => fakeRenderer,
+    releaseRenderer: shared.releaseRenderer,
+    fitRenderer: shared.fitRenderer,
+    onPixelRatioChange: (listener: () => void) => {
+        shared.pixelRatioListener = listener;
+        return shared.stopPixelRatio;
+    },
     disposeObject: shared.disposeObject,
 }));
 
@@ -74,6 +89,24 @@ afterEach(() => {
 });
 
 describe('PersonPreview', () => {
+    it('a pixel ratio change re-fits the renderer (#300)', () => {
+        const preview = new PersonPreview(container);
+        shared.fitRenderer.mockClear();
+        shared.pixelRatioListener?.();
+        expect(shared.fitRenderer).toHaveBeenCalledWith(fakeRenderer, 400, 400);
+        preview.dispose();
+    });
+
+    it('dispose releases the renderer and the pixel-ratio watch once, even if called twice (#300)', () => {
+        shared.releaseRenderer.mockClear();
+        shared.stopPixelRatio.mockClear();
+        const preview = new PersonPreview(container);
+        preview.dispose();
+        preview.dispose();
+        expect(shared.releaseRenderer).toHaveBeenCalledTimes(1);
+        expect(shared.stopPixelRatio).toHaveBeenCalledTimes(1);
+    });
+
     it("uses the arena's standard lighting (#298)", async () => {
         const { lightingRig } = await import('@/three/arena/lighting');
         const { DEFAULT_LIGHTING } = await import('@/utils/venue');
