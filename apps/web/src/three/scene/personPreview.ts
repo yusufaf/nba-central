@@ -42,38 +42,43 @@ export class PersonPreview {
     private disposed = false;
 
     constructor(private readonly container: HTMLElement) {
-        const canvas = this.renderer.domElement;
-        canvas.style.display = 'block';
-        canvas.style.width = '100%';
-        canvas.style.height = '100%';
-        container.appendChild(canvas);
-
-        this.scene.add(buildCourt(null));
-        const shadow = blobShadow(0.45);
-        shadow.position.y = 0.005;
-        this.scene.add(shadow);
-
-        this.controls = new OrbitControls(this.camera, canvas);
-        Object.assign(this.controls, PREVIEW_ORBIT);
-        this.controls.addEventListener('change', () => this.requestRender());
-        // As in TeamScene: vertical swipes and the wheel scroll the page.
-        canvas.style.touchAction = 'pan-y';
-        canvas.addEventListener('wheel', this.onWheel, { capture: true });
-
-        if (import.meta.env.DEV) {
-            (window as unknown as { __scene3dInfo?: () => object }).__scene3dInfo = () => ({
-                ...this.renderer.info.memory,
-                canvases: document.querySelectorAll('canvas').length,
-            });
-        }
-
-        this.observer = new ResizeObserver(() => this.resize());
-        this.observer.observe(container);
-        // Browser zoom and a move to another monitor change the ratio without a resize.
-        this.stopPixelRatio = onPixelRatioChange(() => this.resize());
-        this.resize();
-        // Counted last: a constructor that throws earlier is never disposed, so it must hold nothing.
         acquireRenderer();
+        // Nobody can dispose a preview whose constructor threw, so it undoes itself.
+        try {
+            const canvas = this.renderer.domElement;
+            canvas.style.display = 'block';
+            canvas.style.width = '100%';
+            canvas.style.height = '100%';
+            container.appendChild(canvas);
+
+            this.scene.add(buildCourt(null));
+            const shadow = blobShadow(0.45);
+            shadow.position.y = 0.005;
+            this.scene.add(shadow);
+
+            this.controls = new OrbitControls(this.camera, canvas);
+            Object.assign(this.controls, PREVIEW_ORBIT);
+            this.controls.addEventListener('change', () => this.requestRender());
+            // As in TeamScene: vertical swipes and the wheel scroll the page.
+            canvas.style.touchAction = 'pan-y';
+            canvas.addEventListener('wheel', this.onWheel, { capture: true });
+
+            if (import.meta.env.DEV) {
+                (window as unknown as { __scene3dInfo?: () => object }).__scene3dInfo = () => ({
+                    ...this.renderer.info.memory,
+                    canvases: document.querySelectorAll('canvas').length,
+                });
+            }
+
+            this.observer = new ResizeObserver(() => this.resize());
+            this.observer.observe(container);
+            // Browser zoom and a move to another monitor change the ratio without a resize.
+            this.stopPixelRatio = onPixelRatioChange(() => this.resize());
+            this.resize();
+        } catch (error) {
+            this.dispose();
+            throw error;
+        }
     }
 
     // One build at a time, plus the latest edit queued behind it: a slider
@@ -113,10 +118,11 @@ export class PersonPreview {
     dispose(): void {
         if (this.disposed) return;
         this.disposed = true;
-        this.stopPixelRatio();
+        // These three are unset when the constructor threw before reaching them.
+        this.stopPixelRatio?.();
         this.pending = null;
-        this.observer.disconnect();
-        this.controls.dispose();
+        this.observer?.disconnect();
+        this.controls?.dispose();
         this.renderer.domElement.removeEventListener('wheel', this.onWheel, { capture: true });
         disposeObject(this.scene);
         this.person = null;

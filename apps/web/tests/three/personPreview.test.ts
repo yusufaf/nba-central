@@ -65,6 +65,7 @@ type CameraLike = { position: { x: number; y: number; z: number; set: (x: number
 const cameraOf = (preview: PersonPreview) => (preview as unknown as { camera: CameraLike }).camera;
 
 let container: HTMLDivElement;
+let disconnects = 0;
 
 beforeEach(() => {
     builds.calls.length = 0;
@@ -74,7 +75,9 @@ beforeEach(() => {
         'ResizeObserver',
         class {
             observe() {}
-            disconnect() {}
+            disconnect() {
+                disconnects += 1;
+            }
         },
     );
     vi.stubGlobal('requestAnimationFrame', (callback: FrameRequestCallback) => {
@@ -101,17 +104,20 @@ describe('PersonPreview', () => {
         preview.dispose();
     });
 
-    it('a scene that fails to start holds no renderer it would never release (#300)', () => {
+    it('a scene that fails partway through starting undoes everything it set up (#300)', () => {
         shared.acquireRenderer.mockClear();
-        const broken = document.createElement('div');
-        broken.appendChild = () => {
-            throw new Error('no room');
-        };
-        expect(() => new PersonPreview(broken)).toThrow('no room');
-        expect(shared.acquireRenderer).not.toHaveBeenCalled();
-        const preview = new PersonPreview(container);
+        shared.releaseRenderer.mockClear();
+        shared.stopPixelRatio.mockClear();
+        disconnects = 0;
+        shared.fitRenderer.mockImplementationOnce(() => {
+            throw new Error('lost GPU');
+        });
+        expect(() => new PersonPreview(container)).toThrow('lost GPU');
         expect(shared.acquireRenderer).toHaveBeenCalledTimes(1);
-        preview.dispose();
+        expect(shared.releaseRenderer).toHaveBeenCalledTimes(1);
+        expect(shared.stopPixelRatio).toHaveBeenCalledTimes(1);
+        expect(disconnects).toBe(1);
+        expect(fakeRenderer.domElement.parentElement).toBeNull();
     });
 
     it('dispose releases the renderer and the pixel-ratio watch once, even if called twice (#300)', () => {
