@@ -8,9 +8,24 @@ const fakeRenderer = vi.hoisted(() => ({
     capabilities: { getMaxAnisotropy: () => 1 },
     info: { memory: { geometries: 0, textures: 0 } },
 }));
-const shared = vi.hoisted(() => ({ disposeObject: vi.fn() }));
+const shared = vi.hoisted(() => ({
+    disposeObject: vi.fn(),
+    releaseRenderer: vi.fn(),
+    fitRenderer: vi.fn((renderer: { setSize: (w: number, h: number, s: boolean) => void }, w: number, h: number) =>
+        renderer.setSize(w, h, false),
+    ),
+    stopPixelRatio: vi.fn(),
+    pixelRatioListener: null as (() => void) | null,
+}));
 vi.mock('@/three/renderer/shared', () => ({
     getSharedRenderer: () => fakeRenderer,
+    acquireRenderer: () => fakeRenderer,
+    releaseRenderer: shared.releaseRenderer,
+    fitRenderer: shared.fitRenderer,
+    onPixelRatioChange: (listener: () => void) => {
+        shared.pixelRatioListener = listener;
+        return shared.stopPixelRatio;
+    },
     disposeObject: shared.disposeObject,
 }));
 
@@ -78,6 +93,24 @@ afterEach(() => {
 });
 
 describe('TeamScene', () => {
+    it('a pixel ratio change re-fits the renderer (#300)', () => {
+        const scene = new TeamScene(container);
+        shared.fitRenderer.mockClear();
+        shared.pixelRatioListener?.();
+        expect(shared.fitRenderer).toHaveBeenCalledWith(fakeRenderer, width, height);
+        scene.dispose();
+    });
+
+    it('dispose releases the renderer and the pixel-ratio watch once, even if called twice (#300)', () => {
+        shared.releaseRenderer.mockClear();
+        shared.stopPixelRatio.mockClear();
+        const scene = new TeamScene(container);
+        scene.dispose();
+        scene.dispose();
+        expect(shared.releaseRenderer).toHaveBeenCalledTimes(1);
+        expect(shared.stopPixelRatio).toHaveBeenCalledTimes(1);
+    });
+
     it("a resize keeps the user's orbit and only updates the aspect", () => {
         const scene = new TeamScene(container);
         const camera = cameraOf(scene);

@@ -4,7 +4,7 @@ import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { ribbonTextureIn, scrollRibbon } from '@/three/arena/ribbon';
 import { buildPerson, type PersonInput } from '@/three/character/person';
 import type { KitColours } from '@/utils/jerseyColours';
-import { disposeObject, getSharedRenderer } from '@/three/renderer/shared';
+import { acquireRenderer, disposeObject, fitRenderer, onPixelRatioChange, releaseRenderer } from '@/three/renderer/shared';
 import { buildCourtFloor, buildSeating, createStage, placeInRows, setStageLighting } from './stage';
 import { lightingDesign } from '@/utils/venue';
 import { ORBIT_LIMITS, TWO_ROWS_BELOW_ASPECT, framePreset, type CameraPreset } from './cameraPresets';
@@ -32,11 +32,12 @@ export class TeamScene {
     renderCount = 0;
     onRender: (() => void) | null = null;
 
-    private readonly renderer = getSharedRenderer();
+    private readonly renderer = acquireRenderer();
     private readonly scene = createStage();
     private readonly camera = new PerspectiveCamera(40, 1, 0.1, 200);
     private readonly controls: OrbitControls;
     private readonly observer: ResizeObserver;
+    private readonly stopPixelRatio: () => void;
     private court: Object3D | null = null;
     private bowl: Object3D | null = null;
     private preset: CameraPreset = 'team';
@@ -82,6 +83,8 @@ export class TeamScene {
 
         this.observer = new ResizeObserver(() => this.resize());
         this.observer.observe(container);
+        // Browser zoom and a move to another monitor change the ratio without a resize.
+        this.stopPixelRatio = onPixelRatioChange(() => this.resize());
         this.resize();
         this.frame();
     }
@@ -208,7 +211,9 @@ export class TeamScene {
     }
 
     dispose(): void {
+        if (this.disposed) return;
         this.disposed = true;
+        this.stopPixelRatio();
         if (this.loop !== 0) cancelAnimationFrame(this.loop);
         this.loop = 0;
         this.observer.disconnect();
@@ -220,6 +225,7 @@ export class TeamScene {
         // The canvas is shared: if another scene has already taken it, leave it.
         const canvas = this.renderer.domElement;
         if (canvas.parentElement === this.container) canvas.remove();
+        releaseRenderer();
     }
 
     private readonly onWheel = (event: WheelEvent) => {
@@ -229,7 +235,7 @@ export class TeamScene {
     private resize(): void {
         const { clientWidth: width, clientHeight: height } = this.container;
         if (!width || !height) return;
-        this.renderer.setSize(width, height, false);
+        fitRenderer(this.renderer, width, height);
         this.camera.aspect = width / height;
         // A change of rows moves everyone, so the shot is framed afresh.
         if (this.camera.aspect < TWO_ROWS_BELOW_ASPECT !== this.twoRows) {
