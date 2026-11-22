@@ -8,8 +8,8 @@ vi.mock('@/lib/analytics', () => ({ track: mocks.track }));
 import { LOAD_TIMEOUT_MS, lazyScene } from '@/components/scene3d/lazyScene';
 import Scene3DUnavailable from '@/components/scene3d/Scene3DUnavailable.vue';
 
-const Loaded = defineComponent({ name: 'Loaded', setup: () => () => h('p', { 'data-testid': 'loaded' }, 'loaded') });
-const Loading = defineComponent({ name: 'Loading', setup: () => () => h('p', { 'data-testid': 'loading' }, 'loading') });
+const Loaded = defineComponent({ name: 'LoadedScene', setup: () => () => h('p', { 'data-testid': 'loaded' }, 'loaded') });
+const Loading = defineComponent({ name: 'LoadingScene', setup: () => () => h('p', { 'data-testid': 'loading' }, 'loading') });
 
 const deferred = () => {
     let resolve!: (value: Component) => void;
