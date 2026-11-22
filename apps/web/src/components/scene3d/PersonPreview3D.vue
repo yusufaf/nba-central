@@ -97,12 +97,14 @@ onBeforeUnmount(() => {
         >
             The preview couldn't show this look. Your changes still save.
         </p>
+        <!-- Always rendered, so screen readers announce the text when it changes. -->
         <p
-            v-if="paused"
-            class="absolute inset-x-0 top-1/2 mx-auto w-fit -translate-y-1/2 rounded-md bg-background/90 px-3 py-2 text-sm"
+            class="absolute inset-x-0 top-1/2 mx-auto w-fit -translate-y-1/2 text-sm"
+            :class="paused && 'rounded-md bg-background/90 px-3 py-2'"
             role="status"
+            data-testid="paused-status"
         >
-            3D view paused
+            {{ paused ? '3D view paused' : '' }}
         </p>
     </div>
 </template>

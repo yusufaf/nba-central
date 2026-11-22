@@ -109,6 +109,15 @@ describe('PublicTeam ?view=3d', () => {
         expect(button(wrapper, 'View in 3D')).toBeTruthy();
     });
 
+    it('the 3D toggle carries its state in its label only (#300)', async () => {
+        const wrapper = mountView();
+        await flushPromises();
+        expect(button(wrapper, 'View in 3D')!.attributes('aria-pressed')).toBeUndefined();
+        mocks.route.query = { view: '3d' };
+        await flushPromises();
+        expect(button(wrapper, 'Hide 3D')!.attributes('aria-pressed')).toBeUndefined();
+    });
+
     it("mounts the scene with the arena's court, capacity and venue", async () => {
         mocks.route.query = { view: '3d' };
         const wrapper = mountView();

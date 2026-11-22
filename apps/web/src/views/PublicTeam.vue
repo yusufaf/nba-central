@@ -202,7 +202,7 @@ const remix = () => {
                     <Button v-if="canShareNatively" variant="outline" size="sm" @click="share('native')"><Share2 class="mr-2 h-4 w-4" />Share…</Button>
                     <Button data-testid="download-card-button" variant="outline" size="sm" :disabled="!team.cardUrl" @click="downloadCard"><Download class="mr-2 h-4 w-4" />Download card</Button>
                     <Button data-testid="remix-button" size="sm" @click="remix"><Sparkles class="mr-2 h-4 w-4" />Remix this team</Button>
-                    <Button data-testid="view-3d-button" variant="outline" size="sm" :aria-pressed="show3d ? 'true' : 'false'" @click="toggle3d"><Box class="mr-2 h-4 w-4" />{{ show3d ? 'Hide 3D' : 'View in 3D' }}</Button>
+                    <Button data-testid="view-3d-button" variant="outline" size="sm" @click="toggle3d"><Box class="mr-2 h-4 w-4" />{{ show3d ? 'Hide 3D' : 'View in 3D' }}</Button>
                 </div>
 
                 <section v-if="show3d" aria-label="3D view" data-testid="scene3d-section">
