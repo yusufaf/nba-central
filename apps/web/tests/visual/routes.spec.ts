@@ -1037,12 +1037,12 @@ test.describe('3D team scene', () => {
         test.describe.configure({ timeout: 120000 });
         test.skip(({ isMobile }) => isMobile, 'Reviewed on the desktop canvas the legibility bar is set at');
 
-        test('eight banners from broadcast and rafters', async ({ page }, testInfo) => {
-            await shoot(page, 8, ['Broadcast', 'Rafters'], testInfo);
+        test('eight banners from broadcast, rafters and banners', async ({ page }, testInfo) => {
+            await shoot(page, 8, ['Broadcast', 'Rafters', 'Banners'], testInfo);
         });
 
-        test('five banners from broadcast', async ({ page }, testInfo) => {
-            await shoot(page, 5, ['Broadcast'], testInfo);
+        test('five banners from broadcast and banners', async ({ page }, testInfo) => {
+            await shoot(page, 5, ['Broadcast', 'Banners'], testInfo);
         });
     });
 

@@ -158,7 +158,7 @@ describe('the Seats tab', () => {
         await openTab('Seats');
         expect(lastScene()).toMatchObject({
             initialPreset: 'broadcast',
-            presets: ['broadcast', 'courtside', 'rafters'],
+            presets: ['broadcast', 'courtside', 'rafters', 'banners'],
             page: 'arena-editor',
             capacity: 18600,
             venue: VENUE,

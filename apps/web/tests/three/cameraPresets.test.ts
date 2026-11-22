@@ -9,6 +9,8 @@ import {
     framePerson,
     framePreset,
 } from '@/three/scene/cameraPresets';
+import { BANNER_ROW } from '@/three/arena/banners';
+import { SCOREBOARD_SIZE } from '@/three/arena/scoreboard';
 
 const deg = (d: number) => (d * Math.PI) / 180;
 const distance = (frame: { position: number[]; target: number[] }) =>
@@ -60,7 +62,40 @@ describe('framePreset', () => {
     });
 
     it('every preset has a label', () => {
+        expect(CAMERA_PRESETS).toEqual(['team', 'courtside', 'broadcast', 'rafters', 'banners']);
         expect(CAMERA_PRESETS.every((preset) => PRESET_LABELS[preset])).toBe(true);
+    });
+
+    // The editor's wide previews, desktop windows and phones.
+    const BANNER_ASPECTS = [848 / 160, 848 / 192, 848 / 240, 2.5, 2, 16 / 9, 1200 / 630, 1.43, 1, 0.625, 0.586];
+    const BANNER_HALF_HEIGHT = (BANNER_ROW.maxWidth * BANNER_ROW.heightPerWidth) / 2;
+
+    it('the banners shot aims at the middle of the tallest banner row (#322)', () => {
+        for (const aspect of BANNER_ASPECTS) {
+            const frame = framePreset('banners', aspect);
+            expect(frame.target).toEqual([0, BANNER_ROW.top - BANNER_HALF_HEIGHT, BANNER_ROW.z]);
+            expect(frame.fov).toBe(aspect < 1 ? 50 : 40);
+        }
+    });
+
+    it('keeps the banners shot inside the orbit limits and above the scoreboard', () => {
+        for (const aspect of BANNER_ASPECTS) {
+            const frame = framePreset('banners', aspect);
+            const offset = frame.position.map((p, i) => p - frame.target[i]);
+            const polar = Math.acos(offset[1] / Math.hypot(...offset));
+            expect(distance(frame), `aspect ${aspect}`).toBeLessThanOrEqual(ORBIT_LIMITS.maxDistance);
+            expect(polar, `aspect ${aspect}`).toBeLessThan(ORBIT_LIMITS.maxPolarAngle);
+            expect(frame.position[1]).toBeGreaterThan(SCOREBOARD_SIZE.bottom + SCOREBOARD_SIZE.height);
+            expect(frame.position[1]).toBeGreaterThanOrEqual(BANNER_ROW.top - 2 * BANNER_HALF_HEIGHT);
+            expect(frame.position[0]).toBe(0);
+            expect(frame.position[2]).toBeGreaterThan(BANNER_ROW.z);
+        }
+    });
+
+    it('backs the banners shot off as the view narrows', () => {
+        const at = (aspect: number) => distance(framePreset('banners', aspect));
+        expect(at(0.586)).toBeGreaterThan(at(1));
+        expect(at(1)).toBeGreaterThan(at(16 / 9));
     });
 
     it('a near-square view frames the two-row team in full', () => {

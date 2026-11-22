@@ -10,6 +10,7 @@ import { useSceneMotion } from './sceneMotion';
 import { DEFAULT_COURT, courtAttempts } from './courtRaster';
 import { track } from '@/lib/analytics';
 import type { CourtDesign, TeamUniform, VenueDesign } from '@/models/api';
+import { bannersDesign } from '@/three/arena/banners';
 import { rasteriseCourt } from '@/three/arena/rasteriseCourt';
 import { loadJerseyColours, type KitColours } from '@/utils/jerseyColours';
 import type { PersonInput } from '@/three/character/person';
@@ -137,6 +138,25 @@ const choose = (next: CameraPreset) => {
     track('scene3d_preset', tagged({ preset: next }));
 };
 
+// The Banners shot (#322) only where there are banners to frame.
+const offered = computed(() => {
+    const banners = bannersDesign(props.venue).length > 0;
+    return props.presets.filter((option) => option !== 'banners' || banners);
+});
+// Removing the last banner leaves nothing to frame: back to the starting shot,
+// untracked. Immediate, so a scene never starts on a shot it doesn't offer.
+watch(
+    offered,
+    (options) => {
+        if (options.includes(preset.value)) return;
+        const next = options.includes(props.initialPreset) ? props.initialPreset : options[0];
+        if (!next) return;
+        preset.value = next;
+        scene.value?.setPreset(next);
+    },
+    { immediate: true },
+);
+
 let stopContext: (() => void) | null = null;
 
 // The ribbon scrolls unless reduced motion is on or the screen is a touch screen.
@@ -158,7 +178,7 @@ onMounted(() => {
         anchors.value = created.labelAnchors();
     };
     scene.value = created;
-    if (props.initialPreset !== 'team') created.setPreset(props.initialPreset);
+    if (preset.value !== 'team') created.setPreset(preset.value);
     created.setMotion(motion.value);
     created.setBowl(props.capacity, props.venue);
     stopContext = onContextChange((lost) => {
@@ -221,7 +241,7 @@ onBeforeUnmount(() => {
         </div>
         <div class="flex flex-wrap gap-2" aria-label="Camera">
             <Button
-                v-for="option in presets"
+                v-for="option in offered"
                 :key="option"
                 type="button"
                 size="sm"

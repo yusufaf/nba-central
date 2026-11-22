@@ -67,7 +67,7 @@ const court = ref<CourtDesign | null>(null);
 const venue = ref<VenueDesign | null>(null);
 // Probed the first time a 3D tab opens: the probe costs a GPU context.
 const webgl = ref<boolean | null>(null);
-const SEAT_PRESETS = ['broadcast', 'courtside', 'rafters'] as const;
+const SEAT_PRESETS = ['broadcast', 'courtside', 'rafters', 'banners'] as const;
 // One preview spans these tabs, so switching between them keeps the scene.
 const SCENE_TABS: readonly string[] = ['seats', 'scoreboard', 'banners', 'lighting'];
 const onSceneTab = computed(() => SCENE_TABS.includes(tab.value));
