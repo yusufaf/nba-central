@@ -4,7 +4,14 @@ import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { ribbonTextureIn, scrollRibbon } from '@/three/arena/ribbon';
 import { buildPerson, type PersonInput } from '@/three/character/person';
 import type { KitColours } from '@/utils/jerseyColours';
-import { acquireRenderer, disposeObject, fitRenderer, onPixelRatioChange, releaseRenderer } from '@/three/renderer/shared';
+import {
+    acquireRenderer,
+    disposeObject,
+    fitRenderer,
+    getSharedRenderer,
+    onPixelRatioChange,
+    releaseRenderer,
+} from '@/three/renderer/shared';
 import { buildCourtFloor, buildSeating, createStage, placeInRows, setStageLighting } from './stage';
 import { lightingDesign } from '@/utils/venue';
 import { ORBIT_LIMITS, TWO_ROWS_BELOW_ASPECT, framePreset, type CameraPreset } from './cameraPresets';
@@ -32,7 +39,7 @@ export class TeamScene {
     renderCount = 0;
     onRender: (() => void) | null = null;
 
-    private readonly renderer = acquireRenderer();
+    private readonly renderer = getSharedRenderer();
     private readonly scene = createStage();
     private readonly camera = new PerspectiveCamera(40, 1, 0.1, 200);
     private readonly controls: OrbitControls;
@@ -87,6 +94,8 @@ export class TeamScene {
         this.stopPixelRatio = onPixelRatioChange(() => this.resize());
         this.resize();
         this.frame();
+        // Counted last: a constructor that throws earlier is never disposed, so it must hold nothing.
+        acquireRenderer();
     }
 
     // The court and the bowl are swapped separately: a seat colour edit

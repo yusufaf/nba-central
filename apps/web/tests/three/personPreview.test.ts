@@ -11,6 +11,7 @@ const fakeRenderer = vi.hoisted(() => ({
 const shared = vi.hoisted(() => ({
     disposeObject: vi.fn(),
     releaseRenderer: vi.fn(),
+    acquireRenderer: vi.fn(),
     fitRenderer: vi.fn((renderer: { setSize: (w: number, h: number, s: boolean) => void }, w: number, h: number) =>
         renderer.setSize(w, h, false),
     ),
@@ -19,7 +20,10 @@ const shared = vi.hoisted(() => ({
 }));
 vi.mock('@/three/renderer/shared', () => ({
     getSharedRenderer: () => fakeRenderer,
-    acquireRenderer: () => fakeRenderer,
+    acquireRenderer: () => {
+        shared.acquireRenderer();
+        return fakeRenderer;
+    },
     releaseRenderer: shared.releaseRenderer,
     fitRenderer: shared.fitRenderer,
     onPixelRatioChange: (listener: () => void) => {
@@ -94,6 +98,19 @@ describe('PersonPreview', () => {
         shared.fitRenderer.mockClear();
         shared.pixelRatioListener?.();
         expect(shared.fitRenderer).toHaveBeenCalledWith(fakeRenderer, 400, 400);
+        preview.dispose();
+    });
+
+    it('a scene that fails to start holds no renderer it would never release (#300)', () => {
+        shared.acquireRenderer.mockClear();
+        const broken = document.createElement('div');
+        broken.appendChild = () => {
+            throw new Error('no room');
+        };
+        expect(() => new PersonPreview(broken)).toThrow('no room');
+        expect(shared.acquireRenderer).not.toHaveBeenCalled();
+        const preview = new PersonPreview(container);
+        expect(shared.acquireRenderer).toHaveBeenCalledTimes(1);
         preview.dispose();
     });
 

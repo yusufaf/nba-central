@@ -3,7 +3,14 @@ import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { buildCourt } from '@/three/arena/court';
 import { blobShadow } from '@/three/arena/shadow';
 import { buildPerson, type PersonInput } from '@/three/character/person';
-import { acquireRenderer, disposeObject, fitRenderer, onPixelRatioChange, releaseRenderer } from '@/three/renderer/shared';
+import {
+    acquireRenderer,
+    disposeObject,
+    fitRenderer,
+    getSharedRenderer,
+    onPixelRatioChange,
+    releaseRenderer,
+} from '@/three/renderer/shared';
 import type { KitColours } from '@/utils/jerseyColours';
 import { PREVIEW_ORBIT, framePerson } from './cameraPresets';
 import { createStage } from './stage';
@@ -19,7 +26,7 @@ export class PersonPreview {
     /** A build landed: the preview matches the latest edit it has shown. */
     onShown: (() => void) | null = null;
 
-    private readonly renderer = acquireRenderer();
+    private readonly renderer = getSharedRenderer();
     // The arena's standard lighting (#298): a player belongs to many teams, so
     // there is no one arena to follow.
     private readonly scene = createStage();
@@ -65,6 +72,8 @@ export class PersonPreview {
         // Browser zoom and a move to another monitor change the ratio without a resize.
         this.stopPixelRatio = onPixelRatioChange(() => this.resize());
         this.resize();
+        // Counted last: a constructor that throws earlier is never disposed, so it must hold nothing.
+        acquireRenderer();
     }
 
     // One build at a time, plus the latest edit queued behind it: a slider
