@@ -23,6 +23,7 @@ const mocks = vi.hoisted(() => ({
     unsubscribe: vi.fn(),
     failToStart: false,
     failPeople: false,
+    lostAtStart: false,
 }));
 
 vi.mock('@/three/scene/teamScene', () => ({
@@ -53,6 +54,7 @@ const motionMock = await vi.hoisted(async () => {
 vi.mock('@/components/scene3d/sceneMotion', () => ({ useSceneMotion: () => motionMock.motion }));
 vi.mock('@/three/arena/rasteriseCourt', () => ({ rasteriseCourt: mocks.rasterise }));
 vi.mock('@/three/renderer/shared', () => ({
+    isContextLost: () => mocks.lostAtStart,
     onContextChange: (listener: (lost: boolean) => void) => {
         mocks.contextListener = listener;
         return mocks.unsubscribe;
@@ -62,6 +64,8 @@ vi.mock('@/lib/analytics', () => ({ track: mocks.track }));
 vi.mock('@/utils/jerseyColours', () => ({ loadJerseyColours: async () => mocks.kit }));
 
 import TeamScene3D from '@/components/scene3d/TeamScene3D.vue';
+import Scene3DUnavailable from '@/components/scene3d/Scene3DUnavailable.vue';
+import { RESTORE_TIMEOUT_MS } from '@/components/scene3d/contextWatch';
 import CourtFloor from '@/components/court/CourtFloor.vue';
 
 const COURT: CourtDesign = {
@@ -102,6 +106,7 @@ describe('TeamScene3D', () => {
         mocks.contextListener = null;
         mocks.failToStart = false;
         mocks.failPeople = false;
+        mocks.lostAtStart = false;
         motionMock.motion.value = true;
     });
     afterEach(() => {
@@ -221,19 +226,48 @@ describe('TeamScene3D', () => {
         expect(w.findComponent(CourtFloor).props('court').centerLogo).toBe('none');
     });
 
-    it('a context loss shows the paused message and emits failed', async () => {
+    it('a context loss pauses and tracks scene3d_context_lost, not a failure (#300)', async () => {
         mocks.rasterise.mockResolvedValue(canvas('a'));
         const w = mountScene();
         await flushPromises();
         mocks.contextListener?.(true);
         await flushPromises();
         expect(w.text()).toContain('3D view paused');
-        expect(w.emitted('failed')).toEqual([['context-lost']]);
-        expect(mocks.track).toHaveBeenCalledWith('scene3d_failed', { reason: 'context-lost' });
+        expect(w.emitted('failed')).toBeUndefined();
+        expect(mocks.track).toHaveBeenCalledWith('scene3d_context_lost', {});
+        expect(mocks.track).not.toHaveBeenCalledWith('scene3d_failed', expect.anything());
         mocks.contextListener?.(false);
         await flushPromises();
         expect(w.text()).not.toContain('3D view paused');
         expect(scene().requestRender).toHaveBeenCalled();
+    });
+
+    it('opens paused when the context is already lost (#300)', async () => {
+        mocks.lostAtStart = true;
+        mocks.rasterise.mockResolvedValue(canvas('a'));
+        const w = mountScene();
+        await flushPromises();
+        expect(w.text()).toContain('3D view paused');
+        expect(mocks.track).toHaveBeenCalledWith('scene3d_context_lost', {});
+    });
+
+    it('falls back to the context-lost note after the timeout (#300)', async () => {
+        vi.useFakeTimers();
+        try {
+            mocks.rasterise.mockResolvedValue(canvas('a'));
+            const w = mountScene();
+            await flushPromises();
+            mocks.contextListener?.(true);
+            await flushPromises();
+            vi.advanceTimersByTime(RESTORE_TIMEOUT_MS);
+            await flushPromises();
+            expect(w.findComponent(Scene3DUnavailable).props('reason')).toBe('context-lost');
+            expect(scene().dispose).toHaveBeenCalled();
+            expect(w.emitted('failed')).toEqual([['context-lost']]);
+            expect(mocks.track).toHaveBeenCalledWith('scene3d_failed', { reason: 'context-lost' });
+        } finally {
+            vi.useRealTimers();
+        }
     });
 
     it('a renderer that cannot start shows the unavailable card and tracks no-webgl', async () => {

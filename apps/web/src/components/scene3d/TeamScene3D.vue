@@ -7,6 +7,7 @@ import CourtFloor from '@/components/court/CourtFloor.vue';
 import { Button } from '@/components/ui/button';
 import Scene3DUnavailable from './Scene3DUnavailable.vue';
 import { useSceneMotion } from './sceneMotion';
+import { useContextWatch } from './contextWatch';
 import { DEFAULT_COURT, courtAttempts } from './courtRaster';
 import { track } from '@/lib/analytics';
 import type { CourtDesign, TeamUniform, VenueDesign } from '@/models/api';
@@ -14,7 +15,6 @@ import { bannersDesign } from '@/three/arena/banners';
 import { rasteriseCourt } from '@/three/arena/rasteriseCourt';
 import { loadJerseyColours, type KitColours } from '@/utils/jerseyColours';
 import type { PersonInput } from '@/three/character/person';
-import { onContextChange } from '@/three/renderer/shared';
 import { CAMERA_PRESETS, PRESET_LABELS, type CameraPreset } from '@/three/scene/cameraPresets';
 import { TeamScene, type LabelAnchor } from '@/three/scene/teamScene';
 
@@ -58,7 +58,6 @@ const courtHost = ref<HTMLElement | null>(null);
 const scene = shallowRef<TeamScene | null>(null);
 const preset = ref<CameraPreset>(props.initialPreset);
 const renderCount = ref(0);
-const paused = ref(false);
 // The page's probe can pass and context creation still fail (a blocklisted
 // driver, too many live contexts).
 const unavailable = ref(false);
@@ -157,7 +156,20 @@ watch(
     { immediate: true },
 );
 
-let stopContext: (() => void) | null = null;
+// A lost context pauses the scene; one that never comes back falls back to the note.
+const {
+    paused,
+    gone,
+    start: watchContext,
+} = useContextWatch({
+    tags: () => tagged({}),
+    onRestored: () => scene.value?.requestRender(),
+    onGone: () => {
+        scene.value?.dispose();
+        scene.value = null;
+        emit('failed', 'context-lost');
+    },
+});
 
 // The ribbon scrolls unless reduced motion is on or the screen is a touch screen.
 const motion = useSceneMotion();
@@ -181,15 +193,7 @@ onMounted(() => {
     if (preset.value !== 'team') created.setPreset(preset.value);
     created.setMotion(motion.value);
     created.setBowl(props.capacity, props.venue);
-    stopContext = onContextChange((lost) => {
-        paused.value = lost;
-        if (lost) {
-            emit('failed', 'context-lost');
-            track('scene3d_failed', tagged({ reason: 'context-lost' }));
-        } else {
-            scene.value?.requestRender();
-        }
-    });
+    watchContext();
     void rasterise();
     void placePeople();
 });
@@ -209,14 +213,13 @@ watch(
 
 onBeforeUnmount(() => {
     unmounted = true;
-    stopContext?.();
     scene.value?.dispose();
     scene.value = null;
 });
 </script>
 
 <template>
-    <Scene3DUnavailable v-if="unavailable" reason="no-webgl" />
+    <Scene3DUnavailable v-if="unavailable || gone" :reason="unavailable ? 'no-webgl' : 'context-lost'" />
     <div v-else class="flex flex-col gap-3">
         <div class="relative overflow-hidden rounded-xl border border-border bg-card" :class="viewportClass">
             <div ref="viewport" class="absolute inset-0" role="img" :aria-label="label" :data-render-count="renderCount" />
