@@ -64,6 +64,7 @@ const cameraOf = (scene: TeamScene) => (scene as unknown as { camera: CameraLike
 
 let resizeCallback: (() => void) | null = null;
 let container: HTMLDivElement;
+let disconnects = 0;
 let width = 1280;
 let height = 720;
 
@@ -76,7 +77,9 @@ beforeEach(() => {
                 resizeCallback = callback;
             }
             observe() {}
-            disconnect() {}
+            disconnect() {
+                disconnects += 1;
+            }
         },
     );
     vi.stubGlobal('requestAnimationFrame', (callback: FrameRequestCallback) => {
@@ -105,17 +108,20 @@ describe('TeamScene', () => {
         scene.dispose();
     });
 
-    it('a scene that fails to start holds no renderer it would never release (#300)', () => {
+    it('a scene that fails partway through starting undoes everything it set up (#300)', () => {
         shared.acquireRenderer.mockClear();
-        const broken = document.createElement('div');
-        broken.appendChild = () => {
-            throw new Error('no room');
-        };
-        expect(() => new TeamScene(broken)).toThrow('no room');
-        expect(shared.acquireRenderer).not.toHaveBeenCalled();
-        const scene = new TeamScene(container);
+        shared.releaseRenderer.mockClear();
+        shared.stopPixelRatio.mockClear();
+        disconnects = 0;
+        shared.fitRenderer.mockImplementationOnce(() => {
+            throw new Error('lost GPU');
+        });
+        expect(() => new TeamScene(container)).toThrow('lost GPU');
         expect(shared.acquireRenderer).toHaveBeenCalledTimes(1);
-        scene.dispose();
+        expect(shared.releaseRenderer).toHaveBeenCalledTimes(1);
+        expect(shared.stopPixelRatio).toHaveBeenCalledTimes(1);
+        expect(disconnects).toBe(1);
+        expect(fakeRenderer.domElement.parentElement).toBeNull();
     });
 
     it('dispose releases the renderer and the pixel-ratio watch once, even if called twice (#300)', () => {
