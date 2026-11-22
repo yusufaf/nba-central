@@ -150,6 +150,23 @@ describe('PersonPreview3D', () => {
         expect(w.text()).not.toContain('3D view paused');
     });
 
+    it('keeps one paused status region and only changes its text (#300)', async () => {
+        const w = mountPreview();
+        await flushPromises();
+        const paused = () => w.find('[data-testid="paused-status"]');
+        const region = paused().element;
+        expect(paused().attributes('role')).toBe('status');
+        expect(paused().text()).toBe('');
+        mocks.contextListener?.(true);
+        await flushPromises();
+        expect(paused().element).toBe(region);
+        expect(paused().text()).toBe('3D view paused');
+        mocks.contextListener?.(false);
+        await flushPromises();
+        expect(paused().element).toBe(region);
+        expect(paused().text()).toBe('');
+    });
+
     it('falls back to the context-lost note after the timeout (#300)', async () => {
         vi.useFakeTimers();
         try {

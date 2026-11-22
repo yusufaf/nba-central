@@ -242,6 +242,31 @@ describe('TeamScene3D', () => {
         expect(scene().requestRender).toHaveBeenCalled();
     });
 
+    it('groups the camera buttons (#300)', async () => {
+        mocks.rasterise.mockResolvedValue(canvas('a'));
+        const w = mountScene();
+        await flushPromises();
+        const group = w.find('[role="group"][aria-label="Camera"]');
+        expect(group.findAll('button').map((b) => b.text())).toEqual(['Team photo', 'Courtside', 'Broadcast', 'Rafters']);
+    });
+
+    it('keeps one status region and only changes its text (#300)', async () => {
+        mocks.rasterise.mockResolvedValue(canvas('a'));
+        const w = mountScene();
+        await flushPromises();
+        const status = () => w.find('[role="status"]');
+        const region = status().element;
+        expect(status().text()).toBe('');
+        mocks.contextListener?.(true);
+        await flushPromises();
+        expect(status().element).toBe(region);
+        expect(status().text()).toBe('3D view paused');
+        mocks.contextListener?.(false);
+        await flushPromises();
+        expect(status().element).toBe(region);
+        expect(status().text()).toBe('');
+    });
+
     it('opens paused when the context is already lost (#300)', async () => {
         mocks.lostAtStart = true;
         mocks.rasterise.mockResolvedValue(canvas('a'));
