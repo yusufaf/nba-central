@@ -5,9 +5,9 @@ import { onBeforeUnmount, onMounted, ref, shallowRef, watch } from 'vue';
 import { Focus, RotateCcw, RotateCw } from 'lucide-vue-next';
 import { Button } from '@/components/ui/button';
 import Scene3DUnavailable from './Scene3DUnavailable.vue';
+import { useContextWatch } from './contextWatch';
 import { track } from '@/lib/analytics';
 import type { PersonInput } from '@/three/character/person';
-import { onContextChange } from '@/three/renderer/shared';
 import { PersonPreview } from '@/three/scene/personPreview';
 import { HOME_KIT } from '@/utils/jerseyColours';
 
@@ -21,11 +21,23 @@ const STEP = Math.PI / 8;
 const viewport = ref<HTMLElement | null>(null);
 const preview = shallowRef<PersonPreview | null>(null);
 const renderCount = ref(0);
-const paused = ref(false);
 const unavailable = ref(false);
 // A build failed (a file didn't load): the figure shown, if any, is out of date.
 const stale = ref(false);
-let stopContext: (() => void) | null = null;
+// A lost context pauses the preview; one that never comes back falls back to the note.
+const {
+    paused,
+    gone,
+    start: watchContext,
+} = useContextWatch({
+    tags: () => ({ page: 'creator' }),
+    onRestored: () => preview.value?.requestRender(),
+    onGone: () => {
+        preview.value?.dispose();
+        preview.value = null;
+        emit('failed', 'context-lost');
+    },
+});
 
 onMounted(() => {
     if (!viewport.value) return;
@@ -44,15 +56,7 @@ onMounted(() => {
     };
     created.onShown = () => (stale.value = false);
     preview.value = created;
-    stopContext = onContextChange((lost) => {
-        paused.value = lost;
-        if (lost) {
-            emit('failed', 'context-lost');
-            track('scene3d_failed', { reason: 'context-lost', page: 'creator' });
-        } else {
-            preview.value?.requestRender();
-        }
-    });
+    watchContext();
     created.setPerson(props.person, PREVIEW_KIT);
 });
 
@@ -63,14 +67,13 @@ watch(
 );
 
 onBeforeUnmount(() => {
-    stopContext?.();
     preview.value?.dispose();
     preview.value = null;
 });
 </script>
 
 <template>
-    <Scene3DUnavailable v-if="unavailable" reason="no-webgl" />
+    <Scene3DUnavailable v-if="unavailable || gone" :reason="unavailable ? 'no-webgl' : 'context-lost'" />
     <div v-else class="relative size-full overflow-hidden rounded-xl border border-border bg-card">
         <div ref="viewport" class="absolute inset-0" role="img" :aria-label="label" :data-render-count="renderCount" />
         <span class="pointer-events-none absolute bottom-2 left-2 rounded-full bg-background/85 px-2 py-0.5 text-xs text-foreground/80" aria-hidden="true">

@@ -2,13 +2,14 @@
 import { computed } from 'vue';
 import { Box } from 'lucide-vue-next';
 
-const props = defineProps<{ reason: 'load' | 'no-webgl' }>();
+const props = defineProps<{ reason: 'load' | 'no-webgl' | 'context-lost' }>();
 
-const message = computed(() =>
-    props.reason === 'no-webgl'
-        ? "This browser can't show the 3D view. Everything else still works."
-        : "The 3D view couldn't load. Everything else still works.",
-);
+const MESSAGES = {
+    'no-webgl': "This browser can't show the 3D view. Everything else still works.",
+    load: "The 3D view couldn't load. Everything else still works.",
+    'context-lost': 'The 3D view stopped working. Everything else still works.',
+};
+const message = computed(() => MESSAGES[props.reason]);
 </script>
 
 <template>

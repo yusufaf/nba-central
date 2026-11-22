@@ -40,6 +40,7 @@ vi.mock('@/three/scene/personPreview', () => ({
     },
 }));
 vi.mock('@/three/renderer/shared', () => ({
+    isContextLost: () => false,
     onContextChange: (listener: (lost: boolean) => void) => {
         mocks.contextListener = listener;
         return mocks.unsubscribe;
@@ -49,6 +50,7 @@ vi.mock('@/lib/analytics', () => ({ track: mocks.track }));
 
 import PersonPreview3D from '@/components/scene3d/PersonPreview3D.vue';
 import Scene3DUnavailable from '@/components/scene3d/Scene3DUnavailable.vue';
+import { RESTORE_TIMEOUT_MS } from '@/components/scene3d/contextWatch';
 
 const PERSON: PersonInput = {
     id: 'preview',
@@ -136,15 +138,33 @@ describe('PersonPreview3D', () => {
         expect(mocks.track).toHaveBeenCalledWith('scene3d_failed', { reason: 'no-webgl', page: 'creator' });
     });
 
-    it('pauses on a lost context and emits failed', async () => {
+    it('pauses on a lost context without counting a failure (#300)', async () => {
         const w = mountPreview();
         mocks.contextListener?.(true);
         await flushPromises();
         expect(w.text()).toContain('3D view paused');
-        expect(w.emitted('failed')?.[0]).toEqual(['context-lost']);
+        expect(w.emitted('failed')).toBeUndefined();
+        expect(mocks.track).toHaveBeenCalledWith('scene3d_context_lost', { page: 'creator' });
         mocks.contextListener?.(false);
         await flushPromises();
         expect(w.text()).not.toContain('3D view paused');
+    });
+
+    it('falls back to the context-lost note after the timeout (#300)', async () => {
+        vi.useFakeTimers();
+        try {
+            const w = mountPreview();
+            mocks.contextListener?.(true);
+            await flushPromises();
+            vi.advanceTimersByTime(RESTORE_TIMEOUT_MS);
+            await flushPromises();
+            expect(w.findComponent(Scene3DUnavailable).props('reason')).toBe('context-lost');
+            expect(mocks.previews[0].dispose).toHaveBeenCalled();
+            expect(w.emitted('failed')).toEqual([['context-lost']]);
+            expect(mocks.track).toHaveBeenCalledWith('scene3d_failed', { page: 'creator', reason: 'context-lost' });
+        } finally {
+            vi.useRealTimers();
+        }
     });
 
     it('says when a build fails, until one lands', async () => {
