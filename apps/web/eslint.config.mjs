@@ -89,7 +89,9 @@ export default defineConfigWithVueTs(
   // component. A later block's no-restricted-imports replaces an earlier
   // one for the same file, so these two never overlap and each lists its
   // whole set. Regexes, not globs: a gitignore-style "three/*" also matches
-  // "@/three/...". scripts/check-bundle.mjs backs this up after the build.
+  // "@/three/...". Relative paths into src/three count too, and so does a
+  // direct import of a lazy scene component, which would bundle it eagerly.
+  // scripts/check-bundle.mjs backs this up after the build.
   {
     name: "app/three-boundary",
     files: ["src/**/*.{ts,vue}"],
@@ -100,14 +102,21 @@ export default defineConfigWithVueTs(
         {
           patterns: [
             {
-              regex: "^(three|@/three)(/|$)",
+              regex: "^(three|@/three|(\\.{1,2}/)+three)(/|$)",
               message: "3D code stays behind the lazy scene3d component.",
+            },
+            {
+              regex: "(^|/)(TeamScene3D|PersonPreview3D)(\\.vue)?$",
+              message: "Use TeamScene3DAsync / PersonPreview3DAsync from @/components/scene3d.",
             },
           ],
         },
       ],
     },
   },
+  // index.ts loads the scene components with import(), which this rule never
+  // checks; it is in the page's own chunk, so a static import there is
+  // exactly the leak to catch.
   {
     name: "app/three-boundary-scene3d",
     files: ["src/components/scene3d/**"],
@@ -119,6 +128,10 @@ export default defineConfigWithVueTs(
             {
               regex: "^three(/|$)",
               message: "Go through the @/three modules.",
+            },
+            {
+              regex: "(^|/)(TeamScene3D|PersonPreview3D)(\\.vue)?$",
+              message: "Load scene components with import() in index.ts.",
             },
           ],
         },
