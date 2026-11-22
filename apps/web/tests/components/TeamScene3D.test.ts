@@ -418,6 +418,64 @@ describe('TeamScene3D', () => {
             expect(w.findAll('button').map((b) => b.text())).toEqual(['Broadcast', 'Courtside', 'Rafters']);
         });
 
+        describe('the Banners shot (#322)', () => {
+            const BANNER = { kind: 'title', title: 'CHAMPIONS', subtitle: '1998', color: '#1d2a44' } as const;
+            const texts = (w: VueWrapper) => w.findAll('button').map((b) => b.text());
+
+            it('is offered only when the venue has a banner', async () => {
+                mocks.rasterise.mockResolvedValue(canvas('a'));
+                let w = mountScene();
+                await flushPromises();
+                expect(texts(w)).toEqual(['Team photo', 'Courtside', 'Broadcast', 'Rafters']);
+                w.unmount();
+
+                w = mountScene({ venue: { version: 1, banners: [BANNER] } });
+                await flushPromises();
+                expect(texts(w)).toEqual(['Team photo', 'Courtside', 'Broadcast', 'Rafters', 'Banners']);
+                w.unmount();
+
+                w = mountScene({ venue: { version: 1, banners: [{ ...BANNER, color: 'gold' }] } });
+                await flushPromises();
+                expect(texts(w)).not.toContain('Banners');
+            });
+
+            it('appears when a banner is added', async () => {
+                mocks.rasterise.mockResolvedValue(canvas('a'));
+                const w = mountScene();
+                await flushPromises();
+                await w.setProps({ venue: { version: 1, banners: [BANNER] } });
+                expect(texts(w)).toContain('Banners');
+            });
+
+            it('never starts on it without banners', async () => {
+                mocks.rasterise.mockResolvedValue(canvas('a'));
+                const w = mountScene({ initialPreset: 'banners', presets: ['broadcast', 'rafters', 'banners'] });
+                await flushPromises();
+                expect(scene().setPreset).toHaveBeenCalledWith('broadcast');
+                expect(scene().setPreset).not.toHaveBeenCalledWith('banners');
+                const pressed = w.findAll('button').filter((b) => b.attributes('aria-pressed') === 'true');
+                expect(pressed.map((b) => b.text())).toEqual(['Broadcast']);
+            });
+
+            it('falls back to the starting shot, untracked, when the last banner goes', async () => {
+                mocks.rasterise.mockResolvedValue(canvas('a'));
+                const w = mountScene({ initialPreset: 'broadcast', venue: { version: 1, banners: [BANNER] } });
+                await flushPromises();
+                await w.findAll('button').find((b) => b.text() === 'Banners')!.trigger('click');
+                expect(scene().setPreset).toHaveBeenLastCalledWith('banners');
+                expect(mocks.track).toHaveBeenCalledTimes(1);
+                mocks.track.mockClear();
+
+                await w.setProps({ venue: { version: 1 } });
+                await flushPromises();
+                expect(scene().setPreset).toHaveBeenLastCalledWith('broadcast');
+                const pressed = w.findAll('button').filter((b) => b.attributes('aria-pressed') === 'true');
+                expect(pressed.map((b) => b.text())).toEqual(['Broadcast']);
+                expect(texts(w)).not.toContain('Banners');
+                expect(mocks.track).not.toHaveBeenCalled();
+            });
+        });
+
         it("tags its events with the page when one is given", async () => {
             mocks.rasterise.mockResolvedValue(canvas('a'));
             const w = mountScene({ page: 'arena-editor' });

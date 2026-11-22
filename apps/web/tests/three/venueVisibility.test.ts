@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { Box3, PerspectiveCamera, Ray, Vector3 } from 'three';
-import type { VenueDesign } from '@/constants/venue';
-import { BANNER_FONT, BANNER_ROW, bannerLayout } from '@/three/arena/banners';
+import { BANNER_SUBTITLE_MAX, BANNER_TITLE_MAX, type VenueDesign } from '@/constants/venue';
+import { BANNER_FONT, BANNER_ROW, bannerLayout, bannerLines, lineChars } from '@/three/arena/banners';
 import { bowlLayout, bowlRingPoint } from '@/three/arena/bowl';
 import { ribbonBand } from '@/three/arena/ribbon';
 import { framePreset, type CameraPreset } from '@/three/scene/cameraPresets';
@@ -162,6 +162,41 @@ describe('the banners from broadcast and rafters', () => {
     }
 });
 
+// The arena editor's preview: about 848 px wide and min(32dvh, 15rem) tall, on
+// a narrower sheet, then desktop, 600 px and 500 px tall windows.
+const EDITOR_ASPECTS = [2.5, 848 / 240, 848 / 192, 848 / 160];
+
+describe('the banners shot (#322)', () => {
+    for (const { capacity, upperDeck } of BOWLS) {
+        const seating = buildSeating(capacity, venueWith(upperDeck));
+        seating.updateMatrixWorld(true);
+        const board = new Box3().setFromObject(seating.getObjectByName('scoreboard')!);
+        const decks = bowlLayout(capacity, upperDeck);
+
+        for (const aspect of [...ASPECTS, ...EDITOR_ASPECTS]) {
+            it(`capacity ${capacity}, upper deck ${upperDeck}, aspect ${aspect.toFixed(3)}`, () => {
+                const camera = cameraFor('banners', aspect);
+                for (const count of BANNER_COUNTS) {
+                    for (const banner of bannerRow(count)) {
+                        for (const point of [...banner.corners, banner.centre]) {
+                            expect(inView(point, camera, 0.95), `${count} banners`).toBe(true);
+                            expect(hiddenBy(board, point, camera), `${count} banners`).toBe(false);
+                        }
+                    }
+                }
+                // Wherever the camera hangs over a deck, it is above that deck's top row.
+                for (const deck of decks) {
+                    const inner = bowlRingPoint(Math.PI / 2, deck.startOffset)[1];
+                    const outer = bowlRingPoint(Math.PI / 2, deck.startOffset + deck.rows * deck.tread)[1];
+                    if (camera.position.z >= inner && camera.position.z <= outer) {
+                        expect(camera.position.y).toBeGreaterThan(deck.startHeight + deck.rows * deck.rise);
+                    }
+                }
+            });
+        }
+    }
+});
+
 describe('the team-photo shot and the banners', () => {
     it('never shows a banner, so the share card stays as it was', () => {
         for (const aspect of [1200 / 630, 16 / 9, 0.625]) {
@@ -214,5 +249,22 @@ describe('banner legibility', () => {
             expect(linePx(narrowestBannerPx(preset, 8, 1376, 517), BANNER_FONT.title, 4), preset).toBeGreaterThanOrEqual(10);
         }
         expect(linePx(narrowestBannerPx('broadcast', 5, 1376, 517), BANNER_FONT.title, 6)).toBeGreaterThanOrEqual(10);
+    });
+
+    // An unbroken 16-character title, and subtitle lines up to 16 characters:
+    // a 24-character subtitle reads once it is split onto two lines.
+    it('from the banners shot, full titles and subtitles at eight banners (#322)', () => {
+        for (const [width, height] of [
+            [1200, 630],
+            [1376, 517],
+        ]) {
+            const px = narrowestBannerPx('banners', 8, width, height);
+            expect(linePx(px, BANNER_FONT.title, BANNER_TITLE_MAX), `${width}x${height} title`).toBeGreaterThanOrEqual(10);
+            expect(linePx(px, BANNER_FONT.subtitle, 16), `${width}x${height} subtitle line`).toBeGreaterThanOrEqual(10);
+        }
+        const subtitle = 'NBA WORLD CHAMPIONS 1998';
+        expect(subtitle).toHaveLength(BANNER_SUBTITLE_MAX);
+        const longest = Math.max(...bannerLines(subtitle, lineChars(BANNER_FONT.subtitle)).map((line) => line.length));
+        expect(linePx(narrowestBannerPx('banners', 8, 1200, 630), BANNER_FONT.subtitle, longest)).toBeGreaterThanOrEqual(10);
     });
 });

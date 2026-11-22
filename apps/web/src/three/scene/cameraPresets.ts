@@ -1,14 +1,17 @@
 // Camera shots for the team scene. Pure maths, so it is tested without WebGL.
 
-export type CameraPreset = 'team' | 'courtside' | 'broadcast' | 'rafters';
+import { BANNER_ROW } from '@/three/arena/banners';
 
-export const CAMERA_PRESETS: readonly CameraPreset[] = ['team', 'courtside', 'broadcast', 'rafters'];
+export type CameraPreset = 'team' | 'courtside' | 'broadcast' | 'rafters' | 'banners';
+
+export const CAMERA_PRESETS: readonly CameraPreset[] = ['team', 'courtside', 'broadcast', 'rafters', 'banners'];
 
 export const PRESET_LABELS: Record<CameraPreset, string> = {
     team: 'Team photo',
     courtside: 'Courtside',
     broadcast: 'Broadcast',
     rafters: 'Rafters',
+    banners: 'Banners',
 };
 
 export const ORBIT_LIMITS = { minDistance: 1.5, maxDistance: 45, maxPolarAngle: Math.PI * 0.49 };
@@ -23,6 +26,18 @@ export const TWO_ROWS_BELOW_ASPECT = 1.4;
 
 type Vec3 = [number, number, number];
 
+// The banners shot (#322) frames the biggest row any count makes (four 3.5 m
+// banners, or the full span from five up), so it ignores the count. The row's
+// bottom is above the scoreboard's top, so a camera rising from the row's
+// middle never has the board in its sightline, and it stays inside the orbit
+// controls' polar limit.
+const BANNER_HALF_HEIGHT = (BANNER_ROW.maxWidth * BANNER_ROW.heightPerWidth) / 2;
+const BANNER_CENTRE: Vec3 = [0, BANNER_ROW.top - BANNER_HALF_HEIGHT, BANNER_ROW.z];
+const BANNER_SUBJECT = { halfWidth: BANNER_ROW.span / 2, halfHeight: BANNER_HALF_HEIGHT };
+const BANNER_RISE = 0.1; // metres up per metre back
+// Looking down at the row brings its top edge nearer than the fit assumes, so back off by that much.
+const BANNER_TILT_SLACK = BANNER_HALF_HEIGHT * Math.sin(Math.atan(BANNER_RISE));
+
 const BASE: Record<CameraPreset, { position: Vec3; target: Vec3 }> = {
     team: { position: [0, 1.5, 9.5], target: [0, 1.1, 0] },
     courtside: { position: [7.5, 1.2, 6], target: [0, 1.2, 0] },
@@ -32,6 +47,10 @@ const BASE: Record<CameraPreset, { position: Vec3; target: Vec3 }> = {
     // banners (#297) clear the board's top. tests/three/venueVisibility.test.ts checks both.
     broadcast: { position: [0, 10, 24], target: [0, 6, 0] },
     rafters: { position: [0, 30, 30], target: [0, 6, -4] },
+    banners: {
+        position: [0, BANNER_CENTRE[1] + BANNER_RISE * 10, BANNER_CENTRE[2] + 10],
+        target: BANNER_CENTRE,
+    },
 };
 
 // What the team-photo shot keeps in view, in metres around its target: one
@@ -41,28 +60,37 @@ const TEAM_SUBJECT = {
     twoRows: { halfWidth: 2.7, halfHeight: 1.5 },
 };
 
+// How far back a camera has to be for the subject to fill the view, with a margin.
+const fitDistance = (subject: { halfWidth: number; halfHeight: number }, aspect: number, fov: number): number => {
+    const tanV = Math.tan((fov * Math.PI) / 360);
+    return 1.08 * Math.max(subject.halfWidth / (tanV * aspect), subject.halfHeight / tanV);
+};
+
+// The base position moved along its line to the target, to that distance.
+const alongBase = ({ position, target }: { position: Vec3; target: Vec3 }, distance: number): Vec3 => {
+    const offset = position.map((p, i) => p - target[i]);
+    const length = Math.hypot(...offset);
+    return target.map((t, i) => t + (offset[i] / length) * distance) as Vec3;
+};
+
 export const framePreset = (
     preset: CameraPreset,
     aspect: number,
 ): { position: Vec3; target: Vec3; fov: number } => {
     const portrait = aspect < 1;
     const fov = portrait ? 50 : 40;
-    const { position, target } = BASE[preset];
-    if (preset !== 'team') return { position: [...position], target: [...target], fov };
-
-    const subject = aspect < TWO_ROWS_BELOW_ASPECT ? TEAM_SUBJECT.twoRows : TEAM_SUBJECT.oneRow;
-    const tanV = Math.tan((fov * Math.PI) / 360);
-    const tanH = tanV * aspect;
-    const fit = 1.08 * Math.max(subject.halfWidth / tanH, subject.halfHeight / tanV);
-    const distance = Math.min(fit, MAX_FRAMING_DISTANCE);
-
-    const offset = position.map((p, i) => p - target[i]);
-    const length = Math.hypot(...offset);
-    return {
-        position: target.map((t, i) => t + (offset[i] / length) * distance) as Vec3,
-        target: [...target],
-        fov,
-    };
+    const base = BASE[preset];
+    const target: Vec3 = [...base.target];
+    if (preset === 'team') {
+        const subject = aspect < TWO_ROWS_BELOW_ASPECT ? TEAM_SUBJECT.twoRows : TEAM_SUBJECT.oneRow;
+        const distance = Math.min(fitDistance(subject, aspect, fov), MAX_FRAMING_DISTANCE);
+        return { position: alongBase(base, distance), target, fov };
+    }
+    if (preset === 'banners') {
+        const fit = fitDistance(BANNER_SUBJECT, aspect, fov) + BANNER_TILT_SLACK;
+        return { position: alongBase(base, Math.min(fit, ORBIT_LIMITS.maxDistance)), target, fov };
+    }
+    return { position: [...base.position], target, fov };
 };
 
 // The player creator's preview: one person, head to toe, with room above the
