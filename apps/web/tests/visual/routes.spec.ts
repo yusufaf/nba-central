@@ -1361,6 +1361,67 @@ test.describe('3D team scene', () => {
         await expect.poll(() => renders(page), { timeout: 20000 }).toBeGreaterThan(before);
     });
 
+    // #300: a context lost while 3D was closed is still noticed on the next open.
+    test('opening 3D while the context is lost shows paused', async ({ page }) => {
+        await stubNetwork(page);
+        await page.goto('/t/visual-team?view=3d');
+        await expect.poll(() => renders(page), { timeout: 15000 }).toBeGreaterThanOrEqual(1);
+        type Probe = { __loseContext?: WEBGL_lose_context | null };
+        await page.evaluate(() => {
+            const canvas = document.querySelector('[role="img"] canvas') as HTMLCanvasElement;
+            const gl = canvas.getContext('webgl2') ?? canvas.getContext('webgl');
+            (window as unknown as Probe).__loseContext = gl?.getExtension('WEBGL_lose_context');
+        });
+        await page.getByRole('button', { name: 'Hide 3D' }).click();
+        await page.evaluate(() => (window as unknown as Probe).__loseContext?.loseContext());
+        await page.getByRole('button', { name: 'View in 3D' }).click();
+        await expect(page.getByText('3D view paused')).toBeVisible();
+        const before = await renders(page);
+        await page.evaluate(() => (window as unknown as Probe).__loseContext?.restoreContext());
+        await expect(page.getByText('3D view paused')).toHaveCount(0);
+        await expect.poll(() => renders(page), { timeout: 20000 }).toBeGreaterThan(before);
+    });
+
+    // #300: the page doesn't jump when the 3D chunk lands, on desktop and on a
+    // phone (where the camera row wraps), with and without a Banners button.
+    // At 440 px four buttons fit one row and five don't, so Banners counts.
+    for (const [width, height] of [
+        [1440, 900],
+        [440, 900],
+        [390, 844],
+    ]) {
+        for (const banners of [false, true]) {
+            test(`the loading placeholder holds the scene's height at ${width} px${banners ? ', with banners' : ''}`, async ({
+                page,
+            }) => {
+                await page.setViewportSize({ width, height });
+                await stubNetwork(page);
+                if (banners) {
+                    await withCustomPlayers(page, {}, {}, {
+                        name: 'Harbor Pavilion',
+                        isCustom: true,
+                        arenaUUID: 'a1',
+                        capacity: 18000,
+                        venue: { version: 1, banners: [{ kind: 'title', title: '1998', subtitle: 'NBA CHAMPIONS', color: '#1d2a44' }] },
+                    });
+                }
+                // Hold the scene component back, so the placeholder is measured.
+                await page.route('**/src/components/scene3d/TeamScene3D.vue*', async (route) => {
+                    await new Promise((resolve) => setTimeout(resolve, 1500));
+                    await route.continue();
+                });
+                await page.goto('/t/visual-team?view=3d');
+                const section = page.getByTestId('scene3d-section');
+                await expect(page.getByTestId('scene3d-loading')).toBeVisible();
+                const loading = (await section.boundingBox())!.height;
+                await expect.poll(() => renders(page), { timeout: 20000 }).toBeGreaterThanOrEqual(1);
+                if (banners) await expect(page.getByRole('button', { name: 'Banners', exact: true })).toBeVisible();
+                const loaded = (await section.boundingBox())!.height;
+                expect(Math.abs(loaded - loading), `${loading} -> ${loaded}`).toBeLessThanOrEqual(1);
+            });
+        }
+    }
+
     // "View in 3D" from the builder (#288): a sheet over the builder, for the
     // team as it is being edited.
     const sheet = (page: Page) => page.getByRole('dialog', { name: /in 3D/ });
