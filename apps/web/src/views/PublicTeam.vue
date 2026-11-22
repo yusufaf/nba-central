@@ -116,10 +116,17 @@ const toggle3d = () => {
     router.replace({ query: on ? { ...rest, view: '3d' } : rest });
 };
 let noWebglTracked = false;
+// One per opening: changing team while ?view=3d stays on isn't another.
+let openTracked = false;
 watch(
     () => [team.value?.teamUUID, show3d.value] as const,
     ([loadedUUID, on]) => {
-        if (!loadedUUID || !on) return;
+        if (!on) {
+            openTracked = false;
+            return;
+        }
+        if (!loadedUUID || openTracked) return;
+        openTracked = true;
         if (!webglAvailable.value) {
             if (!noWebglTracked) track('scene3d_failed', { reason: 'no-webgl' });
             noWebglTracked = true;
