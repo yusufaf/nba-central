@@ -1,18 +1,9 @@
 // Camera shots for the team scene. Pure maths, so it is tested without WebGL.
 
+import type { CameraPreset } from '@/constants/cameraPresets';
 import { BANNER_ROW } from '@/three/arena/banners';
 
-export type CameraPreset = 'team' | 'courtside' | 'broadcast' | 'rafters' | 'banners';
-
-export const CAMERA_PRESETS: readonly CameraPreset[] = ['team', 'courtside', 'broadcast', 'rafters', 'banners'];
-
-export const PRESET_LABELS: Record<CameraPreset, string> = {
-    team: 'Team photo',
-    courtside: 'Courtside',
-    broadcast: 'Broadcast',
-    rafters: 'Rafters',
-    banners: 'Banners',
-};
+export { CAMERA_PRESETS, PRESET_LABELS, type CameraPreset } from '@/constants/cameraPresets';
 
 export const ORBIT_LIMITS = { minDistance: 1.5, maxDistance: 45, maxPolarAngle: Math.PI * 0.49 };
 

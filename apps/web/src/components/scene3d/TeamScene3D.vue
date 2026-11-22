@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import Scene3DUnavailable from './Scene3DUnavailable.vue';
 import { useSceneMotion } from './sceneMotion';
 import { useContextWatch } from './contextWatch';
+import { DEFAULT_VIEWPORT_CLASS } from './viewport';
 import { DEFAULT_COURT, courtAttempts } from './courtRaster';
 import { track } from '@/lib/analytics';
 import type { CourtDesign, TeamUniform, VenueDesign } from '@/models/api';
@@ -46,7 +47,7 @@ const props = withDefaults(
         venue: null,
         initialPreset: 'team',
         presets: () => CAMERA_PRESETS,
-        viewportClass: 'h-[min(70vh,40rem,160vw)]',
+        viewportClass: DEFAULT_VIEWPORT_CLASS,
         page: undefined,
     },
 );

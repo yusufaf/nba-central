@@ -1,4 +1,5 @@
 import {
+    BANNER_KINDS,
     BANNER_SUBTITLE_MAX,
     BANNER_TITLE_MAX,
     BANNERS_MAX,
@@ -145,6 +146,32 @@ export const LIGHTING_PRESET_HINTS: Record<LightingPresetId, string> = {
 };
 
 const HEX = /^#[0-9a-f]{6}$/i;
+
+export type BannerDesign = VenueBanner;
+
+/** The venue's well-formed banners, texts and count cut to their limits. */
+export const bannersDesign = (venue: VenueDesign | null | undefined): BannerDesign[] => {
+    const banners: unknown = venue?.banners;
+    if (!Array.isArray(banners)) return [];
+    return banners
+        .filter(
+            (banner): banner is VenueBanner =>
+                typeof banner === 'object' &&
+                banner !== null &&
+                (BANNER_KINDS as readonly unknown[]).includes(banner.kind) &&
+                typeof banner.title === 'string' &&
+                typeof banner.subtitle === 'string' &&
+                typeof banner.color === 'string' &&
+                HEX.test(banner.color),
+        )
+        .slice(0, BANNERS_MAX)
+        .map(({ kind, title, subtitle, color }) => ({
+            kind,
+            title: title.slice(0, BANNER_TITLE_MAX),
+            subtitle: subtitle.slice(0, BANNER_SUBTITLE_MAX),
+            color,
+        }));
+};
 
 /**
  * The venue's lighting, or the default when it has none or a malformed one.
