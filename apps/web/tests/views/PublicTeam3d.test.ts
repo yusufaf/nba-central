@@ -156,17 +156,26 @@ describe('PublicTeam ?view=3d', () => {
         expect(noWebgl).toHaveLength(1);
     });
 
-    it('tracks scene3d_opened once per team load', async () => {
+    const opens = () => mocks.track.mock.calls.filter(([event]) => event === 'scene3d_opened');
+
+    it('counts one open across team changes while 3D stays on (#300)', async () => {
         mocks.route.query = { view: '3d' };
         const wrapper = mountView('t1');
         await flushPromises();
         await wrapper.setProps({ teamUUID: 't2' });
         await flushPromises();
-        const opened = mocks.track.mock.calls.filter(([event]) => event === 'scene3d_opened');
-        expect(opened).toEqual([
-            ['scene3d_opened', { page: 'public' }],
-            ['scene3d_opened', { page: 'public' }],
-        ]);
+        expect(opens()).toEqual([['scene3d_opened', { page: 'public' }]]);
+    });
+
+    it('a new open after hiding 3D counts again (#300)', async () => {
+        mocks.route.query = { view: '3d' };
+        mountView('t1');
+        await flushPromises();
+        mocks.route.query = {};
+        await flushPromises();
+        mocks.route.query = { view: '3d' };
+        await flushPromises();
+        expect(opens()).toHaveLength(2);
     });
 
     it('builds people from starters, coach and GM in order', async () => {
