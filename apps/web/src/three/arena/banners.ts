@@ -1,13 +1,9 @@
 import { BufferAttribute, BufferGeometry, CanvasTexture, Mesh, MeshBasicMaterial, SRGBColorSpace } from 'three';
-import {
-    BANNER_KINDS,
-    BANNER_SUBTITLE_MAX,
-    BANNER_TITLE_MAX,
-    BANNERS_MAX,
-    type VenueBanner,
-    type VenueDesign,
-} from '@/constants/venue';
 import { contrastRatio } from '@/utils/court';
+import { bannersDesign, type BannerDesign } from '@/utils/venue';
+
+// Validation lives in src/utils (three-free), so the loading placeholder can use it.
+export { bannersDesign, type BannerDesign };
 
 // Rafters banners (#297): one straight row on the far side, top-aligned,
 // facing the court. Fewer banners hang bigger. Its depth and top keep every
@@ -30,34 +26,6 @@ const ATLAS = { columns: 4, rows: 2, cell: { width: 256, height: 320 } };
 // Bold upper-case Inter advances about this many ems a character.
 const CHAR_EM = 0.62;
 const LEADING = 1.15;
-const HEX = /^#[0-9a-f]{6}$/i;
-
-export type BannerDesign = VenueBanner;
-
-/** The venue's well-formed banners, texts and count cut to their limits. */
-export const bannersDesign = (venue: VenueDesign | null | undefined): BannerDesign[] => {
-    const banners: unknown = venue?.banners;
-    if (!Array.isArray(banners)) return [];
-    return banners
-        .filter(
-            (banner): banner is VenueBanner =>
-                typeof banner === 'object' &&
-                banner !== null &&
-                (BANNER_KINDS as readonly unknown[]).includes(banner.kind) &&
-                typeof banner.title === 'string' &&
-                typeof banner.subtitle === 'string' &&
-                typeof banner.color === 'string' &&
-                HEX.test(banner.color),
-        )
-        .slice(0, BANNERS_MAX)
-        .map(({ kind, title, subtitle, color }) => ({
-            kind,
-            title: title.slice(0, BANNER_TITLE_MAX),
-            subtitle: subtitle.slice(0, BANNER_SUBTITLE_MAX),
-            color,
-        }));
-};
-
 /** Each banner's centre x and size, left to right. */
 export const bannerLayout = (count: number): { x: number; width: number; height: number }[] => {
     const { span, maxWidth, gap, heightPerWidth } = BANNER_ROW;

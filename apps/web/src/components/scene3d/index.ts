@@ -1,30 +1,22 @@
-import { defineAsyncComponent, defineComponent, h } from 'vue';
-import { track } from '@/lib/analytics';
+import Scene3DLoading from './Scene3DLoading.vue';
 import Scene3DUnavailable from './Scene3DUnavailable.vue';
+import { lazyScene } from './lazyScene';
 import type { TeamPhotoInput } from './teamPhotoInput';
 
 // The only way into the 3D scene: three.js and the scene code load on first
 // use, in their own chunk. A failed load (offline, or a deploy that removed
-// the old chunk) shows a note instead of breaking the page.
-export const TeamScene3DAsync = defineAsyncComponent({
-    loader: () =>
-        import('./TeamScene3D.vue').catch((error: unknown) => {
-            track('scene3d_failed', { reason: 'load' });
-            throw error;
-        }),
-    errorComponent: defineComponent({ name: 'Scene3DLoadFailed', setup: () => () => h(Scene3DUnavailable, { reason: 'load' }) }),
-    timeout: 20000,
+// the old chunk) shows a note instead of breaking the page. A placeholder
+// holds the scene's space while it downloads.
+export const TeamScene3DAsync = lazyScene(() => import('./TeamScene3D.vue'), {
+    name: 'Scene3DLoadFailed',
+    loading: Scene3DLoading,
 });
 
-// The player creator's preview, in the same lazy chunk.
-export const PersonPreview3DAsync = defineAsyncComponent({
-    loader: () =>
-        import('./PersonPreview3D.vue').catch((error: unknown) => {
-            track('scene3d_failed', { reason: 'load', page: 'creator' });
-            throw error;
-        }),
-    errorComponent: defineComponent({ name: 'PersonPreviewLoadFailed', setup: () => () => h(Scene3DUnavailable, { reason: 'load' }) }),
-    timeout: 20000,
+// The player creator's preview, in the same lazy chunk. Its box is sized by
+// the creator, so it needs no placeholder.
+export const PersonPreview3DAsync = lazyScene(() => import('./PersonPreview3D.vue'), {
+    name: 'PersonPreviewLoadFailed',
+    tags: { page: 'creator' },
 });
 
 export { Scene3DUnavailable };
