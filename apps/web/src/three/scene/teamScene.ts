@@ -2,7 +2,8 @@ import { Group, PerspectiveCamera, Vector3, type Object3D, type Texture } from '
 import type { VenueDesign } from '@/constants/venue';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { ribbonTextureIn, scrollRibbon } from '@/three/arena/ribbon';
-import { buildPerson, type PersonInput } from '@/three/character/person';
+import { buildPeople } from '@/three/character/buildPeople';
+import type { PersonInput } from '@/three/character/person';
 import type { KitColours } from '@/utils/jerseyColours';
 import {
     acquireRenderer,
@@ -177,10 +178,17 @@ export class TeamScene {
     }
 
     // Builds everyone, then swaps them in at once. A newer call wins: an
-    // older one that finishes later is disposed, never shown.
+    // older one that finishes later is disposed, never shown, and one that
+    // fails after being replaced stays quiet.
     async setPeople(people: PersonInput[], kit: { colours: KitColours; teamName: string }): Promise<void> {
         const request = ++this.peopleRequest;
-        const built = await Promise.all(people.map((person) => buildPerson(person, kit)));
+        let built: Awaited<ReturnType<typeof buildPeople>>;
+        try {
+            built = await buildPeople(people, kit);
+        } catch (error) {
+            if (request !== this.peopleRequest || this.disposed) return;
+            throw error;
+        }
         if (request !== this.peopleRequest || this.disposed) {
             for (const { root } of built) disposeObject(root);
             return;

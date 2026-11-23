@@ -1,5 +1,6 @@
 import { Group, PerspectiveCamera } from 'three';
-import { buildPerson, type PersonInput } from '@/three/character/person';
+import { buildPeople } from '@/three/character/buildPeople';
+import type { PersonInput } from '@/three/character/person';
 import type { KitColours } from '@/utils/jerseyColours';
 import type { VenueDesign } from '@/constants/venue';
 import { renderToImageData } from '@/three/renderer/offscreen';
@@ -21,13 +22,7 @@ export const renderTeamPhotoFrame = async (input: {
     people: PersonInput[];
     kit: { colours: KitColours; teamName: string };
 }): Promise<HTMLCanvasElement> => {
-    const settled = await Promise.allSettled(input.people.map((person) => buildPerson(person, input.kit)));
-    const failed = settled.find((result): result is PromiseRejectedResult => result.status === 'rejected');
-    const roots = settled.flatMap((result) => (result.status === 'fulfilled' ? [result.value.root] : []));
-    if (failed) {
-        for (const root of roots) disposeObject(root);
-        throw failed.reason;
-    }
+    const roots = (await buildPeople(input.people, input.kit)).map(({ root }) => root);
 
     const { width, height } = CARD_SIZE;
     const aspect = width / height;
