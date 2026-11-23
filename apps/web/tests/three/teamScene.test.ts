@@ -34,14 +34,21 @@ vi.mock('@/three/renderer/shared', () => ({
 }));
 
 // People are a box each: the scene's placing, not the body, is under test.
-const people = vi.hoisted(() => ({ pending: [] as Array<() => void>, hold: false }));
+const people = vi.hoisted(() => ({
+    pending: [] as Array<() => void>,
+    hold: false,
+    failId: null as string | null,
+    built: [] as import('three').Group[],
+}));
 vi.mock('@/three/character/person', async () => {
     const { Group, Mesh, BoxGeometry, MeshBasicMaterial } = await import('three');
     return {
-        buildPerson: async () => {
+        buildPerson: async (input: { id: string }) => {
             if (people.hold) await new Promise<void>((resolve) => people.pending.push(resolve));
+            if (input.id === people.failId) throw new Error('bad body');
             const root = new Group();
             root.add(new Mesh(new BoxGeometry(0.5, 1.9, 0.3), new MeshBasicMaterial()));
+            people.built.push(root);
             return { root, headHeight: 1.9 };
         },
     };
@@ -189,6 +196,42 @@ describe('TeamScene', () => {
         expect(peopleIn(scene)).toBe(4);
         expect(shared.disposeObject).toHaveBeenCalled();
         scene.dispose();
+    });
+
+    it('a failed build disposes the people that did build, and keeps the old ones (#304)', async () => {
+        const scene = new TeamScene(container);
+        await scene.setPeople([person('a')], KIT);
+        people.failId = 'broken';
+        people.built.length = 0;
+        shared.disposeObject.mockClear();
+        try {
+            await expect(scene.setPeople([person('b'), person('broken'), person('c')], KIT)).rejects.toThrow('bad body');
+            expect(people.built).toHaveLength(2);
+            for (const root of people.built) expect(shared.disposeObject).toHaveBeenCalledWith(root);
+            expect(peopleIn(scene)).toBe(2);
+        } finally {
+            people.failId = null;
+            scene.dispose();
+        }
+    });
+
+    it('a stale build that fails resolves quietly (#304)', async () => {
+        const scene = new TeamScene(container);
+        people.failId = 'broken';
+        people.hold = true;
+        try {
+            const older = scene.setPeople([person('broken')], KIT);
+            const newer = scene.setPeople([person('new1'), person('new2')], KIT);
+            people.hold = false;
+            people.pending.splice(0).forEach((resolve) => resolve());
+            await expect(older).resolves.toBeUndefined();
+            await newer;
+            expect(peopleIn(scene)).toBe(4);
+        } finally {
+            people.failId = null;
+            people.hold = false;
+            scene.dispose();
+        }
     });
 
     it('labelAnchors projects heads into the container', async () => {
