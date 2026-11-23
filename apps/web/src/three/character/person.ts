@@ -3,7 +3,7 @@
 // from their height and weight, arms relaxed, facing the camera. A custom
 // person's gear is fitted to the reshaped body and rides its bone; a custom
 // coach's or GM's age look greys their hair and adds a little girth.
-import { Group, Vector3, type MeshStandardMaterial, type Object3D, type SkinnedMesh } from 'three';
+import { Box3, Group, Vector3, type MeshStandardMaterial, type Object3D, type SkinnedMesh } from 'three';
 import type { PersonAppearance, StaffAppearance } from '@/constants/appearance';
 import { DEFAULT_OUTFIT } from '@/utils/appearance';
 import { agedBuild, agedColour, facialHairFits, fits, isStaffLook } from '@/utils/appearanceOptions';
@@ -126,6 +126,9 @@ export const buildPerson = async (
     const box = body.geometry.boundingBox!;
     const heightMetres = size.heightInches * INCH;
     root.scale.setScalar(heightMetres / (box.max.y - box.min.y));
+    // The asset's posed soles sit a little below its origin.
+    root.updateMatrixWorld(true);
+    character.position.y -= new Box3().setFromObject(body, true).min.y / root.scale.y;
     root.name = input.id;
     return { root, headHeight: heightMetres };
 };
