@@ -39,7 +39,7 @@
     "tailwindcss": "^4.3.3",
     "three": "0.187.0",
     "v-calendar": "^3.1.2",
-    "vue": "3.5.45",
+    "vue": "3.5.46",
     "vue-router": "^5.3.1",
     "vue-sonner": "^2.0.9",
     "vuedraggable": "^4.1.0"
