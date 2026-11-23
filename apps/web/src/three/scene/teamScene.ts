@@ -21,8 +21,22 @@ export interface LabelAnchor {
     id: string;
     x: number; // container pixels
     y: number;
+    depth: number; // normalised device z: larger is farther
     visible: boolean;
 }
+
+const sameAnchors = (a: LabelAnchor[], b: LabelAnchor[]) =>
+    a.length === b.length &&
+    a.every((anchor, i) => {
+        const other = b[i];
+        return (
+            anchor.id === other.id &&
+            anchor.x === other.x &&
+            anchor.y === other.y &&
+            anchor.depth === other.depth &&
+            anchor.visible === other.visible
+        );
+    });
 
 // How far above the head a name chip sits, in metres.
 const CHIP_LIFT = 0.25;
@@ -223,8 +237,9 @@ export class TeamScene {
         });
     }
 
-    // A scroll frame skips the anchors: the camera hasn't moved, so
-    // labelAnchors() keeps returning the same array and the chips don't re-render.
+    // A scroll frame skips the anchors, and a frame where nothing moved keeps
+    // them: either way labelAnchors() returns the same array and the chips
+    // don't re-render.
     private paint(withAnchors: boolean): void {
         this.renderer.render(this.scene, this.camera);
         if (withAnchors) this.updateAnchors();
@@ -287,7 +302,7 @@ export class TeamScene {
         const { clientWidth: width, clientHeight: height } = this.container;
         this.camera.updateMatrixWorld();
         const point = new Vector3();
-        this.anchors = this.people.map(({ id, root, head }) => {
+        const next = this.people.map(({ id, root, head }) => {
             root.getWorldPosition(point);
             point.y += head + CHIP_LIFT;
             point.project(this.camera);
@@ -295,9 +310,11 @@ export class TeamScene {
                 id,
                 x: ((point.x + 1) / 2) * width,
                 y: ((1 - point.y) / 2) * height,
+                depth: point.z,
                 visible: point.z < 1 && Math.abs(point.x) <= 1 && Math.abs(point.y) <= 1,
             };
         });
+        if (!sameAnchors(this.anchors, next)) this.anchors = next;
     }
 
     private frame(): void {

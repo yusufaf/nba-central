@@ -15,7 +15,7 @@ const mocks = vi.hoisted(() => ({
         onRender: (() => void) | null;
         setPeople: ReturnType<typeof vi.fn>;
     }>,
-    anchors: [] as Array<{ id: string; x: number; y: number; visible: boolean }>,
+    anchors: [] as Array<{ id: string; x: number; y: number; depth: number; visible: boolean }>,
     kit: { primary: '#123456', secondary: '#654321', trim: '#ffffff' },
     loadJersey: vi.fn(),
     rasterise: vi.fn(),
@@ -369,8 +369,8 @@ describe('TeamScene3D', () => {
     it('renders a chip per visible anchor and none for hidden ones', async () => {
         mocks.rasterise.mockResolvedValue(canvas('a'));
         mocks.anchors = [
-            { id: 'player-1', x: 100, y: 50, visible: true },
-            { id: 'coach', x: 0, y: 0, visible: false },
+            { id: 'player-1', x: 100, y: 50, depth: 0.51, visible: true },
+            { id: 'coach', x: 0, y: 0, depth: 0.52, visible: false },
         ];
         const people = [
             { id: 'player-1', name: 'Jordan Vance', role: 'player', position: 'PG', heightInches: 75, weightPounds: 190 },
@@ -387,7 +387,7 @@ describe('TeamScene3D', () => {
 
     it('hides the name chips while paused (#304)', async () => {
         mocks.rasterise.mockResolvedValue(canvas('a'));
-        mocks.anchors = [{ id: 'player-1', x: 100, y: 50, visible: true }];
+        mocks.anchors = [{ id: 'player-1', x: 100, y: 50, depth: 0.53, visible: true }];
         const people = [{ id: 'player-1', name: 'Jordan Vance', role: 'player', position: 'PG', heightInches: 75, weightPounds: 190 }];
         const w = mountScene({ people, teamName: 'Owls' });
         await flushPromises();
@@ -406,9 +406,45 @@ describe('TeamScene3D', () => {
         mocks.anchors = [];
     });
 
+    it("a frame where nothing moved doesn't re-render (#304)", async () => {
+        mocks.rasterise.mockResolvedValue(canvas('a'));
+        mocks.anchors = [{ id: 'player-1', x: 100, y: 50, depth: 0.5, visible: true }];
+        const people = [{ id: 'player-1', name: 'Jordan Vance', role: 'player', position: 'PG', heightInches: 75, weightPounds: 190 }];
+        const updates = vi.fn();
+        wrapper = mount(TeamScene3D, {
+            props: { court: COURT, capacity: 18000, label: 'Owls court', people, teamName: 'Owls' },
+            attachTo: document.body,
+            global: {
+                mixins: [
+                    {
+                        updated(this: { $: { type: { __name?: string } } }) {
+                            if (this.$.type.__name === 'TeamScene3D') updates();
+                        },
+                    },
+                ],
+            },
+        });
+        await flushPromises();
+        scene().onRender?.();
+        await flushPromises();
+        updates.mockClear();
+
+        scene().renderCount = 5;
+        scene().onRender?.();
+        await flushPromises();
+        expect(updates).not.toHaveBeenCalled();
+        expect(wrapper.find('[role="img"]').attributes('data-render-count')).toBe('5');
+
+        mocks.anchors = [{ ...mocks.anchors[0], x: 120 }];
+        scene().onRender?.();
+        await flushPromises();
+        expect(updates).toHaveBeenCalled();
+        mocks.anchors = [];
+    });
+
     it('shows surnames only when the view is phone-narrow', async () => {
         mocks.rasterise.mockResolvedValue(canvas('a'));
-        mocks.anchors = [{ id: 'player-1', x: 10, y: 10, visible: true }];
+        mocks.anchors = [{ id: 'player-1', x: 10, y: 10, depth: 0.54, visible: true }];
         const people = [{ id: 'player-1', name: 'Jordan Vance', role: 'player', position: 'PG', heightInches: 75, weightPounds: 190 }];
         const w = mountScene({ people, teamName: 'Owls' });
         await flushPromises();
@@ -421,7 +457,7 @@ describe('TeamScene3D', () => {
 
     it('truncates long names', async () => {
         mocks.rasterise.mockResolvedValue(canvas('a'));
-        mocks.anchors = [{ id: 'player-1', x: 10, y: 10, visible: true }];
+        mocks.anchors = [{ id: 'player-1', x: 10, y: 10, depth: 0.55, visible: true }];
         const people = [{ id: 'player-1', name: 'A Very Long Player Name Indeed', role: 'player', position: 'SF', heightInches: null, weightPounds: null }];
         const w = mountScene({ people, teamName: 'Owls' });
         await flushPromises();
@@ -435,8 +471,8 @@ describe('TeamScene3D', () => {
     it('strips a name suffix from the compact chip', async () => {
         mocks.rasterise.mockResolvedValue(canvas('a'));
         mocks.anchors = [
-            { id: 'player-1', x: 10, y: 10, visible: true },
-            { id: 'player-2', x: 60, y: 10, visible: true },
+            { id: 'player-1', x: 10, y: 10, depth: 0.56, visible: true },
+            { id: 'player-2', x: 60, y: 10, depth: 0.57, visible: true },
         ];
         const people = [
             { id: 'player-1', name: 'Jaren Jackson Jr.', role: 'player', position: 'PF', heightInches: 82, weightPounds: 242 },
