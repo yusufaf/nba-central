@@ -385,6 +385,27 @@ describe('TeamScene3D', () => {
         mocks.anchors = [];
     });
 
+    it('hides the name chips while paused (#304)', async () => {
+        mocks.rasterise.mockResolvedValue(canvas('a'));
+        mocks.anchors = [{ id: 'player-1', x: 100, y: 50, visible: true }];
+        const people = [{ id: 'player-1', name: 'Jordan Vance', role: 'player', position: 'PG', heightInches: 75, weightPounds: 190 }];
+        const w = mountScene({ people, teamName: 'Owls' });
+        await flushPromises();
+        scene().onRender?.();
+        await flushPromises();
+        const chips = () => w.findAll('[data-testid="name-chip"]');
+        expect(chips()).toHaveLength(1);
+        mocks.contextListener?.(true);
+        await flushPromises();
+        expect(w.text()).toContain('3D view paused');
+        expect(chips()).toHaveLength(0);
+        mocks.contextListener?.(false);
+        scene().onRender?.();
+        await flushPromises();
+        expect(chips()).toHaveLength(1);
+        mocks.anchors = [];
+    });
+
     it('shows surnames only when the view is phone-narrow', async () => {
         mocks.rasterise.mockResolvedValue(canvas('a'));
         mocks.anchors = [{ id: 'player-1', x: 10, y: 10, visible: true }];
