@@ -87,17 +87,20 @@ const chips = computed(() => {
 });
 
 // The team's people, in the owner's uniform colours or ones read off its
-// jersey (once per URL).
+// jersey (once per URL). A newer call wins over an older one still waiting
+// on its colours.
 let kitFor: { url: string | undefined; colours: Promise<KitColours> } | null = null;
+let peopleRequest = 0;
 const placePeople = async () => {
     const current = scene.value;
     if (!current) return;
+    const request = ++peopleRequest;
     let colours = props.uniform;
     if (!colours) {
         if (!kitFor || kitFor.url !== props.jerseyUrl) kitFor = { url: props.jerseyUrl, colours: loadJerseyColours(props.jerseyUrl) };
         colours = await kitFor.colours;
     }
-    if (scene.value !== current) return;
+    if (request !== peopleRequest || scene.value !== current) return;
     // The arena stays up without them; a later prop change tries again.
     try {
         await current.setPeople(props.people, { colours, teamName: props.teamName });
