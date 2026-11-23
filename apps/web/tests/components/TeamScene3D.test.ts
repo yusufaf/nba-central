@@ -442,6 +442,34 @@ describe('TeamScene3D', () => {
         mocks.anchors = [];
     });
 
+    it('lifts a back-row chip off the one in front (#304)', async () => {
+        const width = vi.spyOn(HTMLElement.prototype, 'offsetWidth', 'get').mockReturnValue(80);
+        const height = vi.spyOn(HTMLElement.prototype, 'offsetHeight', 'get').mockReturnValue(20);
+        try {
+            mocks.rasterise.mockResolvedValue(canvas('a'));
+            mocks.anchors = [
+                { id: 'player-1', x: 100, y: 100, depth: 0.5, visible: true },
+                { id: 'player-2', x: 110, y: 96, depth: 0.6, visible: true },
+            ];
+            const people = [
+                { id: 'player-1', name: 'Front', role: 'player', position: 'SF', heightInches: 79, weightPounds: 220 },
+                { id: 'player-2', name: 'Back', role: 'player', position: 'C', heightInches: 84, weightPounds: 250 },
+            ];
+            const w = mountScene({ people, teamName: 'Owls' });
+            await flushPromises();
+            scene().onRender?.();
+            await flushPromises();
+            const top = (text: string) =>
+                (w.findAll('[data-testid="name-chip"]').find((chip) => chip.text().startsWith(text))!.element as HTMLElement).style.top;
+            expect(top('Front')).toBe('100px');
+            expect(top('Back')).toBe('78px');
+        } finally {
+            width.mockRestore();
+            height.mockRestore();
+            mocks.anchors = [];
+        }
+    });
+
     it('shows surnames only when the view is phone-narrow', async () => {
         mocks.rasterise.mockResolvedValue(canvas('a'));
         mocks.anchors = [{ id: 'player-1', x: 10, y: 10, depth: 0.54, visible: true }];
