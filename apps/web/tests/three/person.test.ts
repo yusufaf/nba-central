@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { Group, MeshStandardMaterial, SkinnedMesh, Vector3, type Mesh } from 'three';
+import { Box3, Group, MeshStandardMaterial, SkinnedMesh, Vector3, type Mesh } from 'three';
 import type { Landmarks } from '@/three/character/kit';
 import { skeletonBody, surfacedBody } from './fixtures/skeleton';
 import type { PersonAppearance, StaffAppearance } from '@/constants/appearance';
@@ -11,6 +11,7 @@ const mocks = vi.hoisted(() => ({
     kitOptions: [] as { vinyl: string | null; material: MeshStandardMaterial; kind: string; colours: KitColours }[],
     failHair: false,
     surfaced: false,
+    sunk: false,
     urls: [] as string[],
 }));
 
@@ -19,7 +20,10 @@ vi.mock('@/three/character/load', async (original) => ({
     loadBody: async (url: string) => {
         mocks.urls.push(url);
         if (url.includes('/hair/') && mocks.failHair) throw new Error('offline');
-        return mocks.surfaced && url.includes('athletic-') ? surfacedBody() : skeletonBody();
+        if (mocks.surfaced && url.includes('athletic-')) return surfacedBody();
+        const body = skeletonBody();
+        if (mocks.sunk) body.traverse((node) => (node as SkinnedMesh).isSkinnedMesh && (node as SkinnedMesh).geometry.translate(0, -0.03, 0));
+        return body;
     },
 }));
 vi.mock('@/three/character/kit', async (original) => {
@@ -62,6 +66,19 @@ describe('buildPerson', () => {
         expect(after.shoulderX).not.toBeCloseTo(before.shoulderX, 3);
         expect(mocks.landmarks[0].shoulderX).toBeCloseTo(after.shoulderX, 5);
         expect(mocks.landmarks[0].frontZ).toBeCloseTo(after.frontZ, 5);
+    });
+
+    it('stands the soles on the floor', async () => {
+        mocks.sunk = true;
+        try {
+            const kit = { colours: { primary: '#123456', secondary: '#ffffff', trim: '#ffffff' }, teamName: 'Owls' };
+            const { root } = await buildPerson({ id: 'c', name: 'C', role: 'player', position: 'C', heightInches: 84, weightPounds: 260 }, kit);
+            root.updateMatrixWorld(true);
+            const body = root.getObjectByProperty('isSkinnedMesh', true) as SkinnedMesh;
+            expect(new Box3().setFromObject(body, true).min.y).toBeCloseTo(0, 5);
+        } finally {
+            mocks.sunk = false;
+        }
     });
 
     it("passes the person's number to the kit texture", async () => {
