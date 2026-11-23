@@ -175,6 +175,9 @@ const {
     },
 });
 
+// Chips over a canvas that stopped drawing would point at nothing.
+const visibleChips = computed(() => (paused.value ? [] : chips.value));
+
 // The ribbon scrolls unless reduced motion is on or the screen is a touch screen.
 const motion = useSceneMotion();
 
@@ -229,7 +232,7 @@ onBeforeUnmount(() => {
             <div ref="viewport" class="absolute inset-0" role="img" :aria-label="label" :data-render-count="renderCount" />
             <!-- Names over heads; the canvas's label already lists everyone. -->
             <span
-                v-for="chip in chips"
+                v-for="chip in visibleChips"
                 :key="chip.id"
                 data-testid="name-chip"
                 class="pointer-events-none absolute max-w-[9rem] -translate-x-1/2 -translate-y-full truncate rounded-full bg-background/85 px-2 py-0.5 text-xs font-semibold"
