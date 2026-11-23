@@ -248,6 +248,19 @@ describe('TeamScene', () => {
         scene.dispose();
     });
 
+    it('keeps the anchors array across a frame where nothing moved (#304)', async () => {
+        const scene = new TeamScene(container);
+        await scene.setPeople([person('a'), person('b')], KIT);
+        const anchors = scene.labelAnchors();
+        expect(anchors[0].depth).toBeGreaterThan(-1);
+        expect(anchors[0].depth).toBeLessThan(1);
+        scene.requestRender();
+        expect(scene.labelAnchors()).toBe(anchors);
+        scene.setPreset('rafters');
+        expect(scene.labelAnchors()).not.toBe(anchors);
+        scene.dispose();
+    });
+
     it('a near-square view stands seven people in two rows', async () => {
         width = 712;
         height = 640;

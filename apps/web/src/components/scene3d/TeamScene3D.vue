@@ -58,7 +58,6 @@ const viewport = ref<HTMLElement | null>(null);
 const courtHost = ref<HTMLElement | null>(null);
 const scene = shallowRef<TeamScene | null>(null);
 const preset = ref<CameraPreset>(props.initialPreset);
-const renderCount = ref(0);
 // The page's probe can pass and context creation still fail (a blocklisted
 // driver, too many live contexts).
 const unavailable = ref(false);
@@ -192,7 +191,8 @@ onMounted(() => {
         return;
     }
     created.onRender = () => {
-        renderCount.value = created.renderCount;
+        // A test probe, not UI state: a frame alone never re-renders the component.
+        viewport.value?.setAttribute('data-render-count', String(created.renderCount));
         compact.value = (viewport.value?.clientWidth || Infinity) < COMPACT_BELOW_PX;
         anchors.value = created.labelAnchors();
     };
@@ -229,7 +229,7 @@ onBeforeUnmount(() => {
     <Scene3DUnavailable v-if="unavailable || gone" :reason="unavailable ? 'no-webgl' : 'context-lost'" />
     <div v-else class="flex flex-col gap-3">
         <div class="relative overflow-hidden rounded-xl border border-border bg-card" :class="viewportClass">
-            <div ref="viewport" class="absolute inset-0" role="img" :aria-label="label" :data-render-count="renderCount" />
+            <div ref="viewport" class="absolute inset-0" role="img" :aria-label="label" data-render-count="0" />
             <!-- Names over heads; the canvas's label already lists everyone. -->
             <span
                 v-for="chip in visibleChips"
