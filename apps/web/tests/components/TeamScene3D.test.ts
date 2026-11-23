@@ -17,6 +17,7 @@ const mocks = vi.hoisted(() => ({
     }>,
     anchors: [] as Array<{ id: string; x: number; y: number; visible: boolean }>,
     kit: { primary: '#123456', secondary: '#654321', trim: '#ffffff' },
+    loadJersey: vi.fn(),
     rasterise: vi.fn(),
     track: vi.fn(),
     contextListener: null as ((lost: boolean) => void) | null,
@@ -61,7 +62,7 @@ vi.mock('@/three/renderer/shared', () => ({
     },
 }));
 vi.mock('@/lib/analytics', () => ({ track: mocks.track }));
-vi.mock('@/utils/jerseyColours', () => ({ loadJerseyColours: async () => mocks.kit }));
+vi.mock('@/utils/jerseyColours', () => ({ loadJerseyColours: (url?: string) => mocks.loadJersey(url) }));
 
 import TeamScene3D from '@/components/scene3d/TeamScene3D.vue';
 import Scene3DUnavailable from '@/components/scene3d/Scene3DUnavailable.vue';
@@ -102,6 +103,8 @@ describe('TeamScene3D', () => {
         mocks.scenes.length = 0;
         mocks.rasterise.mockReset();
         mocks.track.mockReset();
+        mocks.loadJersey.mockReset();
+        mocks.loadJersey.mockImplementation(async () => mocks.kit);
         mocks.unsubscribe.mockReset();
         mocks.contextListener = null;
         mocks.failToStart = false;
@@ -332,6 +335,24 @@ describe('TeamScene3D', () => {
         mountScene({ people, jerseyUrl: 'https://cdn/jersey.png', teamName: 'Owls', uniform });
         await flushPromises();
         expect(scene().setPeople).toHaveBeenCalledWith(people, { colours: uniform, teamName: 'Owls' });
+    });
+
+    it("an older jersey's colours landing last never win (#304)", async () => {
+        mocks.rasterise.mockResolvedValue(canvas('a'));
+        const loads = { 'https://cdn/a.png': deferred<typeof mocks.kit>(), 'https://cdn/b.png': deferred<typeof mocks.kit>() };
+        mocks.loadJersey.mockImplementation((url: keyof typeof loads) => loads[url].promise);
+        const people = [{ id: 'player-1', name: 'Vance', role: 'player', position: 'PG', heightInches: 75, weightPounds: 190 }];
+        const w = mountScene({ people, jerseyUrl: 'https://cdn/a.png', teamName: 'Owls' });
+        await flushPromises();
+        await w.setProps({ jerseyUrl: 'https://cdn/b.png' });
+        await flushPromises();
+        const coloursB = { primary: '#bbbbbb', secondary: '#000000', trim: '#ffffff' };
+        loads['https://cdn/b.png'].resolve(coloursB);
+        await flushPromises();
+        loads['https://cdn/a.png'].resolve({ primary: '#aaaaaa', secondary: '#000000', trim: '#ffffff' });
+        await flushPromises();
+        expect(scene().setPeople).toHaveBeenCalledTimes(1);
+        expect(scene().setPeople).toHaveBeenCalledWith(people, { colours: coloursB, teamName: 'Owls' });
     });
 
     it('a uniform change re-places people', async () => {
