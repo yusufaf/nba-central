@@ -94,10 +94,13 @@ export const findLandmarks = (mesh: SkinnedMesh): Landmarks => {
     };
 };
 
-// The jersey's lettering on a 1024x512 canvas: the front on the left half,
-// the back on the right (mirrored in the shader, so text drawn normally reads
+// The jersey's lettering, laid out on a 1024x512 grid and drawn at half that
+// size, which is plenty for a figurine: the front on the left half, the back
+// on the right (mirrored in the shader, so text drawn normally reads
 // correctly from behind). The front has the team name, with the number under
-// it when there is one; the back has only the number.
+// it when there is one; the back has only the number. Staff outfits never
+// sample the texture, so theirs is a single pixel.
+export const KIT_TEXTURE_SIZE = { width: 512, height: 256 };
 export const kitTexture = (kit: {
     kind: KitKind;
     teamName: string;
@@ -105,11 +108,13 @@ export const kitTexture = (kit: {
     trim: string;
     secondary: string;
 }): CanvasTexture => {
+    const player = kit.kind === 'player';
     const canvas = document.createElement('canvas');
-    canvas.width = 1024;
-    canvas.height = 512;
-    const context = canvas.getContext('2d');
-    if (context && kit.kind === 'player') {
+    canvas.width = player ? KIT_TEXTURE_SIZE.width : 1;
+    canvas.height = player ? KIT_TEXTURE_SIZE.height : 1;
+    const context = player ? canvas.getContext('2d') : null;
+    if (context) {
+        context.scale(KIT_TEXTURE_SIZE.width / 1024, KIT_TEXTURE_SIZE.height / 512);
         context.clearRect(0, 0, 1024, 512);
         context.textAlign = 'center';
         context.textBaseline = 'middle';

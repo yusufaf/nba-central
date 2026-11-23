@@ -105,13 +105,16 @@ export const buildPerson = async (
         trim: kit.colours.trim,
         secondary: kit.colours.secondary,
     });
-    body.material = applyKitMaterial(body.material as MeshStandardMaterial, {
+    // The kit material is a copy; the clone it replaces was never drawn.
+    const base = body.material as MeshStandardMaterial;
+    body.material = applyKitMaterial(base, {
         kind,
         colours,
         landmarks,
         vinyl: look ? null : VINYL,
         texture,
     });
+    if (body.material !== base) base.dispose();
 
     // Face down +z, toward the team-photo camera.
     const root = new Group();

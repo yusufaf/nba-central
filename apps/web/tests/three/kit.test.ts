@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { CanvasTexture, Color, MeshStandardMaterial, type SkinnedMesh } from 'three';
-import { applyKitMaterial, findLandmarks, kitTexture, type KitKind, type Landmarks } from '@/three/character/kit';
+import { applyKitMaterial, findLandmarks, KIT_TEXTURE_SIZE, kitTexture, type KitKind, type Landmarks } from '@/three/character/kit';
 import { skeletonBody } from './fixtures/skeleton';
 import { HOME_KIT } from '@/utils/jerseyColours';
 
@@ -59,6 +59,23 @@ describe('kitTexture', () => {
         const fillText = spyFillText();
         kitTexture({ kind, teamName: 'Night Owls', number: '23', trim: '#ffffff', secondary: '#c9a227' });
         expect(fillText).not.toHaveBeenCalled();
+    });
+
+    const sizeOf = (texture: CanvasTexture) => {
+        const canvas = texture.image as HTMLCanvasElement;
+        return { width: canvas.width, height: canvas.height };
+    };
+
+    it('draws a player kit at 512x256 (#304)', () => {
+        spyFillText();
+        const texture = kitTexture({ kind: 'player', teamName: 'Night Owls', number: '23', trim: '#ffffff', secondary: '#c9a227' });
+        expect(KIT_TEXTURE_SIZE).toEqual({ width: 512, height: 256 });
+        expect(sizeOf(texture)).toEqual(KIT_TEXTURE_SIZE);
+    });
+
+    it.for(['suit', 'polo', 'tracksuit'] as const)('gives a %s a 1x1 canvas (#304)', (kind) => {
+        spyFillText();
+        expect(sizeOf(kitTexture({ kind, teamName: 'Night Owls', trim: '#ffffff', secondary: '#c9a227' }))).toEqual({ width: 1, height: 1 });
     });
 });
 
