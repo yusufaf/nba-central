@@ -37,7 +37,7 @@ vi.mock('@/three/character/kit', async (original) => {
         ) => {
             mocks.landmarks.push(options.landmarks);
             mocks.kitOptions.push({ vinyl: options.vinyl, material, kind: options.kind, colours: options.colours });
-            return material;
+            return material.clone();
         },
     };
 });
@@ -78,6 +78,22 @@ describe('buildPerson', () => {
             expect(new Box3().setFromObject(body, true).min.y).toBeCloseTo(0, 5);
         } finally {
             mocks.sunk = false;
+        }
+    });
+
+    it('disposes the body material the kit replaces (#304)', async () => {
+        mocks.kitOptions.length = 0;
+        const dispose = vi.spyOn(MeshStandardMaterial.prototype, 'dispose');
+        try {
+            const kit = { colours: { primary: '#123456', secondary: '#ffffff', trim: '#ffffff' }, teamName: 'Owls' };
+            const { root } = await buildPerson({ id: 'a', name: 'A', role: 'player', heightInches: 78, weightPounds: 210 }, kit);
+            const body = root.getObjectByProperty('isSkinnedMesh', true) as SkinnedMesh;
+            const [{ material: replaced }] = mocks.kitOptions;
+            expect(body.material).not.toBe(replaced);
+            expect(dispose.mock.contexts).toContain(replaced);
+            expect(dispose.mock.contexts).not.toContain(body.material);
+        } finally {
+            dispose.mockRestore();
         }
     });
 
