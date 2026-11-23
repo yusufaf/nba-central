@@ -1493,6 +1493,45 @@ test.describe('3D team scene', () => {
         await dialog.getByRole('button', { name: 'Broadcast' }).click();
         await expect.poll(() => renders(page)).toBeGreaterThan(before);
     });
+
+    // #304: back-row names used to sit on front-row ones, on a phone (surnames)
+    // and on a near-square tablet (full names).
+    for (const size of [
+        { width: 390, height: 844 },
+        { width: 834, height: 1112 },
+    ]) {
+        test(`builder: no name chip covers another at ${size.width}x${size.height}`, async ({ page }) => {
+            await page.setViewportSize(size);
+            await openBuilder(page);
+            await page.getByTestId('view-3d-button').click();
+            await expect(sheet(page)).toBeVisible();
+            const chips = page.getByTestId('name-chip');
+            await expect(chips).toHaveCount(7, { timeout: 20000 });
+            // The chips settle a frame after their sizes are measured.
+            await expect
+                .poll(async () => {
+                    const boxes = (await Promise.all((await chips.all()).map((chip) => chip.boundingBox()))).filter((box) => box !== null);
+                    const SLACK = 1;
+                    const clashes: string[] = [];
+                    boxes.forEach((a, i) =>
+                        boxes.slice(i + 1).forEach((b, j) => {
+                            const apart =
+                                a.x + a.width - SLACK <= b.x ||
+                                b.x + b.width - SLACK <= a.x ||
+                                a.y + a.height - SLACK <= b.y ||
+                                b.y + b.height - SLACK <= a.y;
+                            if (!apart) clashes.push(`${i}/${i + j + 1}`);
+                        }),
+                    );
+                    return clashes;
+                })
+                .toEqual([]);
+            await page
+                .locator('[role="img"][data-render-count]')
+                .locator('..')
+                .screenshot({ path: test.info().outputPath(`chips-${size.width}x${size.height}.png`) });
+        });
+    }
 });
 
 

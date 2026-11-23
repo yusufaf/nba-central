@@ -6,6 +6,7 @@ import { computed, nextTick, onBeforeUnmount, onMounted, ref, shallowRef, watch 
 import CourtFloor from '@/components/court/CourtFloor.vue';
 import { Button } from '@/components/ui/button';
 import Scene3DUnavailable from './Scene3DUnavailable.vue';
+import { stackChips, type ChipSize } from './chipStack';
 import { useSceneMotion } from './sceneMotion';
 import { useContextWatch } from './contextWatch';
 import { DEFAULT_VIEWPORT_CLASS } from './viewport';
@@ -74,7 +75,7 @@ const surname = (name: string) => {
     const last = words.length > 1 && SUFFIX.test(words.at(-1)!) ? words.at(-2) : words.at(-1);
     return last || name;
 };
-const chips = computed(() => {
+const labelled = computed(() => {
     const byId = new Map(props.people.map((person) => [person.id, person]));
     return anchors.value.flatMap((anchor) => {
         const person = byId.get(anchor.id);
@@ -174,8 +175,21 @@ const {
     },
 });
 
-// Chips over a canvas that stopped drawing would point at nothing.
-const visibleChips = computed(() => (paused.value ? [] : chips.value));
+// Chips over a canvas that stopped drawing would point at nothing. The rest
+// are stacked so a back-row name never covers a front-row one, using sizes
+// read from the DOM only when the chips' text changes, never per frame.
+const chipEls = ref<HTMLElement[]>([]);
+const chipSizes = shallowRef<ReadonlyMap<string, ChipSize>>(new Map());
+const chips = computed(() => (paused.value ? [] : stackChips(labelled.value, chipSizes.value)));
+watch(
+    () => [paused.value, ...labelled.value.map((chip) => `${chip.id}:${chip.text}`)].join('|'),
+    () => {
+        chipSizes.value = new Map(
+            chipEls.value.map((el) => [el.dataset.id ?? '', { width: el.offsetWidth, height: el.offsetHeight }]),
+        );
+    },
+    { flush: 'post' },
+);
 
 // The ribbon scrolls unless reduced motion is on or the screen is a touch screen.
 const motion = useSceneMotion();
@@ -232,8 +246,10 @@ onBeforeUnmount(() => {
             <div ref="viewport" class="absolute inset-0" role="img" :aria-label="label" data-render-count="0" />
             <!-- Names over heads; the canvas's label already lists everyone. -->
             <span
-                v-for="chip in visibleChips"
+                v-for="chip in chips"
                 :key="chip.id"
+                ref="chipEls"
+                :data-id="chip.id"
                 data-testid="name-chip"
                 class="pointer-events-none absolute max-w-[9rem] -translate-x-1/2 -translate-y-full truncate rounded-full bg-background/85 px-2 py-0.5 text-xs font-semibold"
                 :style="{ left: `${chip.x}px`, top: `${chip.y}px` }"
