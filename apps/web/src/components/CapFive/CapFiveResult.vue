@@ -1,11 +1,14 @@
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref } from 'vue';
+import { RouterLink } from 'vue-router';
 import { Button } from '@/components/ui/button';
 import RatingChip from '@/components/RatingChip.vue';
 import CapFiveCredit from '@/components/CapFive/CapFiveCredit.vue';
 import { averageRating } from '@/constants/ratings';
 import { capFiveGrade, type CapFiveGrade } from '@/utils/capFive';
 import { formatCountdown, nextPuzzleAt } from '@/utils/dailyEra';
+import { lineupBuilderLink } from '@/utils/builderLineup';
+import { track } from '@/lib/analytics';
 import type { CapFiveResult } from '@/models/api';
 
 const props = defineProps<{ result: CapFiveResult }>();
@@ -23,6 +26,14 @@ const grade = computed(() => capFiveGrade(props.result));
 const byId = computed(() => new Map(props.result.candidates.map((c) => [c.id, c])));
 const optimalPlayers = computed(() => props.result.optimal.lineup.map((id) => byId.value.get(id)!).filter(Boolean));
 const teamAverage = computed(() => averageRating(props.result.picks.map((id) => byId.value.get(id)?.rating)));
+
+// The perfect five gets its own link only when it isn't the visitor's own.
+const perfectIsYours = computed(() => {
+    const mine = new Set(props.result.picks);
+    return props.result.optimal.lineup.every((id) => mine.has(id));
+});
+const onBuilderClick = (lineup: 'picks' | 'perfect') =>
+    track('cap_five_builder_clicked', { puzzleNumber: props.result.puzzleNumber, lineup });
 
 const target = computed(() => nextPuzzleAt(props.result.date).getTime());
 const now = ref(Date.now());
@@ -66,6 +77,18 @@ onUnmounted(stopTimer);
                     <RatingChip :rating="player.rating" />
                 </li>
             </ul>
+        </div>
+        <div class="flex flex-col gap-2 sm:flex-row">
+            <Button as-child class="w-full sm:w-auto">
+                <RouterLink :to="lineupBuilderLink(result.picks)" data-testid="builder-link-picks" @click="onBuilderClick('picks')">
+                    Play your five in the Team Builder
+                </RouterLink>
+            </Button>
+            <Button v-if="!perfectIsYours" as-child variant="outline" class="w-full sm:w-auto">
+                <RouterLink :to="lineupBuilderLink(result.optimal.lineup)" data-testid="builder-link-perfect" @click="onBuilderClick('perfect')">
+                    Play the perfect five
+                </RouterLink>
+            </Button>
         </div>
         <CapFiveCredit :game-version="result.gameVersion" />
         <p v-if="msLeft > 0" class="text-sm text-foreground/80">

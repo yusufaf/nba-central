@@ -67,6 +67,7 @@ import { findHistoricalJersey } from "@/utils/historicalJersey";
 import { getCurrentTeamSeason, getTeamSeasonFile, getTeamSeasonsIndex } from "@/network/teamSeasons";
 import { findSeasonChoice, parseRealParam, realTeamDetails, rosterSlots, seasonChoices } from "@/utils/realTeam";
 import { toBuilderPlayer } from "@/utils/builderPlayer";
+import { parsePlayersParam, starterSlots } from "@/utils/builderLineup";
 import { parseAppearance } from "@/utils/appearance";
 import type { PersonAppearance, StaffAppearance } from "@/constants/appearance";
 import { track } from "@/lib/analytics";
@@ -704,6 +705,7 @@ const saveTeam = async () => {
                         resume: undefined,
                         jersey: undefined,
                         real: undefined,
+                        players: undefined,
                         team: saved.teamUUID,
                     },
                 });
@@ -1043,6 +1045,39 @@ const loadRealTeamFromRoute = async (param: string) => {
     }
 };
 
+// /teambuilder?players=a,b,c,d,e: the Cap Five reveal's way in. A new team
+// starting those players; like ?real=, the first Save creates a team. An id
+// getPlayers doesn't know is dropped.
+const loadPlayersFromRoute = async (param: string) => {
+    clearBuilderState();
+    const stillWanted = () =>
+        route.name === "teamBuilder" && route.query.players === param && builderEntry() === "players";
+    const ids = parsePlayersParam(param);
+    try {
+        const response = await dataApi.getPlayers({ ids: ids.join(",") });
+        if (!stillWanted()) return;
+        const byId = new Map(response.data.map((p) => [p.id, p]));
+        const records = ids.flatMap((id) => byId.get(id) ?? []);
+        if (!records.length) {
+            toast.error("Couldn't load those players");
+            return;
+        }
+        forgetHistory();
+        track("players_loaded", { requested: ids.length, loaded: records.length, source: landingSource() });
+        if (records.length < ids.length) {
+            toast.info(`${records.length} of the ${ids.length} players could be loaded`);
+        }
+        await Promise.all(
+            Array.from(starterSlots(records), ([slot, record]) =>
+                loadPlayerIntoSlot(slot, toBuilderPlayer(record)).done,
+            ),
+        );
+    } catch (err) {
+        console.error("Error loading players:", err);
+        if (stillWanted()) toast.error("Failed to load those players");
+    }
+};
+
 const showRealTeamPicker = ref(false);
 
 // The picker's choice goes through the URL so the link can be shared. Picking
@@ -1118,13 +1153,14 @@ const resumePendingSave = async () => {
 // independently - a single getter would return a new array identity on
 // every navigation and fire the callback even when neither param changed.
 // Mirrors the precedence of the watcher below, which decides what the builder
-// loads: team > resume > remix > real > jersey > new.
-const builderEntry = (): "team" | "resume" | "remix" | "real" | "jersey" | "new" => {
-    const { team, remix, resume, real, jersey } = route.query;
+// loads: team > resume > remix > real > players > jersey > new.
+const builderEntry = (): "team" | "resume" | "remix" | "real" | "players" | "jersey" | "new" => {
+    const { team, remix, resume, real, players, jersey } = route.query;
     if (typeof team === "string" && team) return "team";
     if (resume === RESUME_SAVE_QUERY) return "resume";
     if (typeof remix === "string" && remix) return "remix";
     if (typeof real === "string" && real) return "real";
+    if (parsePlayersParam(players).length) return "players";
     if (typeof jersey === "string" && jersey) return "jersey";
     return "new";
 };
@@ -1151,9 +1187,10 @@ watch(
         () => route.query.remix,
         () => route.query.resume,
         () => route.query.real,
+        () => route.query.players,
         () => route.query.jersey,
     ],
-    ([teamUUID, remixUUID, resume, realTeam, jerseyId], previous) => {
+    ([teamUUID, remixUUID, resume, realTeam, playerIds, jerseyId], previous) => {
         // Leaving the builder changes the query too (to /login, say); that is
         // not a visit to discard anything for.
         if (route.name !== "teamBuilder") return;
@@ -1162,13 +1199,14 @@ watch(
         // Dropping it (the nav bar's bare link), Back to the same one, or
         // adding it to a saved team's URL keeps the team on screen. The
         // immediate first run gets [] as `previous`.
-        const [prevTeam, prevRemix, prevResume, prevReal] = previous ?? [];
+        const [prevTeam, prevRemix, prevResume, prevReal, prevPlayers] = previous ?? [];
         const sameEntry =
             previous?.length &&
             teamUUID === prevTeam &&
             remixUUID === prevRemix &&
             resume === prevResume &&
-            realTeam === prevReal;
+            realTeam === prevReal &&
+            playerIds === prevPlayers;
         // builderEntry() holds the precedence, so this agrees with the dispatch below.
         if (sameEntry && (builderEntry() !== "jersey" || jerseyId === seededJerseyId)) {
             return;
@@ -1184,6 +1222,8 @@ watch(
             loadRemixFromRoute(remixUUID);
         } else if (typeof realTeam === "string" && realTeam) {
             loadRealTeamFromRoute(realTeam);
+        } else if (typeof playerIds === "string" && parsePlayersParam(playerIds).length) {
+            loadPlayersFromRoute(playerIds);
         } else {
             clearBuilderState();
             applyJerseyFromRoute(jerseyId);

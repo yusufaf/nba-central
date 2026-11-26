@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { mount, flushPromises, type VueWrapper } from '@vue/test-utils';
+import { mount, flushPromises, RouterLinkStub, type VueWrapper } from '@vue/test-utils';
 
 vi.mock('@/network/api', () => ({
     capFiveApi: { getPuzzle: vi.fn(), submit: vi.fn() },
@@ -22,7 +22,7 @@ let wrapper: VueWrapper | null = null;
 
 const mountPage = async () => {
     wrapper = mount(CapFive, {
-        global: { stubs: { PageShell: { template: '<div><slot /></div>' } } },
+        global: { stubs: { PageShell: { template: '<div><slot /></div>' }, RouterLink: RouterLinkStub } },
     });
     await flushPromises();
     return wrapper;
