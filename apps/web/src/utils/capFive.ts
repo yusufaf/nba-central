@@ -192,7 +192,9 @@ export const capFiveShareText = (result: CapFiveResult, streak: number | null, u
     return `Cap Five #${result.puzzleNumber} ${score} ${tiles}${flame} ${url}`;
 };
 
-export const capFiveShareUrl = (): string => appUrl("/cap-five");
+// An archive game links to its own day, so a friend plays the same puzzle.
+export const capFiveShareUrl = (date: string, archive: boolean): string =>
+    appUrl(archive ? `/cap-five?date=${date}` : "/cap-five");
 
 /** "Karl-Anthony Towns" to "K. Towns", for the lineup's narrow slots. */
 export const capFiveShortName = (name: string): string => {

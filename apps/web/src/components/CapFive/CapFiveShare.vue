@@ -12,9 +12,13 @@ const props = defineProps<{
     result: CapFiveResult;
     /** Null leaves the streak out. */
     streak: number | null;
+    /** An archive game, whose link names its day. */
+    archive: boolean;
 }>();
 
-const text = computed(() => capFiveShareText(props.result, props.streak, capFiveShareUrl()));
+const text = computed(() =>
+    capFiveShareText(props.result, props.streak, capFiveShareUrl(props.result.date, props.archive)),
+);
 const canShareNatively = typeof navigator !== 'undefined' && typeof navigator.share === 'function';
 
 const shared = (method: 'copy' | 'native' | 'download') =>

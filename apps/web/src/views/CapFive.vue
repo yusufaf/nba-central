@@ -169,7 +169,12 @@ const shareStreak = computed(() =>
                     <CapFiveLineup :candidates="candidates" :picks="picks" :cap="cap" :result="result" />
                     <CapFiveResult :result="result" @next="playToday" />
                     <!-- Keyed by streak too: the card is rendered once. -->
-                    <CapFiveShare :key="`${date}:${shareStreak}`" :result="result" :streak="shareStreak" />
+                    <CapFiveShare
+                        :key="`${date}:${shareStreak}`"
+                        :result="result"
+                        :streak="shareStreak"
+                        :archive="viewingArchive || archive"
+                    />
                     <CapFiveStats :stats="stats" :archive="archive" />
                     <CapFiveCandidates :candidates="candidates" :picks="picks" :result="result" />
                 </template>

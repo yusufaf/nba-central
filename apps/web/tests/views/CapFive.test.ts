@@ -301,6 +301,16 @@ describe('CapFive archive', () => {
         expect(focus.mock.contexts.at(-1)?.textContent).toBe('Cap Five');
     });
 
+    it("shares an archive day's own link", async () => {
+        const writeText = vi.fn().mockResolvedValue(undefined);
+        Object.assign(navigator, { clipboard: { writeText } });
+        const w = await mountPage('/cap-five?date=2026-11-01');
+        await lockIn(w);
+        await w.get('[data-testid="share-copy"]').trigger('click');
+        await flushPromises();
+        expect(writeText).toHaveBeenCalledWith(expect.stringContaining('/cap-five?date=2026-11-01'));
+    });
+
     it("keeps stored results when today's puzzle is unavailable", async () => {
         seed('2026-11-01', { total: 415 });
         getPuzzle.mockResolvedValueOnce({ success: false, error: 'nope' });
