@@ -124,7 +124,10 @@ to put classes on.
   an injury status through `useInjuries` (`injuries.json`, rewritten every 15
   minutes and refetched by an open tab on the same cadence,
   `INJURIES_REFRESH_MS`), hidden once the file is over 12 hours old
-  (`INJURIES_MAX_AGE_MS`).
+  (`INJURIES_MAX_AGE_MS`). The `/scores` score card tooltip
+  (`TeamDetailsTooltip`) reads a team's standing through `useStandings`:
+  standings.json is loaded when the first tooltip opens, shared by all of
+  them, and refetched on the next open after `STANDINGS_REFRESH_MS`.
   They can lag live results, so the page says it is unofficial.
 - Scores (`/scores`, its calendar counts, `/game/:id`) read `/api/scores/*`
   through `src/network/scores.ts`, which CloudFront caches by game state, so

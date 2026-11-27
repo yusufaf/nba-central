@@ -1,6 +1,17 @@
 import { describe, it, expect } from "vitest";
-import { formatGamesBehind, formatWinPercent, nextGames } from "@/utils/standings";
-import type { GameStatus, ScheduleFile, ScheduleGame } from "@/models/liveData";
+import {
+    formatGamesBehind,
+    formatWinPercent,
+    nextGames,
+    ordinal,
+    recordWinPercent,
+    standingsByTeam,
+    teamDetailsLines,
+} from "@/utils/standings";
+import type { GameStatus, ScheduleFile, ScheduleGame, StandingsFile } from "@/models/liveData";
+import standingsFixture from "../fixtures/liveData/standings.json";
+
+const standings = standingsByTeam(standingsFixture as StandingsFile);
 
 const game = (id: string, date: string, home: string, away: string, status: GameStatus = "scheduled"): ScheduleGame => ({
     id,
@@ -66,5 +77,71 @@ describe("formatters", () => {
         expect(formatWinPercent(0.6667)).toBe(".667");
         expect(formatWinPercent(0)).toBe(".000");
         expect(formatWinPercent(1)).toBe("1.000");
+    });
+});
+
+describe("standingsByTeam", () => {
+    it("keys every team by its ESPN id, with its conference", () => {
+        expect(standings.size).toBe(30);
+        expect(standings.get("20")?.conference).toBe("East");
+        expect(standings.get("20")?.team.abbreviation).toBe("PHI");
+    });
+});
+
+describe("ordinal", () => {
+    it.each([
+        [1, "1st"],
+        [2, "2nd"],
+        [3, "3rd"],
+        [4, "4th"],
+        [11, "11th"],
+        [12, "12th"],
+        [13, "13th"],
+        [21, "21st"],
+        [22, "22nd"],
+        [101, "101st"],
+    ])("%i is %s", (n, text) => {
+        expect(ordinal(n)).toBe(text);
+    });
+});
+
+describe("recordWinPercent", () => {
+    it.each([
+        ["2-0", 1],
+        ["1-3", 0.25],
+        ["0-0", null],
+        ["", null],
+        ["x", null],
+    ])("%s is %s", (record, pct) => {
+        expect(recordWinPercent(record)).toBe(pct);
+    });
+});
+
+describe("teamDetailsLines", () => {
+    it("lists the home team's standing, home record and all", () => {
+        expect(teamDetailsLines(standings.get("20")!, "home")).toEqual([
+            { text: "1st in Eastern Conference" },
+            { text: "Streak: W3", tone: "positive" },
+            { text: "Seed: 1", tone: "positive" },
+            { text: "Overall Win Pct: 100.0%" },
+            { text: "Home Win Pct: 100.0%" },
+            { text: "Games Behind 1st: 0" },
+        ]);
+    });
+
+    it("leaves out a road record with no games yet", () => {
+        expect(teamDetailsLines(standings.get("19")!, "away")).toEqual([
+            { text: "13th in Eastern Conference" },
+            { text: "Streak: L2", tone: "negative" },
+            { text: "Seed: 13", tone: "negative" },
+            { text: "Overall Win Pct: 0.0%" },
+            { text: "Games Behind 1st: 2.5" },
+        ]);
+    });
+
+    it("leaves out a streak ESPN didn't give", () => {
+        const { conference, team } = standings.get("20")!;
+        const lines = teamDetailsLines({ conference, team: { ...team, streak: "" } }, "home");
+        expect(lines.some((line) => line.text.startsWith("Streak"))).toBe(false);
     });
 });

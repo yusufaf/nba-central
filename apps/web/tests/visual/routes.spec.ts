@@ -6,6 +6,7 @@ import liveSchedule from '../fixtures/liveData/schedule.json' with { type: 'json
 import liveHeadshots from '../fixtures/liveData/headshots.json' with { type: 'json' };
 import liveInjuries from '../fixtures/liveData/injuries.json' with { type: 'json' };
 import teamSeasonsIndex from '../fixtures/liveData/team-seasons-index.json' with { type: 'json' };
+import scoreboardEventFinal from '../components/fixtures/scoreboard-event-final.json' with { type: 'json' };
 import { DAILY_ERA_FIRST_DATE } from '../../src/constants/dailyEra';
 import { CAP_FIVE_FIRST_DATE } from '../../src/constants/capFive';
 import { picks, puzzleView, result as capFiveResult } from '../helpers/capFive';
@@ -371,6 +372,35 @@ test("/scores requests nothing from ESPN's API", async ({ page }) => {
     expect(espn).toEqual([]);
     expect(scores.some((path) => path.startsWith('/api/scores/day/'))).toBe(true);
     expect(scores.some((path) => path.startsWith('/api/scores/month/'))).toBe(true);
+});
+
+// #218: the score card's team tooltip fetched ESPN's team API when opened.
+// It now reads live/standings.json from the assets CDN.
+test("/scores tooltip requests nothing from ESPN's API", async ({ page }, testInfo) => {
+    test.skip(testInfo.project.name !== 'desktop', 'tooltips open on hover');
+    await stubNetwork(page);
+    // After stubNetwork, so it wins over the empty scoreboard.
+    await page.route('**/api/scores/day/**', (route) =>
+        route.fulfill({
+            status: 200,
+            contentType: 'application/json',
+            body: JSON.stringify({ events: [scoreboardEventFinal] }),
+        }),
+    );
+    const { espn } = recordScoresRequests(page);
+    await page.goto('/scores', { waitUntil: 'domcontentloaded' });
+    // Whichever the tooltip asks for first: ESPN before the fix, standings after.
+    const tooltipRequest = page.waitForRequest(
+        (request) =>
+            /(^|\.)espn\.com$/.test(new URL(request.url()).hostname) ||
+            request.url().endsWith('/live/standings.json'),
+        { timeout: 5_000 },
+    );
+    await page.locator('.score-card .record').first().hover(); // ORL, the away team, renders first
+    await tooltipRequest;
+    expect(espn).toEqual([]);
+    await page.getByText('13th in Eastern Conference').waitFor();
+    expect(espn).toEqual([]);
 });
 
 test("/game/:id requests nothing from ESPN's API", async ({ page }) => {
