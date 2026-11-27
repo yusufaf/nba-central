@@ -263,8 +263,8 @@ describe('CapFive archive', () => {
         const scrollTo = vi.spyOn(window, 'scrollTo').mockImplementation(() => {});
         await mountPage('/cap-five?date=2026-11-01');
         getPuzzle.mockClear();
-        // The view is mounted outside a RouterView here, so it sees the route
-        // change, as it does for a moment before a real navigation unmounts it.
+        // Mounted outside a RouterView, the view outlives the route change, as
+        // it would under a KeepAlive; in the app's RouterView it unmounts first.
         await router.push('/teambuilder?date=2026-11-02');
         await flushPromises();
         expect(router.currentRoute.value.path).toBe('/teambuilder');
