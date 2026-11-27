@@ -6,6 +6,7 @@ import {
     capFiveGrade,
     capFivePuzzleNumber,
     capFiveShareText,
+    capFiveShareUrl,
     capFiveShortName,
     capFiveStats,
     capFiveTiers,
@@ -118,6 +119,11 @@ describe('share text', () => {
             expect(text).not.toContain(c.name);
             expect(text).not.toContain(c.id);
         }
+    });
+
+    it("links an archive share to its own day and today's to the bare page", () => {
+        expect(capFiveShareUrl('2026-11-01', true)).toMatch(/\/cap-five\?date=2026-11-01$/);
+        expect(capFiveShareUrl('2026-11-02', false)).toMatch(/\/cap-five$/);
     });
 
     it('says bust and leaves an empty streak out', () => {
