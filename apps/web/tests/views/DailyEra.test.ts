@@ -291,6 +291,25 @@ describe('DailyEra archive', () => {
         },
     );
 
+    // Mounted outside a RouterView, the view outlives the route change, as
+    // it would under a KeepAlive; in the app's RouterView it unmounts first.
+    it('stays on another page whose date is today', async () => {
+        await mountPage('/daily?date=2026-11-01');
+        await router.push('/teambuilder?date=2026-11-06');
+        await flushPromises();
+        expect(router.currentRoute.value.fullPath).toBe('/teambuilder?date=2026-11-06');
+    });
+
+    it('leaves an archive day without loading another game', async () => {
+        const scrollTo = vi.spyOn(window, 'scrollTo').mockImplementation(() => {});
+        await mountPage('/daily?date=2026-11-01');
+        getPuzzle.mockClear();
+        await router.push('/teambuilder');
+        await flushPromises();
+        expect(getPuzzle).not.toHaveBeenCalled();
+        expect(scrollTo).not.toHaveBeenCalled();
+    });
+
     it('switches games when the query changes and scrolls back up', async () => {
         const scrollTo = vi.spyOn(window, 'scrollTo').mockImplementation(() => {});
         await mountPage();
