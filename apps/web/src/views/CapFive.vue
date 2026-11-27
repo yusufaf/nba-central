@@ -42,8 +42,9 @@ let firstRun = true;
 watch(
     () => route.query.date,
     (raw) => {
-        // The route changes a moment before a navigation away unmounts this
-        // view; another page's ?date= is not a Cap Five day.
+        // In the app's RouterView this view unmounts before it sees another
+        // page's route; cached by a KeepAlive it would not, and another
+        // page's ?date= is not a Cap Five day.
         if (route.name !== 'capFive') return;
         const now = toIsoDate(new Date());
         const day =
