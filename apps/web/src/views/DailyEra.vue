@@ -60,6 +60,10 @@ let firstRun = true;
 watch(
     () => route.query.date,
     (raw) => {
+        // In the app's RouterView this view unmounts before it sees another
+        // page's route; cached by a KeepAlive it would not, and another
+        // page's ?date= is not a Daily Era day.
+        if (route.name !== 'dailyEra') return;
         const now = toIsoDate(new Date());
         const day = raw === undefined ? now : typeof raw === 'string' && isArchiveDay(raw, now) ? raw : null;
         if (day === null) {
