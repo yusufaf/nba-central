@@ -1,0 +1,1 @@
+var e=(e=new Date)=>e.getMonth()>=9?e.getFullYear():e.getFullYear()-1,t=(t=new Date)=>e(t)+1,n=(e=new Date)=>{let t=new Date(e.getFullYear(),5,30);return new Date(e.getFullYear(),e.getMonth(),e.getDate())<=t?t:new Date(e.getFullYear()+1,5,30)};export{n,t};
