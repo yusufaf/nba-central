@@ -22,7 +22,7 @@ pnpm refresh-coaches           # rewrite coaches.json from Basketball-Reference
 pnpm refresh-execs             # rewrite execs.json from Basketball-Reference
 pnpm refresh-historical-logos  # rewrite historicalLogos.json, upload images to S3/CloudFront
 pnpm refresh-historical-jerseys  # rewrite historicalJerseys.json, upload images to S3/CloudFront
-pnpm refresh-current-logos     # rewrite currentTeamLogos.json from ESPN's teams endpoint
+pnpm refresh-current-logos     # rewrite currentTeamLogos.json, upload images to S3/CloudFront
 pnpm refresh-daily-era         # crop Daily Era puzzle images, append them to the puzzle list
 pnpm refresh-team-seasons      # publish finished seasons' rosters to S3 (only seasons not yet published)
 pnpm run refresh-team-seasons -- --only NBA-1996  # re-publish just these seasons
@@ -33,11 +33,11 @@ pnpm run upload-hero-video -- --check  # validate the local file, upload nothing
 ```
 
 `refresh-historical-logos --check`, `refresh-historical-jerseys --check`,
-`refresh-daily-era --check`, `refresh-team-seasons --check` and `upload-hero-video --check` need no AWS
+`refresh-current-logos --check`, `refresh-daily-era --check`, `refresh-team-seasons --check` and `upload-hero-video --check` need no AWS
 access - they only fetch/parse. A real (non-`--check`) run of any of them
 uploads to the `assets` S3 bucket and needs `TeamBuilderAssetsCdn` already
 deployed (`cdk deploy`) plus AWS credentials able to write to that bucket.
-All four share that upload/CloudFront-lookup logic via
+All of them share that upload/CloudFront-lookup logic via
 `scripts/lib/assetsCdn.ts`. `refresh-daily-era` also reads and writes
 `daily-era-puzzles.json` in the `static-data` bucket.
 
