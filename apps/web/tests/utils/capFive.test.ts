@@ -1,7 +1,10 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import {
     CAP_FIVE_STORAGE_KEY,
+    capFiveArchiveDays,
+    capFiveDayStatus,
     capFiveGrade,
+    capFivePuzzleNumber,
     capFiveShareText,
     capFiveShortName,
     capFiveStats,
@@ -125,6 +128,38 @@ describe('share text', () => {
 
     it('lists tiers in pick order', () => {
         expect(capFiveTiers(result())).toEqual(['elite', 'great', 'great', 'good', 'average']);
+    });
+});
+
+describe('archive', () => {
+    it('numbers a puzzle by its date', () => {
+        expect(capFivePuzzleNumber('2026-10-22')).toBe(1);
+        expect(capFivePuzzleNumber('2026-11-02')).toBe(12);
+        expect(capFivePuzzleNumber('2026-11-25')).toBe(35);
+    });
+
+    it('lists the 30 days before today, newest first', () => {
+        const days = capFiveArchiveDays('2026-11-26');
+        expect(days).toHaveLength(30);
+        expect(days[0]).toBe('2026-11-25');
+        expect(days.at(-1)).toBe('2026-10-27');
+    });
+
+    it('stops at Cap Five #1', () => {
+        const days = capFiveArchiveDays('2026-11-02');
+        expect(days).toHaveLength(11);
+        expect(days.at(-1)).toBe('2026-10-22');
+        expect(capFiveArchiveDays('2026-10-22')).toEqual([]);
+    });
+
+    it.each([
+        ['an unplayed day', undefined, { label: 'Play', tone: 'play' }],
+        ['a perfect lineup', game({ total: 415 }), { label: 'Perfect', tone: 'success' }],
+        ['a busted lineup', game({ busted: true, total: 431 }), { label: 'Bust', tone: 'destructive' }],
+        ['any other score', game(), { label: '412/415', tone: 'muted' }],
+        ['an archive game', game({ total: 415 }, true), { label: 'Perfect', tone: 'success' }],
+    ])('labels %s', (_label, stored, status) => {
+        expect(capFiveDayStatus(stored)).toEqual(status);
     });
 });
 

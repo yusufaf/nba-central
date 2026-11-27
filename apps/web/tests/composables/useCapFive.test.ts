@@ -118,6 +118,25 @@ describe('useCapFive', () => {
         expect((await loaded()).status.value).toBe('unavailable');
     });
 
+    it('expires an earlier day the server no longer serves', async () => {
+        getPuzzle.mockRejectedValue(gone);
+        const game = useCapFive();
+        await game.load('2026-11-01');
+        expect(game.status.value).toBe('expired');
+    });
+
+    it('locks in an earlier day as an archive game', async () => {
+        getPuzzle.mockResolvedValue({ success: true, data: { ...puzzleView, date: '2026-11-01', puzzleNumber: 11 } });
+        submitApi.mockResolvedValue({ success: true, data: result({ date: '2026-11-01', puzzleNumber: 11 }) });
+        const game = useCapFive();
+        await game.load('2026-11-01');
+        pickAll(game);
+        await game.submit();
+        expect(readCapFiveGames()['2026-11-01'].archive).toBe(true);
+        expect(game.stats.value.currentStreak).toBe(0);
+        expect(game.stats.value.played).toBe(1);
+    });
+
     it('is an error when the load fails otherwise', async () => {
         getPuzzle.mockRejectedValue(new Error('network'));
         vi.spyOn(console, 'error').mockImplementation(() => {});

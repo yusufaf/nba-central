@@ -393,6 +393,12 @@ describe('archiveDays', () => {
         expect(archiveDays('2026-10-05')).toEqual([]);
     });
 
+    it('stops at the first puzzle it is given', () => {
+        const days = archiveDays('2026-11-06', '2026-11-01');
+        expect(days).toHaveLength(5);
+        expect(days.at(-1)).toBe('2026-11-01');
+    });
+
     it('knows which days are in the archive', () => {
         expect(isArchiveDay('2026-11-05', '2026-11-06')).toBe(true);
         expect(isArchiveDay('2026-10-07', '2026-11-06')).toBe(true);
