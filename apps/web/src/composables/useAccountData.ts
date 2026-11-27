@@ -14,7 +14,7 @@ export const matchesDeleteConfirmation = (typed: string) =>
     typed.trim().toLowerCase() === DELETE_CONFIRMATION_PHRASE;
 
 // sessionStorage, like the session-expired flag: signing out leaves the page
-// (Logto's end-session endpoint, then back to origin), and App.vue reads
+// (Logto's end-session endpoint, then back to origin), and main.ts reads
 // this on the way back in to show the confirmation page.
 const DATA_DELETED_KEY = 'nba-central:data-deleted';
 

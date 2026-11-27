@@ -14,23 +14,24 @@ const canonicalOf = () => document.querySelector('link[rel="canonical"]')?.getAt
 
 describe('router in a PR preview build', () => {
     let router: Router;
-    // A cold import of the router transforms every eagerly loaded view, which
-    // takes close to the default 10s while other suites run alongside.
     beforeAll(async () => {
         ({ default: router } = await import('@/router'));
-    }, 30_000);
+    });
+
+    // Views load on demand, so each push transforms the view it lands on,
+    // which can take close to the default 10s while other suites run alongside.
 
     it('sends every way into sign-in to the sign-in-off page', async () => {
         for (const path of ['/login', '/sign-up', '/callback', '/settings']) {
             await router.push(path);
             expect(router.currentRoute.value.name, path).toBe('sign-in-off');
         }
-    });
+    }, 30_000);
 
     it('leaves public pages alone', async () => {
         await router.push('/scores');
         expect(router.currentRoute.value.name).toBe('scores');
-    });
+    }, 30_000);
 
     it("strips production's head tags on a first load of a team page, with no server to do it", async () => {
         vi.resetModules();

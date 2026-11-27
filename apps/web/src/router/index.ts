@@ -1,21 +1,9 @@
 import { createRouter, createWebHashHistory, createWebHistory, START_LOCATION } from 'vue-router';
-import Home from '../views/Home.vue';
-import TeamBuilder from '@/views/TeamBuilder.vue';
-import Scores from '@/views/Scores.vue';
-import BoxScore from '@/views/BoxScore.vue';
-import News from '@/views/News.vue';
-import Teams from '@/views/Teams.vue';
-import PublicTeam from '@/views/PublicTeam.vue';
-import Login from '@/views/Login.vue';
-import SignUp from '@/views/SignUp.vue';
-import Callback from '@/views/Callback.vue';
-import Settings from '@/views/Settings.vue';
-import DataDeleted from '@/views/DataDeleted.vue';
-import NotFound from '@/views/NotFound.vue';
-import SignInOff from '@/views/SignInOff.vue';
+import Home from '@/views/Home.vue';
 import { useLogto } from '@logto/vue';
 import { requireSignedIn } from './guards';
 import { syncIndexing } from './indexing';
+import { reloadOnStaleChunk } from './staleChunk';
 import { IS_PREVIEW } from '@/utils/preview';
 
 const router = createRouter({
@@ -25,6 +13,10 @@ const router = createRouter({
         ? createWebHashHistory(import.meta.env.BASE_URL)
         : createWebHistory(import.meta.env.BASE_URL),
     routes: [
+        // Every view but this one is its own chunk, fetched on its route's
+        // first visit. Home is the most common landing page and under 1 KB
+        // gzipped, so it skips that round trip. check:bundle budgets what
+        // loads with the page.
         {
             path: '/',
             name: 'home',
@@ -35,16 +27,14 @@ const router = createRouter({
             path: '/teambuilder',
             name: 'teamBuilder',
             meta: { indexable: true },
-            component: TeamBuilder,
+            component: () => import('@/views/TeamBuilder.vue'),
         },
         {
             path: '/scores',
             name: 'scores',
             meta: { indexable: true },
-            component: Scores,
+            component: () => import('@/views/Scores.vue'),
         },
-        // Lazy: it shares nothing with the other pages, so it stays out of the
-        // entry chunk.
         {
             path: '/standings',
             name: 'standings',
@@ -54,18 +44,16 @@ const router = createRouter({
         {
             path: '/game/:gameId',
             name: 'boxScore',
-            component: BoxScore,
+            component: () => import('@/views/BoxScore.vue'),
             props: true,
         },
         {
             path: '/news',
             name: 'news',
             meta: { indexable: true },
-            component: News,
+            component: () => import('@/views/News.vue'),
         },
-        // The daily games, linked from the header's Daily menu. Lazy, unlike
-        // the rest: a standalone game shares nothing with the other pages, so
-        // it stays out of the entry chunk and out of every router import.
+        // The daily games, linked from the header's Daily menu.
         {
             path: '/daily',
             name: 'dailyEra',
@@ -81,49 +69,49 @@ const router = createRouter({
         {
             path: '/teams',
             name: 'teams',
-            component: Teams,
+            component: () => import('@/views/Teams.vue'),
         },
         {
             path: '/t/:teamUUID',
             name: 'publicTeam',
             meta: { indexable: true, headFromServer: true },
-            component: PublicTeam,
+            component: () => import('@/views/PublicTeam.vue'),
             props: true,
         },
         {
             path: '/login',
             name: 'login',
-            component: Login,
+            component: () => import('@/views/Login.vue'),
         },
         {
             path: '/sign-up',
             name: 'sign-up',
-            component: SignUp,
+            component: () => import('@/views/SignUp.vue'),
         },
         {
             path: '/settings',
             name: 'settings',
-            component: Settings,
+            component: () => import('@/views/Settings.vue'),
             meta: { requiresAuth: true },
         },
         // Where a successful "Delete my data" lands, after the sign-out.
         {
             path: '/data-deleted',
             name: 'data-deleted',
-            component: DataDeleted,
+            component: () => import('@/views/DataDeleted.vue'),
         },
         {
             path: '/callback',
             name: 'callback',
-            component: Callback,
+            component: () => import('@/views/Callback.vue'),
         },
-        ...(IS_PREVIEW ? [{ path: '/sign-in-off', name: 'sign-in-off', component: SignInOff }] : []),
+        ...(IS_PREVIEW ? [{ path: '/sign-in-off', name: 'sign-in-off', component: () => import('@/views/SignInOff.vue') }] : []),
         // Anything no route above matches. Rendered in place, not redirected,
         // so the URL stays what was asked for. No `indexable`, so noindex.
         {
             path: '/:pathMatch(.*)*',
             name: 'not-found',
-            component: NotFound,
+            component: () => import('@/views/NotFound.vue'),
         },
     ],
 });
@@ -149,5 +137,6 @@ router.afterEach((to, from) => {
     if (!IS_PREVIEW && from === START_LOCATION && to.meta.headFromServer) return;
     syncIndexing(to.path, to.meta.indexable === true);
 });
+reloadOnStaleChunk(router);
 
 export default router;

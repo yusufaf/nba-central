@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { RouterView, useRouter } from "vue-router";
+import { RouterView } from "vue-router";
 import { onMounted, ref } from 'vue';
 import { toast } from 'vue-sonner';
 import AppHeader from "./views/Header.vue";
@@ -12,7 +12,6 @@ import {
     SESSION_EXPIRED_MESSAGE,
 } from '@/composables/useSessionExpiry';
 import { useAccountSession } from '@/composables/useCurrentUser';
-import { consumeDataDeletedFlag } from '@/composables/useAccountData';
 import { discardAbandonedPendingSave } from '@/composables/usePendingSave';
 import { applyDisplayPreferences, useResolvedTheme } from '@/composables/useDisplayPreferences';
 import { IS_PREVIEW } from '@/utils/preview';
@@ -27,13 +26,6 @@ useAccountSession();
 discardAbandonedPendingSave(window.location);
 applyDisplayPreferences();
 const theme = useResolvedTheme();
-
-// Signing out after a delete can only return to the site root, the one
-// post-sign-out URL Logto is known to accept; this finishes the trip.
-const router = useRouter();
-if (consumeDataDeletedFlag()) {
-    void router.replace({ name: 'data-deleted' });
-}
 
 onMounted(() => {
     if (consumeSessionExpiredFlag()) {

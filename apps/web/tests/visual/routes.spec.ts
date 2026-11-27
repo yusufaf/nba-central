@@ -163,6 +163,9 @@ async function cutEspn(page: Page) {
     await page.route(ESPN_IMAGES, (route) => route.abort());
 }
 
+/** Lazy views render after load; wait for the routed one, not a timer. */
+const viewRendered = (page: Page) => page.locator('.app-main > *').first().waitFor({ state: 'attached' });
+
 /** Hides anything whose content is inherently unstable, then waits for paint. */
 async function settle(page: Page) {
     // The hero clip would land on a different frame every run. Its stream also
@@ -174,6 +177,7 @@ async function settle(page: Page) {
             *, *::before, *::after { transition: none !important; animation: none !important; }
         `,
     });
+    await viewRendered(page);
     await page.waitForLoadState('load');
     await page.evaluate(() => document.fonts.ready);
     // Vue renders after mount; one frame is enough once fonts have resolved.
@@ -265,6 +269,7 @@ test('page shell width is consistent across routes', async ({ page }) => {
     for (const { path, name } of ROUTES) {
         // domcontentloaded, not load: the hero video keeps load pending.
         await page.goto(path, { waitUntil: "domcontentloaded" });
+        await viewRendered(page);
         await page.waitForTimeout(200);
         // Read the DOM directly: a locator would retry for its full timeout on
         // the routes that legitimately have no shell (home and the auth pages).
@@ -288,6 +293,7 @@ test('no Tailwind class on a rendered page failed to compile', async ({ page }) 
     await stubNetwork(page);
     for (const { path } of ROUTES) {
         await page.goto(path, { waitUntil: "domcontentloaded" });
+        await viewRendered(page);
         await page.waitForTimeout(200);
         const dead = await page.evaluate(() =>
             [...document.querySelectorAll('[class]')]
@@ -310,6 +316,7 @@ test('no route requests the team-logos endpoint', async ({ page }) => {
     });
     for (const { path } of ROUTES) {
         await page.goto(path, { waitUntil: 'domcontentloaded' });
+        await viewRendered(page);
         await page.waitForTimeout(500);
     }
     expect(hits).toEqual([]);
@@ -325,6 +332,7 @@ test('/teambuilder requests nothing from ESPN', async ({ page }) => {
         if (/(^|\.)espn(cdn)?\.com$/.test(hostname)) espn.push(request.url());
     });
     await page.goto('/teambuilder', { waitUntil: 'domcontentloaded' });
+    await viewRendered(page);
     await page.waitForTimeout(500);
     expect(espn).toEqual([]);
 });

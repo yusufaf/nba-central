@@ -13,6 +13,7 @@ import 'v-calendar/style.css';
 import App from './App.vue';
 import router from './router';
 import { captureLandingSource } from './lib/attribution';
+import { consumeDataDeletedFlag } from './composables/useAccountData';
 
 import './assets/main.css';
 import './assets/vendor-overrides.css';
@@ -36,6 +37,19 @@ const logtoConfig: LogtoConfig = {
 
 app.use(createLogto, logtoConfig);
 
+// Signing out after a delete can only return to the site root, the one
+// post-sign-out URL Logto is known to accept; this finishes the trip. Here,
+// after app.use(router) has started the first navigation, rather than in
+// App.vue, so Home never renders first: the replace cancels the navigation
+// to /, and isReady() then waits for the replace.
+if (consumeDataDeletedFlag()) void router.replace({ name: 'data-deleted' }).catch(() => {});
+
 // The theme class is already on <html>: index.html sets it before the first
 // paint, and applyDisplayPreferences (App.vue) keeps it in step from there.
-app.mount('#app');
+// The first view is its own chunk, so mounting before it loads would paint
+// the footer under the header and then shove it down. A failed first
+// navigation still mounts, and one that hangs (a guard waiting on Logto with
+// site data blocked, a stalled chunk) shows the layout after 3 s.
+const firstRoute = router.isReady().catch(() => {});
+const stalled = new Promise<void>((resolve) => setTimeout(resolve, 3000));
+void Promise.race([firstRoute, stalled]).then(() => app.mount('#app'));
