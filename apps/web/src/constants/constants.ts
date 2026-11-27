@@ -139,11 +139,7 @@ export const PLAY_TYPES = {
     SUBSTITUTION: "substitution",
 } as const;
 
-/* API */
-export const ESPN_NEWS_URL =
-    "https://site.api.espn.com/apis/site/v2/sports/basketball/nba/news";
-
-/* API URLs for reference 
+/* API URLs for reference
 - https://site.api.espn.com/apis/site/v2/sports/basketball/nba/teams/7
 - ESPN Scoreboard: http://site.api.espn.com/apis/site/v2/sports/basketball/nba/scoreboard
 - ESPN News: http://site.api.espn.com/apis/site/v2/sports/basketball/nba/news
