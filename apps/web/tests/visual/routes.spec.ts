@@ -7,6 +7,7 @@ import liveHeadshots from '../fixtures/liveData/headshots.json' with { type: 'js
 import liveInjuries from '../fixtures/liveData/injuries.json' with { type: 'json' };
 import teamSeasonsIndex from '../fixtures/liveData/team-seasons-index.json' with { type: 'json' };
 import { DAILY_ERA_FIRST_DATE } from '../../src/constants/dailyEra';
+import { CAP_FIVE_FIRST_DATE } from '../../src/constants/capFive';
 import { picks, puzzleView, result as capFiveResult } from '../helpers/capFive';
 
 /**
@@ -118,17 +119,23 @@ async function stubNetwork(page: Page) {
             ),
         }),
     );
-    // Cap Five: the same pool for every date, and a fixed 412 of 415 reveal.
+    // Cap Five: the same pool for every date, numbered by its date, and a fixed
+    // 412 of 415 reveal.
     await page.route('**/api/daily/cap-five/**', (route) => {
         const date = new URL(route.request().url()).pathname.split('/').at(-1)!;
         const isSubmit = route.request().method() === 'POST';
         const submitted = isSubmit ? (route.request().postDataJSON() as { date: string }).date : date;
+        // Both bare YYYY-MM-DD, so both parse as UTC midnight.
+        const numberFor = (day: string) =>
+            Math.round((Date.parse(day) - Date.parse(CAP_FIVE_FIRST_DATE)) / 86_400_000) + 1;
         return route.fulfill({
             status: 200,
             contentType: 'application/json',
             body: JSON.stringify({
                 success: true,
-                data: isSubmit ? capFiveResult({ date: submitted }) : { ...puzzleView, date },
+                data: isSubmit
+                    ? capFiveResult({ date: submitted, puzzleNumber: numberFor(submitted) })
+                    : { ...puzzleView, date, puzzleNumber: numberFor(date) },
             }),
         });
     });

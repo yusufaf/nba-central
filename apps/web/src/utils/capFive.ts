@@ -1,7 +1,8 @@
 import type { CapFiveResult } from "@/models/api";
-import { CAP_FIVE_LINEUP_SIZE } from "@/constants/capFive";
+import { CAP_FIVE_FIRST_DATE, CAP_FIVE_LINEUP_SIZE } from "@/constants/capFive";
 import { ratingTier, type RatingTier } from "@/constants/ratings";
-import { addDays, parseIsoDate } from "@/utils/date";
+import { addDays, daysBetween, parseIsoDate } from "@/utils/date";
+import { archiveDays } from "@/utils/dailyEra";
 import { appUrl } from "@/utils/appUrl";
 
 export interface StoredCapFiveGame {
@@ -111,6 +112,25 @@ export const capFiveGrade = (result: CapFiveResult): CapFiveGrade => {
     if (short <= 5) return "close";
     if (short <= 15) return "near";
     return "far";
+};
+
+export const capFivePuzzleNumber = (day: string): number => daysBetween(CAP_FIVE_FIRST_DATE, day) + 1;
+
+export const capFiveArchiveDays = (today: string): string[] => archiveDays(today, CAP_FIVE_FIRST_DATE);
+
+export interface CapFiveDayStatus {
+    label: string;
+    tone: "success" | "destructive" | "muted" | "play";
+}
+
+/** An archive row's status: Play until a lineup is locked in, then its outcome. */
+export const capFiveDayStatus = (game: StoredCapFiveGame | undefined): CapFiveDayStatus => {
+    if (!game) return { label: "Play", tone: "play" };
+    const { result } = game;
+    const grade = capFiveGrade(result);
+    if (grade === "perfect") return { label: "Perfect", tone: "success" };
+    if (grade === "bust") return { label: "Bust", tone: "destructive" };
+    return { label: `${result.total}/${result.optimal.total}`, tone: "muted" };
 };
 
 export interface CapFiveStats {

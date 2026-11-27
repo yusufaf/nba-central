@@ -269,16 +269,19 @@ export const dailyEraStats = (
 export const dailyEraPuzzleNumber = (day: string): number =>
     daysBetween(DAILY_ERA_FIRST_DATE, day) + 1;
 
-/** The playable days before today, newest first, never before puzzle #1. */
-export const archiveDays = (today: string): string[] => {
+/**
+ * The playable days before today, newest first, never before `firstDate`
+ * (puzzle #1). The 30-day window is the server's, shared by both daily games.
+ */
+export const archiveDays = (today: string, firstDate: string = DAILY_ERA_FIRST_DATE): string[] => {
     const days: string[] = [];
     for (let i = 1; i <= DAILY_ERA_ARCHIVE_DAYS; i++) {
         const day = addDays(today, -i);
-        if (day < DAILY_ERA_FIRST_DATE) break;
+        if (day < firstDate) break;
         days.push(day);
     }
     return days;
 };
 
-export const isArchiveDay = (day: string, today: string): boolean =>
-    archiveDays(today).includes(day);
+export const isArchiveDay = (day: string, today: string, firstDate: string = DAILY_ERA_FIRST_DATE): boolean =>
+    archiveDays(today, firstDate).includes(day);

@@ -76,7 +76,9 @@ export const useCapFive = () => {
         } catch (err) {
             if (seq !== loadSeq) return;
             if (statusOf(err) === 410) {
-                status.value = "unavailable";
+                // An earlier day the server refuses has aged out of the
+                // window; today's 410 means it isn't published yet.
+                status.value = day < today.value ? "expired" : "unavailable";
             } else {
                 console.error("Failed to load the Cap Five puzzle:", err);
                 status.value = "error";
