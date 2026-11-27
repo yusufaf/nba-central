@@ -78,8 +78,9 @@ jobs:
 
       - run: pnpm --filter web build
 
-      # three.js stays out of the entry chunk, and the lazy 3D chunk stays
-      # within budget (scripts/check-bundle.mjs).
+      # The JS that loads with the page stays within its gzipped budget (so
+      # route views stay lazy), three.js stays out of it, and the lazy 3D
+      # chunk stays within its own budget (scripts/check-bundle.mjs).
       - run: pnpm --filter web check:bundle --require-3d
 
   cdk:
