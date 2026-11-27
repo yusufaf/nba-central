@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { parseCurrentLogos } from "../../scripts/lib/currentLogos";
+import { currentLogoObjectKey, parseCurrentLogos } from "../../scripts/lib/currentLogos";
 
 const logoUrl = (slug: string) =>
 	`https://a.espncdn.com/i/teamlogos/nba/500/${slug}.png`;
@@ -33,7 +33,7 @@ describe("parseCurrentLogos", () => {
 		);
 
 		expect(rows).toEqual([
-			{ name: "Atlanta Hawks", logo: logoUrl("atl") },
+			{ name: "Atlanta Hawks", slug: "atl", source: logoUrl("atl") },
 		]);
 	});
 
@@ -50,15 +50,16 @@ describe("parseCurrentLogos", () => {
 			payload([team("bos"), team("gs"), team("atl"), team("det")]),
 		);
 
-		expect(rows.map((row) => row.logo)).toEqual([
-			logoUrl("atl"),
-			logoUrl("bos"),
-			logoUrl("det"),
-			logoUrl("gs"),
-		]);
+		expect(rows.map((row) => row.slug)).toEqual(["atl", "bos", "det", "gs"]);
 	});
 
-	it("leaves logo empty when a team has no default logo", () => {
+	it("takes the slug from the logo's file name", () => {
+		const [row] = parseCurrentLogos(payload([team("utah")]));
+
+		expect(row.slug).toBe("utah");
+	});
+
+	it("leaves source and slug empty when a team has no default logo", () => {
 		const [row] = parseCurrentLogos(
 			payload([
 				{
@@ -73,10 +74,29 @@ describe("parseCurrentLogos", () => {
 			]),
 		);
 
-		expect(row.logo).toBe("");
+		expect(row).toMatchObject({ source: "", slug: "" });
 	});
 
 	it("returns no rows when the payload shape changes", () => {
 		expect(parseCurrentLogos("{}")).toEqual([]);
+	});
+});
+
+describe("currentLogoObjectKey", () => {
+	const png = new Uint8Array([0x89, 0x50, 0x4e, 0x47, 1, 2, 3]);
+
+	it("content-addresses the image under logos/current/", () => {
+		expect(currentLogoObjectKey("atl", png)).toMatch(
+			/^logos\/current\/atl\.[0-9a-f]{12}\.png$/,
+		);
+	});
+
+	it("is stable for identical bytes and changes with them", () => {
+		const same = currentLogoObjectKey("atl", new Uint8Array(png));
+		expect(same).toBe(currentLogoObjectKey("atl", png));
+
+		const edited = new Uint8Array(png);
+		edited[edited.length - 1] = 9;
+		expect(currentLogoObjectKey("atl", edited)).not.toBe(same);
 	});
 });
