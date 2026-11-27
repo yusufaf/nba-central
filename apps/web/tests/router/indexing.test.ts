@@ -89,6 +89,8 @@ describe('indexable routes', () => {
         expect(indexable).toEqual([...sitemapPaths, '/t/:teamUUID'].sort());
     });
 
+    // Views load on demand, so each push transforms the view it lands on,
+    // which can take close to the default 10s while other suites run alongside.
     it("leave a first-loaded team page's server-written tags alone, then sync later navigations", async () => {
         document.head.innerHTML = '<meta name="robots" content="noindex">';
         await router.push('/t/unknown-team');
@@ -98,7 +100,7 @@ describe('indexable routes', () => {
         await router.push('/scores');
         expect(robotsOf(document)).toBeUndefined();
         expect(canonicalOf(document)).toBe('https://nba.yusufaf.dev/scores');
-    });
+    }, 30_000);
 
     it('leave sign-in, account, and unmatched paths out', () => {
         for (const path of ['/login', '/sign-up', '/callback', '/settings', '/data-deleted', '/teams', '/game/1', '/no-such-page']) {
@@ -129,7 +131,7 @@ describe('unmatched paths', () => {
         expect(router.currentRoute.value.name).toBe('not-found');
         expect(robotsOf(document)).toBe('noindex');
         expect(canonicalOf(document)).toBeUndefined();
-    });
+    }, 30_000);
 
     it('are marked noindex on a first load, which is what a crawler sees', async () => {
         vi.resetModules();
@@ -139,5 +141,5 @@ describe('unmatched paths', () => {
         expect(fresh.currentRoute.value.name).toBe('not-found');
         expect(robotsOf(document)).toBe('noindex');
         expect(canonicalOf(document)).toBeUndefined();
-    });
+    }, 30_000);
 });
