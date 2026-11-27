@@ -27,8 +27,7 @@
 import * as fs from "fs";
 import { createHash } from "crypto";
 import { config as dotEnvConfig } from "dotenv";
-import { HeadObjectCommand, PutObjectCommand } from "@aws-sdk/client-s3";
-import { setupAssetsCdnUpload, type AssetsCdnUpload } from "./lib/assetsCdn";
+import { setupAssetsCdnUpload, uploadIfMissing } from "./lib/assetsCdn";
 import {
 	collapseEras,
 	logoObjectKey,
@@ -129,42 +128,6 @@ const fetchLogoImage = async (
 		return null;
 	}
 	return bytes;
-};
-
-/**
- * Puts one era's PNG in the assets bucket unless an object already sits at
- * its content-addressed key - identical key means identical bytes, so a
- * re-run skips it instead of stacking versions on the versioned bucket.
- * Returns whether an upload actually happened.
- */
-const uploadLogo = async (
-	upload: AssetsCdnUpload,
-	objectKey: string,
-	png: Uint8Array,
-): Promise<boolean> => {
-	try {
-		await upload.s3Client.send(
-			new HeadObjectCommand({ Bucket: upload.bucketName, Key: objectKey }),
-		);
-		return false;
-	} catch (err) {
-		// S3 answers a HEAD on a missing key with 404, or 403 when the caller
-		// lacks s3:ListBucket - either way, fall through and try the upload.
-		const status = (err as { $metadata?: { httpStatusCode?: number } }).$metadata?.httpStatusCode;
-		if (status !== 404 && status !== 403) throw err;
-	}
-	await upload.s3Client.send(
-		new PutObjectCommand({
-			Bucket: upload.bucketName,
-			Key: objectKey,
-			Body: png,
-			ContentType: "image/png",
-			// The hash in the key is the whole cache-busting mechanism - this
-			// object's content never changes at this key, so cache it hard.
-			CacheControl: "public, max-age=31536000, immutable",
-		}),
-	);
-	return true;
 };
 
 const main = async () => {
@@ -280,7 +243,7 @@ const main = async () => {
 
 		let logo = "";
 		if (upload) {
-			if (await uploadLogo(upload, objectKey, png)) {
+			if (await uploadIfMissing(upload, objectKey, png, "image/png")) {
 				uploaded++;
 			} else {
 				unchanged++;
