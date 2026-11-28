@@ -1,1 +1,0 @@
-import{F as e,M as t,_ as n,f as r,ht as i,jt as a}from"./runtime-core.esm-bundler-D3XHpsY-.js";import{t as o}from"./utils-BiyX7irU.js";var s=n({__name:`CardContent`,props:{class:{type:[Boolean,null,String,Object,Array]}},setup(n){let s=n;return(n,c)=>(t(),r(`div`,{class:a(i(o)(`p-6 pt-0`,s.class))},[e(n.$slots,`default`)],2))}});export{s as t};
