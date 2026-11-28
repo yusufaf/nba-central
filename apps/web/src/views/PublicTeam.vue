@@ -23,6 +23,7 @@ import { track } from '@/lib/analytics';
 import { useDateFormat } from '@/composables/useDateFormat';
 import { arenaDetails, backfillArena } from '@/utils/arenaDetails';
 import { centreLogoUrl } from '@/utils/court';
+import { resolveSavedLogoUrl } from '@/utils/savedLogoUrl';
 import CourtFloor from '@/components/court/CourtFloor.vue';
 import CourtStage from '@/components/court/CourtStage.vue';
 import { Scene3DUnavailable, TeamScene3DAsync } from '@/components/scene3d';
@@ -83,7 +84,7 @@ const load = async (teamUUID: string) => {
         const response = await teamApi.getPublicTeam(teamUUID);
         if (seq !== requestSeq) return;
         if (response.success) {
-            team.value = response.data;
+            team.value = { ...response.data, logoUrl: resolveSavedLogoUrl(response.data.logoUrl ?? '') };
             track('public_team_viewed', { teamUUID });
         } else {
             notFound.value = true;

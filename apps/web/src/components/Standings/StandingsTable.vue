@@ -21,7 +21,7 @@ const TITLES: Record<ConferenceName, string> = {
 
 const logoByName = new Map(currentTeamLogos.map((team) => [team.name, team.logo]));
 
-// The logos are ESPN hotlinks. One that fails to load is dropped rather than
+// The logos are on the assets CDN. One that fails to load is dropped rather than
 // left as a broken-image glyph.
 const failedLogos = reactive(new Set<string>());
 const logoFor = (team: StandingsTeam) =>

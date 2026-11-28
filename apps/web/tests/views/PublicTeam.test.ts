@@ -18,6 +18,9 @@ vi.mock("@/utils/downloadFile", () => ({
 
 import PublicTeam from "@/views/PublicTeam.vue";
 import { teamApi } from "@/network/api";
+import currentTeamLogosData from "@/assets/data/currentTeamLogos.json";
+import type { CurrentTeamLogo } from "@/models/types";
+import type { PublicTeam as PublicTeamData } from "@/models/api";
 
 const team = {
     teamUUID: "t1",
@@ -80,6 +83,18 @@ describe("PublicTeam", () => {
         expect(text).toContain("Bench Guy");
         expect(text).toContain("Phil Jackson");
         expect(text).toContain("United Center");
+    });
+
+    it("shows an old ESPN team logo from the assets CDN", async () => {
+        const bos = (currentTeamLogosData as CurrentTeamLogo[]).find((row) => row.slug === "bos");
+        vi.mocked(teamApi.getPublicTeam).mockResolvedValue({
+            success: true,
+            data: { ...team, logoUrl: "https://a.espncdn.com/i/teamlogos/nba/500/bos.png" } as unknown as PublicTeamData,
+        });
+        const wrapper = mountView();
+        await flushPromises();
+
+        expect(wrapper.find('img[alt="Sharers logo"]').attributes("src")).toBe(bos?.logo);
     });
 
     it("shows the not-found state for a private or missing team", async () => {

@@ -11,7 +11,8 @@ import {
 import { DEFAULT_APPEARANCE, DEFAULT_STAFF_APPEARANCE } from "@/utils/appearance";
 import type { EntityRef, SavedTeam, TeamRosterEntry } from "@/models/api";
 import historicalLogosData from "@/assets/data/historicalLogos.json";
-import type { Arena, Coach, GM, HistoricalLogo, Player } from "@/models/types";
+import currentTeamLogosData from "@/assets/data/currentTeamLogos.json";
+import type { Arena, Coach, CurrentTeamLogo, GM, HistoricalLogo, Player } from "@/models/types";
 
 const apiPlayer = (overrides: Record<string, any> = {}) => ({
     id: "jamesle01",
@@ -393,6 +394,16 @@ describe("hydrateTeam", () => {
         });
 
         expect(hydrated.teamLogo).toBe(era.logo);
+    });
+
+    it("upgrades a saved ESPN logo URL to the team's CDN URL", () => {
+        const bos = (currentTeamLogosData as CurrentTeamLogo[]).find((row) => row.slug === "bos");
+        const hydrated = hydrateTeam({
+            ...baseSaved,
+            logoUrl: "https://a.espncdn.com/i/teamlogos/nba/500/bos.png",
+        });
+
+        expect(hydrated.teamLogo).toBe(bos?.logo);
     });
 });
 

@@ -75,9 +75,11 @@ export type HistoricalLogo = {
     logo: string;
 };
 
-// One row of currentTeamLogos.json (refresh-current-logos in apps/cdk).
+// One row of currentTeamLogos.json (refresh-current-logos in apps/cdk);
+// `logo` is the team's assets CDN URL.
 export type CurrentTeamLogo = {
     name: string;
+    slug: string;
     logo: string;
 };
 

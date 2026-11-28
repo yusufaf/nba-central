@@ -159,7 +159,7 @@ const handleFileChange = (event: Event) => {
                         </TabsList>
                         <TabsContent value="current" class="mt-4">
                             <div class="team-logos">
-                                <template v-for="team in currentTeamLogos" :key="team.logo">
+                                <template v-for="team in currentTeamLogos" :key="team.slug">
                                     <img
                                         :src="team.logo"
                                         :alt="team.name"
