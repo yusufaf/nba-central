@@ -1,5 +1,6 @@
 import type { RouteLocationRaw } from 'vue-router';
 import type { SaveTeamPayload } from '@/models/api';
+import { isSaveTeamPayload } from '@/utils/teamPayload';
 
 /*
  * A team built signed out has to survive a full-page trip to Logto and back,
@@ -28,19 +29,6 @@ interface PendingSave {
     team: SaveTeamPayload;
 }
 
-// Every saved player is a snapshot with a fullName, built-in or custom.
-const isRosterEntry = (entry: unknown): boolean => {
-    if (typeof entry !== 'object' || entry === null) return false;
-    const { slot, player } = entry as { slot?: unknown; player?: { fullName?: unknown } | null };
-    return (
-        Number.isInteger(slot) &&
-        (slot as number) >= 0 &&
-        typeof player === 'object' &&
-        player !== null &&
-        typeof player.fullName === 'string'
-    );
-};
-
 const parse = (raw: string | null, now: number): SaveTeamPayload | null => {
     if (!raw) return null;
     let stored: Partial<PendingSave> | null;
@@ -55,12 +43,7 @@ const parse = (raw: string | null, now: number): SaveTeamPayload | null => {
     if (typeof savedAt !== 'number' || now - savedAt > PENDING_SAVE_MAX_AGE_MS || savedAt > now) {
         return null;
     }
-    if (typeof team !== 'object' || team === null) return null;
-    if (typeof team.title !== 'string' || !Array.isArray(team.roster)) return null;
-    if (!team.roster.every(isRosterEntry)) return null;
-    const slots = team.roster.map((entry) => entry.slot);
-    if (new Set(slots).size !== slots.length) return null;
-    return team;
+    return isSaveTeamPayload(team) ? team : null;
 };
 
 const read = (): string | null => {

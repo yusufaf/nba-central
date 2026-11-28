@@ -1,9 +1,9 @@
 <script setup lang="ts">
-import { ref, shallowRef, computed, watch, toRaw, provide, onMounted, type Ref } from "vue";
+import { ref, shallowRef, computed, watch, toRaw, provide, onMounted, onBeforeUnmount, type Ref } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { toast } from 'vue-sonner';
 import axios from 'axios';
-import { until } from "@vueuse/core";
+import { until, useDebounceFn, useEventListener } from "@vueuse/core";
 import { useLogto } from "@logto/vue";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Button } from "@/components/ui/button";
@@ -43,6 +43,16 @@ import {
     readPendingSave,
 } from "@/composables/usePendingSave";
 import {
+    clearDraft,
+    draftKeyFor,
+    readDraft,
+    resolveDraftKey,
+    saveDraft,
+    waitForDraftKey,
+} from "@/composables/useBuilderDraft";
+import { useCurrentUser } from "@/composables/useCurrentUser";
+import type { SaveTeamPayload } from "@/models/api";
+import {
     useTeamHistory,
     snapshotBuilder,
     restoreBuilder,
@@ -79,6 +89,15 @@ const route = useRoute();
 const router = useRouter();
 const userTeamsStore = useUserTeamsStore();
 const { isAuthenticated, isLoading: authLoading } = useLogto();
+const { currentUser } = useCurrentUser();
+const currentUserId = computed(() => currentUser.value?.id ?? null);
+
+// An unsaved team is kept in localStorage (useBuilderDraft) so leaving the
+// builder doesn't lose it. Only a user's own edits make it worth keeping:
+// set by recordChange, which every edit goes through, and cleared by
+// forgetHistory, which every load goes through. So opening a remix or a real
+// team never overwrites the team kept from before.
+let draftDirty = false;
 
 // Save needs an account. Signed out, it asks first rather than sending a
 // request the API would refuse.
@@ -419,6 +438,9 @@ const { show: showUndoToast, dismiss: dismissUndoToast } = useUndoToast((entryId
 // Called just before every undoable change.
 const recordChange = (action: HistoryAction) => {
     dismissUndoToast();
+    draftDirty = true;
+    // Debounced, so it runs after the change is applied, and once per burst.
+    scheduleDraftWrite();
     return history.push(action);
 };
 
@@ -426,6 +448,10 @@ const recordChange = (action: HistoryAction) => {
 // undoing into the previous one would mix the two, or detach the builder
 // from the team it now edits.
 const forgetHistory = () => {
+    // The team being left goes to storage first, or an edit made inside the
+    // debounce window would be lost.
+    writeDraft();
+    draftDirty = false;
     history.clear();
     dismissUndoToast();
 };
@@ -650,10 +676,10 @@ const resetTeam = () => {
     showUndoToast("Team cleared successfully", entryId);
 };
 
-const buildSavePayload = () =>
+const buildSavePayload = (defaultDescription = "Custom NBA Team") =>
     serializeTeam({
         teamName: teamName.value,
-        teamDescription: teamDescription.value || "Custom NBA Team",
+        teamDescription: teamDescription.value || defaultDescription,
         teamCity: teamCity.value,
         teamCountry: teamCountry.value,
         teamLogo: teamLogo.value,
@@ -665,6 +691,49 @@ const buildSavePayload = () =>
         teamUniform: teamUniform.value,
         teamNumbers: teamNumbers.value,
     });
+
+const isBlankTeam = () =>
+    selectedPlayersData.value.size === 0 &&
+    !teamName.value &&
+    !teamDescription.value &&
+    !teamCity.value &&
+    !teamCountry.value &&
+    !teamLogo.value &&
+    !teamJersey.value &&
+    !teamCoach.value &&
+    !teamArena.value &&
+    !teamGM.value &&
+    !teamUniform.value;
+
+// Keeps the unsaved team in localStorage, or drops it once the builder is
+// blank (Clear Team). Saved teams live on the server and are never kept.
+// Skipped while it can't be told whose team this is: a signed-in user's
+// draft must never land under the guest key.
+const writeDraft = () => {
+    if (!draftDirty || loadedTeamUUID.value !== null) return;
+    const key = resolveDraftKey({
+        isLoading: authLoading.value,
+        isAuthenticated: isAuthenticated.value,
+        userId: currentUserId.value,
+    });
+    if (!key) return;
+    if (isBlankTeam()) clearDraft(key);
+    else saveDraft(key, buildSavePayload(""));
+};
+const scheduleDraftWrite = useDebounceFn(writeDraft, 500);
+// Leaving the builder or the page doesn't wait for the debounce. Not dirty
+// afterwards, so a debounced write still pending can't fire on this instance
+// later, over whatever the next visit has done to the draft since.
+const writeDraftNow = () => {
+    writeDraft();
+    draftDirty = false;
+};
+onBeforeUnmount(writeDraftNow);
+useEventListener(window, "pagehide", writeDraft);
+// An edit made before a signed-in user's id arrived couldn't be written then.
+watch(currentUserId, (id) => {
+    if (id) writeDraft();
+});
 
 const saveTeam = async () => {
     // Before the session has loaded, isAuthenticated is false for everyone.
@@ -678,6 +747,10 @@ const saveTeam = async () => {
     const payload = buildSavePayload();
 
     const existingUUID = loadedTeamUUID.value;
+    // A new team saved from the user's own edits is the kept draft; so is
+    // one restored after the sign-in to save it, which was built signed out.
+    const savesDraft = !existingUUID && draftDirty;
+    const resumed = route.query.resume === RESUME_SAVE_QUERY;
 
     // The share card is refreshed only once the save has gone through, and
     // outside the toast: a 3D card can take seconds and must never hold the
@@ -689,6 +762,7 @@ const saveTeam = async () => {
             loadedTeamUUID.value = saved.teamUUID;
             // Saved: whatever was kept for a sign-in has done its job.
             discardPendingSave();
+            if (savesDraft || resumed) clearSavedDraft(savesDraft, resumed);
             // Every snapshot predates the team existing; undoing to one
             // would detach the builder and the next Save would duplicate it.
             if (!existingUUID) forgetHistory();
@@ -1102,6 +1176,64 @@ const signInToSave = (destination: "/login" | "/sign-up") => {
     router.push(destination);
 };
 
+// A team from browser storage into the builder: details at once, then each
+// slot streaming its career stats in, same as adding a player fresh.
+const restoreTeamPayload = async (team: SaveTeamPayload) => {
+    const hydrated = hydrateTeam(team);
+    applyHydratedTeam(hydrated);
+    await Promise.all(
+        Array.from(hydrated.players.entries()).map(([slot, player]) =>
+            loadPlayerIntoSlot(slot, player).done,
+        ),
+    );
+};
+
+const clearSavedDraft = (savesDraft: boolean, resumed: boolean) => {
+    const key = resolveDraftKey({
+        isLoading: authLoading.value,
+        isAuthenticated: isAuthenticated.value,
+        userId: currentUserId.value,
+    });
+    if (savesDraft && key) clearDraft(key);
+    // The way back from signing in to save: the team was built signed out.
+    if (resumed) clearDraft(draftKeyFor(null));
+};
+
+// A bare /teambuilder visit: bring back the team kept from last time, if any.
+// The user may move on, or start a new team, while the session loads; either
+// wins, and the kept team stays for the next visit.
+const restoreDraft = async () => {
+    const stillRestoring = () =>
+        route.name === "teamBuilder" && builderEntry() === "new" && !draftDirty;
+    const key = await waitForDraftKey({ isLoading: authLoading, isAuthenticated }, currentUserId);
+    if (!key || !stillRestoring()) return;
+    const team = readDraft(key);
+    if (!team) return;
+    try {
+        await restoreTeamPayload(team);
+    } catch (err) {
+        console.error("Error restoring the unsaved team:", err);
+        return;
+    }
+    // Edited or left while the players streamed in: that is theirs now.
+    if (!stillRestoring()) return;
+    // Undo must not reach back to the blank builder under the restored team.
+    forgetHistory();
+    // It is the user's own team, so saving it clears the kept copy.
+    draftDirty = true;
+    track("draft_restored", { playerCount: team.roster.length });
+    toast.success("Restored your unsaved team", {
+        action: {
+            label: "Start over",
+            onClick: () => {
+                // In this order: clearing the builder writes the team it leaves.
+                clearBuilderState();
+                clearDraft(key);
+            },
+        },
+    });
+};
+
 // The other half of signing in to save: Callback.vue sends the user back here
 // with ?resume=save. The team they were building is read from storage, put
 // into the builder and saved. The draft stays until the save succeeds, so a
@@ -1126,13 +1258,7 @@ const resumePendingSave = async () => {
         return;
     }
     try {
-        const hydrated = hydrateTeam(draft);
-        applyHydratedTeam(hydrated);
-        await Promise.all(
-            Array.from(hydrated.players.entries()).map(([slot, player]) =>
-                loadPlayerIntoSlot(slot, player).done,
-            ),
-        );
+        await restoreTeamPayload(draft);
     } catch (err) {
         console.error("Error restoring team after sign-in:", err);
         toast.error("Signed in, but the team couldn't be restored. Build it again and Save.");
@@ -1227,6 +1353,8 @@ watch(
         } else {
             clearBuilderState();
             applyJerseyFromRoute(jerseyId);
+            // ?jersey= starts a new team on purpose; the kept one waits.
+            if (!seededJerseyId) void restoreDraft();
         }
     },
     { immediate: true },

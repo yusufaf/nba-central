@@ -108,6 +108,7 @@ const signInPrompt = () => wrapper!.findComponent({ name: 'ConfirmDialog' });
 beforeEach(() => {
     setActivePinia(createPinia());
     sessionStorage.clear();
+    localStorage.clear();
     signedIn.value = false;
     authLoading.value = false;
     vi.clearAllMocks();

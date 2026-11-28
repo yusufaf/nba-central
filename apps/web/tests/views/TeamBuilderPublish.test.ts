@@ -122,6 +122,7 @@ const publishCalls = () => vi.mocked(teamApi.publish).mock.calls.map(([payload])
 beforeEach(() => {
     setActivePinia(createPinia());
     sessionStorage.clear();
+    localStorage.clear();
     vi.clearAllMocks();
     order.length = 0;
     vi.mocked(teamApi.updateTeam).mockResolvedValue({ success: true, data: storedTeam() as never });
