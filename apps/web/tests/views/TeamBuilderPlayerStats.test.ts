@@ -79,6 +79,7 @@ const pick = async (slot: number, player: object) => {
 beforeEach(async () => {
     setActivePinia(createPinia());
     sessionStorage.clear();
+    localStorage.clear();
     vi.clearAllMocks();
     vi.spyOn(console, 'error').mockImplementation(() => {});
     await mountBuilder();

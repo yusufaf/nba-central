@@ -105,6 +105,7 @@ const callsTo = (event: string) => vi.mocked(track).mock.calls.filter(([name]) =
 beforeEach(() => {
     setActivePinia(createPinia());
     sessionStorage.clear();
+    localStorage.clear();
     signedIn.value = false;
     authLoading.value = false;
     vi.clearAllMocks();

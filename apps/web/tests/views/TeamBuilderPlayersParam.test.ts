@@ -107,6 +107,7 @@ const mediaId = mediaIdFromJerseyUrl(jerseyRow.jersey)!;
 beforeEach(() => {
     setActivePinia(createPinia());
     sessionStorage.clear();
+    localStorage.clear();
     vi.clearAllMocks();
     vi.spyOn(console, 'error').mockImplementation(() => {});
     vi.mocked(teamApi.getTeam).mockResolvedValue({ success: false } as never);
