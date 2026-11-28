@@ -11,7 +11,9 @@ vi.mock("@/network/api", () => ({
     },
 }));
 
+import { AxiosError, type AxiosResponse } from "axios";
 import { useUserTeamsStore } from "@/stores/userTeams";
+import { SESSION_EXPIRED_MESSAGE } from "@/composables/useSessionExpiry";
 import { teamApi } from "@/network/api";
 import type {
     SavedTeam,
@@ -110,6 +112,34 @@ describe("useUserTeamsStore.fetch", () => {
 
         expect(store.error).toBe("boom");
         expect(store.loading).toBe(false);
+    });
+
+    it("explains a rejected session instead of the raw 401", async () => {
+        vi.mocked(teamApi.listTeams).mockRejectedValue(
+            new AxiosError("Request failed with status code 401", "ERR_BAD_REQUEST", undefined, undefined, {
+                status: 401,
+                data: { message: "Unauthorized" },
+            } as AxiosResponse),
+        );
+
+        const store = useUserTeamsStore();
+        await store.fetch();
+
+        expect(store.error).toBe(SESSION_EXPIRED_MESSAGE);
+    });
+
+    it("keeps server failures generic", async () => {
+        vi.mocked(teamApi.listTeams).mockRejectedValue(
+            new AxiosError("Request failed with status code 500", "ERR_BAD_RESPONSE", undefined, undefined, {
+                status: 500,
+                data: {},
+            } as AxiosResponse),
+        );
+
+        const store = useUserTeamsStore();
+        await store.fetch();
+
+        expect(store.error).toBe("Something went wrong on our end. Please try again later.");
     });
 });
 
