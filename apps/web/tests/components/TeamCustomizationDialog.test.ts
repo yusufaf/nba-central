@@ -8,12 +8,12 @@ let wrapper: VueWrapper | undefined;
 
 // DialogContent teleports to document.body, so everything queries the live
 // document rather than the wrapper's render tree.
-const mountOpen = async () => {
+const mountOpen = async (teamLogo = "") => {
     wrapper = mount(TeamCustomizationDialog, {
         props: {
             showTeamCustomizationDialog: true,
             "onUpdate:showTeamCustomizationDialog": () => {},
-            teamLogo: "",
+            teamLogo,
         },
         global: {
             stubs: {
@@ -55,5 +55,12 @@ describe("TeamCustomizationDialog current logos", () => {
         await nextTick();
 
         expect(mounted.emitted("update:teamLogo")?.[0]).toEqual([currentTeamLogos[2].logo]);
+    });
+
+    it("marks the saved team's logo as selected", async () => {
+        await mountOpen(currentTeamLogos[4].logo);
+
+        expect(logoImages()[4].classList.contains("selected")).toBe(true);
+        expect(document.querySelectorAll("img.team-logo.selected")).toHaveLength(1);
     });
 });

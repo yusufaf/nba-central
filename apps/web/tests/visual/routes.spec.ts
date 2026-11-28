@@ -154,6 +154,10 @@ async function stubNetwork(page: Page) {
             ? route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(file) })
             : route.fulfill({ status: 404, body: '' });
     });
+    // The bundled current team logos (#217).
+    await page.route('https://d2s6ea2hcvgd9x.cloudfront.net/logos/current/**', (route) =>
+        route.fulfill({ status: 200, contentType: 'image/png', body: GREY_PIXEL }),
+    );
 }
 
 /** ESPN unreachable: the page has to work from the cached files alone. */
@@ -323,17 +327,22 @@ test('no route requests the team-logos endpoint', async ({ page }) => {
 });
 
 // #188: TeamBuilderHeader fetched all 30 team logos from ESPN's API on every
-// mount. The Current logo tab now reads a bundled JSON instead.
-test('/teambuilder requests nothing from ESPN', async ({ page }) => {
+// mount. The Current logo tab now reads a bundled JSON instead. #217: the
+// dialog's Current tab now loads the 30 logos from the assets CDN, not ESPN.
+test('/teambuilder and its logo dialog request nothing from ESPN', async ({ page }) => {
     await stubNetwork(page);
     const espn: string[] = [];
+    const current = new Set<string>();
     page.on('request', (request) => {
-        const { hostname } = new URL(request.url());
-        if (/(^|\.)espn(cdn)?\.com$/.test(hostname)) espn.push(request.url());
+        const url = request.url();
+        if (/(^|\.)espn(cdn)?\.com$/.test(new URL(url).hostname)) espn.push(url);
+        if (url.includes('/logos/current/')) current.add(url);
     });
     await page.goto('/teambuilder', { waitUntil: 'domcontentloaded' });
     await viewRendered(page);
-    await page.waitForTimeout(500);
+    await page.getByTitle('Team settings').click();
+    await expect(page.locator('img.team-logo')).toHaveCount(30);
+    await expect.poll(() => current.size).toBe(30);
     expect(espn).toEqual([]);
 });
 
@@ -341,11 +350,8 @@ test('/standings requests no ESPN data', async ({ page }) => {
     await stubNetwork(page);
     const espn: string[] = [];
     page.on('request', (request) => {
-        const url = new URL(request.url());
-        // Team logos are the app's existing ESPN hotlinks; headshots and
-        // every API call must come from our CDN.
-        if (url.hostname === 'site.api.espn.com') espn.push(request.url());
-        if (url.hostname === 'a.espncdn.com' && url.pathname.includes('/headshots/')) espn.push(request.url());
+        // Team logos and headshots come from our CDN, like the data (#217).
+        if (/(^|\.)espn(cdn)?\.com$/.test(new URL(request.url()).hostname)) espn.push(request.url());
     });
     await page.goto('/standings', { waitUntil: 'domcontentloaded' });
     await page.getByText('Eastern Conference').waitFor();

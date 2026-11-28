@@ -1,5 +1,5 @@
 import type { Arena, Coach, GM, Player } from "@/models/types";
-import { resolveLegacyLogoUrl } from "@/utils/historicalLogoUrl";
+import { resolveSavedLogoUrl } from "@/utils/savedLogoUrl";
 import { backfillArena, parseCapacity } from "@/utils/arenaDetails";
 import { parseAppearance, parseStaffAppearance } from "@/utils/appearance";
 import { parseUniform } from "@/utils/jerseyColours";
@@ -207,7 +207,7 @@ export const hydrateTeam = (saved: HydrateSource): HydratedTeam => {
         teamDescription: saved.description ?? "",
         teamCity: saved.city ?? "",
         teamCountry: saved.country ?? "",
-        teamLogo: resolveLegacyLogoUrl(saved.logoUrl ?? ""),
+        teamLogo: resolveSavedLogoUrl(saved.logoUrl ?? ""),
         teamJersey: saved.jerseyUrl ?? "",
         players,
         teamCoach: saved.coach ?? null,
