@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { ref, onMounted } from "vue";
 import { useRouter } from "vue-router";
+import { useLogto } from "@logto/vue";
+import { until } from "@vueuse/core";
 import { toast } from "vue-sonner";
 import PageTitle from "@/components/PageTitle.vue";
 import PageShell from "@/layouts/PageShell.vue";
@@ -13,15 +15,22 @@ import {
     CardTitle,
 } from "@/components/ui/card";
 import ConfirmDialog from "@/components/ui/confirm-dialog/ConfirmDialog.vue";
-import { Shield, Plus, Users, Trash2, Globe, Link2 } from "lucide-vue-next";
+import { Shield, Plus, Users, Trash2, Globe, Link2, LogIn } from "lucide-vue-next";
 import { useUserTeamsStore } from "@/stores/userTeams";
 import { shareUrlFor } from "@/utils/shareUrl";
 import { track } from "@/lib/analytics";
 import { useDateFormat } from "@/composables/useDateFormat";
+import { IS_PREVIEW } from "@/utils/preview";
 import type { TeamSummary } from "@/models/api";
 
 const router = useRouter();
 const userTeamsStore = useUserTeamsStore();
+const { isAuthenticated, isLoading: authLoading } = useLogto();
+
+// Teams live on the server, so signed out there is nothing to fetch: the
+// list API would only answer 401. Logto reads the stored session
+// asynchronously, and isAuthenticated is false for everyone until it has.
+const checkingSession = ref(true);
 
 const teamToDelete = ref<TeamSummary | null>(null);
 const showDeleteDialog = ref(false);
@@ -68,8 +77,10 @@ const handleDelete = async () => {
     }
 };
 
-onMounted(() => {
-    userTeamsStore.fetch();
+onMounted(async () => {
+    if (authLoading.value) await until(authLoading).toBe(false);
+    checkingSession.value = false;
+    if (isAuthenticated.value) userTeamsStore.fetch();
 });
 </script>
 
@@ -77,7 +88,34 @@ onMounted(() => {
     <main>
         <PageTitle />
         <PageShell width="narrow">
-            <div v-if="userTeamsStore.loading" class="status-state">
+            <div v-if="checkingSession" class="status-state">
+                <p class="status-copy">Loading your teams...</p>
+            </div>
+
+            <div v-else-if="!isAuthenticated" class="empty-state">
+                <div class="empty-state-icon">
+                    <Shield class="h-10 w-10 text-primary-strong" />
+                </div>
+                <p class="empty-state-title">Sign in to see your teams</p>
+                <p class="empty-state-copy">
+                    You can build a team without an account. Sign in to save it and share it.
+                </p>
+                <div class="empty-state-actions">
+                    <Button v-if="!IS_PREVIEW" @click="router.push('/login')">
+                        <LogIn class="h-4 w-4 mr-2" />
+                        Sign in
+                    </Button>
+                    <Button
+                        :variant="IS_PREVIEW ? 'default' : 'outline'"
+                        @click="router.push('/teambuilder')"
+                    >
+                        <Plus class="h-4 w-4 mr-2" />
+                        Build a Team
+                    </Button>
+                </div>
+            </div>
+
+            <div v-else-if="userTeamsStore.loading" class="status-state">
                 <p class="status-copy">Loading your teams...</p>
             </div>
 
@@ -215,6 +253,13 @@ onMounted(() => {
     color: hsl(var(--muted-foreground));
     margin: 0.25rem 0 1.5rem;
     max-width: 24rem;
+}
+
+.empty-state-actions {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 0.75rem;
 }
 
 .teams-grid {

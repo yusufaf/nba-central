@@ -1,5 +1,8 @@
 import { defineStore } from "pinia";
+import { isAxiosError } from "axios";
 import { teamApi } from "@/network/api";
+import { getApiErrorMessage } from "@/composables/useApiErrorMessage";
+import { SESSION_EXPIRED_MESSAGE } from "@/composables/useSessionExpiry";
 import type {
     SaveTeamPayload,
     UpdateTeamPayload,
@@ -34,10 +37,12 @@ export const useUserTeamsStore = defineStore("userTeams", {
                     this.error = response.error;
                 }
             } catch (error) {
-                this.error =
-                    error instanceof Error
-                        ? error.message
-                        : "Failed to fetch teams";
+                // /teams only fetches signed in, so a 401 is a session the
+                // API no longer accepts. API Gateway's 401 has no error body,
+                // which would leave axios's "Request failed with status code 401".
+                this.error = isAxiosError(error) && error.response?.status === 401
+                    ? SESSION_EXPIRED_MESSAGE
+                    : getApiErrorMessage(error, "Couldn't load your teams.");
                 console.error("Error fetching teams:", error);
             } finally {
                 this.loading = false;
